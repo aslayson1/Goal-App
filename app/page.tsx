@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from "react"
-import { Plus, ChevronDown, ChevronUp, Calendar, Target, TrendingUp, MoreHorizontal, Edit, Trash2, CheckCircle, Clock, GripVertical, ClipboardCheck, User, LogOut, CheckCircle2, Circle, Trophy, Minus } from 'lucide-react'
+import { Plus, ChevronDown, ChevronUp, Calendar, Target, TrendingUp, MoreHorizontal, Edit, Trash2, CheckCircle, Clock, GripVertical, ClipboardCheck, User, LogOut, CheckCircle2, Circle, Trophy, Minus, Settings, Award } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -11,11 +11,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
 import { Checkbox } from "@/components/ui/checkbox"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import React from 'react'
+import { useTheme } from 'next-themes'
 
 // Auth components
 import { useAuth } from '@/lib/auth'
@@ -700,17 +701,6 @@ const initialDailyTasks = {
       estimatedMinutes: 90
     }
   ]
-}
-
-interface Goal {
-  id: string
-  title: string
-  description: string
-  targetCount: number
-  currentCount: number
-  notes: string
-  weeklyTarget: number
-  category: string
 }
 
 interface WeeklyTask {

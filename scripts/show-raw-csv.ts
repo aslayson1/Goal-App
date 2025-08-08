@@ -1,38 +1,54 @@
-console.log('Raw CSV data from goal tracker:')
+// Script to display raw CSV data for goal tracking
+console.log('Displaying raw CSV data for goal tracking...')
 
-const rawCsvData = `
-ID,Category,Title,Description,Target,Current,Weekly_Target,Notes
-lg1,Layson Group,Add 3 agents to Memphis & Nashville and 2 to Knoxville,Expand team across key Tennessee markets,7,2,0.6,Focus on experienced agents with local market knowledge
-lg2,Layson Group,Create automated newsletter,Build automated email marketing system,1,0,0.08,Need to set up email templates and automation workflows
-up1,Upside,Get 100 paid users for Upside,Reach 100 paying customers milestone,100,15,8.3,Current conversion rate is 8% need to improve onboarding
-rf1,Relationships/Family,Take Sarah out on 6 dates,Quality time with spouse - planned date nights,6,2,0.5,Planned dinner and movie night need to schedule more
-pnh1,Physical/Nutrition/Health,Run/Walk/Ruck 120 Miles,Complete 120 miles of cardio exercise,120,32,10,Averaging 8 miles per week on track
-sc1,Spiritual/Contribution,Go to Church 10 Times,Regular church attendance,10,3,0.8,Sunday services family enjoys the community
-ie1,Intellect/Education,Review Goals 60 Times,Daily goal review and reflection,60,22,5,Morning review routine established
-la1,Lifestyle/Adventure,Schedule 1 short weekend Trip,Plan and execute weekend getaway,1,0,0.08,Looking at Nashville or Gatlinburg options
-pfm1,Personal Finance/Material,Buy 1st Tax Sale Property,Purchase first property at tax sale,1,0,0.08,Researching properties and auction process
-`
+// Mock CSV data as it would appear in a file
+const csvData = `id,title,category,priority,status,progress,created_date,due_date
+1,"Complete Marathon Training","Health & Fitness",high,in-progress,65,2024-01-01,2024-06-01
+2,"Learn TypeScript","Professional Development",medium,completed,100,2024-01-15,2024-03-15
+3,"Save $10000","Financial",high,in-progress,40,2024-01-01,2024-12-31
+4,"Read 24 Books","Personal Growth",medium,in-progress,33,2024-01-01,2024-12-31
+5,"Learn Spanish","Education",low,not-started,0,2024-02-01,2024-08-01
+6,"Build Side Project","Professional Development",high,in-progress,75,2024-01-10,2024-04-10
+7,"Lose 20 Pounds","Health & Fitness",medium,in-progress,50,2024-01-01,2024-07-01
+8,"Visit 5 Countries","Travel",low,not-started,0,2024-03-01,2024-12-31`
 
-console.log(rawCsvData)
+console.log('\n📄 Raw CSV Data:')
+console.log('================')
+console.log(csvData)
 
-// Basic statistics
-const lines = rawCsvData.trim().split('\n')
-const dataRows = lines.slice(1).filter(line => line.trim())
+// Parse and display formatted data
+const lines = csvData.split('\n')
+const headers = lines[0].split(',')
+const rows = lines.slice(1).map(line => line.split(','))
 
-console.log(`\nTotal goals: ${dataRows.length}`)
+console.log('\n📋 Parsed Data:')
+console.log('===============')
 
-// Calculate completion rates
-let totalProgress = 0
-let totalTargets = 0
+// Display headers
+console.log(headers.join(' | '))
+console.log('-'.repeat(headers.join(' | ').length))
 
-dataRows.forEach(line => {
-  const columns = line.split(',')
-  const current = parseInt(columns[5]) || 0
-  const target = parseInt(columns[4]) || 1
-  
-  totalProgress += current / target
-  totalTargets += 1
+// Display rows
+rows.forEach(row => {
+  console.log(row.join(' | '))
 })
 
-const overallCompletion = (totalProgress / totalTargets * 100).toFixed(1)
-console.log(`Overall completion rate: ${overallCompletion}%`)
+// Basic statistics
+console.log('\n📊 Quick Statistics:')
+console.log('===================')
+console.log(`Total records: ${rows.length}`)
+console.log(`Data fields: ${headers.length}`)
+
+// Count by status
+const statusCounts = rows.reduce((acc, row) => {
+  const status = row[4] // status column
+  acc[status] = (acc[status] || 0) + 1
+  return acc
+}, {} as Record<string, number>)
+
+console.log('\nStatus distribution:')
+Object.entries(statusCounts).forEach(([status, count]) => {
+  console.log(`  ${status}: ${count}`)
+})
+
+console.log('\n✅ Raw data display complete!')

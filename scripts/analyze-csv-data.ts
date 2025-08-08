@@ -1,39 +1,41 @@
-console.log('Analyzing CSV data for goal tracking...')
+// This script analyzes CSV data for goal tracking insights
+console.log('Analyzing CSV data for goal tracking insights...')
 
-// Simulate CSV data analysis
-const csvData = `
-Category,Goal,Target,Current,Status
-Business,Add agents,7,2,In Progress
-Business,Newsletter,1,0,Not Started
-Health,Run miles,120,32,On Track
-Health,Workouts,60,18,On Track
-Relationships,Date nights,6,2,Behind
-`
+// Mock CSV data analysis
+const mockData = [
+  { goal: 'Exercise', completed: 15, total: 20, category: 'Health' },
+  { goal: 'Read Books', completed: 8, total: 12, category: 'Education' },
+  { goal: 'Save Money', completed: 10, total: 10, category: 'Finance' },
+  { goal: 'Learn Spanish', completed: 6, total: 15, category: 'Education' },
+]
 
-console.log('Raw CSV data:')
-console.log(csvData)
+console.log('Goal Completion Analysis:')
+console.log('========================')
 
-// Parse and analyze
-const lines = csvData.trim().split('\n')
-const headers = lines[0].split(',')
-const data = lines.slice(1).map(line => {
-  const values = line.split(',')
-  return headers.reduce((obj, header, index) => {
-    obj[header] = values[index]
-    return obj
-  }, {} as any)
+mockData.forEach(item => {
+  const percentage = Math.round((item.completed / item.total) * 100)
+  console.log(`${item.goal}: ${item.completed}/${item.total} (${percentage}%)`)
 })
 
-console.log('\nParsed data:')
-console.table(data)
+const totalCompleted = mockData.reduce((sum, item) => sum + item.completed, 0)
+const totalGoals = mockData.reduce((sum, item) => sum + item.total, 0)
+const overallPercentage = Math.round((totalCompleted / totalGoals) * 100)
 
-// Analysis
-const statusCounts = data.reduce((acc, row) => {
-  acc[row.Status] = (acc[row.Status] || 0) + 1
+console.log('\nOverall Progress:')
+console.log(`Total: ${totalCompleted}/${totalGoals} (${overallPercentage}%)`)
+
+// Category analysis
+const categories = mockData.reduce((acc, item) => {
+  if (!acc[item.category]) {
+    acc[item.category] = { completed: 0, total: 0 }
+  }
+  acc[item.category].completed += item.completed
+  acc[item.category].total += item.total
   return acc
-}, {} as Record<string, number>)
+}, {} as Record<string, { completed: number; total: number }>)
 
-console.log('\nStatus distribution:')
-Object.entries(statusCounts).forEach(([status, count]) => {
-  console.log(`${status}: ${count}`)
+console.log('\nCategory Breakdown:')
+Object.entries(categories).forEach(([category, data]) => {
+  const percentage = Math.round((data.completed / data.total) * 100)
+  console.log(`${category}: ${data.completed}/${data.total} (${percentage}%)`)
 })

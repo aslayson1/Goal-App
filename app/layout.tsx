@@ -1,37 +1,34 @@
 import type { Metadata } from "next"
-import { Geist, Geist_Mono } from 'next/font/google'
+import { Inter } from 'next/font/google'
 import "./globals.css"
-import { AuthProvider } from "@/lib/auth"
+import { ThemeProvider } from "@/components/theme-provider"
+import { Toaster } from "@/components/ui/toast"
 
-const geist = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-})
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-})
+const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Modern Goal Tracker",
-  description: "Track your 12-week goals with daily and weekly tasks",
+  title: "Goal Tracker",
+  description: "Track and achieve your goals with our modern goal tracking application",
     generator: 'v0.dev'
 }
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode
-}>) {
+}) {
   return (
-    <html lang="en">
-      <body
-        className={`${geist.variable} ${geistMono.variable} antialiased`}
-      >
-        <AuthProvider>
+    <html lang="en" suppressHydrationWarning>
+      <body className={inter.className}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
           {children}
-        </AuthProvider>
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   )

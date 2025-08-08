@@ -1,30 +1,40 @@
-# Modern goal tracker
+# Goal Tracker
 
-*Automatically synced with your [v0.dev](https://v0.dev) deployments*
+A modern goal tracking application built with Next.js, React, and TypeScript.
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/scott-2897s-projects/v0-modern-goal-tracker)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.dev-black?style=for-the-badge)](https://v0.dev/chat/projects/SlRnF98KHpo)
+## Features
 
-## Overview
+- User authentication and profiles
+- Goal creation and management
+- Progress tracking with visual indicators
+- Drag and drop goal organization
+- Dark/light theme support
+- Responsive design
 
-This repository will stay in sync with your deployed chats on [v0.dev](https://v0.dev).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.dev](https://v0.dev).
+## Getting Started
+
+1. Install dependencies:
+\`\`\`bash
+npm install
+\`\`\`
+
+2. Run the development server:
+\`\`\`bash
+npm run dev
+\`\`\`
+
+3. Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+## Tech Stack
+
+- Next.js 15
+- React 19
+- TypeScript
+- Tailwind CSS
+- Radix UI components
+- React Hook Form
+- Zod validation
 
 ## Deployment
 
-Your project is live at:
-
-**[https://vercel.com/scott-2897s-projects/v0-modern-goal-tracker](https://vercel.com/scott-2897s-projects/v0-modern-goal-tracker)**
-
-## Build your app
-
-Continue building your app on:
-
-**[https://v0.dev/chat/projects/SlRnF98KHpo](https://v0.dev/chat/projects/SlRnF98KHpo)**
-
-## How It Works
-
-1. Create and modify your project using [v0.dev](https://v0.dev)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+This project is configured for deployment on Vercel with automatic builds on every commit.
