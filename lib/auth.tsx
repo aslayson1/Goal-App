@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react'
+import React, { useState, useEffect, createContext, useContext, ReactNode } from 'react'
 
 export interface User {
   id: string
@@ -118,17 +118,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const contextValue: AuthContextType = {
-    user,
-    login,
-    register,
-    logout,
-    updateProfile,
-    isLoading,
-  }
-
   return (
-    <AuthContext.Provider value={contextValue}>
+    <AuthContext.Provider
+      value={{
+        user,
+        login,
+        register,
+        logout,
+        updateProfile,
+        isLoading,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   )
