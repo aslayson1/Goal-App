@@ -2030,7 +2030,7 @@ function GoalTrackerApp() {
                 </p>
                 <div className="flex items-center">
                   <Calendar className="h-4 w-4 mr-2" style={{ color: '#05a7b0' }} />
-                  <p className="text-sm font-medium text-gray-600">Weeks Left</p>
+                  <p className="text-sm font-medium text-gray-600">Test</p>
                 </div>
                 <div className="w-full">
                   <Progress 
