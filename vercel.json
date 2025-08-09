@@ -1,5 +1,8 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "framework": "nextjs",
   "git": {
     "deploymentEnabled": {
       "main": true,
@@ -8,8 +11,7 @@
   },
   "github": {
     "silent": false,
-    "autoJobCancellation": false
+    "autoJobCancelation": false
   },
-  "buildCommand": "npm run build",
   "ignoreCommand": "echo 'Force build' && exit 1"
 }

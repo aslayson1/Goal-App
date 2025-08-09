@@ -1,7 +1,20 @@
-'use client'
+"use client"
 
 import { useState, useEffect } from "react"
-import { Plus, ChevronDown, ChevronUp, Calendar, Target, TrendingUp, MoreHorizontal, Edit, Trash2, CheckCircle, Clock, GripVertical, ClipboardCheck, User, LogOut, CheckCircle2, Circle, Trophy, Minus, Settings, Award } from 'lucide-react'
+import {
+  Plus,
+  ChevronDown,
+  ChevronUp,
+  Calendar,
+  Target,
+  MoreHorizontal,
+  Edit,
+  Trash2,
+  CheckCircle,
+  Clock,
+  GripVertical,
+  ClipboardCheck,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -11,17 +24,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import React from 'react'
-import { useTheme } from 'next-themes'
 
 // Auth components
-import { useAuth } from '@/lib/auth'
-import { AuthScreen } from '@/components/auth/auth-screen'
-import { UserProfile } from '@/components/profile/user-profile'
+import { useAuth } from "@/lib/auth"
+import { AuthScreen } from "@/components/auth/auth-screen"
+import { UserProfile } from "@/components/profile/user-profile"
 
 // Drag and Drop imports
 import {
@@ -31,21 +49,15 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  DragEndEvent,
-} from '@dnd-kit/core'
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable'
-import {
-  useSortable,
-} from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
+  type DragEndEvent,
+} from "@dnd-kit/core"
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable"
+import { useSortable } from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
 
 // Custom CSS class for white checkbox background with thinner border
-const checkboxStyles = "bg-white border border-gray-400 data-[state=checked]:border-[#05a7b0] data-[state=checked]:bg-[#05a7b0]"
+const checkboxStyles =
+  "bg-white border border-gray-400 data-[state=checked]:border-[#05a7b0] data-[state=checked]:bg-[#05a7b0]"
 
 // Your actual goals data from the SQL file
 const initialGoalsData = {
@@ -58,7 +70,7 @@ const initialGoalsData = {
       currentCount: 2,
       notes: "Focus on experienced agents with local market knowledge",
       weeklyTarget: 0.6,
-      category: "Business"
+      category: "Business",
     },
     {
       id: "lg2",
@@ -68,7 +80,7 @@ const initialGoalsData = {
       currentCount: 0,
       notes: "Need to set up email templates and automation workflows",
       weeklyTarget: 0.08,
-      category: "Business"
+      category: "Business",
     },
     {
       id: "lg3",
@@ -78,7 +90,7 @@ const initialGoalsData = {
       currentCount: 0,
       notes: "Research CRM integrations and analytics tools",
       weeklyTarget: 0.08,
-      category: "Business"
+      category: "Business",
     },
     {
       id: "lg4",
@@ -88,10 +100,10 @@ const initialGoalsData = {
       currentCount: 0,
       notes: "Coordinate with development team on requirements",
       weeklyTarget: 0.08,
-      category: "Business"
-    }
+      category: "Business",
+    },
   ],
-  "Upside": [
+  Upside: [
     {
       id: "up1",
       title: "Get 100 paid users for Upside",
@@ -100,7 +112,7 @@ const initialGoalsData = {
       currentCount: 15,
       notes: "Current conversion rate is 8%, need to improve onboarding",
       weeklyTarget: 8.3,
-      category: "Business"
+      category: "Business",
     },
     {
       id: "up2",
@@ -110,7 +122,7 @@ const initialGoalsData = {
       currentCount: 0,
       notes: "Preparing pitch deck and financial projections",
       weeklyTarget: 62500,
-      category: "Business"
+      category: "Business",
     },
     {
       id: "up3",
@@ -120,7 +132,7 @@ const initialGoalsData = {
       currentCount: 1,
       notes: "Initial conversations with 3 funds, 1 signed LOI",
       weeklyTarget: 0.4,
-      category: "Business"
+      category: "Business",
     },
     {
       id: "up4",
@@ -130,7 +142,7 @@ const initialGoalsData = {
       currentCount: 8,
       notes: "Current rate is 8%, need better onboarding flow",
       weeklyTarget: 0.8,
-      category: "Business"
+      category: "Business",
     },
     {
       id: "up5",
@@ -140,8 +152,8 @@ const initialGoalsData = {
       currentCount: 0,
       notes: "Evaluating potential partners in real estate tech space",
       weeklyTarget: 0.08,
-      category: "Business"
-    }
+      category: "Business",
+    },
   ],
   "Poplar Title": [
     {
@@ -152,7 +164,7 @@ const initialGoalsData = {
       currentCount: 7,
       notes: "Currently ranking #7, need more local reviews and citations",
       weeklyTarget: 0.25,
-      category: "Business"
+      category: "Business",
     },
     {
       id: "pt2",
@@ -162,8 +174,8 @@ const initialGoalsData = {
       currentCount: 1,
       notes: "First deal closed last month, pipeline building",
       weeklyTarget: 0.4,
-      category: "Business"
-    }
+      category: "Business",
+    },
   ],
   "Relationships/Family": [
     {
@@ -174,7 +186,7 @@ const initialGoalsData = {
       currentCount: 2,
       notes: "Planned dinner and movie night, need to schedule more",
       weeklyTarget: 0.5,
-      category: "Relationships"
+      category: "Relationships",
     },
     {
       id: "rf2",
@@ -184,7 +196,7 @@ const initialGoalsData = {
       currentCount: 1,
       notes: "First session went well, scheduled monthly check-ins",
       weeklyTarget: 0.25,
-      category: "Relationships"
+      category: "Relationships",
     },
     {
       id: "rf3",
@@ -194,7 +206,7 @@ const initialGoalsData = {
       currentCount: 2,
       notes: "Kids love pickleball nights, great family bonding",
       weeklyTarget: 0.5,
-      category: "Relationships"
+      category: "Relationships",
     },
     {
       id: "rf4",
@@ -204,7 +216,7 @@ const initialGoalsData = {
       currentCount: 1,
       notes: "First session was productive, kids are engaged",
       weeklyTarget: 0.25,
-      category: "Relationships"
+      category: "Relationships",
     },
     {
       id: "rf5",
@@ -214,7 +226,7 @@ const initialGoalsData = {
       currentCount: 1,
       notes: "Zoo trip was amazing, planning museum visit next",
       weeklyTarget: 0.25,
-      category: "Relationships"
+      category: "Relationships",
     },
     {
       id: "rf6",
@@ -224,7 +236,7 @@ const initialGoalsData = {
       currentCount: 1,
       notes: "Basketball game was great, planning fishing trip",
       weeklyTarget: 0.25,
-      category: "Relationships"
+      category: "Relationships",
     },
     {
       id: "rf7",
@@ -234,7 +246,7 @@ const initialGoalsData = {
       currentCount: 4,
       notes: "Weekly Sunday calls established as routine",
       weeklyTarget: 1,
-      category: "Relationships"
+      category: "Relationships",
     },
     {
       id: "rf8",
@@ -244,8 +256,8 @@ const initialGoalsData = {
       currentCount: 3,
       notes: "Group chat helps, but need more voice calls",
       weeklyTarget: 1,
-      category: "Relationships"
-    }
+      category: "Relationships",
+    },
   ],
   "Physical/Nutrition/Health": [
     {
@@ -256,7 +268,7 @@ const initialGoalsData = {
       currentCount: 32,
       notes: "Averaging 8 miles per week, on track",
       weeklyTarget: 10,
-      category: "Health"
+      category: "Health",
     },
     {
       id: "pnh2",
@@ -266,7 +278,7 @@ const initialGoalsData = {
       currentCount: 18,
       notes: "5 workouts per week schedule working well",
       weeklyTarget: 5,
-      category: "Health"
+      category: "Health",
     },
     {
       id: "pnh3",
@@ -276,7 +288,7 @@ const initialGoalsData = {
       currentCount: 16,
       notes: "Morning stretches becoming habit",
       weeklyTarget: 5,
-      category: "Health"
+      category: "Health",
     },
     {
       id: "pnh4",
@@ -286,7 +298,7 @@ const initialGoalsData = {
       currentCount: 14,
       notes: "Weekdays are easier, weekends more challenging",
       weeklyTarget: 4,
-      category: "Health"
+      category: "Health",
     },
     {
       id: "pnh5",
@@ -296,8 +308,8 @@ const initialGoalsData = {
       currentCount: 20,
       notes: "Set phone reminders, consistency improving",
       weeklyTarget: 5,
-      category: "Health"
-    }
+      category: "Health",
+    },
   ],
   "Spiritual/Contribution": [
     {
@@ -308,7 +320,7 @@ const initialGoalsData = {
       currentCount: 3,
       notes: "Sunday services, family enjoys the community",
       weeklyTarget: 0.8,
-      category: "Spiritual"
+      category: "Spiritual",
     },
     {
       id: "sc2",
@@ -318,7 +330,7 @@ const initialGoalsData = {
       currentCount: 18,
       notes: "10-minute morning sessions, very centering",
       weeklyTarget: 5,
-      category: "Spiritual"
+      category: "Spiritual",
     },
     {
       id: "sc3",
@@ -328,8 +340,8 @@ const initialGoalsData = {
       currentCount: 15,
       notes: "Using audio bible during commute",
       weeklyTarget: 5,
-      category: "Spiritual"
-    }
+      category: "Spiritual",
+    },
   ],
   "Intellect/Education": [
     {
@@ -340,7 +352,7 @@ const initialGoalsData = {
       currentCount: 22,
       notes: "Morning review routine established",
       weeklyTarget: 5,
-      category: "Education"
+      category: "Education",
     },
     {
       id: "ie2",
@@ -350,7 +362,7 @@ const initialGoalsData = {
       currentCount: 1,
       notes: "Finished 'Atomic Habits', starting 'Deep Work'",
       weeklyTarget: 0.17,
-      category: "Education"
+      category: "Education",
     },
     {
       id: "ie3",
@@ -360,8 +372,8 @@ const initialGoalsData = {
       currentCount: 6,
       notes: "Business and personal development focused",
       weeklyTarget: 1.25,
-      category: "Education"
-    }
+      category: "Education",
+    },
   ],
   "Lifestyle/Adventure": [
     {
@@ -372,7 +384,7 @@ const initialGoalsData = {
       currentCount: 0,
       notes: "Looking at Nashville or Gatlinburg options",
       weeklyTarget: 0.08,
-      category: "Lifestyle"
+      category: "Lifestyle",
     },
     {
       id: "la2",
@@ -382,7 +394,7 @@ const initialGoalsData = {
       currentCount: 1,
       notes: "Played with clients, great for relationship building",
       weeklyTarget: 0.25,
-      category: "Lifestyle"
+      category: "Lifestyle",
     },
     {
       id: "la3",
@@ -392,8 +404,8 @@ const initialGoalsData = {
       currentCount: 1,
       notes: "Tried rock climbing, was challenging but fun",
       weeklyTarget: 0.25,
-      category: "Lifestyle"
-    }
+      category: "Lifestyle",
+    },
   ],
   "Personal Finance/Material": [
     {
@@ -404,7 +416,7 @@ const initialGoalsData = {
       currentCount: 0,
       notes: "Researching properties and auction process",
       weeklyTarget: 0.08,
-      category: "Financial"
+      category: "Financial",
     },
     {
       id: "pfm2",
@@ -414,15 +426,15 @@ const initialGoalsData = {
       currentCount: 0,
       notes: "Comparing high-yield business account options",
       weeklyTarget: 0.08,
-      category: "Financial"
-    }
-  ]
+      category: "Financial",
+    },
+  ],
 }
 
 // Add after the existing initialGoalsData
 const initialLongTermGoals = {
   "1-year": {
-    "Business": [
+    Business: [
       {
         id: "1y_b1",
         title: "Scale Upside to 1,000 paid users",
@@ -435,8 +447,8 @@ const initialLongTermGoals = {
           { id: "m1", title: "Reach 250 users", completed: false, targetDate: "2025-03-31" },
           { id: "m2", title: "Reach 500 users", completed: false, targetDate: "2025-06-30" },
           { id: "m3", title: "Reach 750 users", completed: false, targetDate: "2025-09-30" },
-          { id: "m4", title: "Reach 1,000 users", completed: false, targetDate: "2025-12-31" }
-        ]
+          { id: "m4", title: "Reach 1,000 users", completed: false, targetDate: "2025-12-31" },
+        ],
       },
       {
         id: "1y_b2",
@@ -450,11 +462,11 @@ const initialLongTermGoals = {
           { id: "m1", title: "Market research complete", completed: true, targetDate: "2025-01-31" },
           { id: "m2", title: "Atlanta office opened", completed: false, targetDate: "2025-05-31" },
           { id: "m3", title: "Birmingham office opened", completed: false, targetDate: "2025-08-31" },
-          { id: "m4", title: "Louisville office opened", completed: false, targetDate: "2025-10-31" }
-        ]
-      }
+          { id: "m4", title: "Louisville office opened", completed: false, targetDate: "2025-10-31" },
+        ],
+      },
     ],
-    "Personal": [
+    Personal: [
       {
         id: "1y_p1",
         title: "Complete a marathon",
@@ -467,11 +479,11 @@ const initialLongTermGoals = {
           { id: "m1", title: "Complete 10K race", completed: false, targetDate: "2025-04-15" },
           { id: "m2", title: "Complete half marathon", completed: false, targetDate: "2025-07-15" },
           { id: "m3", title: "Complete 20-mile training run", completed: false, targetDate: "2025-10-01" },
-          { id: "m4", title: "Complete full marathon", completed: false, targetDate: "2025-11-15" }
-        ]
-      }
+          { id: "m4", title: "Complete full marathon", completed: false, targetDate: "2025-11-15" },
+        ],
+      },
     ],
-    "Financial": [
+    Financial: [
       {
         id: "1y_f1",
         title: "Build 6-month emergency fund",
@@ -484,13 +496,13 @@ const initialLongTermGoals = {
           { id: "m1", title: "Save $20,000", completed: false, targetDate: "2025-03-31" },
           { id: "m2", title: "Save $30,000", completed: false, targetDate: "2025-06-30" },
           { id: "m3", title: "Save $40,000", completed: false, targetDate: "2025-09-30" },
-          { id: "m4", title: "Save $50,000", completed: false, targetDate: "2025-12-31" }
-        ]
-      }
-    ]
+          { id: "m4", title: "Save $50,000", completed: false, targetDate: "2025-12-31" },
+        ],
+      },
+    ],
   },
   "5-year": {
-    "Business": [
+    Business: [
       {
         id: "5y_b1",
         title: "Exit Upside for $50M+",
@@ -503,8 +515,8 @@ const initialLongTermGoals = {
           { id: "m1", title: "Reach $5M ARR", completed: false, targetDate: "2026-12-31" },
           { id: "m2", title: "Raise Series B", completed: false, targetDate: "2027-06-30" },
           { id: "m3", title: "Reach $20M ARR", completed: false, targetDate: "2028-12-31" },
-          { id: "m4", title: "Complete exit", completed: false, targetDate: "2029-12-31" }
-        ]
+          { id: "m4", title: "Complete exit", completed: false, targetDate: "2029-12-31" },
+        ],
       },
       {
         id: "5y_b2",
@@ -518,11 +530,11 @@ const initialLongTermGoals = {
           { id: "m1", title: "Reach 10 markets", completed: false, targetDate: "2026-12-31" },
           { id: "m2", title: "Reach $100M in transactions", completed: false, targetDate: "2027-12-31" },
           { id: "m3", title: "Reach 15 markets", completed: false, targetDate: "2028-12-31" },
-          { id: "m4", title: "Establish market leadership", completed: false, targetDate: "2029-12-31" }
-        ]
-      }
+          { id: "m4", title: "Establish market leadership", completed: false, targetDate: "2029-12-31" },
+        ],
+      },
     ],
-    "Personal": [
+    Personal: [
       {
         id: "5y_p1",
         title: "Complete an Ironman triathlon",
@@ -535,8 +547,8 @@ const initialLongTermGoals = {
           { id: "m1", title: "Complete Olympic triathlon", completed: false, targetDate: "2026-08-15" },
           { id: "m2", title: "Complete Half Ironman", completed: false, targetDate: "2027-06-15" },
           { id: "m3", title: "Complete second Half Ironman", completed: false, targetDate: "2028-04-15" },
-          { id: "m4", title: "Complete full Ironman", completed: false, targetDate: "2028-10-15" }
-        ]
+          { id: "m4", title: "Complete full Ironman", completed: false, targetDate: "2028-10-15" },
+        ],
       },
       {
         id: "5y_p2",
@@ -550,11 +562,11 @@ const initialLongTermGoals = {
           { id: "m1", title: "Research and plan itinerary", completed: false, targetDate: "2026-12-31" },
           { id: "m2", title: "Save for trip expenses", completed: false, targetDate: "2027-03-31" },
           { id: "m3", title: "Book flights and accommodations", completed: false, targetDate: "2027-04-30" },
-          { id: "m4", title: "Complete the trip", completed: false, targetDate: "2027-07-31" }
-        ]
-      }
+          { id: "m4", title: "Complete the trip", completed: false, targetDate: "2027-07-31" },
+        ],
+      },
     ],
-    "Financial": [
+    Financial: [
       {
         id: "5y_f1",
         title: "Achieve $5M net worth",
@@ -567,11 +579,11 @@ const initialLongTermGoals = {
           { id: "m1", title: "Reach $1M net worth", completed: false, targetDate: "2026-12-31" },
           { id: "m2", title: "Reach $2M net worth", completed: false, targetDate: "2027-12-31" },
           { id: "m3", title: "Reach $3.5M net worth", completed: false, targetDate: "2028-12-31" },
-          { id: "m4", title: "Reach $5M net worth", completed: false, targetDate: "2029-12-31" }
-        ]
-      }
-    ]
-  }
+          { id: "m4", title: "Reach $5M net worth", completed: false, targetDate: "2029-12-31" },
+        ],
+      },
+    ],
+  },
 }
 
 // Weekly and Daily Tasks Data Structure
@@ -585,17 +597,17 @@ const initialWeeklyTasks = {
       goalId: "up2",
       completed: false,
       priority: "high",
-      estimatedHours: 8
+      estimatedHours: 8,
     },
     {
-      id: "w4_2", 
+      id: "w4_2",
       title: "Interview 2 potential agents in Memphis",
       description: "Screen candidates for Memphis expansion",
       category: "Layson Group",
       goalId: "lg1",
       completed: true,
       priority: "high",
-      estimatedHours: 4
+      estimatedHours: 4,
     },
     {
       id: "w4_3",
@@ -605,13 +617,13 @@ const initialWeeklyTasks = {
       goalId: "rf1",
       completed: false,
       priority: "medium",
-      estimatedHours: 1
-    }
-  ]
+      estimatedHours: 1,
+    },
+  ],
 }
 
 const initialDailyTasks = {
-  "Monday": [
+  Monday: [
     {
       id: "mon_1",
       title: "Review 12-week goals",
@@ -620,7 +632,7 @@ const initialDailyTasks = {
       goalId: "ie1",
       completed: true,
       timeBlock: "6:00 AM",
-      estimatedMinutes: 15
+      estimatedMinutes: 15,
     },
     {
       id: "mon_2",
@@ -630,7 +642,7 @@ const initialDailyTasks = {
       goalId: "pnh2",
       completed: true,
       timeBlock: "6:30 AM",
-      estimatedMinutes: 45
+      estimatedMinutes: 45,
     },
     {
       id: "mon_3",
@@ -640,10 +652,10 @@ const initialDailyTasks = {
       goalId: "up1",
       completed: false,
       timeBlock: "9:00 AM",
-      estimatedMinutes: 120
-    }
+      estimatedMinutes: 120,
+    },
   ],
-  "Tuesday": [
+  Tuesday: [
     {
       id: "tue_1",
       title: "Meditation and affirmations",
@@ -652,7 +664,7 @@ const initialDailyTasks = {
       goalId: "sc2",
       completed: false,
       timeBlock: "6:00 AM",
-      estimatedMinutes: 10
+      estimatedMinutes: 10,
     },
     {
       id: "tue_2",
@@ -662,10 +674,10 @@ const initialDailyTasks = {
       goalId: "pnh1",
       completed: false,
       timeBlock: "6:15 AM",
-      estimatedMinutes: 30
-    }
+      estimatedMinutes: 30,
+    },
   ],
-  "Wednesday": [
+  Wednesday: [
     {
       id: "wed_1",
       title: "Bible reading",
@@ -674,10 +686,10 @@ const initialDailyTasks = {
       goalId: "sc3",
       completed: false,
       timeBlock: "6:00 AM",
-      estimatedMinutes: 10
-    }
+      estimatedMinutes: 10,
+    },
   ],
-  "Thursday": [
+  Thursday: [
     {
       id: "thu_1",
       title: "Meet with Nate from Epicenter",
@@ -686,10 +698,10 @@ const initialDailyTasks = {
       goalId: "up5",
       completed: false,
       timeBlock: "2:00 PM",
-      estimatedMinutes: 60
-    }
+      estimatedMinutes: 60,
+    },
   ],
-  "Friday": [
+  Friday: [
     {
       id: "fri_1",
       title: "Family pickleball night",
@@ -698,9 +710,9 @@ const initialDailyTasks = {
       goalId: "rf3",
       completed: false,
       timeBlock: "7:00 PM",
-      estimatedMinutes: 90
-    }
-  ]
+      estimatedMinutes: 90,
+    },
+  ],
 }
 
 interface WeeklyTask {
@@ -710,7 +722,7 @@ interface WeeklyTask {
   category: string
   goalId: string
   completed: boolean
-  priority: 'low' | 'medium' | 'high'
+  priority: "low" | "medium" | "high"
   estimatedHours: number
 }
 
@@ -729,13 +741,24 @@ interface GoalsData {
   [category: string]: Goal[]
 }
 
+interface Goal {
+  id: string
+  title: string
+  description: string
+  targetCount: number
+  currentCount: number
+  notes: string
+  weeklyTarget: number
+  category: string
+}
+
 interface LongTermGoal {
   id: string
   title: string
   description: string
   targetDate: string
   category: string
-  status: 'in-progress' | 'completed' | 'on-hold'
+  status: "in-progress" | "completed" | "on-hold"
   notes: string
   milestones: {
     id: string
@@ -748,7 +771,7 @@ interface LongTermGoal {
 interface LongTermGoalsData {
   "1-year": {
     [category: string]: LongTermGoal[]
-  },
+  }
   "5-year": {
     [category: string]: LongTermGoal[]
   }
@@ -759,8 +782,7 @@ const extractNumberFromTitle = (title: string): number => {
   if (!title.trim()) return 0
 
   // Remove common words that might contain numbers but aren't targets
-  const cleanTitle = title.toLowerCase()
-    .replace(/\b(1st|2nd|3rd|first|second|third)\b/g, '') // Remove ordinals
+  const cleanTitle = title.toLowerCase().replace(/\b(1st|2nd|3rd|first|second|third)\b/g, "") // Remove ordinals
 
   // Find all numbers in the title, including those with commas or dollar signs
   const numberMatches = cleanTitle.match(/\$?[\d,]+/g)
@@ -769,12 +791,12 @@ const extractNumberFromTitle = (title: string): number => {
 
   // Convert matches to actual numbers and filter out very small numbers (likely not targets)
   const numbers = numberMatches
-    .map(match => {
+    .map((match) => {
       // Remove $ and commas, then convert to number
-      const cleanNumber = match.replace(/[$,]/g, '')
-      return parseInt(cleanNumber, 10)
+      const cleanNumber = match.replace(/[$,]/g, "")
+      return Number.parseInt(cleanNumber, 10)
     })
-    .filter(num => !isNaN(num) && num > 0)
+    .filter((num) => !isNaN(num) && num > 0)
 
   if (numbers.length === 0) return 0
 
@@ -783,21 +805,20 @@ const extractNumberFromTitle = (title: string): number => {
 }
 
 // Sortable Task Item Components
-function SortableWeeklyTaskItem({ task, onToggle, onEdit, onDelete, getPriorityColor }: {
+function SortableWeeklyTaskItem({
+  task,
+  onToggle,
+  onEdit,
+  onDelete,
+  getPriorityColor,
+}: {
   task: WeeklyTask
   onToggle: () => void
   onEdit: () => void
   onDelete: () => void
   getPriorityColor: (priority: string) => string
 }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: task.id })
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id })
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -806,11 +827,7 @@ function SortableWeeklyTaskItem({ task, onToggle, onEdit, onDelete, getPriorityC
   }
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`p-3 rounded-lg bg-gray-50 ${isDragging ? 'shadow-lg' : ''}`}
-    >
+    <div ref={setNodeRef} style={style} className={`p-3 rounded-lg bg-gray-50 ${isDragging ? "shadow-lg" : ""}`}>
       <div className="flex items-center space-x-3 mb-2">
         <div
           {...attributes}
@@ -819,14 +836,10 @@ function SortableWeeklyTaskItem({ task, onToggle, onEdit, onDelete, getPriorityC
         >
           <GripVertical className="h-4 w-4 text-gray-400" />
         </div>
-        <Checkbox
-          checked={task.completed}
-          onCheckedChange={onToggle}
-          className={`${checkboxStyles}`}
-        />
+        <Checkbox checked={task.completed} onCheckedChange={onToggle} className={`${checkboxStyles}`} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
-            <h3 className={`font-medium ${task.completed ? 'line-through text-gray-500' : 'text-gray-900'}`}>
+            <h3 className={`font-medium ${task.completed ? "line-through text-gray-500" : "text-gray-900"}`}>
               {task.title}
             </h3>
             <div className="flex items-center space-x-2">
@@ -854,9 +867,7 @@ function SortableWeeklyTaskItem({ task, onToggle, onEdit, onDelete, getPriorityC
           </div>
         </div>
       </div>
-      <p className="text-sm text-gray-600 mb-2">
-        {task.description}
-      </p>
+      <p className="text-sm text-gray-600 mb-2">{task.description}</p>
       <div className="flex items-center justify-between text-xs text-gray-500">
         <span className="flex items-center">
           <Clock className="h-3 w-3 mr-1" />
@@ -873,20 +884,18 @@ function SortableWeeklyTaskItem({ task, onToggle, onEdit, onDelete, getPriorityC
   )
 }
 
-function SortableDailyTaskItem({ task, onToggle, onEdit, onDelete }: {
+function SortableDailyTaskItem({
+  task,
+  onToggle,
+  onEdit,
+  onDelete,
+}: {
   task: DailyTask
   onToggle: () => void
   onEdit: () => void
   onDelete: () => void
 }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: task.id })
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id })
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -895,11 +904,7 @@ function SortableDailyTaskItem({ task, onToggle, onEdit, onDelete }: {
   }
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`p-3 rounded-lg bg-gray-50 ${isDragging ? 'shadow-lg' : ''}`}
-    >
+    <div ref={setNodeRef} style={style} className={`p-3 rounded-lg bg-gray-50 ${isDragging ? "shadow-lg" : ""}`}>
       <div className="flex items-center space-x-3 mb-2">
         <div
           {...attributes}
@@ -908,14 +913,10 @@ function SortableDailyTaskItem({ task, onToggle, onEdit, onDelete }: {
         >
           <GripVertical className="h-4 w-4 text-gray-400" />
         </div>
-        <Checkbox
-          checked={task.completed}
-          onCheckedChange={onToggle}
-          className={`${checkboxStyles}`}
-        />
+        <Checkbox checked={task.completed} onCheckedChange={onToggle} className={`${checkboxStyles}`} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
-            <h3 className={`font-medium ${task.completed ? 'line-through text-gray-500' : 'text-gray-900'}`}>
+            <h3 className={`font-medium ${task.completed ? "line-through text-gray-500" : "text-gray-900"}`}>
               {task.title}
             </h3>
             <div className="flex items-center space-x-2">
@@ -946,9 +947,7 @@ function SortableDailyTaskItem({ task, onToggle, onEdit, onDelete }: {
           </div>
         </div>
       </div>
-      <p className="text-sm text-gray-600 mb-2">
-        {task.description}
-      </p>
+      <p className="text-sm text-gray-600 mb-2">{task.description}</p>
       {task.completed && (
         <div className="flex justify-end text-xs">
           <span className="flex items-center text-green-600">
@@ -970,7 +969,7 @@ function GoalTrackerApp() {
   const [activeView, setActiveView] = useState("daily")
   const [currentWeek, setCurrentWeek] = useState(4)
   const [selectedDay, setSelectedDay] = useState(() => {
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
     const today = new Date().getDay()
     return days[today]
   })
@@ -989,8 +988,8 @@ function GoalTrackerApp() {
       { title: "", targetDate: "" },
       { title: "", targetDate: "" },
       { title: "", targetDate: "" },
-      { title: "", targetDate: "" }
-    ]
+      { title: "", targetDate: "" },
+    ],
   })
 
   const [showAddGoal, setShowAddGoal] = useState(false)
@@ -1002,7 +1001,7 @@ function GoalTrackerApp() {
     title: "",
     description: "",
     targetCount: 0,
-    weeklyTarget: 0
+    weeklyTarget: 0,
   })
 
   const [newWeeklyTask, setNewWeeklyTask] = useState({
@@ -1011,7 +1010,7 @@ function GoalTrackerApp() {
     category: "",
     goalId: "",
     priority: "medium" as const,
-    estimatedHours: 1
+    estimatedHours: 1,
   })
 
   const [newDailyTask, setNewDailyTask] = useState({
@@ -1020,33 +1019,48 @@ function GoalTrackerApp() {
     category: "",
     goalId: "",
     timeBlock: "",
-    estimatedMinutes: 30
+    estimatedMinutes: 30,
   })
 
   const [showAddCategory, setShowAddCategory] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState("")
 
-  const [editingGoal, setEditingGoal] = useState<{category: string, goal: Goal} | null>(null)
-  const [showDeleteGoal, setShowDeleteGoal] = useState<{category: string, goalId: string, title: string} | null>(null)
+  const [editingGoal, setEditingGoal] = useState<{ category: string; goal: Goal } | null>(null)
+  const [showDeleteGoal, setShowDeleteGoal] = useState<{ category: string; goalId: string; title: string } | null>(null)
   const [showDeleteCategory, setShowDeleteCategory] = useState<string | null>(null)
 
   const [editingWeeklyTask, setEditingWeeklyTask] = useState<WeeklyTask | null>(null)
   const [editingDailyTask, setEditingDailyTask] = useState<DailyTask | null>(null)
-  const [showDeleteWeeklyTask, setShowDeleteWeeklyTask] = useState<{taskId: string, title: string} | null>(null)
-  const [showDeleteDailyTask, setShowDeleteDailyTask] = useState<{day: string, taskId: string, title: string} | null>(null)
+  const [showDeleteWeeklyTask, setShowDeleteWeeklyTask] = useState<{ taskId: string; title: string } | null>(null)
+  const [showDeleteDailyTask, setShowDeleteDailyTask] = useState<{ day: string; taskId: string; title: string } | null>(
+    null,
+  )
 
-  const [customCategoryColors, setCustomCategoryColors] = useState<{[key: string]: string}>({})
+  const [customCategoryColors, setCustomCategoryColors] = useState<{ [key: string]: string }>({})
   const [showEditCategory, setShowEditCategory] = useState<string | null>(null)
   const [editCategoryName, setEditCategoryName] = useState("")
   const [editCategoryColor, setEditCategoryColor] = useState("")
 
   // Add these state variables after the existing state declarations (around line 680):
-  const [editingLongTermGoal, setEditingLongTermGoal] = useState<{timeframe: "1-year" | "5-year", category: string, goal: LongTermGoal} | null>(null)
-  const [showDeleteLongTermGoal, setShowDeleteLongTermGoal] = useState<{timeframe: "1-year" | "5-year", category: string, goalId: string, title: string} | null>(null)
+  const [editingLongTermGoal, setEditingLongTermGoal] = useState<{
+    timeframe: "1-year" | "5-year"
+    category: string
+    goal: LongTermGoal
+  } | null>(null)
+  const [showDeleteLongTermGoal, setShowDeleteLongTermGoal] = useState<{
+    timeframe: "1-year" | "5-year"
+    category: string
+    goalId: string
+    title: string
+  } | null>(null)
 
   // Helper function to get user initials
   const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase()
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
   }
 
   // Cal.com inspired color palette for category badges - each category gets a unique, distinct color
@@ -1055,19 +1069,19 @@ function GoalTrackerApp() {
     if (customCategoryColors[category]) {
       return customCategoryColors[category]
     }
-    
+
     const colors = {
       "Layson Group": "bg-sky-100 text-sky-800 border-sky-200",
-      "Upside": "bg-violet-100 text-violet-800 border-violet-200", 
+      Upside: "bg-violet-100 text-violet-800 border-violet-200",
       "Poplar Title": "bg-purple-100 text-purple-800 border-purple-200",
       "Relationships/Family": "bg-pink-100 text-pink-800 border-pink-200",
       "Physical/Nutrition/Health": "bg-lime-100 text-lime-800 border-lime-200",
       "Spiritual/Contribution": "bg-emerald-100 text-emerald-800 border-emerald-200",
       "Intellect/Education": "bg-amber-100 text-amber-800 border-amber-200",
       "Lifestyle/Adventure": "bg-orange-100 text-orange-800 border-orange-200",
-      "Personal Finance/Material": "bg-teal-100 text-teal-800 border-teal-200"
+      "Personal Finance/Material": "bg-teal-100 text-teal-800 border-teal-200",
     }
-    
+
     // Extended unique color palette for new categories
     const additionalColors = [
       "bg-slate-100 text-slate-800 border-slate-200",
@@ -1081,19 +1095,18 @@ function GoalTrackerApp() {
       "bg-fuchsia-100 text-fuchsia-800 border-fuchsia-200",
       "bg-stone-100 text-stone-800 border-stone-200",
       "bg-zinc-100 text-zinc-800 border-zinc-800 border-zinc-200",
-      "bg-neutral-100 text-neutral-800 border-neutral-200"
+      "bg-neutral-100 text-neutral-800 border-neutral-200",
     ]
-    
+
     // If category has a predefined color, use it
     if (colors[category]) {
       return colors[category]
     }
-    
+
     // For new categories, assign a unique color from the additional palette
     const existingCategories = Object.keys(colors)
-    const newCategoryIndex = Object.keys(colors).length + 
-      Object.keys(colors).filter(cat => !colors[cat]).length
-    
+    const newCategoryIndex = Object.keys(colors).length + Object.keys(colors).filter((cat) => !colors[cat]).length
+
     return additionalColors[newCategoryIndex % additionalColors.length]
   }
 
@@ -1101,11 +1114,13 @@ function GoalTrackerApp() {
   const moveIncompleteTasks = () => {
     // Get current date information
     const today = new Date()
-    const currentDayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][today.getDay()]
+    const currentDayName = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][
+      today.getDay()
+    ]
     const currentDayIndex = today.getDay()
 
     // Check if we need to move to a new week
-    const lastWeekCheck = localStorage.getItem('lastWeekCheck')
+    const lastWeekCheck = localStorage.getItem("lastWeekCheck")
     const currentWeekOfYear = Math.ceil((today.getDate() - today.getDay() + 1) / 7)
     const currentYear = today.getFullYear()
     const weekYearKey = `${currentYear}-${currentWeekOfYear}`
@@ -1114,36 +1129,33 @@ function GoalTrackerApp() {
       // It's a new week, move incomplete weekly tasks
       const weekKey = `Week ${currentWeek}`
       const nextWeekKey = `Week ${currentWeek + 1}`
-      
+
       // Get incomplete tasks from current week
       const currentWeekTasks = weeklyTasks[weekKey] || []
-      const incompleteTasks = currentWeekTasks.filter(task => !task.completed)
-      
+      const incompleteTasks = currentWeekTasks.filter((task) => !task.completed)
+
       if (incompleteTasks.length > 0) {
-        setWeeklyTasks(prev => {
+        setWeeklyTasks((prev) => {
           const updated = { ...prev }
-          
+
           // Add incomplete tasks to next week with updated IDs
-          const updatedTasksForNextWeek = incompleteTasks.map(task => ({
+          const updatedTasksForNextWeek = incompleteTasks.map((task) => ({
             ...task,
-            id: `w${currentWeek + 1}_moved_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+            id: `w${currentWeek + 1}_moved_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           }))
-          
-          updated[nextWeekKey] = [
-            ...(prev[nextWeekKey] || []),
-            ...updatedTasksForNextWeek
-          ]
-          
+
+          updated[nextWeekKey] = [...(prev[nextWeekKey] || []), ...updatedTasksForNextWeek]
+
           return updated
         })
       }
-      
+
       // Update the week check
-      localStorage.setItem('lastWeekCheck', weekYearKey)
+      localStorage.setItem("lastWeekCheck", weekYearKey)
     }
 
     // Handle daily tasks - move all incomplete tasks from previous days to today
-    const allDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+    const allDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
     // Get all days before today
     const previousDays = []
@@ -1156,27 +1168,24 @@ function GoalTrackerApp() {
     let tasksToMove = []
 
     // Collect incomplete tasks from all days
-    previousDays.forEach(day => {
+    previousDays.forEach((day) => {
       const dayTasks = dailyTasks[day] || []
-      const incompleteTasks = dayTasks.filter(task => !task.completed)
+      const incompleteTasks = dayTasks.filter((task) => !task.completed)
       tasksToMove = [...tasksToMove, ...incompleteTasks]
     })
 
     if (tasksToMove.length > 0) {
-      setDailyTasks(prev => {
+      setDailyTasks((prev) => {
         const updated = { ...prev }
-        
+
         // Add incomplete tasks to today with updated IDs
-        const updatedTasksForToday = tasksToMove.map(task => ({
+        const updatedTasksForToday = tasksToMove.map((task) => ({
           ...task,
-          id: `${currentDayName.toLowerCase()}_moved_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+          id: `${currentDayName.toLowerCase()}_moved_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         }))
-        
-        updated[currentDayName] = [
-          ...(prev[currentDayName] || []),
-          ...updatedTasksForToday
-        ]
-        
+
+        updated[currentDayName] = [...(prev[currentDayName] || []), ...updatedTasksForToday]
+
         return updated
       })
     }
@@ -1192,24 +1201,24 @@ function GoalTrackerApp() {
       const now = new Date()
       const currentDay = now.getDay()
       const currentDate = now.getDate()
-      
+
       // Store the current day and date in localStorage
-      const storedDay = localStorage.getItem('lastCheckDay')
-      const storedDate = localStorage.getItem('lastCheckDate')
-      
+      const storedDay = localStorage.getItem("lastCheckDay")
+      const storedDate = localStorage.getItem("lastCheckDate")
+
       // If the day has changed since last check, move incomplete tasks
       if (storedDay !== null && storedDate !== null) {
-        const lastDay = parseInt(storedDay)
-        const lastDate = parseInt(storedDate)
-        
+        const lastDay = Number.parseInt(storedDay)
+        const lastDate = Number.parseInt(storedDate)
+
         if (lastDay !== currentDay || lastDate !== currentDate) {
           moveIncompleteTasks()
         }
       }
-      
+
       // Update the stored day and date
-      localStorage.setItem('lastCheckDay', currentDay.toString())
-      localStorage.setItem('lastCheckDate', currentDate.toString())
+      localStorage.setItem("lastCheckDay", currentDay.toString())
+      localStorage.setItem("lastCheckDate", currentDate.toString())
     }
 
     // Check for day change on mount and set interval to check periodically
@@ -1226,63 +1235,59 @@ function GoalTrackerApp() {
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    })
+    }),
   )
 
-  const incrementGoal = (category: string, goalId: string, amount: number = 1) => {
-    setGoalsData(prev => ({
+  const incrementGoal = (category: string, goalId: string, amount = 1) => {
+    setGoalsData((prev) => ({
       ...prev,
-      [category]: prev[category].map(goal =>
-        goal.id === goalId
-          ? { ...goal, currentCount: Math.min(goal.currentCount + amount, goal.targetCount) }
-          : goal
-      )
+      [category]: prev[category].map((goal) =>
+        goal.id === goalId ? { ...goal, currentCount: Math.min(goal.currentCount + amount, goal.targetCount) } : goal,
+      ),
     }))
   }
 
   const updateGoalProgress = (category: string, goalId: string, newValue: number) => {
-    setGoalsData(prev => ({
+    setGoalsData((prev) => ({
       ...prev,
-      [category]: prev[category].map(goal =>
-        goal.id === goalId
-          ? { ...goal, currentCount: Math.min(Math.max(newValue, 0), goal.targetCount) }
-          : goal
-      )
+      [category]: prev[category].map((goal) =>
+        goal.id === goalId ? { ...goal, currentCount: Math.min(Math.max(newValue, 0), goal.targetCount) } : goal,
+      ),
     }))
   }
 
   const toggleBinaryGoal = (category: string, goalId: string) => {
-    setGoalsData(prev => ({
+    setGoalsData((prev) => ({
       ...prev,
-      [category]: prev[category].map(goal =>
-        goal.id === goalId
-          ? { ...goal, currentCount: goal.currentCount === 0 ? goal.targetCount : 0 }
-          : goal
-      )
+      [category]: prev[category].map((goal) =>
+        goal.id === goalId ? { ...goal, currentCount: goal.currentCount === 0 ? goal.targetCount : 0 } : goal,
+      ),
     }))
   }
 
   const toggleGoalCompletion = (category: string, goalId: string) => {
-    setGoalsData(prev => ({
+    setGoalsData((prev) => ({
       ...prev,
-      [category]: prev[category].map(goal =>
+      [category]: prev[category].map((goal) =>
         goal.id === goalId
-          ? { 
-            ...goal, 
-            currentCount: goal.currentCount >= goal.targetCount ? 
-              Math.max(0, goal.targetCount - 1) : // If complete, set to one less than target
-              goal.targetCount // If not complete, mark as complete
-          }
-        : goal
-    )
-  }))
-}
+          ? {
+              ...goal,
+              currentCount:
+                goal.currentCount >= goal.targetCount
+                  ? Math.max(0, goal.targetCount - 1)
+                  : // If complete, set to one less than target
+                    goal.targetCount, // If not complete, mark as complete
+            }
+          : goal,
+      ),
+    }))
+  }
 
   const getGoalType = (targetCount: number) => {
-    if (targetCount === 1) return 'binary'
-    if (targetCount <= 20) return 'small'
-    if (targetCount <= 100) return 'medium'
-    return 'large'
+    if (targetCount === 1) return "binary"
+    if (targetCount <= 20) return "small"
+    if (targetCount <= 100) return "medium"
+    return "large"
   }
 
   const getQuickIncrements = (targetCount: number) => {
@@ -1292,20 +1297,19 @@ function GoalTrackerApp() {
   }
 
   const toggleWeeklyTask = (taskId: string) => {
-    setWeeklyTasks(prev => ({
+    setWeeklyTasks((prev) => ({
       ...prev,
-      [`Week ${currentWeek}`]: prev[`Week ${currentWeek}`]?.map(task =>
-        task.id === taskId ? { ...task, completed: !task.completed } : task
-      ) || []
+      [`Week ${currentWeek}`]:
+        prev[`Week ${currentWeek}`]?.map((task) =>
+          task.id === taskId ? { ...task, completed: !task.completed } : task,
+        ) || [],
     }))
   }
 
   const toggleDailyTask = (day: string, taskId: string) => {
-    setDailyTasks(prev => ({
+    setDailyTasks((prev) => ({
       ...prev,
-      [day]: prev[day]?.map(task =>
-        task.id === taskId ? { ...task, completed: !task.completed } : task
-      ) || []
+      [day]: prev[day]?.map((task) => (task.id === taskId ? { ...task, completed: !task.completed } : task)) || [],
     }))
   }
 
@@ -1318,19 +1322,16 @@ function GoalTrackerApp() {
     }
 
     const weekKey = `Week ${currentWeek}`
-    const categoryTasks = (weeklyTasks[weekKey] || []).filter(task => task.category === category)
-    const oldIndex = categoryTasks.findIndex(task => task.id === active.id)
-    const newIndex = categoryTasks.findIndex(task => task.id === over.id)
+    const categoryTasks = (weeklyTasks[weekKey] || []).filter((task) => task.category === category)
+    const oldIndex = categoryTasks.findIndex((task) => task.id === active.id)
+    const newIndex = categoryTasks.findIndex((task) => task.id === over.id)
 
     if (oldIndex !== -1 && newIndex !== -1) {
       const reorderedTasks = arrayMove(categoryTasks, oldIndex, newIndex)
-      
-      setWeeklyTasks(prev => ({
+
+      setWeeklyTasks((prev) => ({
         ...prev,
-        [weekKey]: [
-          ...(prev[weekKey] || []).filter(task => task.category !== category),
-          ...reorderedTasks
-        ]
+        [weekKey]: [...(prev[weekKey] || []).filter((task) => task.category !== category), ...reorderedTasks],
       }))
     }
   }
@@ -1342,30 +1343,27 @@ function GoalTrackerApp() {
       return
     }
 
-    const categoryTasks = (dailyTasks[selectedDay] || []).filter(task => task.category === category)
-    const oldIndex = categoryTasks.findIndex(task => task.id === active.id)
-    const newIndex = categoryTasks.findIndex(task => task.id === over.id)
+    const categoryTasks = (dailyTasks[selectedDay] || []).filter((task) => task.category === category)
+    const oldIndex = categoryTasks.findIndex((task) => task.id === active.id)
+    const newIndex = categoryTasks.findIndex((task) => task.id === over.id)
 
     if (oldIndex !== -1 && newIndex !== -1) {
       const reorderedTasks = arrayMove(categoryTasks, oldIndex, newIndex)
-      
-      setDailyTasks(prev => ({
+
+      setDailyTasks((prev) => ({
         ...prev,
-        [selectedDay]: [
-          ...(prev[selectedDay] || []).filter(task => task.category !== category),
-          ...reorderedTasks
-        ]
+        [selectedDay]: [...(prev[selectedDay] || []).filter((task) => task.category !== category), ...reorderedTasks],
       }))
     }
   }
 
   const addWeeklyTask = () => {
     if (!newWeeklyTask.title || !newWeeklyTask.category) return
-    
+
     const taskId = `w${currentWeek}_${Date.now()}`
     const weekKey = `Week ${currentWeek}`
-    
-    setWeeklyTasks(prev => ({
+
+    setWeeklyTasks((prev) => ({
       ...prev,
       [weekKey]: [
         ...(prev[weekKey] || []),
@@ -1377,28 +1375,28 @@ function GoalTrackerApp() {
           goalId: newWeeklyTask.goalId,
           completed: false,
           priority: newWeeklyTask.priority,
-          estimatedHours: newWeeklyTask.estimatedHours
-        }
-      ]
+          estimatedHours: newWeeklyTask.estimatedHours,
+        },
+      ],
     }))
-    
+
     setNewWeeklyTask({
       title: "",
       description: "",
       category: "",
       goalId: "",
       priority: "medium",
-      estimatedHours: 1
+      estimatedHours: 1,
     })
     setShowAddWeeklyTask(false)
   }
 
   const addDailyTask = () => {
     if (!newDailyTask.title || !newDailyTask.category) return
-    
+
     const taskId = `${selectedDay.toLowerCase()}_${Date.now()}`
-    
-    setDailyTasks(prev => ({
+
+    setDailyTasks((prev) => ({
       ...prev,
       [selectedDay]: [
         ...(prev[selectedDay] || []),
@@ -1410,33 +1408,31 @@ function GoalTrackerApp() {
           goalId: newDailyTask.goalId,
           completed: false,
           timeBlock: newDailyTask.timeBlock,
-          estimatedMinutes: newDailyTask.estimatedMinutes
-        }
-      ]
+          estimatedMinutes: newDailyTask.estimatedMinutes,
+        },
+      ],
     }))
-    
+
     setNewDailyTask({
       title: "",
       description: "",
       category: "",
       goalId: "",
       timeBlock: "",
-      estimatedMinutes: 30
+      estimatedMinutes: 30,
     })
     setShowAddDailyTask(false)
   }
 
   const updateNotes = (category: string, goalId: string, notes: string) => {
-    setGoalsData(prev => ({
+    setGoalsData((prev) => ({
       ...prev,
-      [category]: prev[category].map(goal =>
-        goal.id === goalId ? { ...goal, notes } : goal
-      )
+      [category]: prev[category].map((goal) => (goal.id === goalId ? { ...goal, notes } : goal)),
     }))
   }
 
   const toggleNotes = (goalId: string) => {
-    setExpandedNotes(prev => {
+    setExpandedNotes((prev) => {
       const newSet = new Set(prev)
       if (newSet.has(goalId)) {
         newSet.delete(goalId)
@@ -1457,26 +1453,30 @@ function GoalTrackerApp() {
     return {
       expected: expectedProgress,
       actual: actualProgress,
-      onTrack: actualProgress >= expectedProgress * 0.8
+      onTrack: actualProgress >= expectedProgress * 0.8,
     }
   }
 
   const getTotalProgress = () => {
     let totalCurrent = 0
     let totalTarget = 0
-    
-    Object.values(goalsData).flat().forEach(goal => {
-      const normalizedCurrent = goal.currentCount / goal.targetCount
-      const normalizedTarget = 1
-      totalCurrent += normalizedCurrent
-      totalTarget += normalizedTarget
-    })
-    
+
+    Object.values(goalsData)
+      .flat()
+      .forEach((goal) => {
+        const normalizedCurrent = goal.currentCount / goal.targetCount
+        const normalizedTarget = 1
+        totalCurrent += normalizedCurrent
+        totalTarget += normalizedTarget
+      })
+
     return Math.round((totalCurrent / totalTarget) * 100)
   }
 
   const getCompletedGoals = () => {
-    return Object.values(goalsData).flat().filter(goal => goal.currentCount >= goal.targetCount).length
+    return Object.values(goalsData)
+      .flat()
+      .filter((goal) => goal.currentCount >= goal.targetCount).length
   }
 
   const getTotalGoals = () => {
@@ -1485,10 +1485,14 @@ function GoalTrackerApp() {
 
   const getCompletedTasks = () => {
     // Count completed weekly tasks
-    const weeklyTasksCompleted = Object.values(weeklyTasks).flat().filter(task => task.completed).length
+    const weeklyTasksCompleted = Object.values(weeklyTasks)
+      .flat()
+      .filter((task) => task.completed).length
 
     // Count completed daily tasks
-    const dailyTasksCompleted = Object.values(dailyTasks).flat().filter(task => task.completed).length
+    const dailyTasksCompleted = Object.values(dailyTasks)
+      .flat()
+      .filter((task) => task.completed).length
 
     return weeklyTasksCompleted + dailyTasksCompleted
   }
@@ -1505,13 +1509,13 @@ function GoalTrackerApp() {
 
   const addNewGoal = () => {
     const detectedNumber = extractNumberFromTitle(newGoal.title)
-    const targetCount = detectedNumber > 0 ? (newGoal.targetCount || detectedNumber) : 1
+    const targetCount = detectedNumber > 0 ? newGoal.targetCount || detectedNumber : 1
 
     if (!selectedCategory || !newGoal.title) return
 
-    const goalId = `${selectedCategory.toLowerCase().replace(/[^a-z0-9]/g, '')}_${Date.now()}`
+    const goalId = `${selectedCategory.toLowerCase().replace(/[^a-z0-9]/g, "")}_${Date.now()}`
 
-    setGoalsData(prev => ({
+    setGoalsData((prev) => ({
       ...prev,
       [selectedCategory]: [
         ...prev[selectedCategory],
@@ -1523,9 +1527,9 @@ function GoalTrackerApp() {
           currentCount: 0,
           notes: "",
           weeklyTarget: newGoal.weeklyTarget || targetCount / 12,
-          category: selectedCategory
-        }
-      ]
+          category: selectedCategory,
+        },
+      ],
     }))
 
     setNewGoal({ title: "", description: "", targetCount: 0, weeklyTarget: 0 })
@@ -1535,54 +1539,53 @@ function GoalTrackerApp() {
 
   const addNewCategory = () => {
     if (!newCategoryName.trim()) return
-    
+
     // Convert to title case instead of uppercase
-    const categoryName = newCategoryName.trim()
-      .split(' ')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(' ')
-    
+    const categoryName = newCategoryName
+      .trim()
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" ")
+
     if (goalsData[categoryName]) {
-      alert('Category already exists!')
+      alert("Category already exists!")
       return
     }
-    
-    setGoalsData(prev => ({
+
+    setGoalsData((prev) => ({
       ...prev,
-      [categoryName]: []
+      [categoryName]: [],
     }))
-    
+
     setNewCategoryName("")
     setShowAddCategory(false)
   }
 
   const editGoal = (category: string, goalId: string, updatedGoal: Partial<Goal>) => {
-    setGoalsData(prev => ({
+    setGoalsData((prev) => ({
       ...prev,
-      [category]: prev[category].map(goal =>
-        goal.id === goalId ? { ...goal, ...updatedGoal } : goal
-      )
+      [category]: prev[category].map((goal) => (goal.id === goalId ? { ...goal, ...updatedGoal } : goal)),
     }))
   }
 
   const deleteGoal = (category: string, goalId: string) => {
-    setGoalsData(prev => ({
+    setGoalsData((prev) => ({
       ...prev,
-      [category]: prev[category].filter(goal => goal.id !== goalId)
+      [category]: prev[category].filter((goal) => goal.id !== goalId),
     }))
     setShowDeleteGoal(null)
   }
 
   const saveEditedGoal = () => {
     if (!editingGoal) return
-    
+
     editGoal(editingGoal.category, editingGoal.goal.id, {
       title: newGoal.title,
       description: newGoal.description,
       targetCount: newGoal.targetCount,
-      weeklyTarget: newGoal.weeklyTarget || newGoal.targetCount / 12
+      weeklyTarget: newGoal.weeklyTarget || newGoal.targetCount / 12,
     })
-    
+
     setNewGoal({ title: "", description: "", targetCount: 0, weeklyTarget: 0 })
     setEditingGoal(null)
   }
@@ -1593,49 +1596,50 @@ function GoalTrackerApp() {
       title: goal.title,
       description: goal.description,
       targetCount: goal.targetCount,
-      weeklyTarget: goal.weeklyTarget
+      weeklyTarget: goal.weeklyTarget,
     })
   }
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'high': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-      case 'medium': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-      case 'low': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+      case "high":
+        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+      case "medium":
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+      case "low":
+        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+      default:
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
     }
   }
 
   const editWeeklyTask = (taskId: string, updatedTask: Partial<WeeklyTask>) => {
-    setWeeklyTasks(prev => ({
+    setWeeklyTasks((prev) => ({
       ...prev,
-      [`Week ${currentWeek}`]: prev[`Week ${currentWeek}`]?.map(task =>
-        task.id === taskId ? { ...task, ...updatedTask } : task
-      ) || []
+      [`Week ${currentWeek}`]:
+        prev[`Week ${currentWeek}`]?.map((task) => (task.id === taskId ? { ...task, ...updatedTask } : task)) || [],
     }))
   }
 
   const deleteWeeklyTask = (taskId: string) => {
-    setWeeklyTasks(prev => ({
+    setWeeklyTasks((prev) => ({
       ...prev,
-      [`Week ${currentWeek}`]: prev[`Week ${currentWeek}`]?.filter(task => task.id !== taskId) || []
+      [`Week ${currentWeek}`]: prev[`Week ${currentWeek}`]?.filter((task) => task.id !== taskId) || [],
     }))
     setShowDeleteWeeklyTask(null)
   }
 
   const editDailyTask = (day: string, taskId: string, updatedTask: Partial<DailyTask>) => {
-    setDailyTasks(prev => ({
+    setDailyTasks((prev) => ({
       ...prev,
-      [day]: prev[day]?.map(task =>
-        task.id === taskId ? { ...task, ...updatedTask } : task
-      ) || []
+      [day]: prev[day]?.map((task) => (task.id === taskId ? { ...task, ...updatedTask } : task)) || [],
     }))
   }
 
   const deleteDailyTask = (day: string, taskId: string) => {
-    setDailyTasks(prev => ({
+    setDailyTasks((prev) => ({
       ...prev,
-      [day]: prev[day]?.filter(task => task.id !== taskId) || []
+      [day]: prev[day]?.filter((task) => task.id !== taskId) || [],
     }))
     setShowDeleteDailyTask(null)
   }
@@ -1648,7 +1652,7 @@ function GoalTrackerApp() {
       category: task.category,
       goalId: task.goalId,
       priority: task.priority,
-      estimatedHours: task.estimatedHours
+      estimatedHours: task.estimatedHours,
     })
     setShowAddWeeklyTask(true)
   }
@@ -1661,21 +1665,21 @@ function GoalTrackerApp() {
       category: task.category,
       goalId: task.goalId,
       timeBlock: task.timeBlock,
-      estimatedMinutes: task.estimatedMinutes
+      estimatedMinutes: task.estimatedMinutes,
     })
     setShowAddDailyTask(true)
   }
 
   const saveEditedWeeklyTask = () => {
     if (!editingWeeklyTask) return
-    
+
     editWeeklyTask(editingWeeklyTask.id, {
       title: newWeeklyTask.title,
       description: newWeeklyTask.description,
       category: newWeeklyTask.category,
       goalId: newWeeklyTask.goalId,
       priority: newWeeklyTask.priority,
-      estimatedHours: newWeeklyTask.estimatedHours
+      estimatedHours: newWeeklyTask.estimatedHours,
     })
 
     setNewWeeklyTask({
@@ -1684,7 +1688,7 @@ function GoalTrackerApp() {
       category: "",
       goalId: "",
       priority: "medium",
-      estimatedHours: 1
+      estimatedHours: 1,
     })
     setEditingWeeklyTask(null)
     setShowAddWeeklyTask(false)
@@ -1699,7 +1703,7 @@ function GoalTrackerApp() {
       category: newDailyTask.category,
       goalId: newDailyTask.goalId,
       timeBlock: newDailyTask.timeBlock,
-      estimatedMinutes: newDailyTask.estimatedMinutes
+      estimatedMinutes: newDailyTask.estimatedMinutes,
     })
 
     setNewDailyTask({
@@ -1708,7 +1712,7 @@ function GoalTrackerApp() {
       category: "",
       goalId: "",
       timeBlock: "",
-      estimatedMinutes: 30
+      estimatedMinutes: 30,
     })
     setEditingDailyTask(null)
     setShowAddDailyTask(false)
@@ -1732,7 +1736,7 @@ function GoalTrackerApp() {
     { name: "Cyan", value: "bg-cyan-100 text-cyan-800 border-cyan-200" },
     { name: "Slate", value: "bg-slate-100 text-slate-800 border-slate-200" },
     { name: "Gray", value: "bg-gray-100 text-gray-800 border-gray-200" },
-    { name: "Stone", value: "bg-stone-100 text-stone-800 border-stone-200" }
+    { name: "Stone", value: "bg-stone-100 text-stone-800 border-stone-200" },
   ]
 
   const startEditingCategory = (category: string) => {
@@ -1743,51 +1747,47 @@ function GoalTrackerApp() {
 
   const saveEditedCategory = () => {
     if (!showEditCategory || !editCategoryName.trim()) return
-    
+
     const oldCategoryName = showEditCategory
     const newCategoryName = editCategoryName.trim()
-    
+
     // If name changed, update the goals data structure
     if (oldCategoryName !== newCategoryName) {
-      setGoalsData(prev => {
+      setGoalsData((prev) => {
         const updated = { ...prev }
-        
+
         // Move goals to new category name
         if (updated[oldCategoryName]) {
           updated[newCategoryName] = updated[oldCategoryName]
           delete updated[oldCategoryName]
         }
-        
+
         return updated
       })
-      
+
       // Update tasks to use new category name
-      setWeeklyTasks(prev => {
+      setWeeklyTasks((prev) => {
         const updated = { ...prev }
-        Object.keys(updated).forEach(week => {
-          updated[week] = updated[week].map(task => 
-            task.category === oldCategoryName 
-              ? { ...task, category: newCategoryName }
-              : task
+        Object.keys(updated).forEach((week) => {
+          updated[week] = updated[week].map((task) =>
+            task.category === oldCategoryName ? { ...task, category: newCategoryName } : task,
           )
         })
         return updated
       })
-      
-      setDailyTasks(prev => {
+
+      setDailyTasks((prev) => {
         const updated = { ...prev }
-        Object.keys(updated).forEach(day => {
-          updated[day] = updated[day].map(task => 
-            task.category === oldCategoryName 
-              ? { ...task, category: newCategoryName }
-              : task
+        Object.keys(updated).forEach((day) => {
+          updated[day] = updated[day].map((task) =>
+            task.category === oldCategoryName ? { ...task, category: newCategoryName } : task,
           )
         })
         return updated
       })
-      
+
       // Update custom colors
-      setCustomCategoryColors(prev => {
+      setCustomCategoryColors((prev) => {
         const updated = { ...prev }
         if (updated[oldCategoryName]) {
           updated[newCategoryName] = updated[oldCategoryName]
@@ -1796,32 +1796,32 @@ function GoalTrackerApp() {
         return updated
       })
     }
-    
+
     // Update color
-    setCustomCategoryColors(prev => ({
+    setCustomCategoryColors((prev) => ({
       ...prev,
-      [newCategoryName]: editCategoryColor
+      [newCategoryName]: editCategoryColor,
     }))
-    
+
     setShowEditCategory(null)
     setEditCategoryName("")
     setEditCategoryColor("")
   }
 
   const deleteCategory = (category: string) => {
-    setGoalsData(prev => {
+    setGoalsData((prev) => {
       const updated = { ...prev }
       delete updated[category]
       return updated
     })
-    
+
     // Remove custom color if exists
-    setCustomCategoryColors(prev => {
+    setCustomCategoryColors((prev) => {
       const updated = { ...prev }
       delete updated[category]
       return updated
     })
-    
+
     setShowDeleteCategory(null)
   }
 
@@ -1835,24 +1835,24 @@ function GoalTrackerApp() {
       targetDate: goal.targetDate,
       category: goal.category,
       notes: goal.notes,
-      milestones: goal.milestones.map(m => ({
+      milestones: goal.milestones.map((m) => ({
         title: m.title,
-        targetDate: m.targetDate
-      }))
+        targetDate: m.targetDate,
+      })),
     })
     setShowAddLongTermGoal(true)
   }
 
   const saveEditedLongTermGoal = () => {
     if (!editingLongTermGoal) return
-    
+
     const { timeframe, category, goal } = editingLongTermGoal
-    
-    setLongTermGoals(prev => ({
+
+    setLongTermGoals((prev) => ({
       ...prev,
       [timeframe]: {
         ...prev[timeframe],
-        [category]: prev[timeframe][category].map(g =>
+        [category]: prev[timeframe][category].map((g) =>
           g.id === goal.id
             ? {
                 ...g,
@@ -1862,19 +1862,19 @@ function GoalTrackerApp() {
                 category: newLongTermGoal.category,
                 notes: newLongTermGoal.notes,
                 milestones: newLongTermGoal.milestones
-                  .filter(m => m.title && m.targetDate)
+                  .filter((m) => m.title && m.targetDate)
                   .map((m, index) => ({
                     id: `${g.id}_m${index + 1}`,
                     title: m.title,
                     completed: g.milestones[index]?.completed || false,
-                    targetDate: m.targetDate
-                  }))
+                    targetDate: m.targetDate,
+                  })),
               }
-            : g
-        )
-      }
+            : g,
+        ),
+      },
     }))
-    
+
     setNewLongTermGoal({
       title: "",
       description: "",
@@ -1885,20 +1885,20 @@ function GoalTrackerApp() {
         { title: "", targetDate: "" },
         { title: "", targetDate: "" },
         { title: "", targetDate: "" },
-        { title: "", targetDate: "" }
-      ]
+        { title: "", targetDate: "" },
+      ],
     })
     setEditingLongTermGoal(null)
     setShowAddLongTermGoal(false)
   }
 
   const deleteLongTermGoal = (timeframe: "1-year" | "5-year", category: string, goalId: string) => {
-    setLongTermGoals(prev => ({
+    setLongTermGoals((prev) => ({
       ...prev,
       [timeframe]: {
         ...prev[timeframe],
-        [category]: prev[timeframe][category].filter(g => g.id !== goalId)
-      }
+        [category]: prev[timeframe][category].filter((g) => g.id !== goalId),
+      },
     }))
     setShowDeleteLongTermGoal(null)
   }
@@ -1909,29 +1909,15 @@ function GoalTrackerApp() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">
-              Hi {user?.name.split(' ')[0]},
-            </h1>
-            <p className="text-gray-600">
-              Here are your tasks for week {currentWeek} of 12.
-            </p>
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">Hi {user?.name.split(" ")[0]},</h1>
+            <p className="text-gray-600">Here are your tasks for week {currentWeek} of 12.</p>
           </div>
           <div className="flex items-center space-x-2">
-            <Button
-              variant="default"
-              size="sm"
-              onClick={() => setShowAddGoal(true)}
-              className="text-sm"
-            >
+            <Button variant="default" size="sm" onClick={() => setShowAddGoal(true)} className="text-sm">
               <Plus className="h-4 w-4 mr-2" />
               Add Goal
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowAddCategory(true)}
-              className="text-sm"
-            >
+            <Button variant="outline" size="sm" onClick={() => setShowAddCategory(true)} className="text-sm">
               <Plus className="h-4 w-4 mr-2" />
               Add Category
             </Button>
@@ -1943,9 +1929,11 @@ function GoalTrackerApp() {
               className="flex items-center space-x-2"
             >
               <Avatar className="h-8 w-8 border-2 border-black">
-                {user?.avatar && <AvatarImage src={user.avatar || "/placeholder.svg?height=40&width=40&text=U"} alt={user?.name} />}
+                {user?.avatar && (
+                  <AvatarImage src={user.avatar || "/placeholder.svg?height=40&width=40&text=U"} alt={user?.name} />
+                )}
                 <AvatarFallback className="bg-white text-black text-xs font-semibold">
-                  {user ? getInitials(user.name) : 'U'}
+                  {user ? getInitials(user.name) : "U"}
                 </AvatarFallback>
               </Avatar>
             </Button>
@@ -1959,19 +1947,16 @@ function GoalTrackerApp() {
               <div className="flex flex-col items-center justify-center text-center h-full space-y-3">
                 <p className="text-4xl font-bold text-gray-900">{getTotalProgress()}%</p>
                 <div className="flex items-center">
-                  <Target className="h-4 w-4 mr-2" style={{ color: '#05a7b0' }} />
+                  <Target className="h-4 w-4 mr-2" style={{ color: "#05a7b0" }} />
                   <p className="text-sm font-medium text-gray-600">Overall Progress</p>
                 </div>
                 <div className="w-full">
-                  <Progress 
-                    value={getTotalProgress()} 
-                    className="h-2 [&>div]:bg-[#05a7b0]"
-                  />
+                  <Progress value={getTotalProgress()} className="h-2 [&>div]:bg-[#05a7b0]" />
                 </div>
               </div>
             </CardContent>
           </Card>
-          
+
           <Card className="border-0 shadow-sm">
             <CardContent className="p-6">
               <div className="flex flex-col items-center justify-center text-center h-full space-y-3">
@@ -1979,32 +1964,12 @@ function GoalTrackerApp() {
                   {getCompletedTasks()}/{getTotalTasks()}
                 </p>
                 <div className="flex items-center">
-                  <ClipboardCheck className="h-4 w-4 mr-2" style={{ color: '#05a7b0' }} />
+                  <ClipboardCheck className="h-4 w-4 mr-2" style={{ color: "#05a7b0" }} />
                   <p className="text-sm font-medium text-gray-600">Tasks Completed</p>
                 </div>
                 <div className="w-full">
-                  <Progress 
-                    value={getTotalTasks() > 0 ? (getCompletedTasks() / getTotalTasks()) * 100 : 0} 
-                    className="h-2 [&>div]:bg-[#05a7b0]"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="border-0 shadow-sm">
-            <CardContent className="p-6">
-              <div className="flex flex-col items-center justify-center text-center h-full space-y-3">
-                <p className="text-4xl font-bold text-gray-900">
-                  {getCompletedGoals()}/{getTotalGoals()}
-                </p>
-                <div className="flex items-center">
-                  <CheckCircle className="h-4 w-4 mr-2" style={{ color: '#05a7b0' }} />
-                  <p className="text-sm font-medium text-gray-600">Goals Completed</p>
-                </div>
-                <div className="w-full">
-                  <Progress 
-                    value={getTotalGoals() > 0 ? (getCompletedGoals() / getTotalGoals()) * 100 : 0} 
+                  <Progress
+                    value={getTotalTasks() > 0 ? (getCompletedTasks() / getTotalTasks()) * 100 : 0}
                     className="h-2 [&>div]:bg-[#05a7b0]"
                   />
                 </div>
@@ -2016,17 +1981,32 @@ function GoalTrackerApp() {
             <CardContent className="p-6">
               <div className="flex flex-col items-center justify-center text-center h-full space-y-3">
                 <p className="text-4xl font-bold text-gray-900">
-                  {12 - currentWeek}
+                  {getCompletedGoals()}/{getTotalGoals()}
                 </p>
                 <div className="flex items-center">
-                  <Calendar className="h-4 w-4 mr-2" style={{ color: '#05a7b0' }} />
+                  <CheckCircle className="h-4 w-4 mr-2" style={{ color: "#05a7b0" }} />
+                  <p className="text-sm font-medium text-gray-600">Goals Completed</p>
+                </div>
+                <div className="w-full">
+                  <Progress
+                    value={getTotalGoals() > 0 ? (getCompletedGoals() / getTotalGoals()) * 100 : 0}
+                    className="h-2 [&>div]:bg-[#05a7b0]"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-sm">
+            <CardContent className="p-6">
+              <div className="flex flex-col items-center justify-center text-center h-full space-y-3">
+                <p className="text-4xl font-bold text-gray-900">{12 - currentWeek}</p>
+                <div className="flex items-center">
+                  <Calendar className="h-4 w-4 mr-2" style={{ color: "#05a7b0" }} />
                   <p className="text-sm font-medium text-gray-600">Test</p>
                 </div>
                 <div className="w-full">
-                  <Progress 
-                    value={((12 - (12 - currentWeek)) / 12) * 100} 
-                    className="h-2 [&>div]:bg-[#05a7b0]"
-                  />
+                  <Progress value={((12 - (12 - currentWeek)) / 12) * 100} className="h-2 [&>div]:bg-[#05a7b0]" />
                 </div>
               </div>
             </CardContent>
@@ -2048,20 +2028,17 @@ function GoalTrackerApp() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {Object.entries(goalsData).map(([category, goals]) => (
                 <Card key={category} className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200">
-                  
                   <CardHeader className="pb-4">
                     <div className="flex items-center justify-between">
-                      <Badge className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}>
+                      <Badge
+                        className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}
+                      >
                         {category}
                       </Badge>
                       <div className="flex items-center space-x-2">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0"
-                            >
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                               <Plus className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
@@ -2077,7 +2054,7 @@ function GoalTrackerApp() {
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => {
-                                setNewWeeklyTask(prev => ({ ...prev, category }))
+                                setNewWeeklyTask((prev) => ({ ...prev, category }))
                                 setShowAddWeeklyTask(true)
                               }}
                             >
@@ -2086,7 +2063,7 @@ function GoalTrackerApp() {
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => {
-                                setNewDailyTask(prev => ({ ...prev, category }))
+                                setNewDailyTask((prev) => ({ ...prev, category }))
                                 setShowAddDailyTask(true)
                               }}
                             >
@@ -2111,9 +2088,7 @@ function GoalTrackerApp() {
                               <Plus className="h-4 w-4 mr-2" />
                               Add Goal
                             </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => startEditingCategory(category)}
-                            >
+                            <DropdownMenuItem onClick={() => startEditingCategory(category)}>
                               <Edit className="h-4 w-4 mr-2" />
                               Edit Category
                             </DropdownMenuItem>
@@ -2130,7 +2105,7 @@ function GoalTrackerApp() {
                       </div>
                     </div>
                     <CardDescription className="mt-2">
-                      {goals.length} goal{goals.length !== 1 ? 's' : ''} • Week {currentWeek}/12
+                      {goals.length} goal{goals.length !== 1 ? "s" : ""} • Week {currentWeek}/12
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -2139,11 +2114,7 @@ function GoalTrackerApp() {
                         <p className="text-gray-500 mb-4">No goals in this category yet</p>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-sm"
-                            >
+                            <Button variant="outline" size="sm" className="text-sm bg-transparent">
                               <Plus className="h-4 w-4 mr-2" />
                               Add First Item
                             </Button>
@@ -2160,7 +2131,7 @@ function GoalTrackerApp() {
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => {
-                                setNewWeeklyTask(prev => ({ ...prev, category }))
+                                setNewWeeklyTask((prev) => ({ ...prev, category }))
                                 setShowAddWeeklyTask(true)
                               }}
                             >
@@ -2169,7 +2140,7 @@ function GoalTrackerApp() {
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => {
-                                setNewDailyTask(prev => ({ ...prev, category }))
+                                setNewDailyTask((prev) => ({ ...prev, category }))
                                 setShowAddDailyTask(true)
                               }}
                             >
@@ -2186,7 +2157,7 @@ function GoalTrackerApp() {
                         const isCompleted = goal.currentCount >= goal.targetCount
                         const goalType = getGoalType(goal.targetCount)
                         const quickIncrements = getQuickIncrements(goal.targetCount)
-                        
+
                         return (
                           <div key={goal.id} className="p-3 rounded-lg bg-gray-50 space-y-3">
                             {/* All goals now have checkbox + title layout */}
@@ -2199,26 +2170,39 @@ function GoalTrackerApp() {
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-start justify-between gap-3">
                                   <div className="flex-1 min-w-0">
-                                    <h4 className={`font-medium ${isCompleted ? 'line-through text-gray-500' : 'text-gray-900'} break-words`}>
+                                    <h4
+                                      className={`font-medium ${isCompleted ? "line-through text-gray-500" : "text-gray-900"} break-words`}
+                                    >
                                       {goal.title}
                                     </h4>
-                                    <p className={`text-sm mt-1 ${isCompleted ? 'text-gray-400' : 'text-gray-600'} break-words`}>
+                                    <p
+                                      className={`text-sm mt-1 ${isCompleted ? "text-gray-400" : "text-gray-600"} break-words`}
+                                    >
                                       {goal.description}
                                     </p>
                                   </div>
                                   <div className="flex items-center space-x-2 flex-shrink-0">
                                     {isCompleted && (
-                                      <Badge variant="secondary" className="bg-green-100 text-green-800 whitespace-nowrap">
+                                      <Badge
+                                        variant="secondary"
+                                        className="bg-green-100 text-green-800 whitespace-nowrap"
+                                      >
                                         Complete
                                       </Badge>
                                     )}
                                     {!isCompleted && weeklyProgress.onTrack && (
-                                      <Badge variant="secondary" className="bg-blue-100 text-blue-800 whitespace-nowrap">
+                                      <Badge
+                                        variant="secondary"
+                                        className="bg-blue-100 text-blue-800 whitespace-nowrap"
+                                      >
                                         On Track
                                       </Badge>
                                     )}
                                     {!isCompleted && !weeklyProgress.onTrack && (
-                                      <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 whitespace-nowrap">
+                                      <Badge
+                                        variant="secondary"
+                                        className="bg-yellow-100 text-yellow-800 whitespace-nowrap"
+                                      >
                                         Behind
                                       </Badge>
                                     )}
@@ -2234,7 +2218,9 @@ function GoalTrackerApp() {
                                           Edit Goal
                                         </DropdownMenuItem>
                                         <DropdownMenuItem
-                                          onClick={() => setShowDeleteGoal({ category, goalId: goal.id, title: goal.title })}
+                                          onClick={() =>
+                                            setShowDeleteGoal({ category, goalId: goal.id, title: goal.title })
+                                          }
                                           className="text-red-600"
                                         >
                                           <Trash2 className="h-4 w-4 mr-2" />
@@ -2246,32 +2232,31 @@ function GoalTrackerApp() {
                                 </div>
                               </div>
                             </div>
-                            
+
                             {/* Progress bar and controls for number-based goals only */}
-                            {goalType !== 'binary' && (
+                            {goalType !== "binary" && (
                               <div className="space-y-3">
                                 <div className="space-y-2">
                                   <div className="flex justify-between text-sm">
                                     <span className="text-gray-600">
-                                      {goal.targetCount >= 1000 && (goal.title.toLowerCase().includes('$') || goal.title.toLowerCase().includes('dollar') || goal.title.toLowerCase().includes('funding') || goal.title.toLowerCase().includes('revenue') || goal.title.toLowerCase().includes('money'))
+                                      {goal.targetCount >= 1000 &&
+                                      (goal.title.toLowerCase().includes("$") ||
+                                        goal.title.toLowerCase().includes("dollar") ||
+                                        goal.title.toLowerCase().includes("funding") ||
+                                        goal.title.toLowerCase().includes("revenue") ||
+                                        goal.title.toLowerCase().includes("money"))
                                         ? `$${goal.currentCount.toLocaleString()} / $${goal.targetCount.toLocaleString()}`
-                                        : `${goal.currentCount} / ${goal.targetCount}`
-                                      }
+                                        : `${goal.currentCount} / ${goal.targetCount}`}
                                     </span>
-                                    <span className="font-medium text-gray-900">
-                                      {Math.round(progressPercentage)}%
-                                    </span>
+                                    <span className="font-medium text-gray-900">{Math.round(progressPercentage)}%</span>
                                   </div>
-                                  <Progress 
-                                    value={progressPercentage} 
-                                    className="h-2 [&>div]:bg-[#05a7b0]"
-                                  />
+                                  <Progress value={progressPercentage} className="h-2 [&>div]:bg-[#05a7b0]" />
                                 </div>
-                                
+
                                 {/* Progress Update Controls */}
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center space-x-1">
-                                    {goalType === 'small' ? (
+                                    {goalType === "small" ? (
                                       // Small numbers - single + button
                                       <Button
                                         size="sm"
@@ -2295,20 +2280,22 @@ function GoalTrackerApp() {
                                             disabled={isCompleted}
                                             className="h-7 px-2 text-xs"
                                           >
-                                            +{increment >= 1000 ? `${increment/1000}k` : increment}
+                                            +{increment >= 1000 ? `${increment / 1000}k` : increment}
                                           </Button>
                                         ))}
                                       </>
                                     )}
                                   </div>
-                                  
+
                                   {/* Direct input for medium/large goals */}
-                                  {goalType !== 'small' && (
+                                  {goalType !== "small" && (
                                     <div className="flex items-center space-x-2">
                                       <Input
                                         type="number"
                                         value={goal.currentCount}
-                                        onChange={(e) => updateGoalProgress(category, goal.id, parseInt(e.target.value) || 0)}
+                                        onChange={(e) =>
+                                          updateGoalProgress(category, goal.id, Number.parseInt(e.target.value) || 0)
+                                        }
                                         className="w-20 h-7 text-xs text-center"
                                         min="0"
                                         max={goal.targetCount}
@@ -2318,7 +2305,7 @@ function GoalTrackerApp() {
                                 </div>
                               </div>
                             )}
-                            
+
                             {/* Notes Section */}
                             <div className="space-y-2">
                               <Button
@@ -2335,11 +2322,11 @@ function GoalTrackerApp() {
                                 ) : (
                                   <>
                                     <ChevronDown className="h-3 w-3 mr-1" />
-                                    {goal.notes ? 'Show notes' : 'Add notes'}
+                                    {goal.notes ? "Show notes" : "Add notes"}
                                   </>
                                 )}
                               </Button>
-                              
+
                               {expandedNotes.has(goal.id) && (
                                 <div className="animate-in slide-in-from-top-2 duration-200">
                                   <Textarea
@@ -2347,7 +2334,7 @@ function GoalTrackerApp() {
                                     value={goal.notes}
                                     onChange={(e) => updateNotes(category, goal.id, e.target.value)}
                                     onKeyDown={(e) => {
-                                      if (e.key === 'Enter' && !e.shiftKey) {
+                                      if (e.key === "Enter" && !e.shiftKey) {
                                         e.preventDefault()
                                         toggleNotes(goal.id)
                                       }
@@ -2370,24 +2357,26 @@ function GoalTrackerApp() {
           {/* Weekly Tasks View */}
           <TabsContent value="weekly" className="mt-8">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">
-                Week {currentWeek} Tasks
-              </h2>
+              <h2 className="text-2xl font-bold text-gray-900">Week {currentWeek} Tasks</h2>
             </div>
-            
+
             {/* Group weekly tasks by category */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {Object.keys(goalsData).map((category) => {
-                const categoryTasks = (weeklyTasks[`Week ${currentWeek}`] || []).filter(task => task.category === category)
-                
+                const categoryTasks = (weeklyTasks[`Week ${currentWeek}`] || []).filter(
+                  (task) => task.category === category,
+                )
+
                 if (categoryTasks.length === 0) return null
-                
+
                 return (
                   <Card key={category} className="border-0 shadow-sm">
                     <CardHeader className="pb-4">
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                          <Badge className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}>
+                          <Badge
+                            className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}
+                          >
                             {category}
                           </Badge>
                         </CardTitle>
@@ -2395,7 +2384,7 @@ function GoalTrackerApp() {
                           variant="ghost"
                           size="sm"
                           onClick={() => {
-                            setNewWeeklyTask(prev => ({ ...prev, category }))
+                            setNewWeeklyTask((prev) => ({ ...prev, category }))
                             setShowAddWeeklyTask(true)
                           }}
                           className="h-8 w-8 p-0"
@@ -2404,7 +2393,7 @@ function GoalTrackerApp() {
                         </Button>
                       </div>
                       <CardDescription>
-                        {categoryTasks.length} task{categoryTasks.length !== 1 ? 's' : ''} this week
+                        {categoryTasks.length} task{categoryTasks.length !== 1 ? "s" : ""} this week
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -2414,7 +2403,7 @@ function GoalTrackerApp() {
                         onDragEnd={(event) => handleWeeklyTaskDragEnd(event, category)}
                       >
                         <SortableContext
-                          items={categoryTasks.map(task => task.id)}
+                          items={categoryTasks.map((task) => task.id)}
                           strategy={verticalListSortingStrategy}
                         >
                           {categoryTasks.map((task) => (
@@ -2433,19 +2422,23 @@ function GoalTrackerApp() {
                   </Card>
                 )
               })}
-              
+
               {/* Show category cards even if empty, with plus buttons */}
               {Object.keys(goalsData).map((category) => {
-                const categoryTasks = (weeklyTasks[`Week ${currentWeek}`] || []).filter(task => task.category === category)
-                
+                const categoryTasks = (weeklyTasks[`Week ${currentWeek}`] || []).filter(
+                  (task) => task.category === category,
+                )
+
                 if (categoryTasks.length > 0) return null // Already rendered above
-                
+
                 return (
                   <Card key={`empty-${category}`} className="border-0 shadow-sm">
                     <CardHeader className="pb-4">
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                          <Badge className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}>
+                          <Badge
+                            className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}
+                          >
                             {category}
                           </Badge>
                         </CardTitle>
@@ -2453,7 +2446,7 @@ function GoalTrackerApp() {
                           variant="ghost"
                           size="sm"
                           onClick={() => {
-                            setNewWeeklyTask(prev => ({ ...prev, category }))
+                            setNewWeeklyTask((prev) => ({ ...prev, category }))
                             setShowAddWeeklyTask(true)
                           }}
                           className="h-8 w-8 p-0"
@@ -2464,9 +2457,9 @@ function GoalTrackerApp() {
                     </CardHeader>
                     <CardContent className="py-8">
                       <div className="text-center text-gray-500">
-                        <button 
+                        <button
                           onClick={() => {
-                            setNewWeeklyTask(prev => ({ ...prev, category }))
+                            setNewWeeklyTask((prev) => ({ ...prev, category }))
                             setShowAddWeeklyTask(true)
                           }}
                           className="text-sm hover:text-gray-700 cursor-pointer"
@@ -2493,36 +2486,38 @@ function GoalTrackerApp() {
           <TabsContent value="daily" className="mt-8">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center space-x-4">
-                <h2 className="text-2xl font-bold text-gray-900">
-                  Daily Tasks
-                </h2>
+                <h2 className="text-2xl font-bold text-gray-900">Daily Tasks</h2>
                 <Select value={selectedDay} onValueChange={setSelectedDay}>
                   <SelectTrigger className="w-40">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
-                      <SelectItem key={day} value={day}>{day}</SelectItem>
+                    {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((day) => (
+                      <SelectItem key={day} value={day}>
+                        {day}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
             </div>
-            
+
             {/* Group daily tasks by category */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {Object.keys(goalsData).map((category) => {
-                const categoryTasks = (dailyTasks[selectedDay] || []).filter(task => task.category === category)
-                
+                const categoryTasks = (dailyTasks[selectedDay] || []).filter((task) => task.category === category)
+
                 if (categoryTasks.length === 0) return null
-                
+
                 return (
                   <Card key={category} className="border-0 shadow-sm">
                     <CardHeader className="pb-4">
                       <div className="flex items-center justify-between">
                         <div>
                           <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-2">
-                            <Badge className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}>
+                            <Badge
+                              className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}
+                            >
                               {category}
                             </Badge>
                           </CardTitle>
@@ -2531,7 +2526,7 @@ function GoalTrackerApp() {
                           variant="ghost"
                           size="sm"
                           onClick={() => {
-                            setNewDailyTask(prev => ({ ...prev, category }))
+                            setNewDailyTask((prev) => ({ ...prev, category }))
                             setShowAddDailyTask(true)
                           }}
                           className="h-8 w-8 p-0"
@@ -2547,7 +2542,7 @@ function GoalTrackerApp() {
                         onDragEnd={(event) => handleDailyTaskDragEnd(event, category)}
                       >
                         <SortableContext
-                          items={categoryTasks.map(task => task.id)}
+                          items={categoryTasks.map((task) => task.id)}
                           strategy={verticalListSortingStrategy}
                         >
                           {categoryTasks.map((task) => (
@@ -2556,7 +2551,9 @@ function GoalTrackerApp() {
                               task={task}
                               onToggle={() => toggleDailyTask(selectedDay, task.id)}
                               onEdit={() => startEditingDailyTask(task)}
-                              onDelete={() => setShowDeleteDailyTask({ day: selectedDay, taskId: task.id, title: task.title })}
+                              onDelete={() =>
+                                setShowDeleteDailyTask({ day: selectedDay, taskId: task.id, title: task.title })
+                              }
                             />
                           ))}
                         </SortableContext>
@@ -2565,20 +2562,22 @@ function GoalTrackerApp() {
                   </Card>
                 )
               })}
-              
+
               {/* Show category cards even if empty, with plus buttons */}
               {Object.keys(goalsData).map((category) => {
-                const categoryTasks = (dailyTasks[selectedDay] || []).filter(task => task.category === category)
-                
+                const categoryTasks = (dailyTasks[selectedDay] || []).filter((task) => task.category === category)
+
                 if (categoryTasks.length > 0) return null // Already rendered above
-                
+
                 return (
                   <Card key={`empty-${category}`} className="border-0 shadow-sm">
                     <CardHeader className="pb-4">
                       <div className="flex items-center justify-between">
                         <div>
                           <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-2">
-                            <Badge className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}>
+                            <Badge
+                              className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}
+                            >
                               {category}
                             </Badge>
                           </CardTitle>
@@ -2587,7 +2586,7 @@ function GoalTrackerApp() {
                           variant="ghost"
                           size="sm"
                           onClick={() => {
-                            setNewDailyTask(prev => ({ ...prev, category }))
+                            setNewDailyTask((prev) => ({ ...prev, category }))
                             setShowAddDailyTask(true)
                           }}
                           className="h-8 w-8 p-0"
@@ -2598,9 +2597,9 @@ function GoalTrackerApp() {
                     </CardHeader>
                     <CardContent className="py-8">
                       <div className="text-center text-gray-500">
-                        <button 
+                        <button
                           onClick={() => {
-                            setNewDailyTask(prev => ({ ...prev, category }))
+                            setNewDailyTask((prev) => ({ ...prev, category }))
                             setShowAddDailyTask(true)
                           }}
                           className="text-sm hover:text-gray-700 cursor-pointer"
@@ -2632,137 +2631,151 @@ function GoalTrackerApp() {
                 Add 1-Year Goal
               </Button>
             </div>
-            
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {Object.entries(longTermGoals["1-year"]).map(([category, goals]) => (
                 <Card key={category} className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200">
                   <CardHeader className="pb-4">
                     <div className="flex items-center justify-between">
-                      <Badge className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}>
+                      <Badge
+                        className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}
+                      >
                         {category}
                       </Badge>
                     </div>
                     <CardDescription className="mt-2">
-                      {goals.length} goal{goals.length !== 1 ? 's' : ''} • Long-term vision
+                      {goals.length} goal{goals.length !== 1 ? "s" : ""} • Long-term vision
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {goals.map((goal) => (
-                      
                       <div key={goal.id} className="p-4 rounded-lg bg-gray-50 space-y-4">
-<div className="flex items-start space-x-3">
-  <Checkbox
-    checked={goal.status === 'completed'}
-    onCheckedChange={(checked) => {
-      setLongTermGoals(prev => ({
-        ...prev,
-        "1-year": {
-          ...prev["1-year"],
-          [category]: prev["1-year"][category].map(g =>
-            g.id === goal.id
-              ? { ...g, status: checked ? 'completed' : 'in-progress' }
-              : g
-          )
-        }
-      }))
-    }}
-    className={`h-5 w-5 mt-0.5 flex-shrink-0 ${checkboxStyles}`}
-  />
-  <div className="flex-1 min-w-0">
-    <div className="flex items-start justify-between">
-      <div className="flex-1">
-        <h4 className={`font-semibold mb-2 ${goal.status === 'completed' ? 'line-through text-gray-500' : 'text-gray-900'}`}>
-          {goal.title}
-        </h4>
-        <p className={`text-sm mb-3 ${goal.status === 'completed' ? 'text-gray-400' : 'text-gray-600'}`}>
-          {goal.description}
-        </p>
-        <div className="flex items-center space-x-4 text-xs text-gray-500">
-          <span>Target: {new Date(goal.targetDate).toLocaleDateString()}</span>
-          <Badge 
-            variant="secondary" 
-            className={
-              goal.status === 'completed' ? 'bg-green-100 text-green-800' :
-              goal.status === 'on-hold' ? 'bg-yellow-100 text-yellow-800' :
-              'bg-blue-100 text-blue-800'
-            }
-          >
-            {goal.status.replace('-', ' ')}
-          </Badge>
-        </div>
-      </div>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0">
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => startEditingLongTermGoal("1-year", category, goal)}>
-            <Edit className="h-4 w-4 mr-2" />
-            Edit Goal
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => setShowDeleteLongTermGoal({ timeframe: "1-year", category, goalId: goal.id, title: goal.title })}
-            className="text-red-600"
-          >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Delete Goal
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
-  </div>
-</div>
+                        <div className="flex items-start space-x-3">
+                          <Checkbox
+                            checked={goal.status === "completed"}
+                            onCheckedChange={(checked) => {
+                              setLongTermGoals((prev) => ({
+                                ...prev,
+                                "1-year": {
+                                  ...prev["1-year"],
+                                  [category]: prev["1-year"][category].map((g) =>
+                                    g.id === goal.id ? { ...g, status: checked ? "completed" : "in-progress" } : g,
+                                  ),
+                                },
+                              }))
+                            }}
+                            className={`h-5 w-5 mt-0.5 flex-shrink-0 ${checkboxStyles}`}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <h4
+                                  className={`font-semibold mb-2 ${goal.status === "completed" ? "line-through text-gray-500" : "text-gray-900"}`}
+                                >
+                                  {goal.title}
+                                </h4>
+                                <p
+                                  className={`text-sm mb-3 ${goal.status === "completed" ? "text-gray-400" : "text-gray-600"}`}
+                                >
+                                  {goal.description}
+                                </p>
+                                <div className="flex items-center space-x-4 text-xs text-gray-500">
+                                  <span>Target: {new Date(goal.targetDate).toLocaleDateString()}</span>
+                                  <Badge
+                                    variant="secondary"
+                                    className={
+                                      goal.status === "completed"
+                                        ? "bg-green-100 text-green-800"
+                                        : goal.status === "on-hold"
+                                          ? "bg-yellow-100 text-yellow-800"
+                                          : "bg-blue-100 text-blue-800"
+                                    }
+                                  >
+                                    {goal.status.replace("-", " ")}
+                                  </Badge>
+                                </div>
+                              </div>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => startEditingLongTermGoal("1-year", category, goal)}>
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    Edit Goal
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      setShowDeleteLongTermGoal({
+                                        timeframe: "1-year",
+                                        category,
+                                        goalId: goal.id,
+                                        title: goal.title,
+                                      })
+                                    }
+                                    className="text-red-600"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete Goal
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          </div>
+                        </div>
 
-{/* Milestones */}
-<div className="space-y-2">
-  <h5 className="text-sm font-medium text-gray-700">Milestones</h5>
-  <div className="space-y-2">
-    {goal.milestones.map((milestone, index) => (
-      <div key={milestone.id} className="flex items-center space-x-3">
-        <Checkbox
-          checked={milestone.completed}
-          onCheckedChange={(checked) => {
-            setLongTermGoals(prev => ({
-              ...prev,
-              "1-year": {
-                ...prev["1-year"],
-                [category]: prev["1-year"][category].map(g =>
-                  g.id === goal.id
-                    ? {
-                        ...g,
-                        milestones: g.milestones.map(m =>
-                          m.id === milestone.id ? { ...m, completed: !!checked } : m
-                        )
-                      }
-                    : g
-                )
-              }
-            }))
-          }}
-          className={checkboxStyles}
-        />
-        <div className="flex-1 min-w-0">
-          <p className={`text-sm ${milestone.completed ? 'line-through text-gray-500' : 'text-gray-700'}`}>
-            {milestone.title}
-          </p>
-          <p className="text-xs text-gray-500">
-            {new Date(milestone.targetDate).toLocaleDateString()}
-          </p>
-        </div>
-      </div>
-    ))}
-  </div>
-</div>
+                        {/* Milestones */}
+                        <div className="space-y-2">
+                          <h5 className="text-sm font-medium text-gray-700">Milestones</h5>
+                          <div className="space-y-2">
+                            {goal.milestones.map((milestone, index) => (
+                              <div key={milestone.id} className="flex items-center space-x-3">
+                                <Checkbox
+                                  checked={milestone.completed}
+                                  onCheckedChange={(checked) => {
+                                    setLongTermGoals((prev) => ({
+                                      ...prev,
+                                      "1-year": {
+                                        ...prev["1-year"],
+                                        [category]: prev["1-year"][category].map((g) =>
+                                          g.id === goal.id
+                                            ? {
+                                                ...g,
+                                                milestones: g.milestones.map((m) =>
+                                                  m.id === milestone.id ? { ...m, completed: !!checked } : m,
+                                                ),
+                                              }
+                                            : g,
+                                        ),
+                                      },
+                                    }))
+                                  }}
+                                  className={checkboxStyles}
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <p
+                                    className={`text-sm ${milestone.completed ? "line-through text-gray-500" : "text-gray-700"}`}
+                                  >
+                                    {milestone.title}
+                                  </p>
+                                  <p className="text-xs text-gray-500">
+                                    {new Date(milestone.targetDate).toLocaleDateString()}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
 
-{/* Notes */}
-{goal.notes && (
-  <div className="pt-2 border-t border-gray-200">
-    <p className="text-xs text-gray-600">{goal.notes}</p>
-  </div>
-)}
-</div>
+                        {/* Notes */}
+                        {goal.notes && (
+                          <div className="pt-2 border-t border-gray-200">
+                            <p className="text-xs text-gray-600">{goal.notes}</p>
+                          </div>
+                        )}
+                      </div>
                     ))}
                   </CardContent>
                 </Card>
@@ -2787,137 +2800,151 @@ function GoalTrackerApp() {
                 Add 5-Year Goal
               </Button>
             </div>
-            
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {Object.entries(longTermGoals["5-year"]).map(([category, goals]) => (
                 <Card key={category} className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200">
                   <CardHeader className="pb-4">
                     <div className="flex items-center justify-between">
-                      <Badge className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}>
+                      <Badge
+                        className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}
+                      >
                         {category}
                       </Badge>
                     </div>
                     <CardDescription className="mt-2">
-                      {goals.length} goal{goals.length !== 1 ? 's' : ''} • Long-term vision
+                      {goals.length} goal{goals.length !== 1 ? "s" : ""} • Long-term vision
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {goals.map((goal) => (
-                      
                       <div key={goal.id} className="p-4 rounded-lg bg-gray-50 space-y-4">
-<div className="flex items-start space-x-3">
-  <Checkbox
-    checked={goal.status === 'completed'}
-    onCheckedChange={(checked) => {
-      setLongTermGoals(prev => ({
-        ...prev,
-        "5-year": {
-          ...prev["5-year"],
-          [category]: prev["5-year"][category].map(g =>
-            g.id === goal.id
-              ? { ...g, status: checked ? 'completed' : 'in-progress' }
-              : g
-          )
-        }
-      }))
-    }}
-    className={`h-5 w-5 mt-0.5 flex-shrink-0 ${checkboxStyles}`}
-  />
-  <div className="flex-1 min-w-0">
-    <div className="flex items-start justify-between">
-      <div className="flex-1">
-        <h4 className={`font-semibold mb-2 ${goal.status === 'completed' ? 'line-through text-gray-500' : 'text-gray-900'}`}>
-          {goal.title}
-        </h4>
-        <p className={`text-sm mb-3 ${goal.status === 'completed' ? 'text-gray-400' : 'text-gray-600'}`}>
-          {goal.description}
-        </p>
-        <div className="flex items-center space-x-4 text-xs text-gray-500">
-          <span>Target: {new Date(goal.targetDate).toLocaleDateString()}</span>
-          <Badge 
-            variant="secondary" 
-            className={
-              goal.status === 'completed' ? 'bg-green-100 text-green-800' :
-              goal.status === 'on-hold' ? 'bg-yellow-100 text-yellow-800' :
-              'bg-blue-100 text-blue-800'
-            }
-          >
-            {goal.status.replace('-', ' ')}
-          </Badge>
-        </div>
-      </div>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0">
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => startEditingLongTermGoal("5-year", category, goal)}>
-            <Edit className="h-4 w-4 mr-2" />
-            Edit Goal
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => setShowDeleteLongTermGoal({ timeframe: "5-year", category, goalId: goal.id, title: goal.title })}
-            className="text-red-600"
-          >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Delete Goal
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
-  </div>
-</div>
+                        <div className="flex items-start space-x-3">
+                          <Checkbox
+                            checked={goal.status === "completed"}
+                            onCheckedChange={(checked) => {
+                              setLongTermGoals((prev) => ({
+                                ...prev,
+                                "5-year": {
+                                  ...prev["5-year"],
+                                  [category]: prev["5-year"][category].map((g) =>
+                                    g.id === goal.id ? { ...g, status: checked ? "completed" : "in-progress" } : g,
+                                  ),
+                                },
+                              }))
+                            }}
+                            className={`h-5 w-5 mt-0.5 flex-shrink-0 ${checkboxStyles}`}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <h4
+                                  className={`font-semibold mb-2 ${goal.status === "completed" ? "line-through text-gray-500" : "text-gray-900"}`}
+                                >
+                                  {goal.title}
+                                </h4>
+                                <p
+                                  className={`text-sm mb-3 ${goal.status === "completed" ? "text-gray-400" : "text-gray-600"}`}
+                                >
+                                  {goal.description}
+                                </p>
+                                <div className="flex items-center space-x-4 text-xs text-gray-500">
+                                  <span>Target: {new Date(goal.targetDate).toLocaleDateString()}</span>
+                                  <Badge
+                                    variant="secondary"
+                                    className={
+                                      goal.status === "completed"
+                                        ? "bg-green-100 text-green-800"
+                                        : goal.status === "on-hold"
+                                          ? "bg-yellow-100 text-yellow-800"
+                                          : "bg-blue-100 text-blue-800"
+                                    }
+                                  >
+                                    {goal.status.replace("-", " ")}
+                                  </Badge>
+                                </div>
+                              </div>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => startEditingLongTermGoal("5-year", category, goal)}>
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    Edit Goal
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      setShowDeleteLongTermGoal({
+                                        timeframe: "5-year",
+                                        category,
+                                        goalId: goal.id,
+                                        title: goal.title,
+                                      })
+                                    }
+                                    className="text-red-600"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete Goal
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          </div>
+                        </div>
 
-{/* Milestones */}
-<div className="space-y-2">
-  <h5 className="text-sm font-medium text-gray-700">Milestones</h5>
-  <div className="space-y-2">
-    {goal.milestones.map((milestone, index) => (
-      <div key={milestone.id} className="flex items-center space-x-3">
-        <Checkbox
-          checked={milestone.completed}
-          onCheckedChange={(checked) => {
-            setLongTermGoals(prev => ({
-              ...prev,
-              "5-year": {
-                ...prev["5-year"],
-                [category]: prev["5-year"][category].map(g =>
-                  g.id === goal.id
-                    ? {
-                        ...g,
-                        milestones: g.milestones.map(m =>
-                          m.id === milestone.id ? { ...m, completed: !!checked } : m
-                        )
-                      }
-                    : g
-                )
-              }
-            }))
-          }}
-          className={checkboxStyles}
-        />
-        <div className="flex-1 min-w-0">
-          <p className={`text-sm ${milestone.completed ? 'line-through text-gray-500' : 'text-gray-700'}`}>
-            {milestone.title}
-          </p>
-          <p className="text-xs text-gray-500">
-            {new Date(milestone.targetDate).toLocaleDateString()}
-          </p>
-        </div>
-      </div>
-    ))}
-  </div>
-</div>
+                        {/* Milestones */}
+                        <div className="space-y-2">
+                          <h5 className="text-sm font-medium text-gray-700">Milestones</h5>
+                          <div className="space-y-2">
+                            {goal.milestones.map((milestone, index) => (
+                              <div key={milestone.id} className="flex items-center space-x-3">
+                                <Checkbox
+                                  checked={milestone.completed}
+                                  onCheckedChange={(checked) => {
+                                    setLongTermGoals((prev) => ({
+                                      ...prev,
+                                      "5-year": {
+                                        ...prev["5-year"],
+                                        [category]: prev["5-year"][category].map((g) =>
+                                          g.id === goal.id
+                                            ? {
+                                                ...g,
+                                                milestones: g.milestones.map((m) =>
+                                                  m.id === milestone.id ? { ...m, completed: !!checked } : m,
+                                                ),
+                                              }
+                                            : g,
+                                        ),
+                                      },
+                                    }))
+                                  }}
+                                  className={checkboxStyles}
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <p
+                                    className={`text-sm ${milestone.completed ? "line-through text-gray-500" : "text-gray-700"}`}
+                                  >
+                                    {milestone.title}
+                                  </p>
+                                  <p className="text-xs text-gray-500">
+                                    {new Date(milestone.targetDate).toLocaleDateString()}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
 
-{/* Notes */}
-{goal.notes && (
-  <div className="pt-2 border-t border-gray-200">
-    <p className="text-xs text-gray-600">{goal.notes}</p>
-  </div>
-)}
-</div>
+                        {/* Notes */}
+                        {goal.notes && (
+                          <div className="pt-2 border-t border-gray-200">
+                            <p className="text-xs text-gray-600">{goal.notes}</p>
+                          </div>
+                        )}
+                      </div>
                     ))}
                   </CardContent>
                 </Card>
@@ -2927,18 +2954,18 @@ function GoalTrackerApp() {
         </Tabs>
 
         {/* User Profile Modal */}
-        {showProfile && (
-          <UserProfile onClose={() => setShowProfile(false)} />
-        )}
+        {showProfile && <UserProfile onClose={() => setShowProfile(false)} />}
 
         {/* All existing dialogs remain the same... */}
         {/* Add Goal Dialog */}
         <Dialog open={showAddGoal} onOpenChange={setShowAddGoal}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>{editingGoal ? 'Edit Goal' : 'Add New Goal'}</DialogTitle>
+              <DialogTitle>{editingGoal ? "Edit Goal" : "Add New Goal"}</DialogTitle>
               <DialogDescription>
-                {editingGoal ? 'Update your goal details and targets.' : 'Create a new goal for your 12-week year. Choose a category and set your target.'}
+                {editingGoal
+                  ? "Update your goal details and targets."
+                  : "Create a new goal for your 12-week year. Choose a category and set your target."}
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
@@ -2966,12 +2993,12 @@ function GoalTrackerApp() {
                   onChange={(e) => {
                     const title = e.target.value
                     const detectedNumber = extractNumberFromTitle(title)
-                    
-                    setNewGoal(prev => ({ 
-                      ...prev, 
+
+                    setNewGoal((prev) => ({
+                      ...prev,
                       title,
                       targetCount: detectedNumber || prev.targetCount,
-                      weeklyTarget: detectedNumber ? (detectedNumber / 12) : prev.weeklyTarget
+                      weeklyTarget: detectedNumber ? detectedNumber / 12 : prev.weeklyTarget,
                     }))
                   }}
                 />
@@ -2982,7 +3009,7 @@ function GoalTrackerApp() {
                   id="description"
                   placeholder="Brief description of your goal"
                   value={newGoal.description}
-                  onChange={(e) => setNewGoal(prev => ({ ...prev, description: e.target.value }))}
+                  onChange={(e) => setNewGoal((prev) => ({ ...prev, description: e.target.value }))}
                 />
               </div>
               {extractNumberFromTitle(newGoal.title) > 0 && (
@@ -2994,10 +3021,12 @@ function GoalTrackerApp() {
                       type="number"
                       placeholder="12"
                       value={newGoal.targetCount || ""}
-                      onChange={(e) => setNewGoal(prev => ({ 
-                        ...prev, 
-                        targetCount: parseInt(e.target.value) || 0 
-                      }))}
+                      onChange={(e) =>
+                        setNewGoal((prev) => ({
+                          ...prev,
+                          targetCount: Number.parseInt(e.target.value) || 0,
+                        }))
+                      }
                     />
                   </div>
                   <div className="grid gap-2">
@@ -3008,10 +3037,12 @@ function GoalTrackerApp() {
                       step="0.1"
                       placeholder="1.0"
                       value={newGoal.weeklyTarget || ""}
-                      onChange={(e) => setNewGoal(prev => ({ 
-                        ...prev, 
-                        weeklyTarget: parseFloat(e.target.value) || 0 
-                      }))}
+                      onChange={(e) =>
+                        setNewGoal((prev) => ({
+                          ...prev,
+                          weeklyTarget: Number.parseFloat(e.target.value) || 0,
+                        }))
+                      }
                     />
                   </div>
                 </div>
@@ -3025,23 +3056,27 @@ function GoalTrackerApp() {
 
               {extractNumberFromTitle(newGoal.title) === 0 && newGoal.title.trim() && (
                 <p className="text-sm text-blue-600 bg-blue-50 p-3 rounded-lg">
-                  💡 <strong>Tip:</strong> Include a number in your goal title (e.g., "Read 12 books", "Save $5,000") to set targets and track progress.
+                  💡 <strong>Tip:</strong> Include a number in your goal title (e.g., "Read 12 books", "Save $5,000") to
+                  set targets and track progress.
                 </p>
               )}
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => {
-                setShowAddGoal(false)
-                setEditingGoal(null)
-                setNewGoal({ title: "", description: "", targetCount: 0, weeklyTarget: 0 })
-              }}>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowAddGoal(false)
+                  setEditingGoal(null)
+                  setNewGoal({ title: "", description: "", targetCount: 0, weeklyTarget: 0 })
+                }}
+              >
                 Cancel
               </Button>
-              <Button 
-                onClick={editingGoal ? saveEditedGoal : addNewGoal} 
+              <Button
+                onClick={editingGoal ? saveEditedGoal : addNewGoal}
                 disabled={!selectedCategory || !newGoal.title}
               >
-                {editingGoal ? 'Save Changes' : 'Add Goal'}
+                {editingGoal ? "Save Changes" : "Add Goal"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -3051,12 +3086,11 @@ function GoalTrackerApp() {
         <Dialog open={showAddWeeklyTask} onOpenChange={setShowAddWeeklyTask}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>{editingWeeklyTask ? 'Edit Weekly Task' : 'Add Weekly Task'}</DialogTitle>
+              <DialogTitle>{editingWeeklyTask ? "Edit Weekly Task" : "Add Weekly Task"}</DialogTitle>
               <DialogDescription>
-                {editingWeeklyTask 
-                  ? 'Update your weekly task details and settings.'
-                  : 'Create a task to work on this week that contributes to your 12-week goals.'
-                }
+                {editingWeeklyTask
+                  ? "Update your weekly task details and settings."
+                  : "Create a task to work on this week that contributes to your 12-week goals."}
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
@@ -3066,7 +3100,7 @@ function GoalTrackerApp() {
                   id="taskTitle"
                   placeholder="e.g., Complete pitch deck"
                   value={newWeeklyTask.title}
-                  onChange={(e) => setNewWeeklyTask(prev => ({ ...prev, title: e.target.value }))}
+                  onChange={(e) => setNewWeeklyTask((prev) => ({ ...prev, title: e.target.value }))}
                 />
               </div>
               <div className="grid gap-2">
@@ -3075,12 +3109,15 @@ function GoalTrackerApp() {
                   id="taskDescription"
                   placeholder="Brief description of the task"
                   value={newWeeklyTask.description}
-                  onChange={(e) => setNewWeeklyTask(prev => ({ ...prev, description: e.target.value }))}
+                  onChange={(e) => setNewWeeklyTask((prev) => ({ ...prev, description: e.target.value }))}
                 />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="taskCategory">Category</Label>
-                <Select value={newWeeklyTask.category} onValueChange={(value) => setNewWeeklyTask(prev => ({ ...prev, category: value }))}>
+                <Select
+                  value={newWeeklyTask.category}
+                  onValueChange={(value) => setNewWeeklyTask((prev) => ({ ...prev, category: value }))}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
@@ -3095,25 +3132,28 @@ function GoalTrackerApp() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => {
-                setShowAddWeeklyTask(false)
-                setEditingWeeklyTask(null)
-                setNewWeeklyTask({
-                  title: "",
-                  description: "",
-                  category: "",
-                  goalId: "",
-                  priority: "medium",
-                  estimatedHours: 1
-                })
-              }}>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowAddWeeklyTask(false)
+                  setEditingWeeklyTask(null)
+                  setNewWeeklyTask({
+                    title: "",
+                    description: "",
+                    category: "",
+                    goalId: "",
+                    priority: "medium",
+                    estimatedHours: 1,
+                  })
+                }}
+              >
                 Cancel
               </Button>
-              <Button 
-                onClick={editingWeeklyTask ? saveEditedWeeklyTask : addWeeklyTask} 
+              <Button
+                onClick={editingWeeklyTask ? saveEditedWeeklyTask : addWeeklyTask}
                 disabled={!newWeeklyTask.title || !newWeeklyTask.category}
               >
-                {editingWeeklyTask ? 'Save Changes' : 'Add Task'}
+                {editingWeeklyTask ? "Save Changes" : "Add Task"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -3123,14 +3163,13 @@ function GoalTrackerApp() {
         <Dialog open={showAddDailyTask} onOpenChange={setShowAddDailyTask}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>{editingDailyTask ? 'Edit Daily Task' : 'Add Daily Task'}</DialogTitle>
+              <DialogTitle>{editingDailyTask ? "Edit Daily Task" : "Add Daily Task"}</DialogTitle>
               <DialogDescription>
-                {editingDailyTask 
-                  ? 'Update your daily task details and timing.'
-                  : newDailyTask.category 
+                {editingDailyTask
+                  ? "Update your daily task details and timing."
+                  : newDailyTask.category
                     ? `Create a daily task for ${selectedDay} in ${newDailyTask.category}.`
-                    : `Create a daily task for ${selectedDay} that supports your weekly and 12-week goals.`
-                }
+                    : `Create a daily task for ${selectedDay} that supports your weekly and 12-week goals.`}
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
@@ -3140,7 +3179,7 @@ function GoalTrackerApp() {
                   id="dailyTaskTitle"
                   placeholder="e.g., Morning workout"
                   value={newDailyTask.title}
-                  onChange={(e) => setNewDailyTask(prev => ({ ...prev, title: e.target.value }))}
+                  onChange={(e) => setNewDailyTask((prev) => ({ ...prev, title: e.target.value }))}
                 />
               </div>
               <div className="grid gap-2">
@@ -3149,14 +3188,17 @@ function GoalTrackerApp() {
                   id="dailyTaskDescription"
                   placeholder="Brief description of the task"
                   value={newDailyTask.description}
-                  onChange={(e) => setNewDailyTask(prev => ({ ...prev, description: e.target.value }))}
+                  onChange={(e) => setNewDailyTask((prev) => ({ ...prev, description: e.target.value }))}
                 />
               </div>
               {/* Only show category dropdown if no category is pre-selected */}
               {!newDailyTask.category && (
                 <div className="grid gap-2">
                   <Label htmlFor="dailyTaskCategory">Category</Label>
-                  <Select value={newDailyTask.category} onValueChange={(value) => setNewDailyTask(prev => ({ ...prev, category: value }))}>
+                  <Select
+                    value={newDailyTask.category}
+                    onValueChange={(value) => setNewDailyTask((prev) => ({ ...prev, category: value }))}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select a category" />
                     </SelectTrigger>
@@ -3175,7 +3217,9 @@ function GoalTrackerApp() {
                 <div className="grid gap-2">
                   <Label>Category</Label>
                   <div className="flex items-center">
-                    <Badge className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(newDailyTask.category)}`}>
+                    <Badge
+                      className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(newDailyTask.category)}`}
+                    >
                       {newDailyTask.category}
                     </Badge>
                   </div>
@@ -3188,31 +3232,34 @@ function GoalTrackerApp() {
                     id="timeBlock"
                     placeholder="e.g., 6:00 AM"
                     value={newDailyTask.timeBlock}
-                    onChange={(e) => setNewDailyTask(prev => ({ ...prev, timeBlock: e.target.value }))}
+                    onChange={(e) => setNewDailyTask((prev) => ({ ...prev, timeBlock: e.target.value }))}
                   />
                 </div>
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => {
-                setShowAddDailyTask(false)
-                setEditingDailyTask(null)
-                setNewDailyTask({
-                  title: "",
-                  description: "",
-                  category: "",
-                  goalId: "",
-                  timeBlock: "",
-                  estimatedMinutes: 30
-                })
-              }}>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowAddDailyTask(false)
+                  setEditingDailyTask(null)
+                  setNewDailyTask({
+                    title: "",
+                    description: "",
+                    category: "",
+                    goalId: "",
+                    timeBlock: "",
+                    estimatedMinutes: 30,
+                  })
+                }}
+              >
                 Cancel
               </Button>
-              <Button 
-                onClick={editingDailyTask ? saveEditedDailyTask : addDailyTask} 
+              <Button
+                onClick={editingDailyTask ? saveEditedDailyTask : addDailyTask}
                 disabled={!newDailyTask.title || !newDailyTask.category}
               >
-                {editingDailyTask ? 'Save Changes' : 'Add Task'}
+                {editingDailyTask ? "Save Changes" : "Add Task"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -3224,7 +3271,8 @@ function GoalTrackerApp() {
             <DialogHeader>
               <DialogTitle>Add New Category</DialogTitle>
               <DialogDescription>
-                Create a new category to organize your goals. Category names will be automatically converted to title case.
+                Create a new category to organize your goals. Category names will be automatically converted to title
+                case.
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
@@ -3236,7 +3284,7 @@ function GoalTrackerApp() {
                   value={newCategoryName}
                   onChange={(e) => setNewCategoryName(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
+                    if (e.key === "Enter") {
                       addNewCategory()
                     }
                   }}
@@ -3270,8 +3318,8 @@ function GoalTrackerApp() {
               <Button variant="outline" onClick={() => setShowDeleteGoal(null)}>
                 Cancel
               </Button>
-              <Button 
-                variant="destructive" 
+              <Button
+                variant="destructive"
                 onClick={() => showDeleteGoal && deleteGoal(showDeleteGoal.category, showDeleteGoal.goalId)}
               >
                 Delete Goal
@@ -3286,23 +3334,21 @@ function GoalTrackerApp() {
             <DialogHeader>
               <DialogTitle>Delete Category</DialogTitle>
               <DialogDescription>
-                Are you sure you want to delete the "{showDeleteCategory}" category? This action cannot be undone. You can only delete empty categories.
+                Are you sure you want to delete the "{showDeleteCategory}" category? This action cannot be undone. You
+                can only delete empty categories.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
               <Button variant="outline" onClick={() => setShowDeleteCategory(null)}>
                 Cancel
               </Button>
-              <Button 
-                variant="destructive" 
-                onClick={() => showDeleteCategory && deleteCategory(showDeleteCategory)}
-              >
+              <Button variant="destructive" onClick={() => showDeleteCategory && deleteCategory(showDeleteCategory)}>
                 Delete Category
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
-        
+
         {/* Delete Weekly Task Confirmation Dialog */}
         <Dialog open={!!showDeleteWeeklyTask} onOpenChange={() => setShowDeleteWeeklyTask(null)}>
           <DialogContent className="sm:max-w-[425px]">
@@ -3316,8 +3362,8 @@ function GoalTrackerApp() {
               <Button variant="outline" onClick={() => setShowDeleteWeeklyTask(null)}>
                 Cancel
               </Button>
-              <Button 
-                variant="destructive" 
+              <Button
+                variant="destructive"
                 onClick={() => showDeleteWeeklyTask && deleteWeeklyTask(showDeleteWeeklyTask.taskId)}
               >
                 Delete Task
@@ -3339,9 +3385,11 @@ function GoalTrackerApp() {
               <Button variant="outline" onClick={() => setShowDeleteDailyTask(null)}>
                 Cancel
               </Button>
-              <Button 
-                variant="destructive" 
-                onClick={() => showDeleteDailyTask && deleteDailyTask(showDeleteDailyTask.day, showDeleteDailyTask.taskId)}
+              <Button
+                variant="destructive"
+                onClick={() =>
+                  showDeleteDailyTask && deleteDailyTask(showDeleteDailyTask.day, showDeleteDailyTask.taskId)
+                }
               >
                 Delete Task
               </Button>
@@ -3354,9 +3402,7 @@ function GoalTrackerApp() {
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>Edit Category</DialogTitle>
-              <DialogDescription>
-                Update the category name and choose a new color theme.
-              </DialogDescription>
+              <DialogDescription>Update the category name and choose a new color theme.</DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
@@ -3366,7 +3412,7 @@ function GoalTrackerApp() {
                   value={editCategoryName}
                   onChange={(e) => setEditCategoryName(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
+                    if (e.key === "Enter") {
                       saveEditedCategory()
                     }
                   }}
@@ -3380,9 +3426,9 @@ function GoalTrackerApp() {
                       key={color.name}
                       onClick={() => setEditCategoryColor(color.value)}
                       className={`p-2 rounded-lg border-2 transition-all ${
-                        editCategoryColor === color.value 
-                          ? 'border-gray-400 ring-2 ring-blue-500' 
-                          : 'border-gray-200 hover:border-gray-300'
+                        editCategoryColor === color.value
+                          ? "border-gray-400 ring-2 ring-blue-500"
+                          : "border-gray-200 hover:border-gray-300"
                       }`}
                     >
                       <div className={`px-3 py-1 rounded-full text-xs font-medium border ${color.value}`}>
@@ -3396,17 +3442,20 @@ function GoalTrackerApp() {
                 <Label>Preview</Label>
                 <div className="flex items-center">
                   <Badge className={`px-3 py-1 rounded-full text-sm font-medium border ${editCategoryColor}`}>
-                    {editCategoryName || 'Category Name'}
+                    {editCategoryName || "Category Name"}
                   </Badge>
                 </div>
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => {
-                setShowEditCategory(null)
-                setEditCategoryName("")
-                setEditCategoryColor("")
-              }}>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowEditCategory(null)
+                  setEditCategoryName("")
+                  setEditCategoryColor("")
+                }}
+              >
                 Cancel
               </Button>
               <Button onClick={saveEditedCategory} disabled={!editCategoryName.trim()}>
@@ -3420,12 +3469,13 @@ function GoalTrackerApp() {
         <Dialog open={showAddLongTermGoal} onOpenChange={setShowAddLongTermGoal}>
           <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>{editingLongTermGoal ? 'Edit Goal' : `Add ${selectedTimeframe === "1-year" ? "1-Year" : "5-Year"} Goal`}</DialogTitle>
+              <DialogTitle>
+                {editingLongTermGoal ? "Edit Goal" : `Add ${selectedTimeframe === "1-year" ? "1-Year" : "5-Year"} Goal`}
+              </DialogTitle>
               <DialogDescription>
-                {editingLongTermGoal 
-                  ? 'Update your long-term goal details and milestones.'
-                  : 'Create a long-term goal with milestones to track your progress over time.'
-                }
+                {editingLongTermGoal
+                  ? "Update your long-term goal details and milestones."
+                  : "Create a long-term goal with milestones to track your progress over time."}
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
@@ -3435,7 +3485,7 @@ function GoalTrackerApp() {
                   id="longTermTitle"
                   placeholder="e.g., Build a $10M business"
                   value={newLongTermGoal.title}
-                  onChange={(e) => setNewLongTermGoal(prev => ({ ...prev, title: e.target.value }))}
+                  onChange={(e) => setNewLongTermGoal((prev) => ({ ...prev, title: e.target.value }))}
                 />
               </div>
               <div className="grid gap-2">
@@ -3444,14 +3494,17 @@ function GoalTrackerApp() {
                   id="longTermDescription"
                   placeholder="Detailed description of what you want to achieve..."
                   value={newLongTermGoal.description}
-                  onChange={(e) => setNewLongTermGoal(prev => ({ ...prev, description: e.target.value }))}
+                  onChange={(e) => setNewLongTermGoal((prev) => ({ ...prev, description: e.target.value }))}
                   className="min-h-[80px]"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="longTermCategory">Category</Label>
-                  <Select value={newLongTermGoal.category} onValueChange={(value) => setNewLongTermGoal(prev => ({ ...prev, category: value }))}>
+                  <Select
+                    value={newLongTermGoal.category}
+                    onValueChange={(value) => setNewLongTermGoal((prev) => ({ ...prev, category: value }))}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
@@ -3471,7 +3524,7 @@ function GoalTrackerApp() {
                     id="longTermTargetDate"
                     type="date"
                     value={newLongTermGoal.targetDate}
-                    onChange={(e) => setNewLongTermGoal(prev => ({ ...prev, targetDate: e.target.value }))}
+                    onChange={(e) => setNewLongTermGoal((prev) => ({ ...prev, targetDate: e.target.value }))}
                   />
                 </div>
               </div>
@@ -3481,11 +3534,11 @@ function GoalTrackerApp() {
                   id="longTermNotes"
                   placeholder="Additional context, strategy, or thoughts..."
                   value={newLongTermGoal.notes}
-                  onChange={(e) => setNewLongTermGoal(prev => ({ ...prev, notes: e.target.value }))}
+                  onChange={(e) => setNewLongTermGoal((prev) => ({ ...prev, notes: e.target.value }))}
                   className="min-h-[60px]"
                 />
               </div>
-              
+
               {/* Milestones */}
               <div className="grid gap-2">
                 <Label>Milestones (4 key checkpoints)</Label>
@@ -3498,7 +3551,7 @@ function GoalTrackerApp() {
                         onChange={(e) => {
                           const updatedMilestones = [...newLongTermGoal.milestones]
                           updatedMilestones[index] = { ...updatedMilestones[index], title: e.target.value }
-                          setNewLongTermGoal(prev => ({ ...prev, milestones: updatedMilestones }))
+                          setNewLongTermGoal((prev) => ({ ...prev, milestones: updatedMilestones }))
                         }}
                       />
                       <Input
@@ -3507,7 +3560,7 @@ function GoalTrackerApp() {
                         onChange={(e) => {
                           const updatedMilestones = [...newLongTermGoal.milestones]
                           updatedMilestones[index] = { ...updatedMilestones[index], targetDate: e.target.value }
-                          setNewLongTermGoal(prev => ({ ...prev, milestones: updatedMilestones }))
+                          setNewLongTermGoal((prev) => ({ ...prev, milestones: updatedMilestones }))
                         }}
                       />
                     </div>
@@ -3516,59 +3569,11 @@ function GoalTrackerApp() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => {
-                setShowAddLongTermGoal(false)
-                setEditingLongTermGoal(null)
-                setNewLongTermGoal({
-                  title: "",
-                  description: "",
-                  targetDate: "",
-                  category: "",
-                  notes: "",
-                  milestones: [
-                    { title: "", targetDate: "" },
-                    { title: "", targetDate: "" },
-                    { title: "", targetDate: "" },
-                    { title: "", targetDate: "" }
-                  ]
-                })
-              }}>
-                Cancel
-              </Button>
-              <Button 
-                onClick={editingLongTermGoal ? saveEditedLongTermGoal : () => {
-                  if (!newLongTermGoal.title || !newLongTermGoal.category || !newLongTermGoal.targetDate) return
-                  
-                  const goalId = `${selectedTimeframe}_${newLongTermGoal.category.toLowerCase()}_${Date.now()}`
-                  const newGoal = {
-                    id: goalId,
-                    title: newLongTermGoal.title,
-                    description: newLongTermGoal.description,
-                    targetDate: newLongTermGoal.targetDate,
-                    category: newLongTermGoal.category,
-                    status: "in-progress" as const,
-                    notes: newLongTermGoal.notes,
-                    milestones: newLongTermGoal.milestones
-                      .filter(m => m.title && m.targetDate)
-                      .map((m, index) => ({
-                        id: `${goalId}_m${index + 1}`,
-                        title: m.title,
-                        completed: false,
-                        targetDate: m.targetDate
-                      }))
-                  }
-                  
-                  setLongTermGoals(prev => ({
-                    ...prev,
-                    [selectedTimeframe]: {
-                      ...prev[selectedTimeframe],
-                      [newLongTermGoal.category]: [
-                        ...(prev[selectedTimeframe][newLongTermGoal.category] || []),
-                        newGoal
-                      ]
-                    }
-                  }))
-                  
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowAddLongTermGoal(false)
+                  setEditingLongTermGoal(null)
                   setNewLongTermGoal({
                     title: "",
                     description: "",
@@ -3579,14 +3584,69 @@ function GoalTrackerApp() {
                       { title: "", targetDate: "" },
                       { title: "", targetDate: "" },
                       { title: "", targetDate: "" },
-                      { title: "", targetDate: "" }
-                    ]
+                      { title: "", targetDate: "" },
+                    ],
                   })
-                  setShowAddLongTermGoal(false)
                 }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={
+                  editingLongTermGoal
+                    ? saveEditedLongTermGoal
+                    : () => {
+                        if (!newLongTermGoal.title || !newLongTermGoal.category || !newLongTermGoal.targetDate) return
+
+                        const goalId = `${selectedTimeframe}_${newLongTermGoal.category.toLowerCase()}_${Date.now()}`
+                        const newGoal = {
+                          id: goalId,
+                          title: newLongTermGoal.title,
+                          description: newLongTermGoal.description,
+                          targetDate: newLongTermGoal.targetDate,
+                          category: newLongTermGoal.category,
+                          status: "in-progress" as const,
+                          notes: newLongTermGoal.notes,
+                          milestones: newLongTermGoal.milestones
+                            .filter((m) => m.title && m.targetDate)
+                            .map((m, index) => ({
+                              id: `${goalId}_m${index + 1}`,
+                              title: m.title,
+                              completed: false,
+                              targetDate: m.targetDate,
+                            })),
+                        }
+
+                        setLongTermGoals((prev) => ({
+                          ...prev,
+                          [selectedTimeframe]: {
+                            ...prev[selectedTimeframe],
+                            [newLongTermGoal.category]: [
+                              ...(prev[selectedTimeframe][newLongTermGoal.category] || []),
+                              newGoal,
+                            ],
+                          },
+                        }))
+
+                        setNewLongTermGoal({
+                          title: "",
+                          description: "",
+                          targetDate: "",
+                          category: "",
+                          notes: "",
+                          milestones: [
+                            { title: "", targetDate: "" },
+                            { title: "", targetDate: "" },
+                            { title: "", targetDate: "" },
+                            { title: "", targetDate: "" },
+                          ],
+                        })
+                        setShowAddLongTermGoal(false)
+                      }
+                }
                 disabled={!newLongTermGoal.title || !newLongTermGoal.category || !newLongTermGoal.targetDate}
               >
-                {editingLongTermGoal ? 'Save Changes' : 'Add Goal'}
+                {editingLongTermGoal ? "Save Changes" : "Add Goal"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -3596,7 +3656,9 @@ function GoalTrackerApp() {
         <Dialog open={!!showDeleteLongTermGoal} onOpenChange={() => setShowDeleteLongTermGoal(null)}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Delete {showDeleteLongTermGoal?.timeframe === "1-year" ? "1-Year" : "5-Year"} Goal</DialogTitle>
+              <DialogTitle>
+                Delete {showDeleteLongTermGoal?.timeframe === "1-year" ? "1-Year" : "5-Year"} Goal
+              </DialogTitle>
               <DialogDescription>
                 Are you sure you want to delete "{showDeleteLongTermGoal?.title}"? This action cannot be undone.
               </DialogDescription>
@@ -3605,13 +3667,16 @@ function GoalTrackerApp() {
               <Button variant="outline" onClick={() => setShowDeleteLongTermGoal(null)}>
                 Cancel
               </Button>
-              <Button 
-                variant="destructive" 
-                onClick={() => showDeleteLongTermGoal && deleteLongTermGoal(
-                  showDeleteLongTermGoal.timeframe, 
-                  showDeleteLongTermGoal.category, 
-                  showDeleteLongTermGoal.goalId
-                )}
+              <Button
+                variant="destructive"
+                onClick={() =>
+                  showDeleteLongTermGoal &&
+                  deleteLongTermGoal(
+                    showDeleteLongTermGoal.timeframe,
+                    showDeleteLongTermGoal.category,
+                    showDeleteLongTermGoal.goalId,
+                  )
+                }
               >
                 Delete Goal
               </Button>
