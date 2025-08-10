@@ -37,7 +37,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 // Auth components
-import { useAuth } from "@/lib/auth"
+import { useAuth } from "@/components/auth/auth-provider"
 import { AuthScreen } from "@/components/auth/auth-screen"
 import { UserProfile } from "@/components/profile/user-profile"
 
@@ -2003,7 +2003,7 @@ function GoalTrackerApp() {
                 <p className="text-4xl font-bold text-gray-900">{12 - currentWeek}</p>
                 <div className="flex items-center">
                   <Calendar className="h-4 w-4 mr-2" style={{ color: "#05a7b0" }} />
-                  <p className="text-sm font-medium text-gray-600">Test</p>
+                  <p className="text-sm font-medium text-gray-600">Weeks Remaining</p>
                 </div>
                 <div className="w-full">
                   <Progress value={((12 - (12 - currentWeek)) / 12) * 100} className="h-2 [&>div]:bg-[#05a7b0]" />

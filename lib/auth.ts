@@ -1,5 +1,3 @@
-import { createContext, useContext } from 'react'
-
 export interface User {
   id: string
   name: string
@@ -15,41 +13,31 @@ export interface AuthContextType {
   isLoading: boolean
 }
 
-export const AuthContext = createContext<AuthContextType | undefined>(undefined)
-
-export function useAuth() {
-  const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider')
-  }
-  return context
-}
-
 // Mock authentication functions
 export const mockLogin = async (email: string, password: string): Promise<User> => {
   // Simulate API call
-  await new Promise(resolve => setTimeout(resolve, 1000))
-  
-  if (email === 'demo@example.com' && password === 'password') {
+  await new Promise((resolve) => setTimeout(resolve, 1000))
+
+  if (email === "demo@example.com" && password === "password") {
     return {
-      id: '1',
-      name: 'Demo User',
-      email: 'demo@example.com',
-      avatar: '/placeholder-user.jpg'
+      id: "1",
+      name: "Demo User",
+      email: "demo@example.com",
+      avatar: "/placeholder-user.jpg",
     }
   }
-  
-  throw new Error('Invalid credentials')
+
+  throw new Error("Invalid credentials")
 }
 
 export const mockRegister = async (name: string, email: string, password: string): Promise<User> => {
   // Simulate API call
-  await new Promise(resolve => setTimeout(resolve, 1000))
-  
+  await new Promise((resolve) => setTimeout(resolve, 1000))
+
   return {
     id: Math.random().toString(36).substr(2, 9),
     name,
     email,
-    avatar: '/placeholder-user.jpg'
+    avatar: "/placeholder-user.jpg",
   }
 }
