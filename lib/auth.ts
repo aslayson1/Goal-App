@@ -4,10 +4,10 @@ export interface User {
   email: string
   avatar?: string
   preferences?: {
-    theme?: string
-    weekStartDay?: string
-    timezone?: string
-    notifications?: boolean
+    theme: "light" | "dark" | "system"
+    weekStartDay: "sunday" | "monday"
+    timezone: string
+    notifications: boolean
   }
 }
 
@@ -19,6 +19,7 @@ export interface AuthContextType {
   isLoading: boolean
 }
 
+// Mock authentication functions
 export const mockLogin = async (email: string, password: string): Promise<User> => {
   // Simulate API delay
   await new Promise((resolve) => setTimeout(resolve, 1000))
@@ -26,9 +27,9 @@ export const mockLogin = async (email: string, password: string): Promise<User> 
   if (email === "demo@example.com" && password === "password") {
     return {
       id: "1",
-      name: "John Doe",
+      name: "Demo User",
       email: "demo@example.com",
-      avatar: "/placeholder.svg?height=40&width=40&text=JD",
+      avatar: "/placeholder-user.jpg",
       preferences: {
         theme: "system",
         weekStartDay: "monday",

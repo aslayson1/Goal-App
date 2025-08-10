@@ -1,8 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    appDir: true,
-  },
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -12,6 +9,9 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-}
+  experimental: {
+    optimizePackageImports: ['lucide-react']
+  }
+};
 
-export default nextConfig
+export default nextConfig;
