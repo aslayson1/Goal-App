@@ -4,10 +4,10 @@ export interface User {
   email: string
   avatar?: string
   preferences?: {
-    theme: "light" | "dark" | "system"
-    weekStartDay: "sunday" | "monday"
-    timezone: string
-    notifications: boolean
+    theme?: string
+    weekStartDay?: string
+    timezone?: string
+    notifications?: boolean
   }
 }
 
@@ -19,18 +19,16 @@ export interface AuthContextType {
   isLoading: boolean
 }
 
-// Mock authentication functions
 export const mockLogin = async (email: string, password: string): Promise<User> => {
   // Simulate API delay
   await new Promise((resolve) => setTimeout(resolve, 1000))
 
-  // Mock validation
   if (email === "demo@example.com" && password === "password") {
     return {
       id: "1",
-      name: "Demo User",
+      name: "John Doe",
       email: "demo@example.com",
-      avatar: "/placeholder-user.jpg",
+      avatar: "/placeholder.svg?height=40&width=40&text=JD",
       preferences: {
         theme: "system",
         weekStartDay: "monday",
@@ -47,7 +45,6 @@ export const mockRegister = async (name: string, email: string, password: string
   // Simulate API delay
   await new Promise((resolve) => setTimeout(resolve, 1000))
 
-  // Mock user creation
   return {
     id: Date.now().toString(),
     name,
