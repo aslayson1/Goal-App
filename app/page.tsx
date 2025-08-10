@@ -1913,7 +1913,12 @@ function GoalTrackerApp() {
             <p className="text-gray-600">Here are your tasks for week {currentWeek} of 12.</p>
           </div>
           <div className="flex items-center space-x-2">
-            <Button variant="default" size="sm" onClick={() => setShowAddGoal(true)} className="text-sm">
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => setShowAddGoal(true)}
+              className="text-sm bg-black hover:bg-gray-800 text-white"
+            >
               <Plus className="h-4 w-4 mr-2" />
               Add Goal
             </Button>
@@ -2625,7 +2630,7 @@ function GoalTrackerApp() {
                   setSelectedTimeframe("1-year")
                   setShowAddLongTermGoal(true)
                 }}
-                className="text-sm"
+                className="text-sm bg-black hover:bg-gray-800 text-white"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add 1-Year Goal
@@ -2794,7 +2799,7 @@ function GoalTrackerApp() {
                   setSelectedTimeframe("5-year")
                   setShowAddLongTermGoal(true)
                 }}
-                className="text-sm"
+                className="text-sm bg-black hover:bg-gray-800 text-white"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add 5-Year Goal
@@ -3075,6 +3080,7 @@ function GoalTrackerApp() {
               <Button
                 onClick={editingGoal ? saveEditedGoal : addNewGoal}
                 disabled={!selectedCategory || !newGoal.title}
+                className="bg-black hover:bg-gray-800 text-white"
               >
                 {editingGoal ? "Save Changes" : "Add Goal"}
               </Button>
@@ -3645,6 +3651,7 @@ function GoalTrackerApp() {
                       }
                 }
                 disabled={!newLongTermGoal.title || !newLongTermGoal.category || !newLongTermGoal.targetDate}
+                className="bg-black hover:bg-gray-800 text-white"
               >
                 {editingLongTermGoal ? "Save Changes" : "Add Goal"}
               </Button>
