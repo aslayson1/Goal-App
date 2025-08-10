@@ -2008,7 +2008,7 @@ function GoalTrackerApp() {
                 <p className="text-4xl font-bold text-gray-900">{12 - currentWeek}</p>
                 <div className="flex items-center">
                   <Calendar className="h-4 w-4 mr-2" style={{ color: "#05a7b0" }} />
-                  <p className="text-sm font-medium text-gray-600">Weeks Remaining</p>
+                  <p className="text-sm font-medium text-gray-600">Test</p>
                 </div>
                 <div className="w-full">
                   <Progress value={((12 - (12 - currentWeek)) / 12) * 100} className="h-2 [&>div]:bg-[#05a7b0]" />
