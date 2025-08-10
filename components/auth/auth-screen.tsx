@@ -1,22 +1,20 @@
-'use client'
+"use client"
 
-import { useState } from 'react'
-import { LoginForm } from './login-form'
-import { RegisterForm } from './register-form'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useState } from "react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { LoginForm } from "./login-form"
+import { RegisterForm } from "./register-form"
 
 export function AuthScreen() {
-  const [activeTab, setActiveTab] = useState('login')
+  const [activeTab, setActiveTab] = useState("login")
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">Goal Tracker</CardTitle>
-          <CardDescription>
-            Track your goals and achieve success
-          </CardDescription>
+          <CardDescription>Track and achieve your goals with our modern goal tracking application</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>

@@ -3,6 +3,12 @@ export interface User {
   name: string
   email: string
   avatar?: string
+  preferences?: {
+    theme: "light" | "dark" | "system"
+    weekStartDay: "sunday" | "monday"
+    timezone: string
+    notifications: boolean
+  }
 }
 
 export interface AuthContextType {
@@ -15,15 +21,22 @@ export interface AuthContextType {
 
 // Mock authentication functions
 export const mockLogin = async (email: string, password: string): Promise<User> => {
-  // Simulate API call
+  // Simulate API delay
   await new Promise((resolve) => setTimeout(resolve, 1000))
 
+  // Mock validation
   if (email === "demo@example.com" && password === "password") {
     return {
       id: "1",
       name: "Demo User",
       email: "demo@example.com",
       avatar: "/placeholder-user.jpg",
+      preferences: {
+        theme: "system",
+        weekStartDay: "monday",
+        timezone: "America/New_York",
+        notifications: true,
+      },
     }
   }
 
@@ -31,13 +44,19 @@ export const mockLogin = async (email: string, password: string): Promise<User> 
 }
 
 export const mockRegister = async (name: string, email: string, password: string): Promise<User> => {
-  // Simulate API call
+  // Simulate API delay
   await new Promise((resolve) => setTimeout(resolve, 1000))
 
+  // Mock user creation
   return {
-    id: Math.random().toString(36).substr(2, 9),
+    id: Date.now().toString(),
     name,
     email,
-    avatar: "/placeholder-user.jpg",
+    preferences: {
+      theme: "system",
+      weekStartDay: "monday",
+      timezone: "America/New_York",
+      notifications: true,
+    },
   }
 }
