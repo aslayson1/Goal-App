@@ -13,6 +13,5 @@
   "github": {
     "silent": false,
     "autoJobCancelation": false
-  },
-  "ignoreCommand": "echo 'Force build' && exit 1"
+  }
 }
