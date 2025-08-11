@@ -1,17 +1,15 @@
 import { execSync } from "child_process"
 
-try {
-  console.log("Installing dependencies...")
-  execSync("pnpm install", { stdio: "inherit" })
+console.log("Installing dependencies with pnpm...")
+execSync("pnpm install", { stdio: "inherit" })
 
-  console.log("Committing changes...")
-  execSync("git add .", { stdio: "inherit" })
-  execSync('git commit -m "fix: use @supabase/ssr for server+browser clients"', {
-    stdio: "inherit",
-  })
+console.log("Adding changes to git...")
+execSync("git add .", { stdio: "inherit" })
 
-  console.log("✅ Dependencies installed and changes committed successfully!")
-} catch (error) {
-  console.error("❌ Error:", error)
-  process.exit(1)
-}
+console.log("Committing changes...")
+execSync('git commit -m "fix: add tw-animate-css dependency"', { stdio: "inherit" })
+
+console.log("Pushing to main...")
+execSync("git push origin main", { stdio: "inherit" })
+
+console.log("✅ Successfully added tw-animate-css dependency and pushed to main!")

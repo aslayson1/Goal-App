@@ -1,13 +1,22 @@
 export interface User {
   id: string
-  email: string
   name: string
+  email: string
   avatar?: string
+  preferences?: {
+    theme: "light" | "dark" | "system"
+    weekStartDay: "sunday" | "monday"
+    timezone: string
+    notifications: boolean
+  }
 }
 
-export interface AuthState {
+export interface AuthContextType {
   user: User | null
-  loading: boolean
+  login: (email: string, password: string) => Promise<void>
+  register: (name: string, email: string, password: string) => Promise<void>
+  logout: () => void
+  isLoading: boolean
 }
 
 // Mock authentication functions
@@ -18,28 +27,34 @@ export const mockLogin = async (email: string, password: string): Promise<User> 
   if (email === "demo@example.com" && password === "password") {
     return {
       id: "1",
-      email,
       name: "Demo User",
+      email: "demo@example.com",
       avatar: "/placeholder-user.jpg",
+      preferences: {
+        theme: "system",
+        weekStartDay: "monday",
+        timezone: "America/New_York",
+        notifications: true,
+      },
     }
   }
 
   throw new Error("Invalid credentials")
 }
 
-export const mockRegister = async (email: string, password: string, name: string): Promise<User> => {
+export const mockRegister = async (name: string, email: string, password: string): Promise<User> => {
   // Simulate API delay
   await new Promise((resolve) => setTimeout(resolve, 1000))
 
   return {
     id: Date.now().toString(),
-    email,
     name,
-    avatar: "/placeholder-user.jpg",
+    email,
+    preferences: {
+      theme: "system",
+      weekStartDay: "monday",
+      timezone: "America/New_York",
+      notifications: true,
+    },
   }
-}
-
-export const mockLogout = async (): Promise<void> => {
-  // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, 500))
 }
