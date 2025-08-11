@@ -1,8 +1,8 @@
 "use client"
 
+import type React from "react"
+
 import { useState } from "react"
-import { useActionState } from "react"
-import { useFormStatus } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -21,42 +21,26 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useAuth } from "@/components/auth/auth-provider"
 import { Camera, LogOut, User, Settings, Bell, Loader2 } from "lucide-react"
-import { updateProfile } from "@/lib/actions/profile"
+import { updateUserProfile, type ProfileData } from "@/lib/actions/profile"
 
 interface UserProfileProps {
   onClose: () => void
 }
 
-function SaveButton() {
-  const { pending } = useFormStatus()
-
-  return (
-    <Button type="submit" disabled={pending}>
-      {pending ? (
-        <>
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Saving...
-        </>
-      ) : (
-        "Save Changes"
-      )}
-    </Button>
-  )
-}
-
 export function UserProfile({ onClose }: UserProfileProps) {
   const { user, logout } = useAuth()
   const [activeTab, setActiveTab] = useState("profile")
+  const [isLoading, setIsLoading] = useState(false)
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
+
   const [formData, setFormData] = useState({
     name: user?.name || "",
     email: user?.email || "",
     theme: user?.preferences?.theme || "system",
-    week_start_day: user?.preferences?.weekStartDay || "monday",
+    weekStartDay: user?.preferences?.weekStartDay || "monday",
     timezone: user?.preferences?.timezone || "America/New_York",
     notifications: user?.preferences?.notifications ?? true,
   })
-
-  const [state, formAction] = useActionState(updateProfile, null)
 
   if (!user) return null
 
@@ -72,6 +56,37 @@ export function UserProfile({ onClose }: UserProfileProps) {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+    setMessage(null)
+
+    try {
+      const profileData: ProfileData = {
+        name: formData.name,
+        email: formData.email,
+        theme: formData.theme as "light" | "dark" | "system",
+        weekStartDay: formData.weekStartDay as "sunday" | "monday",
+        timezone: formData.timezone,
+        notifications: formData.notifications,
+      }
+
+      const result = updateUserProfile(profileData)
+
+      if (result.success) {
+        setMessage({ type: "success", text: "Profile updated successfully!" })
+        // Trigger a page refresh to update the auth context
+        window.location.reload()
+      } else {
+        setMessage({ type: "error", text: result.error || "Failed to update profile" })
+      }
+    } catch (error) {
+      setMessage({ type: "error", text: "An unexpected error occurred" })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
@@ -80,16 +95,19 @@ export function UserProfile({ onClose }: UserProfileProps) {
           <DialogDescription>Manage your account settings and preferences</DialogDescription>
         </DialogHeader>
 
-        {state?.success && (
-          <div className="bg-green-500/10 border border-green-500/50 text-green-700 px-4 py-3 rounded">
-            {state.success}
+        {message && (
+          <div
+            className={`px-4 py-3 rounded border ${
+              message.type === "success"
+                ? "bg-green-500/10 border-green-500/50 text-green-700"
+                : "bg-red-500/10 border-red-500/50 text-red-700"
+            }`}
+          >
+            {message.text}
           </div>
         )}
-        {state?.error && (
-          <div className="bg-red-500/10 border border-red-500/50 text-red-700 px-4 py-3 rounded">{state.error}</div>
-        )}
 
-        <form action={formAction}>
+        <form onSubmit={handleSave}>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="profile">Profile</TabsTrigger>
@@ -189,8 +207,8 @@ export function UserProfile({ onClose }: UserProfileProps) {
                       </div>
                       <Select
                         name="week_start_day"
-                        value={formData.week_start_day}
-                        onValueChange={(value) => handleInputChange("week_start_day", value)}
+                        value={formData.weekStartDay}
+                        onValueChange={(value) => handleInputChange("weekStartDay", value)}
                       >
                         <SelectTrigger className="w-32">
                           <SelectValue />
@@ -245,7 +263,6 @@ export function UserProfile({ onClose }: UserProfileProps) {
                         checked={formData.notifications}
                         onCheckedChange={(checked) => handleInputChange("notifications", checked)}
                       />
-                      <input type="hidden" name="notifications" value={formData.notifications.toString()} />
                     </div>
                   </div>
                 </CardContent>
@@ -285,7 +302,16 @@ export function UserProfile({ onClose }: UserProfileProps) {
             <Button variant="outline" onClick={onClose}>
               Close
             </Button>
-            <SaveButton />
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save Changes"
+              )}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
