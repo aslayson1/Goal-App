@@ -7,7 +7,7 @@ export async function GET() {
       data: { user },
     } = await supabase.auth.getUser()
     return Response.json({ ok: true, authenticated: !!user })
-  } catch (e) {
+  } catch (e: any) {
     return Response.json({ ok: false, error: e.message })
   }
 }
