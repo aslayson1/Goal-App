@@ -20,6 +20,7 @@
     @apply leading-relaxed;
   }
 }
+
 @layer components {
   .btn {
     @apply inline-flex items-center justify-center rounded-md text-sm font-medium h-9 px-4 py-2 bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50;
@@ -44,8 +45,9 @@
     @apply p-6;
   }
 }
+
 @layer utilities {
-  @utility container {
+  .container {
     max-width: 80rem;
     margin-inline: auto;
     padding-inline: 1rem;

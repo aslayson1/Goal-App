@@ -28,6 +28,7 @@
     "child_process": "latest",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "framer-motion": "^10.16.4",
     "lucide-react": "^0.454.0",
     "next": "14.2.16",
     "next-themes": "latest",
@@ -42,8 +43,8 @@
     "@types/node": "^22",
     "@types/react": "^18",
     "@types/react-dom": "^18",
-    "eslint": "^8.53.0",
-    "eslint-config-next": "14.0.0",
+    "eslint": "^8",
+    "eslint-config-next": "14.0.3",
     "postcss": "^8.5",
     "tailwindcss": "^4.1.9",
     "typescript": "^5"
