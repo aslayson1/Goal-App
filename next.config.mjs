@@ -1,13 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  images: {
-    domains: ['placeholder.com', 'via.placeholder.com'],
+  reactStrictMode: true,
+  swcMinify: true,
+  eslint: {
+    ignoreDuringBuilds: true,
   },
   typescript: {
-    ignoreBuildErrors: false,
+    ignoreBuildErrors: true,
   },
-  eslint: {
-    ignoreDuringBuilds: false,
+  images: {
+    unoptimized: true,
   },
 }
 

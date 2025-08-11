@@ -1,39 +1,41 @@
-import fs from "fs"
-import path from "path"
+// This script analyzes CSV data for goal tracking insights
+console.log('Analyzing CSV data for goal tracking insights...')
 
-// This script analyzes CSV data for the goal tracker application
-export function analyzeCsvData() {
-  console.log("Analyzing CSV data...")
+// Mock CSV data analysis
+const mockData = [
+  { goal: 'Exercise', completed: 15, total: 20, category: 'Health' },
+  { goal: 'Read Books', completed: 8, total: 12, category: 'Education' },
+  { goal: 'Save Money', completed: 10, total: 10, category: 'Finance' },
+  { goal: 'Learn Spanish', completed: 6, total: 15, category: 'Education' },
+]
 
-  // Check if data directory exists
-  const dataDir = path.join(process.cwd(), "data")
-  if (!fs.existsSync(dataDir)) {
-    console.log("No data directory found. Creating sample data structure...")
-    fs.mkdirSync(dataDir, { recursive: true })
+console.log('Goal Completion Analysis:')
+console.log('========================')
 
-    // Create sample CSV structure
-    const sampleData = `id,title,description,category,progress,created_at
-1,Learn TypeScript,Master TypeScript fundamentals,Learning,75,2024-01-01
-2,Build Portfolio,Create a professional portfolio website,Career,50,2024-01-02
-3,Exercise Daily,Maintain daily exercise routine,Health,90,2024-01-03`
+mockData.forEach(item => {
+  const percentage = Math.round((item.completed / item.total) * 100)
+  console.log(`${item.goal}: ${item.completed}/${item.total} (${percentage}%)`)
+})
 
-    fs.writeFileSync(path.join(dataDir, "goals.csv"), sampleData)
-    console.log("Sample goals.csv created")
+const totalCompleted = mockData.reduce((sum, item) => sum + item.completed, 0)
+const totalGoals = mockData.reduce((sum, item) => sum + item.total, 0)
+const overallPercentage = Math.round((totalCompleted / totalGoals) * 100)
+
+console.log('\nOverall Progress:')
+console.log(`Total: ${totalCompleted}/${totalGoals} (${overallPercentage}%)`)
+
+// Category analysis
+const categories = mockData.reduce((acc, item) => {
+  if (!acc[item.category]) {
+    acc[item.category] = { completed: 0, total: 0 }
   }
+  acc[item.category].completed += item.completed
+  acc[item.category].total += item.total
+  return acc
+}, {} as Record<string, { completed: number; total: number }>)
 
-  // Analyze existing data
-  const csvFiles = fs.readdirSync(dataDir).filter((file) => file.endsWith(".csv"))
-  console.log(`Found ${csvFiles.length} CSV files:`, csvFiles)
-
-  csvFiles.forEach((file) => {
-    const filePath = path.join(dataDir, file)
-    const content = fs.readFileSync(filePath, "utf-8")
-    const lines = content.split("\n").filter((line) => line.trim())
-    console.log(`${file}: ${lines.length - 1} data rows (excluding header)`)
-  })
-}
-
-// Run if called directly
-if (require.main === module) {
-  analyzeCsvData()
-}
+console.log('\nCategory Breakdown:')
+Object.entries(categories).forEach(([category, data]) => {
+  const percentage = Math.round((data.completed / data.total) * 100)
+  console.log(`${category}: ${data.completed}/${data.total} (${percentage}%)`)
+})

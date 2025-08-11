@@ -1,36 +1,40 @@
 # Goal Tracker
 
-A modern goal tracking application built with Next.js, TypeScript, and Tailwind CSS.
+A modern goal tracking application built with Next.js, React, and TypeScript.
 
 ## Features
 
-- Create and manage goals
-- Track progress with visual indicators
-- Organize goals by categories
-- Drag and drop functionality
-- Responsive design
+- User authentication and profiles
+- Goal creation and management
+- Progress tracking with visual indicators
+- Drag and drop goal organization
 - Dark/light theme support
+- Responsive design
 
 ## Getting Started
 
-1. Clone the repository
-2. Install dependencies: `npm install`
-3. Run the development server: `npm run dev`
-4. Open [http://localhost:3000](http://localhost:3000) in your browser
+1. Install dependencies:
+\`\`\`bash
+npm install
+\`\`\`
+
+2. Run the development server:
+\`\`\`bash
+npm run dev
+\`\`\`
+
+3. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## Tech Stack
 
-- Next.js 14
+- Next.js 15
+- React 19
 - TypeScript
 - Tailwind CSS
 - Radix UI components
-- Lucide React icons
-- Supabase (for authentication and data)
+- React Hook Form
+- Zod validation
 
-## Environment Variables
+## Deployment
 
-Create a `.env.local` file with:
-
-\`\`\`
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+This project is configured for deployment on Vercel with automatic builds on every commit.

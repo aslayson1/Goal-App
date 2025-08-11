@@ -64,13 +64,15 @@
 }
 /* --- end compat tweaks --- */
 
+@custom-variant dark (&:is(.dark *));
+
 :root {
   --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0 0);
+  --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0 0);
+  --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0 0);
+  --popover-foreground: oklch(0.145 0 0);
   --primary: oklch(0.205 0 0);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
@@ -175,113 +177,11 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
-* {
-  border-color: hsl(var(--border));
-}
-
-body {
-  background-color: hsl(var(--background));
-  color: hsl(var(--foreground));
-}
-
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: hsl(var(--muted));
-}
-
-::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground));
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--accent-foreground));
-}
-
-/* Animation classes */
-.animate-fade-in {
-  animation: fadeIn 0.3s ease-in-out;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+  body {
+    @apply bg-background text-foreground;
   }
-}
-
-.animate-slide-up {
-  animation: slideUp 0.3s ease-out;
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Progress bar custom styling */
-.progress-bar {
-  background-color: #05a7b0;
-}
-
-/* Checkbox custom styling */
-.checkbox-custom {
-  background-color: white;
-  border: 2px solid #d1d5db;
-}
-
-.checkbox-custom:checked {
-  background-color: #05a7b0;
-  border-color: #05a7b0;
-}
-
-/* Category badge colors */
-.badge-work {
-  background-color: #3b82f6;
-  color: white;
-}
-
-.badge-personal {
-  background-color: #10b981;
-  color: white;
-}
-
-.badge-health {
-  background-color: #f59e0b;
-  color: white;
-}
-
-.badge-learning {
-  background-color: #8b5cf6;
-  color: white;
-}
-
-.badge-finance {
-  background-color: #ef4444;
-  color: white;
-}
-
-/* Drag and drop styles */
-.dragging {
-  opacity: 0.5;
-  transform: rotate(2deg);
-}
-
-.drop-zone {
-  border: 2px dashed #05a7b0;
-  background-color: rgba(5, 167, 176, 0.05);
 }
