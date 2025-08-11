@@ -3110,7 +3110,10 @@ function GoalTrackerApp() {
                   type="number"
                   id="target"
                   value={newGoal.targetCount}
-                  onChange={(e) => setNewGoal({ ...newGoal, targetCount: Number.parseInt(e.target.value) })}
+                  onChange={(e) => {
+                    const value = Number.parseInt(e.target.value)
+                    setNewGoal({ ...newGoal, targetCount: isNaN(value) ? 0 : value })
+                  }}
                   className="col-span-3"
                 />
               </div>
@@ -3122,7 +3125,10 @@ function GoalTrackerApp() {
                   type="number"
                   id="weeklyTarget"
                   value={newGoal.weeklyTarget}
-                  onChange={(e) => setNewGoal({ ...newGoal, weeklyTarget: Number.parseFloat(e.target.value) })}
+                  onChange={(e) => {
+                    const value = Number.parseFloat(e.target.value)
+                    setNewGoal({ ...newGoal, weeklyTarget: isNaN(value) ? 0 : value })
+                  }}
                   className="col-span-3"
                 />
               </div>
@@ -3173,7 +3179,10 @@ function GoalTrackerApp() {
                   type="number"
                   id="target"
                   value={newGoal.targetCount}
-                  onChange={(e) => setNewGoal({ ...newGoal, targetCount: Number.parseInt(e.target.value) })}
+                  onChange={(e) => {
+                    const value = Number.parseInt(e.target.value)
+                    setNewGoal({ ...newGoal, targetCount: isNaN(value) ? 0 : value })
+                  }}
                   className="col-span-3"
                 />
               </div>
@@ -3185,7 +3194,10 @@ function GoalTrackerApp() {
                   type="number"
                   id="weeklyTarget"
                   value={newGoal.weeklyTarget}
-                  onChange={(e) => setNewGoal({ ...newGoal, weeklyTarget: Number.parseFloat(e.target.value) })}
+                  onChange={(e) => {
+                    const value = Number.parseFloat(e.target.value)
+                    setNewGoal({ ...newGoal, weeklyTarget: isNaN(value) ? 0 : value })
+                  }}
                   className="col-span-3"
                 />
               </div>
