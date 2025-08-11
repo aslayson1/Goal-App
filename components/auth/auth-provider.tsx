@@ -1,9 +1,66 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
-import { type User, type AuthContextType, mockLogin, mockRegister } from "@/lib/auth"
+import type React from "react"
+
+import { createContext, useContext, useEffect, useState } from "react"
+import type { User } from "@supabase/supabase-js"
+import { supabaseClient } from "@/lib/supabase/client"
+
+interface AuthContextType {
+  user: User | null
+  loading: boolean
+  signIn: (email: string, password: string) => Promise<void>
+  signUp: (email: string, password: string) => Promise<void>
+  signOut: () => Promise<void>
+}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    // Get initial session
+    supabaseClient.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null)
+      setLoading(false)
+    })
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabaseClient.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+      setLoading(false)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  const signIn = async (email: string, password: string) => {
+    const { error } = await supabaseClient.auth.signInWithPassword({
+      email,
+      password,
+    })
+    if (error) throw error
+  }
+
+  const signUp = async (email: string, password: string) => {
+    const { error } = await supabaseClient.auth.signUp({
+      email,
+      password,
+    })
+    if (error) throw error
+  }
+
+  const signOut = async () => {
+    const { error } = await supabaseClient.auth.signOut()
+    if (error) throw error
+  }
+
+  return <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>{children}</AuthContext.Provider>
+}
 
 export function useAuth() {
   const context = useContext(AuthContext)
@@ -11,68 +68,4 @@ export function useAuth() {
     throw new Error("useAuth must be used within an AuthProvider")
   }
   return context
-}
-
-interface AuthProviderProps {
-  children: ReactNode
-}
-
-export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    // Check for stored user session
-    const storedUser = localStorage.getItem("user")
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser))
-      } catch (error) {
-        console.error("Error parsing stored user:", error)
-        localStorage.removeItem("user")
-      }
-    }
-    setIsLoading(false)
-  }, [])
-
-  const login = async (email: string, password: string) => {
-    setIsLoading(true)
-    try {
-      const userData = await mockLogin(email, password)
-      setUser(userData)
-      localStorage.setItem("user", JSON.stringify(userData))
-    } catch (error) {
-      throw error
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const register = async (name: string, email: string, password: string) => {
-    setIsLoading(true)
-    try {
-      const userData = await mockRegister(name, email, password)
-      setUser(userData)
-      localStorage.setItem("user", JSON.stringify(userData))
-    } catch (error) {
-      throw error
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const logout = () => {
-    setUser(null)
-    localStorage.removeItem("user")
-  }
-
-  const value: AuthContextType = {
-    user,
-    login,
-    register,
-    logout,
-    isLoading,
-  }
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

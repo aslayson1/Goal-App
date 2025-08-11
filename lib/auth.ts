@@ -1,60 +1,47 @@
 export interface User {
   id: string
-  name: string
   email: string
+  name?: string
   avatar?: string
-  preferences?: {
-    theme: "light" | "dark" | "system"
-    weekStartDay: "sunday" | "monday"
-    timezone: string
-    notifications: boolean
-  }
 }
 
-export interface AuthContextType {
+export interface AuthState {
   user: User | null
-  login: (email: string, password: string) => Promise<void>
-  register: (name: string, email: string, password: string) => Promise<void>
-  logout: () => void
-  isLoading: boolean
+  loading: boolean
 }
 
-// Mock authentication functions
-export const mockLogin = async (email: string, password: string): Promise<User> => {
-  // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, 1000))
+// Mock authentication functions for development
+export const mockUser: User = {
+  id: "1",
+  email: "user@example.com",
+  name: "John Doe",
+  avatar: "/placeholder-user.jpg",
+}
 
-  if (email === "demo@example.com" && password === "password") {
-    return {
-      id: "1",
-      name: "Demo User",
-      email: "demo@example.com",
-      avatar: "/placeholder-user.jpg",
-      preferences: {
-        theme: "system",
-        weekStartDay: "monday",
-        timezone: "America/New_York",
-        notifications: true,
-      },
+export function getStoredAuth(): AuthState {
+  if (typeof window === "undefined") {
+    return { user: null, loading: false }
+  }
+
+  const stored = localStorage.getItem("auth")
+  if (stored) {
+    try {
+      return JSON.parse(stored)
+    } catch {
+      return { user: null, loading: false }
     }
   }
-
-  throw new Error("Invalid credentials")
+  return { user: null, loading: false }
 }
 
-export const mockRegister = async (name: string, email: string, password: string): Promise<User> => {
-  // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, 1000))
+export function setStoredAuth(authState: AuthState) {
+  if (typeof window !== "undefined") {
+    localStorage.setItem("auth", JSON.stringify(authState))
+  }
+}
 
-  return {
-    id: Date.now().toString(),
-    name,
-    email,
-    preferences: {
-      theme: "system",
-      weekStartDay: "monday",
-      timezone: "America/New_York",
-      notifications: true,
-    },
+export function clearStoredAuth() {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("auth")
   }
 }

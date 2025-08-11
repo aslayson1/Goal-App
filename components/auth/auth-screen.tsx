@@ -10,11 +10,11 @@ export function AuthScreen() {
   const [activeTab, setActiveTab] = useState("login")
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">Goal Tracker</CardTitle>
-          <CardDescription>Track and achieve your goals with our modern goal tracking application</CardDescription>
+          <CardDescription>Track your goals and achieve success</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>

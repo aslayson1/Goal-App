@@ -1,54 +1,48 @@
-// Script to display raw CSV data for goal tracking
-console.log('Displaying raw CSV data for goal tracking...')
+import fs from "fs"
+import path from "path"
 
-// Mock CSV data as it would appear in a file
-const csvData = `id,title,category,priority,status,progress,created_date,due_date
-1,"Complete Marathon Training","Health & Fitness",high,in-progress,65,2024-01-01,2024-06-01
-2,"Learn TypeScript","Professional Development",medium,completed,100,2024-01-15,2024-03-15
-3,"Save $10000","Financial",high,in-progress,40,2024-01-01,2024-12-31
-4,"Read 24 Books","Personal Growth",medium,in-progress,33,2024-01-01,2024-12-31
-5,"Learn Spanish","Education",low,not-started,0,2024-02-01,2024-08-01
-6,"Build Side Project","Professional Development",high,in-progress,75,2024-01-10,2024-04-10
-7,"Lose 20 Pounds","Health & Fitness",medium,in-progress,50,2024-01-01,2024-07-01
-8,"Visit 5 Countries","Travel",low,not-started,0,2024-03-01,2024-12-31`
+export function showRawCsv() {
+  console.log("📄 Raw CSV Data Preview")
+  console.log("=".repeat(50))
 
-console.log('\n📄 Raw CSV Data:')
-console.log('================')
-console.log(csvData)
+  const dataDir = path.join(process.cwd(), "data")
 
-// Parse and display formatted data
-const lines = csvData.split('\n')
-const headers = lines[0].split(',')
-const rows = lines.slice(1).map(line => line.split(','))
+  if (!fs.existsSync(dataDir)) {
+    console.log("❌ No data directory found")
+    return
+  }
 
-console.log('\n📋 Parsed Data:')
-console.log('===============')
+  const csvFiles = fs.readdirSync(dataDir).filter((file) => file.endsWith(".csv"))
 
-// Display headers
-console.log(headers.join(' | '))
-console.log('-'.repeat(headers.join(' | ').length))
+  if (csvFiles.length === 0) {
+    console.log("❌ No CSV files found in data directory")
+    return
+  }
 
-// Display rows
-rows.forEach(row => {
-  console.log(row.join(' | '))
-})
+  csvFiles.forEach((file) => {
+    console.log(`\n📁 File: ${file}`)
+    console.log("-".repeat(30))
 
-// Basic statistics
-console.log('\n📊 Quick Statistics:')
-console.log('===================')
-console.log(`Total records: ${rows.length}`)
-console.log(`Data fields: ${headers.length}`)
+    const filePath = path.join(dataDir, file)
+    const content = fs.readFileSync(filePath, "utf-8")
 
-// Count by status
-const statusCounts = rows.reduce((acc, row) => {
-  const status = row[4] // status column
-  acc[status] = (acc[status] || 0) + 1
-  return acc
-}, {} as Record<string, number>)
+    // Show first 10 lines
+    const lines = content.split("\n")
+    const preview = lines.slice(0, Math.min(10, lines.length))
 
-console.log('\nStatus distribution:')
-Object.entries(statusCounts).forEach(([status, count]) => {
-  console.log(`  ${status}: ${count}`)
-})
+    preview.forEach((line, index) => {
+      if (line.trim()) {
+        console.log(`${index + 1}: ${line}`)
+      }
+    })
 
-console.log('\n✅ Raw data display complete!')
+    if (lines.length > 10) {
+      console.log(`... and ${lines.length - 10} more lines`)
+    }
+  })
+}
+
+// Run if called directly
+if (require.main === module) {
+  showRawCsv()
+}
