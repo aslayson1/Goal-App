@@ -1,40 +1,36 @@
 # Goal Tracker
 
-A modern goal tracking application built with Next.js, React, and TypeScript.
+A modern goal tracking application built with Next.js, TypeScript, and Tailwind CSS.
 
 ## Features
 
-- User authentication and profiles
+- User authentication with Supabase
 - Goal creation and management
-- Progress tracking with visual indicators
-- Drag and drop goal organization
+- Progress tracking
 - Dark/light theme support
 - Responsive design
 
 ## Getting Started
 
-1. Install dependencies:
-\`\`\`bash
-npm install
-\`\`\`
+1. Clone the repository
+2. Install dependencies: `pnpm install`
+3. Set up environment variables (see `.env.example`)
+4. Run the development server: `pnpm dev`
 
-2. Run the development server:
-\`\`\`bash
-npm run dev
-\`\`\`
+## Environment Variables
 
-3. Open [http://localhost:3000](http://localhost:3000) in your browser.
+Create a `.env.local` file with:
+
+\`\`\`
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+\`\`\`
 
 ## Tech Stack
 
-- Next.js 15
-- React 19
+- Next.js 14
 - TypeScript
 - Tailwind CSS
-- Radix UI components
-- React Hook Form
-- Zod validation
-
-## Deployment
-
-This project is configured for deployment on Vercel with automatic builds on every commit.
+- Supabase
+- Radix UI
+- Lucide React

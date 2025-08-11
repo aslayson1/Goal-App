@@ -6,7 +6,7 @@ try {
 
   console.log("Committing changes...")
   execSync("git add .", { stdio: "inherit" })
-  execSync('git commit -m "fix: use @supabase/ssr for browser client and auth-helpers for server"', {
+  execSync('git commit -m "fix: use @supabase/ssr for server+browser clients"', {
     stdio: "inherit",
   })
 

@@ -1,29 +1,32 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import {
-  Plus,
-  ChevronDown,
-  ChevronUp,
-  Calendar,
-  Target,
-  MoreHorizontal,
-  Edit,
-  Trash2,
-  CheckCircle,
-  Clock,
-  GripVertical,
-  ClipboardCheck,
-} from "lucide-react"
+import { TabsContent } from "@/components/ui/tabs"
+
+import { TabsTrigger } from "@/components/ui/tabs"
+
+import { TabsList } from "@/components/ui/tabs"
+
+import { Tabs } from "@/components/ui/tabs"
+
+import { AvatarFallback } from "@/components/ui/avatar"
+
+import { AvatarImage } from "@/components/ui/avatar"
+
+import { Avatar } from "@/components/ui/avatar"
+
+import { Checkbox } from "@/components/ui/checkbox"
+
+import { useAuth } from "@/components/auth/auth-provider"
+import { AuthScreen } from "@/components/auth/auth-screen"
+import { UserProfile } from "@/components/profile/user-profile"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   Dialog,
   DialogContent,
@@ -33,13 +36,23 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-
-// Auth components
-import { useAuth } from "@/components/auth/auth-provider"
-import { UserProfile } from "@/components/profile/user-profile"
-import { AuthScreen } from "@/components/auth/auth-screen"
+import { useToast } from "@/hooks/use-toast"
+import { useState, useEffect } from "react"
+import {
+  Plus,
+  Target,
+  Calendar,
+  MoreHorizontal,
+  Edit,
+  Trash2,
+  CheckCircle,
+  Clock,
+  GripVertical,
+  ClipboardCheck,
+  ChevronUp,
+  ChevronDown,
+} from "lucide-react"
+import { useTheme } from "next-themes"
 
 // Drag and Drop imports
 import {
@@ -970,6 +983,8 @@ function SortableDailyTaskItem({
 
 function GoalTrackerApp() {
   const { user } = useAuth()
+  const { toast } = useToast()
+  const { theme, setTheme } = useTheme()
   const [goalsData, setGoalsData] = useState<GoalsData>(initialGoalsData)
   const [weeklyTasks, setWeeklyTasks] = useState(initialWeeklyTasks)
   const [dailyTasks, setDailyTasks] = useState(initialDailyTasks)
