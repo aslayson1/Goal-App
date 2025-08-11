@@ -40,6 +40,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAuth } from "@/components/auth/auth-provider"
 import { UserProfile } from "@/components/profile/user-profile"
 import { AuthScreen } from "@/components/auth/auth-screen"
+import { SignOutButton } from "@/components/auth/sign-out-button"
 
 // Drag and Drop imports
 import {
@@ -1926,21 +1927,26 @@ function GoalTrackerApp() {
               Add Category
             </Button>
             {/* User Profile Button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowProfile(true)}
-              className="flex items-center space-x-2"
-            >
-              <Avatar className="h-8 w-8 border-2 border-black">
-                {user?.avatar && (
-                  <AvatarImage src={user.avatar || "/placeholder.svg?height=40&width=40&text=U"} alt={user?.name} />
-                )}
-                <AvatarFallback className="bg-white text-black text-xs font-semibold">
-                  {user ? getInitials(user.name) : "U"}
-                </AvatarFallback>
-              </Avatar>
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="flex items-center space-x-2">
+                  <Avatar className="h-8 w-8 border-2 border-black">
+                    {user?.avatar && (
+                      <AvatarImage src={user.avatar || "/placeholder.svg?height=40&width=40&text=U"} alt={user?.name} />
+                    )}
+                    <AvatarFallback className="bg-white text-black text-xs font-semibold">
+                      {user ? getInitials(user.name) : "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setShowProfile(true)}>Profile Settings</DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <SignOutButton className="w-full text-left" />
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
