@@ -833,7 +833,7 @@ function SortableWeeklyTaskItem({
     <div
       ref={setNodeRef}
       style={style}
-      className={`p-3 rounded-lg bg-gray-50 border border-border ${isDragging ? "shadow-lg" : ""}`}
+      className={`p-3 rounded-lg bg-white border border-gray-200 shadow-sm ${isDragging ? "shadow-lg" : ""}`}
     >
       <div className="flex items-center space-x-3 mb-2">
         <div
@@ -914,7 +914,7 @@ function SortableDailyTaskItem({
     <div
       ref={setNodeRef}
       style={style}
-      className={`p-3 rounded-lg bg-gray-50 border border-border ${isDragging ? "shadow-lg" : ""}`}
+      className={`p-3 rounded-lg bg-white border border-gray-200 shadow-sm ${isDragging ? "shadow-lg" : ""}`}
     >
       <div className="flex items-center space-x-3 mb-2">
         <div
@@ -1950,92 +1950,95 @@ function GoalTrackerApp() {
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card className="border-0 shadow-sm">
-            <CardContent className="p-6">
-              <div className="flex flex-col items-center justify-center text-center h-full space-y-3">
-                <p className="text-4xl font-bold text-gray-900">{getTotalProgress()}%</p>
-                <div className="flex items-center">
-                  <Target className="h-4 w-4 mr-2 text-[#05a7b0]" />
-                  <p className="text-sm font-medium text-gray-600">Overall Progress</p>
-                </div>
-                <div className="w-full">
-                  <Progress value={getTotalProgress()} className="h-2 [&>div]:bg-[#05a7b0]" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 shadow-sm">
-            <CardContent className="p-6">
-              <div className="flex flex-col items-center justify-center text-center h-full space-y-3">
-                <p className="text-4xl font-bold text-gray-900">
-                  {getCompletedTasks()}/{getTotalTasks()}
-                </p>
-                <div className="flex items-center">
-                  <ClipboardCheck className="h-4 w-4 mr-2 text-[#05a7b0]" />
-                  <p className="text-sm font-medium text-gray-600">Tasks Completed</p>
-                </div>
-                <div className="w-full">
-                  <Progress
-                    value={getTotalTasks() > 0 ? (getCompletedTasks() / getTotalTasks()) * 100 : 0}
-                    className="h-2 [&>div]:bg-[#05a7b0]"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 shadow-sm">
-            <CardContent className="p-6">
-              <div className="flex flex-col items-center justify-center text-center h-full space-y-3">
-                <p className="text-4xl font-bold text-gray-900">
-                  {getCompletedGoals()}/{getTotalGoals()}
-                </p>
-                <div className="flex items-center">
-                  <CheckCircle className="h-4 w-4 mr-2 text-[#05a7b0]" />
-                  <p className="text-sm font-medium text-gray-600">Goals Completed</p>
-                </div>
-                <div className="w-full">
-                  <Progress
-                    value={getTotalGoals() > 0 ? (getCompletedGoals() / getTotalGoals()) * 100 : 0}
-                    className="h-2 [&>div]:bg-[#05a7b0]"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 shadow-sm">
-            <CardContent className="p-6">
-              <div className="flex flex-col items-center justify-center text-center h-full space-y-3">
-                <p className="text-4xl font-bold text-gray-900">{12 - currentWeek}</p>
-                <div className="flex items-center">
-                  <Calendar className="h-4 w-4 mr-2 text-[#05a7b0]" />
-                  <p className="text-sm font-medium text-gray-600">Weeks Left</p>
-                </div>
-                <div className="w-full">
-                  <Progress value={((12 - (12 - currentWeek)) / 12) * 100} className="h-2 [&>div]:bg-[#05a7b0]" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+  <Card className="bg-white border border-gray-200 shadow-sm">
+    <CardContent className="p-6">
+      <div className="flex flex-col items-center justify-center text-center h-full space-y-3">
+        <p className="text-4xl font-bold text-gray-900">{getTotalProgress()}%</p>
+        <div className="flex items-center">
+          <Target className="h-4 w-4 mr-2 text-[#05a7b0]" />
+          <p className="text-sm font-medium text-gray-600">Overall Progress</p>
         </div>
+        <div className="w-full">
+          <Progress value={getTotalProgress()} className="h-2 bg-gray-200 [&>div]:bg-[#05a7b0]" />
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+
+  <Card className="bg-white border border-gray-200 shadow-sm">
+    <CardContent className="p-6">
+      <div className="flex flex-col items-center justify-center text-center h-full space-y-3">
+        <p className="text-4xl font-bold text-gray-900">
+          {getCompletedTasks()}/{getTotalTasks()}
+        </p>
+        <div className="flex items-center">
+          <ClipboardCheck className="h-4 w-4 mr-2 text-[#05a7b0]" />
+          <p className="text-sm font-medium text-gray-600">Tasks Completed</p>
+        </div>
+        <div className="w-full">
+          <Progress
+            value={getTotalTasks() > 0 ? (getCompletedTasks() / getTotalTasks()) * 100 : 0}
+            className="h-2 bg-gray-200 [&>div]:bg-[#05a7b0]"
+          />
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+
+  <Card className="bg-white border border-gray-200 shadow-sm">
+    <CardContent className="p-6">
+      <div className="flex flex-col items-center justify-center text-center h-full space-y-3">
+        <p className="text-4xl font-bold text-gray-900">
+          {getCompletedGoals()}/{getTotalGoals()}
+        </p>
+        <div className="flex items-center">
+          <CheckCircle className="h-4 w-4 mr-2 text-[#05a7b0]" />
+          <p className="text-sm font-medium text-gray-600">Goals Completed</p>
+        </div>
+        <div className="w-full">
+          <Progress
+            value={getTotalGoals() > 0 ? (getCompletedGoals() / getTotalGoals()) * 100 : 0}
+            className="h-2 bg-gray-200 [&>div]:bg-[#05a7b0]"
+          />
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+
+  <Card className="bg-white border border-gray-200 shadow-sm">
+    <CardContent className="p-6">
+      <div className="flex flex-col items-center justify-center text-center h-full space-y-3">
+        <p className="text-4xl font-bold text-gray-900">{12 - currentWeek}</p>
+        <div className="flex items-center">
+          <Calendar className="h-4 w-4 mr-2 text-[#05a7b0]" />
+          <p className="text-sm font-medium text-gray-600">Weeks Left</p>
+        </div>
+        <div className="w-full">
+          <Progress value={((12 - (12 - currentWeek)) / 12) * 100} className="h-2 bg-gray-200 [&>div]:bg-[#05a7b0]" />
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+</div>
 
         {/* View Toggle */}
-        <Tabs value={activeView} onValueChange={setActiveView} className="mb-8">
-          <TabsList className="grid w-full max-w-2xl grid-cols-5">
-            <TabsTrigger value="daily">Daily</TabsTrigger>
-            <TabsTrigger value="weekly">Weekly</TabsTrigger>
-            <TabsTrigger value="12-week">12-Week</TabsTrigger>
-            <TabsTrigger value="1-year">1-Year</TabsTrigger>
-            <TabsTrigger value="5-year">5-Year</TabsTrigger>
-          </TabsList>
+        <div className="mb-8">
+  <Tabs value={activeView} onValueChange={setActiveView}>
+    <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-1 inline-block">
+      <TabsList className="bg-transparent border-0 p-0">
+        <TabsTrigger value="daily" className="data-[state=active]:bg-gray-100 data-[state=active]:shadow-sm">Daily</TabsTrigger>
+        <TabsTrigger value="weekly" className="data-[state=active]:bg-gray-100 data-[state=active]:shadow-sm">Weekly</TabsTrigger>
+        <TabsTrigger value="12-week" className="data-[state=active]:bg-gray-100 data-[state=active]:shadow-sm">12-Week</TabsTrigger>
+        <TabsTrigger value="1-year" className="data-[state=active]:bg-gray-100 data-[state=active]:shadow-sm">1-Year</TabsTrigger>
+        <TabsTrigger value="5-year" className="data-[state=active]:bg-gray-100 data-[state=active]:shadow-sm">5-Year</TabsTrigger>
+      </TabsList>
+    </div>
 
           {/* 12-Week Goals View */}
           <TabsContent value="12-week" className="mt-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {Object.entries(goalsData).map(([category, goals]) => (
-                <Card key={category} className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200">
+                <Card key={category} className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
                   <CardHeader className="pb-4">
                     <div className="flex items-center justify-between">
                       <Badge
@@ -2167,7 +2170,7 @@ function GoalTrackerApp() {
                         const quickIncrements = getQuickIncrements(goal.targetCount)
 
                         return (
-                          <div key={goal.id} className="p-3 rounded-lg bg-gray-50 border border-border space-y-3">
+                          <div key={goal.id} className="p-3 rounded-lg bg-white border border-gray-200 shadow-sm space-y-3">
                             {/* All goals now have checkbox + title layout */}
                             <div className="flex items-start space-x-3">
                               <Checkbox
@@ -2258,7 +2261,7 @@ function GoalTrackerApp() {
                                     </span>
                                     <span className="font-medium text-gray-900">{Math.round(progressPercentage)}%</span>
                                   </div>
-                                  <Progress value={progressPercentage} className="h-2 [&>div]:bg-[#05a7b0]" />
+                                  <Progress value={progressPercentage} className="h-2 bg-gray-200 [&>div]:bg-[#05a7b0]" />
                                 </div>
 
                                 {/* Progress Update Controls */}
@@ -2378,7 +2381,7 @@ function GoalTrackerApp() {
                 if (categoryTasks.length === 0) return null
 
                 return (
-                  <Card key={category} className="border-0 shadow-sm">
+                  <Card key={category} className="bg-white border border-gray-200 shadow-sm">
                     <CardHeader className="pb-4">
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
@@ -2440,7 +2443,7 @@ function GoalTrackerApp() {
                 if (categoryTasks.length > 0) return null // Already rendered above
 
                 return (
-                  <Card key={`empty-${category}`} className="border-0 shadow-sm">
+                  <Card key={`empty-${category}`} className="bg-white border border-gray-200 shadow-sm">
                     <CardHeader className="pb-4">
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
@@ -2518,7 +2521,7 @@ function GoalTrackerApp() {
                 if (categoryTasks.length === 0) return null
 
                 return (
-                  <Card key={category} className="border-0 shadow-sm">
+                  <Card key={category} className="bg-white border border-gray-200 shadow-sm">
                     <CardHeader className="pb-4">
                       <div className="flex items-center justify-between">
                         <div>
@@ -2578,7 +2581,7 @@ function GoalTrackerApp() {
                 if (categoryTasks.length > 0) return null // Already rendered above
 
                 return (
-                  <Card key={`empty-${category}`} className="border-0 shadow-sm">
+                  <Card key={`empty-${category}`} className="bg-white border border-gray-200 shadow-sm">
                     <CardHeader className="pb-4">
                       <div className="flex items-center justify-between">
                         <div>
@@ -2642,7 +2645,7 @@ function GoalTrackerApp() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {Object.entries(longTermGoals["1-year"]).map(([category, goals]) => (
-                <Card key={category} className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200">
+                <Card key={category} className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
                   <CardHeader className="pb-4">
                     <div className="flex items-center justify-between">
                       <Badge
@@ -2657,7 +2660,7 @@ function GoalTrackerApp() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {goals.map((goal) => (
-                      <div key={goal.id} className="p-4 rounded-lg bg-gray-50 border border-border space-y-4">
+                      <div key={goal.id} className="p-4 rounded-lg bg-white border border-gray-200 shadow-sm space-y-4">
                         <div className="flex items-start space-x-3">
                           <Checkbox
                             checked={goal.status === "completed"}
@@ -2811,7 +2814,7 @@ function GoalTrackerApp() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {Object.entries(longTermGoals["5-year"]).map(([category, goals]) => (
-                <Card key={category} className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200">
+                <Card key={category} className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
                   <CardHeader className="pb-4">
                     <div className="flex items-center justify-between">
                       <Badge
@@ -2826,7 +2829,7 @@ function GoalTrackerApp() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {goals.map((goal) => (
-                      <div key={goal.id} className="p-4 rounded-lg bg-gray-50 border border-border space-y-4">
+                      <div key={goal.id} className="p-4 rounded-lg bg-white border border-gray-200 shadow-sm space-y-4">
                         <div className="flex items-start space-x-3">
                           <Checkbox
                             checked={goal.status === "completed"}
@@ -3698,11 +3701,11 @@ function GoalTrackerApp() {
   )
 }
 
-export default function Page() {
+export default function Page() {\
   const { user, loading } = useAuth()
 
-  if (loading) {
-    return (
+  if (loading) {\
+    return (\
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#05a7b0] mx-auto mb-4"></div>
@@ -3712,9 +3715,9 @@ export default function Page() {
     )
   }
 
-  if (!user) {
+  if (!user) {\
     return <AuthScreen />
   }
 
-  return <GoalTrackerApp />
+  return <GoalTrackerApp />\
 }
