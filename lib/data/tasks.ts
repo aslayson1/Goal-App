@@ -10,6 +10,9 @@ export type TaskRow = {
   goal_id?: string | null
   created_at: string
   updated_at: string
+  category?: string
+  task_type?: "daily" | "weekly"
+  target_date?: string
 }
 
 export async function listTasks(filter?: { day?: string; weekStart?: string; weekEnd?: string }) {
@@ -24,19 +27,28 @@ export async function listTasks(filter?: { day?: string; weekStart?: string; wee
 export async function createTask(partial: {
   title: string
   description?: string | null
-  due_date?: string | null
-  goal_id?: string | null
+  category?: string
+  goalId?: string | null
+  taskType?: "daily" | "weekly"
+  targetDate?: string
 }) {
   const {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) throw new Error("Not authenticated")
 
-  const { data, error } = await supabase
-    .from("tasks")
-    .insert([{ user_id: user.id, status: "pending", ...partial }])
-    .select()
-    .single()
+  const taskData = {
+    user_id: user.id,
+    title: partial.title,
+    description: partial.description || null,
+    due_date: partial.targetDate || null,
+    goal_id: partial.goalId || null,
+    status: "pending" as const,
+    category: partial.category || null,
+    task_type: partial.taskType || null,
+  }
+
+  const { data, error } = await supabase.from("tasks").insert([taskData]).select().single()
   if (error) throw error
 
   await supabase.from("task_events").insert([
