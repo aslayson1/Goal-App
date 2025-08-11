@@ -72,14 +72,15 @@
     --sidebar-border: oklch(0.269 0 0);
     --sidebar-ring: oklch(0.439 0 0);
   }
+}
 
-  * {
-    @apply border-border outline-ring/50;
-  }
+/* Moved @apply directives outside of @layer to fix nesting error */
+* {
+  @apply border-border outline-ring/50;
+}
 
-  body {
-    @apply bg-background text-foreground;
-  }
+body {
+  @apply bg-background text-foreground;
 }
 
 @theme inline {
