@@ -1,29 +1,15 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import {
-  Plus,
-  ChevronDown,
-  ChevronUp,
-  Calendar,
-  Target,
-  MoreHorizontal,
-  Edit,
-  Trash2,
-  CheckCircle,
-  Clock,
-  GripVertical,
-  ClipboardCheck,
-} from "lucide-react"
+import { useEffect } from "react"
+
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Progress } from "@/components/ui/progress"
+import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Dialog,
   DialogContent,
@@ -32,9 +18,26 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import {
+  Plus,
+  Target,
+  Calendar,
+  ChevronDown,
+  ChevronUp,
+  MoreHorizontal,
+  Edit,
+  Trash2,
+  CheckCircle,
+  Clock,
+  GripVertical,
+  ClipboardCheck,
+} from "lucide-react"
+import { useTheme } from "next-themes"
 
 // Auth components
 import { useAuth } from "@/components/auth/auth-provider"
@@ -969,6 +972,7 @@ function SortableDailyTaskItem({
 }
 
 function GoalTrackerApp() {
+  const { theme, setTheme } = useTheme()
   const { user } = useAuth()
   const [goalsData, setGoalsData] = useState<GoalsData>(initialGoalsData)
   const [weeklyTasks, setWeeklyTasks] = useState(initialWeeklyTasks)
