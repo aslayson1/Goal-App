@@ -39,6 +39,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 // Auth components
 import { useAuth } from "@/components/auth/auth-provider"
 import { UserProfile } from "@/components/profile/user-profile"
+import { AuthScreen } from "@/components/auth/auth-screen"
 
 // Drag and Drop imports
 import {
@@ -1711,15 +1712,6 @@ function GoalTrackerApp() {
       goalId: newDailyTask.goalId,
       timeBlock: newDailyTask.timeBlock,
       estimatedMinutes: newDailyTask.estimatedMinutes,
-    })
-
-    setNewDailyTask({
-      title: "",
-      description: "",
-      category: "",
-      goalId: "",
-      timeBlock: "",
-      estimatedMinutes: 30,
     })
     setEditingDailyTask(null)
     setShowAddDailyTask(false)
@@ -3516,4 +3508,209 @@ function GoalTrackerApp() {
                   <Label htmlFor="longTermCategory">Category</Label>
                   <Select
                     value={newLongTermGoal.category}
-                    onValue\
+                    onValueChange={(value) => setNewLongTermGoal((prev) => ({ ...prev, category: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Business">Business</SelectItem>
+                      <SelectItem value="Personal">Personal</SelectItem>
+                      <SelectItem value="Financial">Financial</SelectItem>
+                      <SelectItem value="Health">Health</SelectItem>
+                      <SelectItem value="Relationships">Relationships</SelectItem>
+                      <SelectItem value="Education">Education</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="longTermTargetDate">Target Date</Label>
+                  <Input
+                    id="longTermTargetDate"
+                    type="date"
+                    value={newLongTermGoal.targetDate}
+                    onChange={(e) => setNewLongTermGoal((prev) => ({ ...prev, targetDate: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="longTermNotes">Notes (optional)</Label>
+                <Textarea
+                  id="longTermNotes"
+                  placeholder="Additional context, strategy, or thoughts..."
+                  value={newLongTermGoal.notes}
+                  onChange={(e) => setNewLongTermGoal((prev) => ({ ...prev, notes: e.target.value }))}
+                  className="min-h-[60px]"
+                />
+              </div>
+
+              {/* Milestones */}
+              <div className="grid gap-2">
+                <Label>Milestones (4 key checkpoints)</Label>
+                <div className="space-y-3">
+                  {newLongTermGoal.milestones.map((milestone, index) => (
+                    <div key={index} className="grid grid-cols-2 gap-2">
+                      <Input
+                        placeholder={`Milestone ${index + 1} title`}
+                        value={milestone.title}
+                        onChange={(e) => {
+                          const updatedMilestones = [...newLongTermGoal.milestones]
+                          updatedMilestones[index] = { ...updatedMilestones[index], title: e.target.value }
+                          setNewLongTermGoal((prev) => ({ ...prev, milestones: updatedMilestones }))
+                        }}
+                      />
+                      <Input
+                        type="date"
+                        value={milestone.targetDate}
+                        onChange={(e) => {
+                          const updatedMilestones = [...newLongTermGoal.milestones]
+                          updatedMilestones[index] = { ...updatedMilestones[index], targetDate: e.target.value }
+                          setNewLongTermGoal((prev) => ({ ...prev, milestones: updatedMilestones }))
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowAddLongTermGoal(false)
+                  setEditingLongTermGoal(null)
+                  setNewLongTermGoal({
+                    title: "",
+                    description: "",
+                    targetDate: "",
+                    category: "",
+                    notes: "",
+                    milestones: [
+                      { title: "", targetDate: "" },
+                      { title: "", targetDate: "" },
+                      { title: "", targetDate: "" },
+                      { title: "", targetDate: "" },
+                    ],
+                  })
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={
+                  editingLongTermGoal
+                    ? saveEditedLongTermGoal
+                    : () => {
+                        if (!newLongTermGoal.title || !newLongTermGoal.category || !newLongTermGoal.targetDate) return
+
+                        const goalId = `${selectedTimeframe}_${newLongTermGoal.category.toLowerCase()}_${Date.now()}`
+                        const newGoal = {
+                          id: goalId,
+                          title: newLongTermGoal.title,
+                          description: newLongTermGoal.description,
+                          targetDate: newLongTermGoal.targetDate,
+                          category: newLongTermGoal.category,
+                          status: "in-progress" as const,
+                          notes: newLongTermGoal.notes,
+                          milestones: newLongTermGoal.milestones
+                            .filter((m) => m.title && m.targetDate)
+                            .map((m, index) => ({
+                              id: `${goalId}_m${index + 1}`,
+                              title: m.title,
+                              completed: false,
+                              targetDate: m.targetDate,
+                            })),
+                        }
+
+                        setLongTermGoals((prev) => ({
+                          ...prev,
+                          [selectedTimeframe]: {
+                            ...prev[selectedTimeframe],
+                            [newLongTermGoal.category]: [
+                              ...(prev[selectedTimeframe][newLongTermGoal.category] || []),
+                              newGoal,
+                            ],
+                          },
+                        }))
+
+                        setNewLongTermGoal({
+                          title: "",
+                          description: "",
+                          targetDate: "",
+                          category: "",
+                          notes: "",
+                          milestones: [
+                            { title: "", targetDate: "" },
+                            { title: "", targetDate: "" },
+                            { title: "", targetDate: "" },
+                            { title: "", targetDate: "" },
+                          ],
+                        })
+                        setShowAddLongTermGoal(false)
+                      }
+                }
+                disabled={!newLongTermGoal.title || !newLongTermGoal.category || !newLongTermGoal.targetDate}
+                className="bg-black hover:bg-gray-800 text-white"
+              >
+                {editingLongTermGoal ? "Save Changes" : "Add Goal"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Long-Term Goal Dialog */}
+        <Dialog open={!!showDeleteLongTermGoal} onOpenChange={() => setShowDeleteLongTermGoal(null)}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>
+                Delete {showDeleteLongTermGoal?.timeframe === "1-year" ? "1-Year" : "5-Year"} Goal
+              </DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete "{showDeleteLongTermGoal?.title}"? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowDeleteLongTermGoal(null)}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() =>
+                  showDeleteLongTermGoal &&
+                  deleteLongTermGoal(
+                    showDeleteLongTermGoal.timeframe,
+                    showDeleteLongTermGoal.category,
+                    showDeleteLongTermGoal.goalId,
+                  )
+                }
+              >
+                Delete Goal
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </div>
+  )
+}
+
+export default function Page() {
+  const { user, isLoading } = useAuth()
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#05a7b0] mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return <AuthScreen />
+  }
+
+  return <GoalTrackerApp />
+}
