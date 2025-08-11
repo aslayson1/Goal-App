@@ -1363,22 +1363,19 @@ function GoalTrackerApp() {
     const taskId = `w${currentWeek}_${Date.now()}`
     const weekKey = `Week ${currentWeek}`
 
-    setWeeklyTasks((prev) => ({
-      ...prev,
-      [weekKey]: [
-        ...(prev[weekKey] || []),
-        {
-          id: taskId,
-          title: newWeeklyTask.title,
-          description: newWeeklyTask.description,
-          category: newWeeklyTask.category,
-          goalId: newWeeklyTask.goalId,
-          completed: false,
-          priority: newWeeklyTask.priority,
-          estimatedHours: newWeeklyTask.estimatedHours,
-        },
-      ],
-    }))
+    setWeeklyTasks((prev) => {
+      const updated = { ...prev }
+
+      // Add incomplete tasks to next week with updated IDs
+      const updatedTasksForNextWeek = incompleteTasks.map((task) => ({
+        ...task,
+        id: `w${currentWeek + 1}_moved_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      }))
+
+      updated[nextWeekKey] = [...(prev[nextWeekKey] || []), ...updatedTasksForNextWeek]
+
+      return updated
+    })
 
     setNewWeeklyTask({
       title: "",
@@ -1396,22 +1393,19 @@ function GoalTrackerApp() {
 
     const taskId = `${selectedDay.toLowerCase()}_${Date.now()}`
 
-    setDailyTasks((prev) => ({
-      ...prev,
-      [selectedDay]: [
-        ...(prev[selectedDay] || []),
-        {
-          id: taskId,
-          title: newDailyTask.title,
-          description: newDailyTask.description,
-          category: newDailyTask.category,
-          goalId: newDailyTask.goalId,
-          completed: false,
-          timeBlock: newDailyTask.timeBlock,
-          estimatedMinutes: newDailyTask.estimatedMinutes,
-        },
-      ],
-    }))
+    setDailyTasks((prev) => {
+      const updated = { ...prev }
+
+      // Add incomplete tasks to today with updated IDs
+      const updatedTasksForToday = tasksToMove.map((task) => ({
+        ...task,
+        id: `${currentDayName.toLowerCase()}_moved_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      }))
+
+      updated[currentDayName] = [...(prev[currentDayName] || []), ...updatedTasksForToday]
+
+      return updated
+    })
 
     setNewDailyTask({
       title: "",
@@ -1706,14 +1700,6 @@ function GoalTrackerApp() {
       estimatedMinutes: newDailyTask.estimatedMinutes,
     })
 
-    setNewDailyTask({
-      title: "",
-      description: "",
-      category: "",
-      goalId: "",
-      timeBlock: "",
-      estimatedMinutes: 30,
-    })
     setEditingDailyTask(null)
     setShowAddDailyTask(false)
   }
@@ -2193,6 +2179,14 @@ function GoalTrackerApp() {
                                         className="bg-green-100 text-green-800 whitespace-nowrap"
                                       >
                                         Complete
+                                      </Badge>
+                                    )}
+                                    {!isCompleted && weeklyProgress.onTrack && (
+                                      <Badge
+                                        variant="secondary"
+                                        className="bg-blue-100 text-blue-800 whitespace-nowrap"
+                                      >
+                                        On Track
                                       </Badge>
                                     )}
                                     {!isCompleted && weeklyProgress.onTrack && (
@@ -3344,14 +3338,6 @@ function GoalTrackerApp() {
                 can only delete empty categories.
               </DialogDescription>
             </DialogHeader>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowDeleteCategory(null)}>
-                Cancel
-              </Button>
-              <Button variant="destructive" onClick={() => showDeleteCategory && deleteCategory(showDeleteCategory)}>
-                Delete Category
-              </Button>
-            </DialogFooter>
           </DialogContent>
         </Dialog>
 
@@ -3390,6 +3376,14 @@ function GoalTrackerApp() {
             <DialogFooter>
               <Button variant="outline" onClick={() => setShowDeleteDailyTask(null)}>
                 Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() =>
+                  showDeleteDailyTask && deleteDailyTask(showDeleteDailyTask.day, showDeleteDailyTask.taskId)
+                }
+              >
+                Delete Task
               </Button>
               <Button
                 variant="destructive"
