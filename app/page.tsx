@@ -1580,6 +1580,24 @@ function GoalTrackerApp() {
     }
   }
 
+  const getTotalProgressLocal = () => {
+    let totalCurrent = 0
+    let totalTarget = 0
+
+    Object.values(goalsData)
+      .flat()
+      .forEach((goal) => {
+        const normalizedCurrent = goal.currentCount / goal.targetCount
+        const normalizedTarget = 1
+        totalCurrent += normalizedCurrent
+        totalTarget += normalizedTarget
+      })
+
+    if (totalTarget === 0) return 0
+    const result = (totalCurrent / totalTarget) * 100
+    return isNaN(result) ? 0 : Math.round(result)
+  }
+
   const addNewGoalLocal = async () => {
     const detectedNumber = extractNumberFromTitle(newGoal.title)
     const targetCount = detectedNumber > 0 ? newGoal.targetCount || detectedNumber : 1
@@ -1607,6 +1625,14 @@ function GoalTrackerApp() {
     }))
 
     try {
+      console.log("Creating goal:", {
+        title: newGoal.title,
+        description: newGoal.description,
+        category: selectedCategory,
+        targetCount: targetCount,
+        weeklyTarget: newGoal.weeklyTarget || targetCount / 12,
+      })
+
       await createGoal({
         title: newGoal.title,
         description: newGoal.description,
@@ -1619,16 +1645,16 @@ function GoalTrackerApp() {
       setSelectedCategory("")
       setShowAddGoal(false)
     } catch (error) {
-      // Rollback on error
+      console.error("Failed to create goal:", error)
+
+      // Rollback optimistic update
       setGoalsData((prev) => ({
         ...prev,
-        [selectedCategory]: (prev[selectedCategory] || []).filter((goal) => goal.id !== goalId),
+        [selectedCategory]: prev[selectedCategory].filter((g) => g.id !== goalId),
       }))
-      toast({
-        title: "Error creating goal",
-        description: "Failed to create goal. Please try again.",
-        variant: "destructive",
-      })
+
+      // Show error to user
+      alert(`Failed to create goal: ${error instanceof Error ? error.message : "Unknown error"}`)
     } finally {
       setIsCreatingGoal(false)
     }
@@ -1665,22 +1691,6 @@ function GoalTrackerApp() {
       actual: actualProgress,
       onTrack: actualProgress >= expectedProgress * 0.8,
     }
-  }
-
-  const getTotalProgressLocal = () => {
-    let totalCurrent = 0
-    let totalTarget = 0
-
-    Object.values(goalsData)
-      .flat()
-      .forEach((goal) => {
-        const normalizedCurrent = goal.currentCount / goal.targetCount
-        const normalizedTarget = 1
-        totalCurrent += normalizedCurrent
-        totalTarget += normalizedTarget
-      })
-
-    return Math.round((totalCurrent / totalTarget) * 100)
   }
 
   const addNewCategory = () => {
