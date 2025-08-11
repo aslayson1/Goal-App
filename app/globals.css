@@ -1,6 +1,67 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* --- Tailwind v4 compat tweaks (keeps old look) --- */
+@layer base {
+  html,
+  body {
+    @apply bg-background text-foreground;
+  }
+  h1 {
+    @apply text-3xl font-semibold leading-tight tracking-tight;
+  }
+  h2 {
+    @apply text-2xl font-semibold leading-snug;
+  }
+  h3 {
+    @apply text-xl font-semibold leading-snug;
+  }
+  p {
+    @apply leading-relaxed;
+  }
+}
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center rounded-md text-sm font-medium h-9 px-4 py-2 bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50;
+  }
+  .btn-outline {
+    @apply border border-input bg-transparent hover:bg-accent hover:text-accent-foreground;
+  }
+  .input,
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  textarea,
+  select {
+    @apply h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
+           ring-offset-background;
+  }
+  .card {
+    @apply rounded-xl border border-border bg-card text-card-foreground shadow;
+  }
+  .card-content {
+    @apply p-6;
+  }
+}
+@layer utilities {
+  @utility container {
+    max-width: 80rem;
+    margin-inline: auto;
+    padding-inline: 1rem;
+  }
+  .stack-sm > * + * {
+    @apply mt-2;
+  }
+  .stack-md > * + * {
+    @apply mt-4;
+  }
+  .stack-lg > * + * {
+    @apply mt-6;
+  }
+}
+/* --- end compat tweaks --- */
+
 @custom-variant dark (&:is(.dark *));
 
 :root {
