@@ -1071,7 +1071,7 @@ function GoalTrackerApp() {
   } | null>(null)
 
   const [isLoadingData, setIsLoadingData] = useState(true)
-  const [isCreatingGoal, setIsCreatingGoal] = useState(true)
+  const [isCreatingGoal, setIsCreatingGoal] = useState(false)
   const [isCreatingTask, setIsCreatingTask] = useState(false)
 
   // Helper function to get user initials
