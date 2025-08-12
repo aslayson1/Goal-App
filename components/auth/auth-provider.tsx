@@ -62,6 +62,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     checkAuthState()
 
+    const immediateRecheck = setTimeout(() => {
+      checkAuthState()
+    }, 100)
+
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
       const u = session?.user
       setUser(u ? { id: u.id, email: u.email ?? null } : null)
@@ -74,6 +78,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     window.addEventListener("focus", handleFocus)
 
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        checkAuthState()
+      }
+    }
+    document.addEventListener("visibilitychange", handleVisibilityChange)
+
     const handleStorageChange = () => {
       if (isInitialized) {
         checkAuthState()
@@ -81,15 +92,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     window.addEventListener("storage", handleStorageChange)
 
+    let checkCount = 0
     const cookieCheckInterval = setInterval(() => {
       if (isInitialized) {
         checkAuthState()
+        checkCount++
+        if (checkCount > 10) {
+          clearInterval(cookieCheckInterval)
+          const slowInterval = setInterval(() => {
+            if (isInitialized) {
+              checkAuthState()
+            }
+          }, 5000)
+          return () => clearInterval(slowInterval)
+        }
       }
-    }, 2000)
+    }, 500)
 
     return () => {
+      clearTimeout(immediateRecheck)
       sub.subscription.unsubscribe()
       window.removeEventListener("focus", handleFocus)
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
       window.removeEventListener("storage", handleStorageChange)
       clearInterval(cookieCheckInterval)
     }
