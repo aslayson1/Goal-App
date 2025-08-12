@@ -2,6 +2,7 @@
 
 import { createServerActionClient } from "@supabase/auth-helpers-nextjs"
 import { cookies } from "next/headers"
+import { mockLogin } from "@/lib/auth"
 
 export async function signIn(prevState: any, formData: FormData) {
   if (!formData) {
@@ -13,6 +14,23 @@ export async function signIn(prevState: any, formData: FormData) {
 
   if (!email || !password) {
     return { error: "Email and password are required" }
+  }
+
+  if (email.toString() === "demo@example.com" && password.toString() === "password") {
+    try {
+      const user = await mockLogin(email.toString(), password.toString())
+      // Store demo user in session/cookie for the auth provider to pick up
+      const cookieStore = cookies()
+      cookieStore.set("demo-user", JSON.stringify(user), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+      })
+      return { success: true, isDemo: true }
+    } catch (error: any) {
+      return { error: error.message }
+    }
   }
 
   const cookieStore = cookies()
