@@ -1,123 +1,60 @@
 import { supabase } from "@/lib/supabase/client"
 
-export type GoalRow = {
+export interface Goal {
   id: string
   user_id: string
-  category_id?: string | null
+  category_id: string | null
   title: string
-  description?: string | null
+  description: string | null
   target_count: number
-  current_count: number
   weekly_target: number
-  notes?: string | null
+  current_progress: number
+  completed: boolean
+  completed_at: string | null
   created_at: string
   updated_at: string
 }
 
-export async function listGoals() {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) throw new Error("Not authenticated")
-
-  const { data, error } = await supabase
-    .from("goals")
-    .select(`
-      *,
-      categories(name, color)
-    `)
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false })
+export async function getGoals(): Promise<Goal[]> {
+  const { data, error } = await supabase.from("goals").select("*").order("created_at", { ascending: false })
 
   if (error) throw error
-  return data as GoalRow[]
+  return data || []
 }
 
-export async function createGoal(params: {
-  title: string
-  description?: string
-  targetCount: number
-  weeklyTarget?: number
-  category?: string
-  notes?: string
-}) {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) throw new Error("Not authenticated")
-
-  // Get category_id if category name provided
-  let category_id = null
-  if (params.category) {
-    const { data: categoryData } = await supabase
-      .from("categories")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("name", params.category)
-      .single()
-    category_id = categoryData?.id || null
-  }
-
-  const goalData = {
-    user_id: user.id,
-    category_id,
-    title: params.title,
-    description: params.description || null,
-    target_count: params.targetCount,
-    current_count: 0,
-    weekly_target: params.weeklyTarget || 0,
-    notes: params.notes || null,
-  }
-
-  const { data, error } = await supabase.from("goals").insert([goalData]).select().single()
+export async function createGoal(goal: Omit<Goal, "id" | "user_id" | "created_at" | "updated_at">): Promise<Goal> {
+  const { data, error } = await supabase.from("goals").insert(goal).select().single()
 
   if (error) throw error
-  return data as GoalRow
+  return data
 }
 
-export async function updateGoalProgress(id: string, currentCount: number) {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) throw new Error("Not authenticated")
-
-  const { data, error } = await supabase
+export async function updateGoal(id: string, updates: Partial<Goal>): Promise<void> {
+  const { error } = await supabase
     .from("goals")
-    .update({ current_count: currentCount })
+    .update({ ...updates, updated_at: new Date().toISOString() })
     .eq("id", id)
-    .eq("user_id", user.id)
-    .select()
-    .single()
 
   if (error) throw error
-  return data as GoalRow
 }
 
-export async function updateGoal(id: string, updates: Partial<GoalRow>) {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) throw new Error("Not authenticated")
-
-  const { data, error } = await supabase
+export async function updateGoalProgress(id: string, progress: number): Promise<void> {
+  const completed = progress >= 100
+  const { error } = await supabase
     .from("goals")
-    .update(updates)
+    .update({
+      current_progress: progress,
+      completed,
+      completed_at: completed ? new Date().toISOString() : null,
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", id)
-    .eq("user_id", user.id)
-    .select()
-    .single()
 
   if (error) throw error
-  return data as GoalRow
 }
 
-export async function deleteGoal(id: string) {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) throw new Error("Not authenticated")
-
-  const { error } = await supabase.from("goals").delete().eq("id", id).eq("user_id", user.id)
+export async function deleteGoal(id: string): Promise<void> {
+  const { error } = await supabase.from("goals").delete().eq("id", id)
 
   if (error) throw error
 }
