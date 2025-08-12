@@ -48,7 +48,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const { data } = await supabase.auth.getUser()
       const u = data.user
-      setUser(u ? { id: u.id, email: u.email ?? null } : null)
+      setUser(
+        u
+          ? {
+              id: u.id,
+              email: u.email ?? null,
+              name: u.user_metadata?.name ?? null,
+            }
+          : null,
+      )
       setIsLoading(false)
       setIsInitialized(true)
     } catch (error) {
@@ -71,7 +79,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
       const u = session?.user
-      setUser(u ? { id: u.id, email: u.email ?? null } : null)
+      setUser(
+        u
+          ? {
+              id: u.id,
+              email: u.email ?? null,
+              name: u.user_metadata?.name ?? null,
+            }
+          : null,
+      )
       setIsLoading(false)
       setIsInitialized(true)
     })
