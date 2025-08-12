@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -25,11 +25,14 @@ export function RegisterForm() {
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
-  // useEffect(() => {
-  //   if (state?.success) {
-  //     router.push("/")
-  //   }
-  // }, [state, router])
+  useEffect(() => {
+    if (state?.success) {
+      // Redirect to main page after 2 seconds to show success message
+      setTimeout(() => {
+        router.push("/")
+      }, 2000)
+    }
+  }, [state, router])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()

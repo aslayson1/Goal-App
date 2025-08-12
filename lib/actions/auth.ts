@@ -3,6 +3,7 @@
 import { createServerActionClient } from "@supabase/auth-helpers-nextjs"
 import { cookies } from "next/headers"
 import { mockLogin } from "@/lib/auth"
+import { createClient } from "@supabase/supabase-js"
 
 export async function signIn(prevState: any, formData: FormData) {
   if (!formData) {
@@ -59,22 +60,26 @@ export async function signUp(prevState: any, formData: FormData) {
 
   const email = formData.get("email")
   const password = formData.get("password")
+  const name = formData.get("name")
 
   if (!email || !password) {
     return { error: "Email and password are required" }
   }
 
-  const cookieStore = cookies()
-  const supabase = createServerActionClient({ cookies: () => cookieStore })
+  const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  })
 
   try {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabaseAdmin.auth.admin.createUser({
       email: email.toString(),
       password: password.toString(),
-      options: {
-        emailRedirectTo:
-          process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
-          `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/`,
+      email_confirm: true, // Pre-confirm the email
+      user_metadata: {
+        name: name?.toString() || email.toString().split("@")[0],
       },
     })
 
@@ -82,7 +87,7 @@ export async function signUp(prevState: any, formData: FormData) {
       return { error: error.message }
     }
 
-    return { success: "Check your email to confirm your account before signing in." }
+    return { success: "Account created successfully! You can now sign in." }
   } catch (error) {
     console.error("Sign up error:", error)
     return { error: "An unexpected error occurred. Please try again." }
