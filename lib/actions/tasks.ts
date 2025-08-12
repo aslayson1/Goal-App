@@ -12,6 +12,9 @@ export async function createTaskAction(taskData: {
 }) {
   const cookieStore = cookies()
 
+  console.log("=== DEBUG: Task Creation Started ===")
+  console.log("Task data:", taskData)
+
   // First try Supabase authentication
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -35,17 +38,23 @@ export async function createTaskAction(taskData: {
     data: { user },
   } = await supabase.auth.getUser()
 
+  console.log("Supabase user:", user ? `Found user: ${user.id}` : "No Supabase user")
+
   let userId: string
   let supabaseClient = supabase
 
   if (user) {
     userId = user.id
+    console.log("Using Supabase auth with user ID:", userId)
   } else {
     const demoUserCookie = cookieStore.get("demo-user")?.value
+    console.log("Demo user cookie:", demoUserCookie ? "Found" : "Not found")
+
     if (demoUserCookie) {
       try {
         const demoUser = JSON.parse(decodeURIComponent(demoUserCookie))
         userId = demoUser.id
+        console.log("Using demo user with ID:", userId)
 
         supabaseClient = createServerClient(
           process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -65,12 +74,16 @@ export async function createTaskAction(taskData: {
           },
         )
       } catch (error) {
+        console.error("Demo user parsing error:", error)
         throw new Error("Invalid demo user session")
       }
     } else {
+      console.error("No authentication found - no Supabase user and no demo user cookie")
       throw new Error("User not authenticated")
     }
   }
+
+  console.log("Attempting database insert with user ID:", userId)
 
   const { data, error } = await supabaseClient
     .from("tasks")
@@ -86,6 +99,9 @@ export async function createTaskAction(taskData: {
     console.error("Database error:", error)
     throw new Error(`Failed to create task: ${error.message}`)
   }
+
+  console.log("Task created successfully:", data)
+  console.log("=== DEBUG: Task Creation Completed ===")
 
   return data
 }
@@ -123,6 +139,7 @@ export async function fetchTasksAction() {
     userId = user.id
   } else {
     const demoUserCookie = cookieStore.get("demo-user")?.value
+
     if (demoUserCookie) {
       try {
         const demoUser = JSON.parse(decodeURIComponent(demoUserCookie))
