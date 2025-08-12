@@ -71,13 +71,19 @@ export async function signUp(prevState: any, formData: FormData) {
     const { error } = await supabase.auth.signUp({
       email: email.toString(),
       password: password.toString(),
+      options: {
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/`,
+        data: {
+          email_confirm: false,
+        },
+      },
     })
 
     if (error) {
       return { error: error.message }
     }
 
-    return { success: "Check your email to confirm your account." }
+    return { success: "Account created successfully! You can now sign in." }
   } catch (error) {
     console.error("Sign up error:", error)
     return { error: "An unexpected error occurred. Please try again." }
