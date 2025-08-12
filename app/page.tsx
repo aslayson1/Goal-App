@@ -1,10 +1,7 @@
 "use client"
 
 // Adding Supabase imports for task persistence
-import { createTask, setTaskCompleted } from "@/lib/data/tasks"
-import { supabase } from "@/lib/supabase/client"
-
-import { useState, useEffect } from "react"
+import { setTaskCompleted, createTask } from "@/lib/data/tasks"
 import {
   Plus,
   ChevronDown,
@@ -39,26 +36,25 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-
-// Auth components
-import { useAuth } from "@/components/auth/auth-provider"
 import { UserProfile } from "@/components/profile/user-profile"
 import { AuthScreen } from "@/components/auth/auth-screen"
 import { SignOutButton } from "@/components/auth/sign-out-button"
+import { useAuth } from "@/hooks/use-auth"
+import { supabase } from "@/lib/supabase"
 
 // Drag and Drop imports
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from "@dnd-kit/core"
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable"
+import { DndContext, closestCenter } from "@dnd-kit/core"
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
+import { arrayMove } from "@dnd-kit/sortable"
+import type { DragEndEvent } from "@dnd-kit/core"
+import { useSensors } from "@dnd-kit/core"
+import { useSensor } from "@dnd-kit/core"
+import { PointerSensor } from "@dnd-kit/core"
+import { KeyboardSensor } from "@dnd-kit/core"
+import { sortableKeyboardCoordinates } from "@dnd-kit/sortable"
+import { useState, useEffect } from "react"
 
 // Custom CSS class for white checkbox background with thinner border
 const checkboxStyles =
@@ -729,6 +725,7 @@ interface WeeklyTask {
   completed: boolean
   priority: "low" | "medium" | "high"
   estimatedHours: number
+  dbId?: string
 }
 
 interface DailyTask {
@@ -740,6 +737,7 @@ interface DailyTask {
   completed: boolean
   timeBlock: string
   estimatedMinutes: number
+  dbId?: string
 }
 
 interface GoalsData {
@@ -1340,7 +1338,7 @@ function GoalTrackerApp() {
 
       await createTask({
         title: newWeeklyTask.title,
-        description: newWeeklyTask.description || null,
+        description: `WEEKLY|${newWeeklyTask.category}|${newWeeklyTask.description || ""}|${newWeeklyTask.priority}|${newWeeklyTask.estimatedHours}`,
         due_date: weekStartDate.toISOString(),
         goal_id: newWeeklyTask.goalId || null,
       })
@@ -1391,7 +1389,7 @@ function GoalTrackerApp() {
       const today = new Date()
       await createTask({
         title: newDailyTask.title,
-        description: newDailyTask.description || null,
+        description: `DAILY|${newDailyTask.category}|${newDailyTask.description || ""}|${newDailyTask.timeBlock}|${newDailyTask.estimatedMinutes}`,
         due_date: today.toISOString(),
         goal_id: newDailyTask.goalId || null,
       })
@@ -2038,23 +2036,160 @@ function GoalTrackerApp() {
         { title: "", targetDate: "" },
         { title: "", targetDate: "" },
       ],
-    })
+      \,
+  }
+  )
+    )
     setEditingLongTermGoal(null)
     setShowAddLongTermGoal(false)
-  }
+}
 
-  const deleteLongTermGoal = (timeframe: "1-year" | "5-year", category: string, goalId: string) => {
-    setLongTermGoals((prev) => ({
-      ...prev,
-      [timeframe]: {
-        ...prev[timeframe],
-        [category]: prev[timeframe][category].filter((g) => g.id !== goalId),
-      },
-    }))
-    setShowDeleteLongTermGoal(null)
-  }
+const deleteLongTermGoal = (timeframe: "1-year" | "5-year", category: string, goalId: string) => {
+  setLongTermGoals((prev) => ({
+    ...prev,
+    [timeframe]: {
+      ...prev[timeframe],
+      [category]: prev[timeframe][category].filter((g) => g.id !== goalId),
+    },
+  }))
+  setShowDeleteLongTermGoal(null)
+}
 
-  return (
+const toggleWeeklyTaskCompletion = async (weekKey: string, taskId: string) => {
+  const task = weeklyTasks[weekKey]?.find((t) => t.id === taskId)
+  if (!task) return
+
+  const newCompleted = !task.completed
+
+  // Optimistic update
+  setWeeklyTasks((prev) => ({
+    ...prev,
+    [weekKey]: prev[weekKey]?.map((t) => (t.id === taskId ? { ...t, completed: newCompleted } : t)) || [],
+  }))
+
+  // Persist to Supabase if it's a database task
+  if (task.id.length > 20) {
+    // Database tasks have longer IDs
+    try {
+      await setTaskCompleted(task.id, newCompleted)
+    } catch (e) {
+      console.error("Failed to update task completion:", e instanceof Error ? e.message : String(e))
+      // Revert on error
+      setWeeklyTasks((prev) => ({
+        ...prev,
+        [weekKey]: prev[weekKey]?.map((t) => (t.id === taskId ? { ...t, completed: !newCompleted } : t)) || [],
+      }))
+    }
+  }
+}
+
+const toggleDailyTaskCompletion = async (day: string, taskId: string) => {
+  const task = dailyTasks[day]?.find((t) => t.id === taskId)
+  if (!task) return
+
+  const newCompleted = !task.completed
+
+  // Optimistic update
+  setDailyTasks((prev) => ({
+    ...prev,
+    [day]: prev[day]?.map((t) => (t.id === taskId ? { ...t, completed: newCompleted } : t)) || [],
+  }))
+
+  // Persist to Supabase if it's a database task
+  if (task.id.length > 20) {
+    // Database tasks have longer IDs
+    try {
+      await setTaskCompleted(task.id, newCompleted)
+    } catch (e) {
+      console.error("Failed to update task completion:", e instanceof Error ? e.message : String(e))
+      // Revert on error
+      setDailyTasks((prev) => ({
+        ...prev,
+        [day]: prev[day]?.map((t) => (t.id === taskId ? { ...t, completed: !newCompleted } : t)) || [],
+      }))
+    }
+  }
+}
+
+useEffect(() => {
+  ;(async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) return
+
+    try {
+      const { data, error } = await supabase.from("tasks").select("*").order("created_at", { ascending: false })
+      if (error) throw error
+      console.log("Hydrated tasks from Supabase:", data)
+
+      if (data && data.length > 0) {
+        // Separate tasks by type and merge into existing state
+        const weeklyTasksFromDB: any = {}
+        const dailyTasksFromDB: any = {}
+
+        data.forEach((task: any) => {
+          // Parse the description to extract metadata
+          const descParts = task.description?.split("|") || []
+          const taskType = descParts[0] || "DAILY"
+          const category = descParts[1] || "General"
+          const actualDesc = descParts[2] || ""
+
+          const taskObj = {
+            id: task.id,
+            title: task.title,
+            description: actualDesc,
+            completed: task.status === "completed",
+            goalId: task.goal_id,
+            category: category,
+          }
+
+          if (taskType === "WEEKLY") {
+            // Add weekly-specific fields
+            const priority = descParts[3] || "medium"
+            const estimatedHours = Number.parseInt(descParts[4]) || 1
+            const weekKey = `Week ${currentWeek}` // Use current week for now
+
+            if (!weeklyTasksFromDB[weekKey]) {
+              weeklyTasksFromDB[weekKey] = []
+            }
+            weeklyTasksFromDB[weekKey].push({
+              ...taskObj,
+              priority,
+              estimatedHours,
+            })
+          } else {
+            // Daily task
+            const timeBlock = descParts[3] || ""
+            const estimatedMinutes = Number.parseInt(descParts[4]) || 30
+            const dayKey = selectedDay // Use current selected day for now
+
+            if (!dailyTasksFromDB[dayKey]) {
+              dailyTasksFromDB[dayKey] = []
+            }
+            dailyTasksFromDB[dayKey].push({
+              ...taskObj,
+              timeBlock,
+              estimatedMinutes,
+            })
+          }
+        })
+
+        // Merge with existing state
+        setWeeklyTasks((prev) => ({ ...prev, ...weeklyTasksFromDB }))
+        setDailyTasks((prev) => ({ ...prev, ...dailyTasksFromDB }))
+      }
+    } catch (error: any) {
+      if (error?.message?.includes("does not exist") || error?.message?.includes("schema cache")) {
+        console.warn("Tasks table not found, using local state only")
+      } else {
+        console.error("Failed to hydrate tasks:", error.message || String(error))
+      }
+    }
+  })()
+}, [user, currentWeek, selectedDay])
+
+return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Header */}
@@ -2571,7 +2706,7 @@ function GoalTrackerApp() {
                             <SortableWeeklyTaskItem
                               key={task.id}
                               task={task}
-                              onToggle={() => toggleWeeklyTask(task.id)}
+                              onToggle={() => toggleWeeklyTaskCompletion(`Week ${currentWeek}`, task.id)}
                               onEdit={() => startEditingWeeklyTask(task)}
                               onDelete={() => setShowDeleteWeeklyTask({ taskId: task.id, title: task.title })}
                               getPriorityColor={getPriorityColor}
@@ -2710,7 +2845,7 @@ function GoalTrackerApp() {
                             <SortableDailyTaskItem
                               key={task.id}
                               task={task}
-                              onToggle={() => toggleDailyTask(selectedDay, task.id)}
+                              onToggle={() => toggleDailyTaskCompletion(selectedDay, task.id)}
                               onEdit={() => startEditingDailyTask(task)}
                               onDelete={() =>
                                 setShowDeleteDailyTask({ day: selectedDay, taskId: task.id, title: task.title })
