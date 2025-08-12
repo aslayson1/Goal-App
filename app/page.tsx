@@ -1244,7 +1244,7 @@ function GoalTrackerApp() {
     return () => clearInterval(intervalId)
   }, [])
 
-  // Drag and drop sensors
+  // Drag and drop handlers
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -1395,7 +1395,7 @@ function GoalTrackerApp() {
           description: newDailyTask.description || null,
           target_date: today.toISOString().split("T")[0],
           task_type: "daily",
-          goal_id: newDailyTask.goalId || null,
+          goal_id: newDailyTask.goalId && newDailyTask.goalId.trim() !== "" ? newDailyTask.goalId : null,
           user_id: user?.id || "demo-user",
           completed: false,
         })
