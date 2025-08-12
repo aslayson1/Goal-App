@@ -72,10 +72,9 @@ export async function signUp(prevState: any, formData: FormData) {
       email: email.toString(),
       password: password.toString(),
       options: {
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/`,
-        data: {
-          email_confirm: false,
-        },
+        emailRedirectTo:
+          process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
+          `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/`,
       },
     })
 
@@ -83,7 +82,7 @@ export async function signUp(prevState: any, formData: FormData) {
       return { error: error.message }
     }
 
-    return { success: "Account created successfully! You can now sign in." }
+    return { success: "Check your email to confirm your account before signing in." }
   } catch (error) {
     console.error("Sign up error:", error)
     return { error: "An unexpected error occurred. Please try again." }
