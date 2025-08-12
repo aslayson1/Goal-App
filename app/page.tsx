@@ -1028,7 +1028,6 @@ function GoalTrackerApp() {
 
   const [newDailyTask, setNewDailyTask] = useState({
     title: "",
-    description: "",
     category: "",
     goalId: "",
     timeBlock: "",
@@ -1373,7 +1372,6 @@ function GoalTrackerApp() {
     const newTask = {
       id: taskId,
       title: newDailyTask.title,
-      description: newDailyTask.description,
       category: newDailyTask.category,
       goalId: newDailyTask.goalId,
       completed: false,
@@ -1392,7 +1390,6 @@ function GoalTrackerApp() {
         .from("tasks")
         .insert({
           title: newDailyTask.title,
-          description: newDailyTask.description || null,
           target_date: today.toISOString().split("T")[0],
           task_type: "daily",
           goal_id: newDailyTask.goalId || null,
@@ -1419,7 +1416,6 @@ function GoalTrackerApp() {
 
     setNewDailyTask({
       title: "",
-      description: "",
       category: "",
       goalId: "",
       timeBlock: "",
@@ -3357,15 +3353,6 @@ function GoalTrackerApp() {
                   onChange={(e) => setNewDailyTask((prev) => ({ ...prev, title: e.target.value }))}
                 />
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="dailyTaskDescription">Description (optional)</Label>
-                <Input
-                  id="dailyTaskDescription"
-                  placeholder="Brief description of the task"
-                  value={newDailyTask.description}
-                  onChange={(e) => setNewDailyTask((prev) => ({ ...prev, description: e.target.value }))}
-                />
-              </div>
               {/* Only show category dropdown if no category is pre-selected */}
               {!newDailyTask.category && (
                 <div className="grid gap-2">
@@ -3420,7 +3407,6 @@ function GoalTrackerApp() {
                   setEditingDailyTask(null)
                   setNewDailyTask({
                     title: "",
-                    description: "",
                     category: "",
                     goalId: "",
                     timeBlock: "",
