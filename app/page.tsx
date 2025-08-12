@@ -1335,9 +1335,13 @@ function GoalTrackerApp() {
 
     // Persist to Supabase
     try {
+      const weekStartDate = new Date()
+      weekStartDate.setDate(weekStartDate.getDate() + (currentWeek - 1) * 7)
+
       await createTask({
         title: newWeeklyTask.title,
         description: newWeeklyTask.description || null,
+        due_date: weekStartDate.toISOString(),
         goal_id: newWeeklyTask.goalId || null,
       })
     } catch (e) {
@@ -1384,9 +1388,11 @@ function GoalTrackerApp() {
 
     // Persist to Supabase
     try {
+      const today = new Date()
       await createTask({
         title: newDailyTask.title,
         description: newDailyTask.description || null,
+        due_date: today.toISOString(),
         goal_id: newDailyTask.goalId || null,
       })
     } catch (e) {
