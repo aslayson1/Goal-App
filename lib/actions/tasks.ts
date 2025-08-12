@@ -15,68 +15,67 @@ export async function createTaskAction(taskData: {
   console.log("=== DEBUG: Task Creation Started ===")
   console.log("Task data:", taskData)
 
-  // First try Supabase authentication
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
-        },
-        set(name: string, value: string, options: any) {
-          cookieStore.set({ name, value, ...options })
-        },
-        remove(name: string, options: any) {
-          cookieStore.set({ name, value: "", ...options })
-        },
-      },
-    },
-  )
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  console.log("Supabase user:", user ? `Found user: ${user.id}` : "No Supabase user")
+  const demoUserCookie = cookieStore.get("demo-user")?.value
+  console.log("Demo user cookie:", demoUserCookie ? "Found" : "Not found")
 
   let userId: string
-  let supabaseClient = supabase
+  let supabaseClient
 
-  if (user) {
-    userId = user.id
-    console.log("Using Supabase auth with user ID:", userId)
-  } else {
-    const demoUserCookie = cookieStore.get("demo-user")?.value
-    console.log("Demo user cookie:", demoUserCookie ? "Found" : "Not found")
+  if (demoUserCookie) {
+    try {
+      const demoUser = JSON.parse(decodeURIComponent(demoUserCookie))
+      userId = demoUser.id
+      console.log("Using demo user with ID:", userId)
 
-    if (demoUserCookie) {
-      try {
-        const demoUser = JSON.parse(decodeURIComponent(demoUserCookie))
-        userId = demoUser.id
-        console.log("Using demo user with ID:", userId)
-
-        supabaseClient = createServerClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.SUPABASE_SERVICE_ROLE_KEY!,
-          {
-            cookies: {
-              get(name: string) {
-                return cookieStore.get(name)?.value
-              },
-              set(name: string, value: string, options: any) {
-                cookieStore.set({ name, value, ...options })
-              },
-              remove(name: string, options: any) {
-                cookieStore.set({ name, value: "", ...options })
-              },
+      supabaseClient = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        {
+          cookies: {
+            get(name: string) {
+              return cookieStore.get(name)?.value
+            },
+            set(name: string, value: string, options: any) {
+              cookieStore.set({ name, value, ...options })
+            },
+            remove(name: string, options: any) {
+              cookieStore.set({ name, value: "", ...options })
             },
           },
-        )
-      } catch (error) {
-        console.error("Demo user parsing error:", error)
-        throw new Error("Invalid demo user session")
-      }
+        },
+      )
+    } catch (error) {
+      console.error("Demo user parsing error:", error)
+      throw new Error("Invalid demo user session")
+    }
+  } else {
+    supabaseClient = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value
+          },
+          set(name: string, value: string, options: any) {
+            cookieStore.set({ name, value, ...options })
+          },
+          remove(name: string, options: any) {
+            cookieStore.set({ name, value: "", ...options })
+          },
+        },
+      },
+    )
+
+    const {
+      data: { user },
+    } = await supabaseClient.auth.getUser()
+
+    console.log("Supabase user:", user ? `Found user: ${user.id}` : "No Supabase user")
+
+    if (user) {
+      userId = user.id
+      console.log("Using Supabase auth with user ID:", userId)
     } else {
       console.error("No authentication found - no Supabase user and no demo user cookie")
       throw new Error("User not authenticated")
@@ -109,62 +108,65 @@ export async function createTaskAction(taskData: {
 export async function fetchTasksAction() {
   const cookieStore = cookies()
 
-  // First try Supabase authentication
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
-        },
-        set(name: string, value: string, options: any) {
-          cookieStore.set({ name, value, ...options })
-        },
-        remove(name: string, options: any) {
-          cookieStore.set({ name, value: "", ...options })
-        },
-      },
-    },
-  )
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const demoUserCookie = cookieStore.get("demo-user")?.value
+  console.log("Demo user cookie:", demoUserCookie ? "Found" : "Not found")
 
   let userId: string
-  let supabaseClient = supabase
+  let supabaseClient
 
-  if (user) {
-    userId = user.id
-  } else {
-    const demoUserCookie = cookieStore.get("demo-user")?.value
+  if (demoUserCookie) {
+    try {
+      const demoUser = JSON.parse(decodeURIComponent(demoUserCookie))
+      userId = demoUser.id
+      console.log("Using demo user with ID:", userId)
 
-    if (demoUserCookie) {
-      try {
-        const demoUser = JSON.parse(decodeURIComponent(demoUserCookie))
-        userId = demoUser.id
-
-        supabaseClient = createServerClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.SUPABASE_SERVICE_ROLE_KEY!,
-          {
-            cookies: {
-              get(name: string) {
-                return cookieStore.get(name)?.value
-              },
-              set(name: string, value: string, options: any) {
-                cookieStore.set({ name, value, ...options })
-              },
-              remove(name: string, options: any) {
-                cookieStore.set({ name, value: "", ...options })
-              },
+      supabaseClient = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        {
+          cookies: {
+            get(name: string) {
+              return cookieStore.get(name)?.value
+            },
+            set(name: string, value: string, options: any) {
+              cookieStore.set({ name, value, ...options })
+            },
+            remove(name: string, options: any) {
+              cookieStore.set({ name, value: "", ...options })
             },
           },
-        )
-      } catch (error) {
-        return []
-      }
+        },
+      )
+    } catch (error) {
+      return []
+    }
+  } else {
+    supabaseClient = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value
+          },
+          set(name: string, value: string, options: any) {
+            cookieStore.set({ name, value, ...options })
+          },
+          remove(name: string, options: any) {
+            cookieStore.set({ name, value: "", ...options })
+          },
+        },
+      },
+    )
+
+    const {
+      data: { user },
+    } = await supabaseClient.auth.getUser()
+
+    console.log("Supabase user:", user ? `Found user: ${user.id}` : "No Supabase user")
+
+    if (user) {
+      userId = user.id
     } else {
       return []
     }
