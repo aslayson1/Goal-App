@@ -1,6 +1,6 @@
 "use client"
 
-import { useActionState, useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import { useFormStatus } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -21,7 +21,7 @@ function SubmitButton() {
 
 export function RegisterForm() {
   const router = useRouter()
-  const [state, formAction] = useActionState(signUp, null)
+  const [state, setState] = useState<{ success?: boolean | string; error?: string } | null>(null)
   const [confirmPassword, setConfirmPassword] = useState("")
   const [error, setError] = useState("")
 
@@ -32,14 +32,20 @@ export function RegisterForm() {
     }
   }, [state, router])
 
-  const handleSubmit = (formData: FormData) => {
+  const handleSubmit = async (formData: FormData) => {
     const password = formData.get("password")
     if (password !== confirmPassword) {
       setError("Passwords do not match")
       return
     }
     setError("")
-    formAction(formData)
+
+    try {
+      const result = await signUp(null, formData)
+      setState(result)
+    } catch (error) {
+      setState({ error: "An unexpected error occurred" })
+    }
   }
 
   return (
