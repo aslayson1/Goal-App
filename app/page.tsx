@@ -1483,7 +1483,53 @@ function GoalTrackerApp() {
         const { data, error } = await supabase.from("tasks").select("*").order("created_at", { ascending: false })
         if (error) throw error
         console.log("Hydrated tasks from Supabase:", data)
-        // TODO: Merge these rows into your existing daily/weekly state so toggles can persist.
+
+        if (data && data.length > 0) {
+          // Separate tasks by type and merge into existing state
+          const weeklyTasksFromDB: any = {}
+          const dailyTasksFromDB: any = {}
+
+          data.forEach((task: any) => {
+            const taskObj = {
+              id: task.id,
+              title: task.title,
+              description: task.description || "",
+              completed: task.completed || false,
+              goalId: task.goal_id,
+              time: task.due_date
+                ? new Date(task.due_date).toLocaleTimeString("en-US", {
+                    hour: "numeric",
+                    minute: "2-digit",
+                    hour12: true,
+                  })
+                : "",
+            }
+
+            // Determine if it's a weekly or daily task based on due_date
+            const dueDate = task.due_date ? new Date(task.due_date) : null
+            const isWeeklyTask = dueDate && dueDate.getDay() !== new Date().getDay()
+
+            if (isWeeklyTask) {
+              // Add to weekly tasks - use a default category if none specified
+              const category = "General"
+              if (!weeklyTasksFromDB[category]) {
+                weeklyTasksFromDB[category] = []
+              }
+              weeklyTasksFromDB[category].push(taskObj)
+            } else {
+              // Add to daily tasks - use a default category if none specified
+              const category = "General"
+              if (!dailyTasksFromDB[category]) {
+                dailyTasksFromDB[category] = []
+              }
+              dailyTasksFromDB[category].push(taskObj)
+            }
+          })
+
+          // Merge with existing state
+          setWeeklyTasks((prev) => ({ ...prev, ...weeklyTasksFromDB }))
+          setDailyTasks((prev) => ({ ...prev, ...dailyTasksFromDB }))
+        }
       } catch (error: any) {
         if (error?.message?.includes("does not exist") || error?.message?.includes("schema cache")) {
           console.warn("Tasks table not found, using local state only")
