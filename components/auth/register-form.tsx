@@ -27,8 +27,7 @@ export function RegisterForm() {
 
   useEffect(() => {
     if (state?.success) {
-      // Show success message or redirect to login
-      router.push("/auth/login")
+      router.push("/")
     }
   }, [state, router])
 
