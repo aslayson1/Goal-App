@@ -1,7 +1,7 @@
 "use client"
 
 // Adding Supabase imports for task persistence
-import { createTask } from "@/lib/data/tasks"
+import { createTask, setTaskCompleted } from "@/lib/data/tasks"
 import { supabase } from "@/lib/supabase/client"
 
 import { useState, useEffect } from "react"
@@ -1310,38 +1310,43 @@ function GoalTrackerApp() {
     return [1, 100, 1000, 5000]
   }
 
-  const addWeeklyTask = () => {
+  const addWeeklyTask = async () => {
     if (!newWeeklyTask.title || !newWeeklyTask.category) return
 
     const taskId = `w${currentWeek}_${Date.now()}`
     const weekKey = `Week ${currentWeek}`
 
+    // Optimistic update to local state
+    const newTask = {
+      id: taskId,
+      title: newWeeklyTask.title,
+      description: newWeeklyTask.description,
+      category: newWeeklyTask.category,
+      goalId: newWeeklyTask.goalId,
+      completed: false,
+      priority: newWeeklyTask.priority,
+      estimatedHours: newWeeklyTask.estimatedHours,
+    }
+
     setWeeklyTasks((prev) => ({
       ...prev,
-      [weekKey]: [
-        ...(prev[weekKey] || []),
-        {
-          id: taskId,
-          title: newWeeklyTask.title,
-          description: newWeeklyTask.description,
-          category: newWeeklyTask.category,
-          goalId: newWeeklyTask.goalId,
-          completed: false,
-          priority: newWeeklyTask.priority,
-          estimatedHours: newWeeklyTask.estimatedHours,
-        },
-      ],
+      [weekKey]: [...(prev[weekKey] || []), newTask],
     }))
 
-    // Adding Supabase persistence for weekly tasks
+    // Persist to Supabase
     try {
-      createTask({
+      await createTask({
         title: newWeeklyTask.title,
         description: newWeeklyTask.description || null,
-        // Optionally add a week-derived ISO date if available: due_date: mondayISO
+        goal_id: newWeeklyTask.goalId || null,
       })
     } catch (e) {
       console.error("Supabase create weekly task failed:", e instanceof Error ? e.message : String(e))
+      // Revert optimistic update on error
+      setWeeklyTasks((prev) => ({
+        ...prev,
+        [weekKey]: prev[weekKey]?.filter((task) => task.id !== taskId) || [],
+      }))
     }
 
     setNewWeeklyTask({
@@ -1355,37 +1360,42 @@ function GoalTrackerApp() {
     setShowAddWeeklyTask(false)
   }
 
-  const addDailyTask = () => {
+  const addDailyTask = async () => {
     if (!newDailyTask.title || !newDailyTask.category) return
 
     const taskId = `${selectedDay.toLowerCase()}_${Date.now()}`
 
+    // Optimistic update to local state
+    const newTask = {
+      id: taskId,
+      title: newDailyTask.title,
+      description: newDailyTask.description,
+      category: newDailyTask.category,
+      goalId: newDailyTask.goalId,
+      completed: false,
+      timeBlock: newDailyTask.timeBlock,
+      estimatedMinutes: newDailyTask.estimatedMinutes,
+    }
+
     setDailyTasks((prev) => ({
       ...prev,
-      [selectedDay]: [
-        ...(prev[selectedDay] || []),
-        {
-          id: taskId,
-          title: newDailyTask.title,
-          description: newDailyTask.description,
-          category: newDailyTask.category,
-          goalId: newDailyTask.goalId,
-          completed: false,
-          timeBlock: newDailyTask.timeBlock,
-          estimatedMinutes: newDailyTask.estimatedMinutes,
-        },
-      ],
+      [selectedDay]: [...(prev[selectedDay] || []), newTask],
     }))
 
-    // Adding Supabase persistence for daily tasks
+    // Persist to Supabase
     try {
-      createTask({
+      await createTask({
         title: newDailyTask.title,
         description: newDailyTask.description || null,
-        // Optionally: due_date: selectedDayISO
+        goal_id: newDailyTask.goalId || null,
       })
     } catch (e) {
       console.error("Supabase create daily task failed:", e instanceof Error ? e.message : String(e))
+      // Revert optimistic update on error
+      setDailyTasks((prev) => ({
+        ...prev,
+        [selectedDay]: prev[selectedDay]?.filter((task) => task.id !== taskId) || [],
+      }))
     }
 
     setNewDailyTask({
@@ -1399,25 +1409,60 @@ function GoalTrackerApp() {
     setShowAddDailyTask(false)
   }
 
-  const toggleWeeklyTask = (taskId: string) => {
+  const toggleWeeklyTask = async (taskId: string) => {
+    const weekKey = `Week ${currentWeek}`
+    const currentTask = weeklyTasks[weekKey]?.find((task) => task.id === taskId)
+    if (!currentTask) return
+
+    const newCompleted = !currentTask.completed
+
+    // Optimistic update
     setWeeklyTasks((prev) => ({
       ...prev,
-      [`Week ${currentWeek}`]:
-        prev[`Week ${currentWeek}`]?.map((task) =>
-          task.id === taskId ? { ...task, completed: !task.completed } : task,
-        ) || [],
+      [weekKey]: prev[weekKey]?.map((task) => (task.id === taskId ? { ...task, completed: newCompleted } : task)) || [],
     }))
-    // TODO: when tasks are hydrated from Supabase, call:
-    // await setTaskCompleted(dbId, newCompleted)
+
+    // Persist to Supabase (if task has a database ID)
+    try {
+      if (currentTask.dbId) {
+        await setTaskCompleted(currentTask.dbId, newCompleted)
+      }
+    } catch (e) {
+      console.error("Failed to update task completion:", e instanceof Error ? e.message : String(e))
+      // Revert optimistic update on error
+      setWeeklyTasks((prev) => ({
+        ...prev,
+        [weekKey]:
+          prev[weekKey]?.map((task) => (task.id === taskId ? { ...task, completed: !newCompleted } : task)) || [],
+      }))
+    }
   }
 
-  const toggleDailyTask = (day: string, taskId: string) => {
+  const toggleDailyTask = async (day: string, taskId: string) => {
+    const currentTask = dailyTasks[day]?.find((task) => task.id === taskId)
+    if (!currentTask) return
+
+    const newCompleted = !currentTask.completed
+
+    // Optimistic update
     setDailyTasks((prev) => ({
       ...prev,
-      [day]: prev[day]?.map((task) => (task.id === taskId ? { ...task, completed: !task.completed } : task)) || [],
+      [day]: prev[day]?.map((task) => (task.id === taskId ? { ...task, completed: newCompleted } : task)) || [],
     }))
-    // TODO: when tasks are hydrated from Supabase, call:
-    // await setTaskCompleted(dbId, newCompleted)
+
+    // Persist to Supabase (if task has a database ID)
+    try {
+      if (currentTask.dbId) {
+        await setTaskCompleted(currentTask.dbId, newCompleted)
+      }
+    } catch (e) {
+      console.error("Failed to update task completion:", e instanceof Error ? e.message : String(e))
+      // Revert optimistic update on error
+      setDailyTasks((prev) => ({
+        ...prev,
+        [day]: prev[day]?.map((task) => (task.id === taskId ? { ...task, completed: !newCompleted } : task)) || [],
+      }))
+    }
   }
 
   // Adding useEffect to hydrate tasks from Supabase
