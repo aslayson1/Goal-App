@@ -34,34 +34,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
       const u = session?.user
       setUser(u ? { id: u.id, email: u.email ?? null } : null)
+      setIsLoading(false)
     })
     return () => sub.subscription.unsubscribe()
   }, [])
 
   const login = async (email: string, password: string) => {
     setIsLoading(true)
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) throw error
-    const { data } = await supabase.auth.getUser()
-    const u = data.user
-    setUser(u ? { id: u.id, email: u.email ?? null } : null)
-    setIsLoading(false)
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) throw error
+    } catch (error) {
+      setIsLoading(false)
+      throw error
+    }
   }
 
   const register = async (name: string, email: string, password: string) => {
     setIsLoading(true)
-    const { error, data } = await supabase.auth.signUp({ email, password, options: { data: { name } } })
-    if (error) throw error
-    const u = data.user
-    setUser(u ? { id: u.id, email: u.email ?? null, name } : null)
-    setIsLoading(false)
+    try {
+      const { error, data } = await supabase.auth.signUp({ email, password, options: { data: { name } } })
+      if (error) throw error
+    } catch (error) {
+      setIsLoading(false)
+      throw error
+    }
   }
 
   const logout = async () => {
     setIsLoading(true)
-    await supabase.auth.signOut()
-    setUser(null)
-    setIsLoading(false)
+    try {
+      await supabase.auth.signOut()
+    } catch (error) {
+      setIsLoading(false)
+      throw error
+    }
   }
 
   const value: AuthContextType = { user, isLoading, login, register, logout }
