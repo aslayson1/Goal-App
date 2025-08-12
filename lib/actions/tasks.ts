@@ -12,6 +12,7 @@ export async function createTaskAction(taskData: {
 }) {
   const cookieStore = cookies()
 
+  // First try Supabase authentication
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -34,15 +35,48 @@ export async function createTaskAction(taskData: {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (!user) {
-    throw new Error("User not authenticated")
+  let userId: string
+  let supabaseClient = supabase
+
+  if (user) {
+    userId = user.id
+  } else {
+    const demoUserCookie = cookieStore.get("demo-user")?.value
+    if (demoUserCookie) {
+      try {
+        const demoUser = JSON.parse(decodeURIComponent(demoUserCookie))
+        userId = demoUser.id
+
+        supabaseClient = createServerClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!,
+          {
+            cookies: {
+              get(name: string) {
+                return cookieStore.get(name)?.value
+              },
+              set(name: string, value: string, options: any) {
+                cookieStore.set({ name, value, ...options })
+              },
+              remove(name: string, options: any) {
+                cookieStore.set({ name, value: "", ...options })
+              },
+            },
+          },
+        )
+      } catch (error) {
+        throw new Error("Invalid demo user session")
+      }
+    } else {
+      throw new Error("User not authenticated")
+    }
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from("tasks")
     .insert({
       ...taskData,
-      user_id: user.id,
+      user_id: userId,
       completed: false,
     })
     .select()
@@ -59,6 +93,7 @@ export async function createTaskAction(taskData: {
 export async function fetchTasksAction() {
   const cookieStore = cookies()
 
+  // First try Supabase authentication
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -81,14 +116,47 @@ export async function fetchTasksAction() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (!user) {
-    return []
+  let userId: string
+  let supabaseClient = supabase
+
+  if (user) {
+    userId = user.id
+  } else {
+    const demoUserCookie = cookieStore.get("demo-user")?.value
+    if (demoUserCookie) {
+      try {
+        const demoUser = JSON.parse(decodeURIComponent(demoUserCookie))
+        userId = demoUser.id
+
+        supabaseClient = createServerClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!,
+          {
+            cookies: {
+              get(name: string) {
+                return cookieStore.get(name)?.value
+              },
+              set(name: string, value: string, options: any) {
+                cookieStore.set({ name, value, ...options })
+              },
+              remove(name: string, options: any) {
+                cookieStore.set({ name, value: "", ...options })
+              },
+            },
+          },
+        )
+      } catch (error) {
+        return []
+      }
+    } else {
+      return []
+    }
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from("tasks")
     .select("*")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .order("created_at", { ascending: false })
 
   if (error) {
