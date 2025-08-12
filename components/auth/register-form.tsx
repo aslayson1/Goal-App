@@ -1,59 +1,74 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
+import { useActionState, useEffect, useState } from "react"
+import { useFormStatus } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { useAuth } from "@/components/auth/auth-provider"
+import { useRouter } from "next/navigation"
+import { signUp } from "@/lib/actions/auth"
+
+function SubmitButton() {
+  const { pending } = useFormStatus()
+
+  return (
+    <Button type="submit" className="w-full" disabled={pending}>
+      {pending ? "Creating account..." : "Create Account"}
+    </Button>
+  )
+}
 
 export function RegisterForm() {
-  const [name, setName] = useState("")
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
+  const router = useRouter()
+  const [state, formAction] = useActionState(signUp, null)
   const [confirmPassword, setConfirmPassword] = useState("")
   const [error, setError] = useState("")
-  const { register, isLoading } = useAuth()
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
+  useEffect(() => {
+    if (state?.success) {
+      // Show success message or redirect to login
+      router.push("/auth/login")
+    }
+  }, [state, router])
 
+  const handleSubmit = (formData: FormData) => {
+    const password = formData.get("password")
     if (password !== confirmPassword) {
       setError("Passwords do not match")
       return
     }
-
-    try {
-      await register(name, email, password)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Registration failed")
-    }
+    setError("")
+    formAction(formData)
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {error && (
+    <form action={handleSubmit} className="space-y-4">
+      {(state?.error || error) && (
         <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription>{state?.error || error}</AlertDescription>
+        </Alert>
+      )}
+
+      {state?.success && (
+        <Alert>
+          <AlertDescription>{state.success}</AlertDescription>
         </Alert>
       )}
 
       <div className="space-y-2">
         <Label htmlFor="name">Full Name</Label>
-        <Input id="name" type="text" value={name} onChange={(e) => setName(e.target.value)} required />
+        <Input id="name" name="name" type="text" required />
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
-        <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        <Input id="email" name="email" type="email" required />
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="password">Password</Label>
-        <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+        <Input id="password" name="password" type="password" required />
       </div>
 
       <div className="space-y-2">
@@ -67,9 +82,7 @@ export function RegisterForm() {
         />
       </div>
 
-      <Button type="submit" className="w-full" disabled={isLoading}>
-        {isLoading ? "Creating account..." : "Create Account"}
-      </Button>
+      <SubmitButton />
     </form>
   )
 }

@@ -54,13 +54,13 @@ importers:
         specifier: latest
         version: 1.2.14(@types/react-dom@18.0.0)(@types/react@18.0.0)(react-dom@18.0.0(react@18.0.0))(react@18.0.0)
       '@supabase/auth-helpers-nextjs':
-        specifier: ^0.10.0
+        specifier: latest
         version: 0.10.0(@supabase/supabase-js@2.54.0)
       '@supabase/ssr':
         specifier: latest
         version: 0.6.1(@supabase/supabase-js@2.54.0)
       '@supabase/supabase-js':
-        specifier: latest
+        specifier: ^2.39.0
         version: 2.54.0
       child_process:
         specifier: latest
