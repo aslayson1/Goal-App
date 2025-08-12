@@ -5,19 +5,18 @@ export type TaskRow = {
   user_id: string
   title: string
   description?: string | null
-  target_date?: string | null // Changed from due_date
-  completed: boolean // Changed from status string to boolean
+  target_date?: string | null
+  completed_at?: string | null // Use completed_at instead of completed boolean
   category_id?: string | null
   task_type?: string | null
   created_at: string
   updated_at: string
-  completed_at?: string | null
 }
 
 export async function createTask(row: {
   title: string
   description?: string | null
-  target_date?: string | null // Changed from due_date
+  target_date?: string | null
   category_id?: string | null
   task_type?: string | null
 }) {
@@ -32,7 +31,7 @@ export async function createTask(row: {
       .insert([
         {
           user_id: user.id,
-          completed: false, // Use boolean instead of status string
+          completed_at: null, // Use completed_at: null instead of completed: false
           ...row,
         },
       ])
@@ -51,7 +50,7 @@ export async function createTask(row: {
 
 export async function setTaskCompleted(id: string, completed: boolean) {
   try {
-    const updateData: any = { completed }
+    const updateData: any = {}
     if (completed) {
       updateData.completed_at = new Date().toISOString()
     } else {
