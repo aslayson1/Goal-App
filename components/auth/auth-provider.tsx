@@ -48,12 +48,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const { data } = await supabase.auth.getUser()
       const u = data.user
+
+      // Debug logging to see what we're getting from Supabase
+      console.log("Supabase user data:", u)
+      console.log("User metadata:", u?.user_metadata)
+
       setUser(
         u
           ? {
               id: u.id,
               email: u.email ?? null,
-              name: u.user_metadata?.name ?? null,
+              name: u.user_metadata?.name ?? u.user_metadata?.full_name ?? null,
             }
           : null,
       )
@@ -77,19 +82,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     performInitialCheck()
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+    const { data: sub } = supabase.auth.onAuthStateChange(async (_e, session) => {
       const u = session?.user
+
+      console.log("Auth state change - user:", u)
+      console.log("Auth state change - metadata:", u?.user_metadata)
+
       setUser(
         u
           ? {
               id: u.id,
               email: u.email ?? null,
-              name: u.user_metadata?.name ?? null,
+              name: u.user_metadata?.name ?? u.user_metadata?.full_name ?? null,
             }
           : null,
       )
       setIsLoading(false)
       setIsInitialized(true)
+
+      if (u && !u.user_metadata?.name && !u.user_metadata?.full_name) {
+        setTimeout(async () => {
+          await checkAuthState()
+        }, 1000)
+      }
     })
 
     const handleFocus = () => {

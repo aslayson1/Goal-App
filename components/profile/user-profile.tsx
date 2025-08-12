@@ -44,7 +44,11 @@ export function UserProfile({ onClose }: UserProfileProps) {
 
   if (!user) return null
 
-  const getInitials = (name: string) => {
+  const getInitials = (name: string | null | undefined) => {
+    if (!name || typeof name !== "string") {
+      return "U" // Default to "U" for User
+    }
+
     return name
       .split(" ")
       .map((n) => n[0])

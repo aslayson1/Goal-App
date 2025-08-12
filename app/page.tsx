@@ -1068,8 +1068,8 @@ function GoalTrackerApp() {
   } | null>(null)
 
   // Helper function to get user initials
-  const getInitials = (name: string) => {
-    if (!name) return "U"
+  const getInitials = (name: string | null | undefined) => {
+    if (!name || typeof name !== "string") return "U"
     return name
       .split(" ")
       .map((n) => n[0])
@@ -1989,7 +1989,7 @@ function GoalTrackerApp() {
                       <AvatarImage src={user.avatar || "/placeholder.svg?height=40&width=40&text=U"} alt={user?.name} />
                     )}
                     <AvatarFallback className="bg-white text-black text-xs font-semibold">
-                      {user?.name ? getInitials(user.name) : "U"}
+                      {getInitials(user?.name)}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
