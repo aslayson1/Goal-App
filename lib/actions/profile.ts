@@ -1,4 +1,7 @@
-"use client"
+"use server"
+
+import { createServerActionClient } from "@supabase/auth-helpers-nextjs"
+import { cookies } from "next/headers"
 
 export interface ProfileData {
   name: string
@@ -9,33 +12,41 @@ export interface ProfileData {
   notifications: boolean
 }
 
-export function updateUserProfile(profileData: ProfileData) {
+export async function updateUserProfile(profileData: ProfileData) {
   try {
-    // Get current user from localStorage
-    const storedUser = localStorage.getItem("user")
-    if (!storedUser) {
-      throw new Error("User not authenticated")
+    const cookieStore = cookies()
+    const supabase = createServerActionClient({ cookies: () => cookieStore })
+
+    // Get current user
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser()
+
+    if (userError || !user) {
+      return { success: false, error: "User not authenticated" }
     }
 
-    const user = JSON.parse(storedUser)
-
-    // Update user data with new profile information
-    const updatedUser = {
-      ...user,
-      name: profileData.name,
-      email: profileData.email,
-      preferences: {
-        theme: profileData.theme,
-        weekStartDay: profileData.weekStartDay,
-        timezone: profileData.timezone,
-        notifications: profileData.notifications,
+    // Update user metadata with profile information
+    const { error: updateError } = await supabase.auth.updateUser({
+      data: {
+        name: profileData.name,
+        full_name: profileData.name,
+        preferences: {
+          theme: profileData.theme,
+          weekStartDay: profileData.weekStartDay,
+          timezone: profileData.timezone,
+          notifications: profileData.notifications,
+        },
       },
+    })
+
+    if (updateError) {
+      console.error("Profile update error:", updateError)
+      return { success: false, error: updateError.message }
     }
 
-    // Save updated user back to localStorage
-    localStorage.setItem("user", JSON.stringify(updatedUser))
-
-    return { success: true, user: updatedUser }
+    return { success: true, message: "Profile updated successfully" }
   } catch (error) {
     console.error("Profile update error:", error)
     return { success: false, error: error instanceof Error ? error.message : "Failed to update profile" }
