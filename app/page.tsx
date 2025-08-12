@@ -4,6 +4,8 @@
 import { createTask, setTaskCompleted } from "@/lib/data/tasks"
 import { supabase } from "@/lib/supabase/client"
 
+import { createTaskAction } from "@/lib/actions/tasks"
+
 import { useState, useEffect } from "react"
 import {
   Plus,
@@ -1386,13 +1388,12 @@ function GoalTrackerApp() {
       [selectedDay]: [...(prev[selectedDay] || []), newTask],
     }))
 
-    // Persist to Supabase
     try {
       const today = new Date()
-      await createTask({
+      await createTaskAction({
         title: newDailyTask.title,
         description: newDailyTask.description || null,
-        target_date: today.toISOString().split("T")[0], // Use date format for target_date
+        target_date: today.toISOString().split("T")[0],
         task_type: "daily",
         goal_id: newDailyTask.goalId || null,
       })
