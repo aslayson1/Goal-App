@@ -60,11 +60,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    checkAuthState()
+    const performInitialCheck = async () => {
+      await checkAuthState()
+      setTimeout(async () => {
+        await checkAuthState()
+      }, 100)
+    }
 
-    const immediateRecheck = setTimeout(() => {
-      checkAuthState()
-    }, 100)
+    performInitialCheck()
 
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
       const u = session?.user
@@ -110,14 +113,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, 500)
 
     return () => {
-      clearTimeout(immediateRecheck)
       sub.subscription.unsubscribe()
       window.removeEventListener("focus", handleFocus)
       document.removeEventListener("visibilitychange", handleVisibilityChange)
       window.removeEventListener("storage", handleStorageChange)
       clearInterval(cookieCheckInterval)
     }
-  }, [isInitialized])
+  }, [])
 
   const logout = async () => {
     setIsLoading(true)
@@ -134,7 +136,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value: AuthContextType = {
     user,
-    isLoading: !isInitialized,
+    isLoading,
     login: async () => {
       throw new Error("Use server actions for login")
     },
