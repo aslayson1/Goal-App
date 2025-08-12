@@ -24,10 +24,10 @@ export function useAuth() {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isInitialized, setIsInitialized] = useState(false)
 
   const checkAuthState = async () => {
     try {
-      // Check for demo user cookie first
       const demoUserCookie = document.cookie.split("; ").find((row) => row.startsWith("demo-user="))
 
       if (demoUserCookie) {
@@ -37,60 +37,63 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const demoUserData = JSON.parse(decodeURIComponent(cookieValue))
             setUser(demoUserData)
             setIsLoading(false)
+            setIsInitialized(true)
             return
           } catch (parseError) {
             console.error("Failed to parse demo user cookie:", parseError)
-            // Clear invalid cookie
             document.cookie = "demo-user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
           }
         }
       }
 
-      // Check Supabase auth
       const { data } = await supabase.auth.getUser()
       const u = data.user
       setUser(u ? { id: u.id, email: u.email ?? null } : null)
       setIsLoading(false)
+      setIsInitialized(true)
     } catch (error) {
       console.error("Auth check error:", error)
       setUser(null)
       setIsLoading(false)
+      setIsInitialized(true)
     }
   }
 
   useEffect(() => {
     checkAuthState()
 
-    // Listen for Supabase auth changes
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
       const u = session?.user
       setUser(u ? { id: u.id, email: u.email ?? null } : null)
       setIsLoading(false)
+      setIsInitialized(true)
     })
 
     const handleStorageChange = () => {
-      checkAuthState()
+      if (isInitialized) {
+        checkAuthState()
+      }
     }
     window.addEventListener("storage", handleStorageChange)
 
-    const cookieCheckInterval = setInterval(checkAuthState, 1000)
+    const cookieCheckInterval = setInterval(() => {
+      if (isInitialized) {
+        checkAuthState()
+      }
+    }, 5000)
 
     return () => {
       sub.subscription.unsubscribe()
       window.removeEventListener("storage", handleStorageChange)
       clearInterval(cookieCheckInterval)
     }
-  }, [])
+  }, [isInitialized])
 
   const logout = async () => {
     setIsLoading(true)
     try {
-      // Clear demo user cookie
       document.cookie = "demo-user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
-
-      // Sign out from Supabase
       await supabase.auth.signOut()
-
       setUser(null)
     } catch (error) {
       console.error("Logout error:", error)
@@ -101,7 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value: AuthContextType = {
     user,
-    isLoading,
+    isLoading: isLoading || !isInitialized,
     login: async () => {
       throw new Error("Use server actions for login")
     },
