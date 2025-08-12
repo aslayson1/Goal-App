@@ -31,10 +31,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const demoUserCookie = document.cookie.split("; ").find((row) => row.startsWith("demo-user="))
 
       if (demoUserCookie) {
-        const demoUserData = JSON.parse(decodeURIComponent(demoUserCookie.split("=")[1]))
-        setUser(demoUserData)
-        setIsLoading(false)
-        return
+        const cookieValue = demoUserCookie.split("=")[1]
+        if (cookieValue && cookieValue !== "") {
+          try {
+            const demoUserData = JSON.parse(decodeURIComponent(cookieValue))
+            setUser(demoUserData)
+            setIsLoading(false)
+            return
+          } catch (parseError) {
+            console.error("Failed to parse demo user cookie:", parseError)
+            // Clear invalid cookie
+            document.cookie = "demo-user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
+          }
+        }
       }
 
       // Check Supabase auth
