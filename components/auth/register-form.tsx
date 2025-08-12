@@ -1,7 +1,8 @@
 "use client"
 
+import type React from "react"
+
 import { useEffect, useState } from "react"
-import { useFormStatus } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -9,12 +10,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useRouter } from "next/navigation"
 import { signUp } from "@/lib/actions/auth"
 
-function SubmitButton() {
-  const { pending } = useFormStatus()
-
+function SubmitButton({ isLoading }: { isLoading: boolean }) {
   return (
-    <Button type="submit" className="w-full" disabled={pending}>
-      {pending ? "Creating account..." : "Create Account"}
+    <Button type="submit" className="w-full" disabled={isLoading}>
+      {isLoading ? "Creating account..." : "Create Account"}
     </Button>
   )
 }
@@ -24,6 +23,7 @@ export function RegisterForm() {
   const [state, setState] = useState<{ success?: boolean | string; error?: string } | null>(null)
   const [confirmPassword, setConfirmPassword] = useState("")
   const [error, setError] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     if (state?.success) {
@@ -32,10 +32,16 @@ export function RegisterForm() {
     }
   }, [state, router])
 
-  const handleSubmit = async (formData: FormData) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setIsLoading(true)
+
+    const formData = new FormData(e.currentTarget)
     const password = formData.get("password")
+
     if (password !== confirmPassword) {
       setError("Passwords do not match")
+      setIsLoading(false)
       return
     }
     setError("")
@@ -45,11 +51,13 @@ export function RegisterForm() {
       setState(result)
     } catch (error) {
       setState({ error: "An unexpected error occurred" })
+    } finally {
+      setIsLoading(false)
     }
   }
 
   return (
-    <form action={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       {(state?.error || error) && (
         <Alert variant="destructive">
           <AlertDescription>{state?.error || error}</AlertDescription>
@@ -88,7 +96,7 @@ export function RegisterForm() {
         />
       </div>
 
-      <SubmitButton />
+      <SubmitButton isLoading={isLoading} />
     </form>
   )
 }

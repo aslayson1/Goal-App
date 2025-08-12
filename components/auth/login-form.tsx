@@ -1,7 +1,8 @@
 "use client"
 
+import type React from "react"
+
 import { useEffect, useState } from "react"
-import { useFormStatus } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -9,12 +10,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useRouter } from "next/navigation"
 import { signIn } from "@/lib/actions/auth"
 
-function SubmitButton() {
-  const { pending } = useFormStatus()
-
+function SubmitButton({ isLoading }: { isLoading: boolean }) {
   return (
-    <Button type="submit" className="w-full" disabled={pending}>
-      {pending ? "Signing in..." : "Sign In"}
+    <Button type="submit" className="w-full" disabled={isLoading}>
+      {isLoading ? "Signing in..." : "Sign In"}
     </Button>
   )
 }
@@ -22,6 +21,7 @@ function SubmitButton() {
 export function LoginForm() {
   const router = useRouter()
   const [state, setState] = useState<{ success?: boolean; error?: string } | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     if (state?.success) {
@@ -29,17 +29,23 @@ export function LoginForm() {
     }
   }, [state, router])
 
-  const handleSubmit = async (formData: FormData) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setIsLoading(true)
+
     try {
+      const formData = new FormData(e.currentTarget)
       const result = await signIn(null, formData)
       setState(result)
     } catch (error) {
       setState({ error: "An unexpected error occurred" })
+    } finally {
+      setIsLoading(false)
     }
   }
 
   return (
-    <form action={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       {state?.error && (
         <Alert variant="destructive">
           <AlertDescription>{state.error}</AlertDescription>
@@ -56,7 +62,7 @@ export function LoginForm() {
         <Input id="password" name="password" type="password" defaultValue="password" required />
       </div>
 
-      <SubmitButton />
+      <SubmitButton isLoading={isLoading} />
 
       <div className="text-sm text-gray-600 text-center">Demo credentials: demo@example.com / password</div>
     </form>
