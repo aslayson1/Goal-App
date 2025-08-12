@@ -69,6 +69,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsInitialized(true)
     })
 
+    const handleFocus = () => {
+      checkAuthState()
+    }
+    window.addEventListener("focus", handleFocus)
+
     const handleStorageChange = () => {
       if (isInitialized) {
         checkAuthState()
@@ -80,10 +85,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (isInitialized) {
         checkAuthState()
       }
-    }, 5000)
+    }, 2000)
 
     return () => {
       sub.subscription.unsubscribe()
+      window.removeEventListener("focus", handleFocus)
       window.removeEventListener("storage", handleStorageChange)
       clearInterval(cookieCheckInterval)
     }
@@ -104,7 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value: AuthContextType = {
     user,
-    isLoading: isLoading || !isInitialized,
+    isLoading: !isInitialized,
     login: async () => {
       throw new Error("Use server actions for login")
     },
