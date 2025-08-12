@@ -1392,13 +1392,17 @@ function GoalTrackerApp() {
       const today = new Date()
       await createTask({
         title: newDailyTask.title,
-        goal_id: newDailyTask.goalId || null,
+        description: newDailyTask.description || null,
         target_date: today.toISOString().split("T")[0], // Use date format for target_date
         task_type: "daily",
         category_id: newDailyTask.category || null,
       })
     } catch (e) {
-      console.error("Supabase create daily task failed:", e instanceof Error ? e.message : String(e))
+      console.error("Supabase create daily task failed:", e)
+      if (e instanceof Error) {
+        console.error("Error message:", e.message)
+        console.error("Error stack:", e.stack)
+      }
       // Revert optimistic update on error
       setDailyTasks((prev) => ({
         ...prev,
