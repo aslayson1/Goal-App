@@ -1427,13 +1427,19 @@ function GoalTrackerApp() {
         data: { user },
       } = await supabase.auth.getUser()
       if (!user) return
-      const { data, error } = await supabase.from("tasks").select("*").order("created_at", { ascending: false })
-      if (error) {
-        console.error("Failed to hydrate tasks:", error.message || String(error))
-        return
+
+      try {
+        const { data, error } = await supabase.from("tasks").select("*").order("created_at", { ascending: false })
+        if (error) throw error
+        console.log("Hydrated tasks from Supabase:", data)
+        // TODO: Merge these rows into your existing daily/weekly state so toggles can persist.
+      } catch (error: any) {
+        if (error?.message?.includes("does not exist") || error?.message?.includes("schema cache")) {
+          console.warn("Tasks table not found, using local state only")
+        } else {
+          console.error("Failed to hydrate tasks:", error.message || String(error))
+        }
       }
-      console.log("Hydrated tasks from Supabase:", data)
-      // TODO: Merge these rows into your existing daily/weekly state so toggles can persist.
     })()
   }, [])
 
@@ -1950,22 +1956,6 @@ function GoalTrackerApp() {
     }))
     setShowDeleteLongTermGoal(null)
   }
-
-  useEffect(() => {
-    ;(async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) return
-      const { data, error } = await supabase.from("tasks").select("*").order("created_at", { ascending: false })
-      if (error) {
-        console.error("Failed to hydrate tasks:", error.message || String(error))
-        return
-      }
-      console.log("Hydrated tasks from Supabase:", data)
-      // TODO: Merge these rows into your existing daily/weekly state so toggles can persist.
-    })()
-  }, [])
 
   return (
     <div className="min-h-screen bg-gray-50">
