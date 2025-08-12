@@ -15,8 +15,18 @@ export async function createTaskAction(taskData: {
   console.log("=== DEBUG: Task Creation Started ===")
   console.log("Task data:", taskData)
 
+  const allCookies = cookieStore.getAll()
+  console.log(
+    "All available cookies:",
+    allCookies.map((c) => ({ name: c.name, hasValue: !!c.value })),
+  )
+
   const demoUserCookie = cookieStore.get("demo-user")?.value
-  console.log("Demo user cookie:", demoUserCookie ? "Found" : "Not found")
+  console.log("Demo user cookie raw value:", demoUserCookie)
+
+  // Check for alternative cookie names just in case
+  const altCookie = cookieStore.get("demoUser")?.value
+  console.log("Alternative demoUser cookie:", altCookie)
 
   let userId: string
   let supabaseClient
@@ -26,6 +36,7 @@ export async function createTaskAction(taskData: {
       const demoUser = JSON.parse(decodeURIComponent(demoUserCookie))
       userId = demoUser.id
       console.log("Using demo user with ID:", userId)
+      console.log("Demo user data:", demoUser)
 
       supabaseClient = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -49,6 +60,8 @@ export async function createTaskAction(taskData: {
       throw new Error("Invalid demo user session")
     }
   } else {
+    console.log("No demo user cookie found, trying Supabase auth...")
+
     supabaseClient = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -78,6 +91,10 @@ export async function createTaskAction(taskData: {
       console.log("Using Supabase auth with user ID:", userId)
     } else {
       console.error("No authentication found - no Supabase user and no demo user cookie")
+      console.error(
+        "Available cookies:",
+        allCookies.map((c) => c.name),
+      )
       throw new Error("User not authenticated")
     }
   }
