@@ -75,7 +75,7 @@ export function UserProfile({ onClose }: UserProfileProps) {
         notifications: formData.notifications,
       }
 
-      const result = updateUserProfile(profileData)
+      const result = await updateUserProfile(profileData)
 
       if (result.success) {
         setMessage({ type: "success", text: "Profile updated successfully!" })
