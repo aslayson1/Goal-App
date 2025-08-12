@@ -5,21 +5,19 @@ export type TaskRow = {
   user_id: string
   title: string
   description?: string | null
-  due_date?: string | null
-  status: "pending" | "completed"
-  goal_id?: string | null
+  target_date?: string | null // Changed from due_date
+  completed: boolean // Changed from status string to boolean
+  category_id?: string | null
+  task_type?: string | null
   created_at: string
   updated_at: string
   completed_at?: string | null
-  category_id?: string | null
-  task_type?: string | null
 }
 
 export async function createTask(row: {
   title: string
   description?: string | null
-  due_date?: string | null
-  goal_id?: string | null
+  target_date?: string | null // Changed from due_date
   category_id?: string | null
   task_type?: string | null
 }) {
@@ -34,8 +32,7 @@ export async function createTask(row: {
       .insert([
         {
           user_id: user.id,
-          status: "pending",
-          completed: false,
+          completed: false, // Use boolean instead of status string
           ...row,
         },
       ])
