@@ -4,8 +4,6 @@
 import { createTask, setTaskCompleted } from "@/lib/data/tasks"
 import { supabase } from "@/lib/supabase/client"
 
-import { createTaskAction } from "@/lib/actions/tasks"
-
 import { useState, useEffect } from "react"
 import {
   Plus,
@@ -1390,13 +1388,22 @@ function GoalTrackerApp() {
 
     try {
       const today = new Date()
-      await createTaskAction({
-        title: newDailyTask.title,
-        description: newDailyTask.description || null,
-        target_date: today.toISOString().split("T")[0],
-        task_type: "daily",
-        goal_id: newDailyTask.goalId || null,
-      })
+      const { data, error } = await supabase
+        .from("tasks")
+        .insert({
+          title: newDailyTask.title,
+          description: newDailyTask.description || null,
+          target_date: today.toISOString().split("T")[0],
+          task_type: "daily",
+          goal_id: newDailyTask.goalId || null,
+          user_id: user?.id || "demo-user",
+          completed: false,
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+      console.log("Task created successfully:", data)
     } catch (e) {
       console.error("Supabase create daily task failed:", e)
       if (e instanceof Error) {
