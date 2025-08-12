@@ -1069,6 +1069,7 @@ function GoalTrackerApp() {
 
   // Helper function to get user initials
   const getInitials = (name: string) => {
+    if (!name) return "U"
     return name
       .split(" ")
       .map((n) => n[0])
@@ -1972,7 +1973,7 @@ function GoalTrackerApp() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">Hi {user?.name.split(" ")[0]},</h1>
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">Hi {user?.name?.split(" ")[0] || "there"},</h1>
             <p className="text-gray-600">Here are your tasks for week {currentWeek} of 12.</p>
           </div>
           <div className="flex items-center space-x-2">
@@ -1998,7 +1999,7 @@ function GoalTrackerApp() {
                       <AvatarImage src={user.avatar || "/placeholder.svg?height=40&width=40&text=U"} alt={user?.name} />
                     )}
                     <AvatarFallback className="bg-white text-black text-xs font-semibold">
-                      {user ? getInitials(user.name) : "U"}
+                      {user?.name ? getInitials(user.name) : "U"}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
