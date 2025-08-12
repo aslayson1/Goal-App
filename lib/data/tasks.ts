@@ -6,8 +6,8 @@ export type TaskRow = {
   title: string
   description?: string | null
   target_date?: string | null
-  completed_at?: string | null // Use completed_at instead of completed boolean
-  category_id?: string | null
+  completed: boolean
+  goal_id?: string | null
   task_type?: string | null
   created_at: string
   updated_at: string
@@ -17,7 +17,7 @@ export async function createTask(row: {
   title: string
   description?: string | null
   target_date?: string | null
-  category_id?: string | null
+  goal_id?: string | null
   task_type?: string | null
 }) {
   const {
@@ -31,7 +31,7 @@ export async function createTask(row: {
       .insert([
         {
           user_id: user.id,
-          completed_at: null, // Use completed_at: null instead of completed: false
+          completed: false,
           ...row,
         },
       ])
@@ -50,14 +50,7 @@ export async function createTask(row: {
 
 export async function setTaskCompleted(id: string, completed: boolean) {
   try {
-    const updateData: any = {}
-    if (completed) {
-      updateData.completed_at = new Date().toISOString()
-    } else {
-      updateData.completed_at = null
-    }
-
-    const { data, error } = await supabase.from("tasks").update(updateData).eq("id", id).select().single()
+    const { data, error } = await supabase.from("tasks").update({ completed }).eq("id", id).select().single()
     if (error) throw error
     return data as TaskRow
   } catch (error: any) {

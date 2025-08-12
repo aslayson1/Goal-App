@@ -1343,7 +1343,6 @@ function GoalTrackerApp() {
         goal_id: newWeeklyTask.goalId || null,
         target_date: weekStartDate.toISOString().split("T")[0], // Use date format for target_date
         task_type: "weekly",
-        category_id: newWeeklyTask.category || null,
       })
     } catch (e) {
       console.error("Supabase create weekly task failed:", e instanceof Error ? e.message : String(e))
@@ -1395,7 +1394,7 @@ function GoalTrackerApp() {
         description: newDailyTask.description || null,
         target_date: today.toISOString().split("T")[0], // Use date format for target_date
         task_type: "daily",
-        category_id: newDailyTask.category || null,
+        goal_id: newDailyTask.goalId || null,
       })
     } catch (e) {
       console.error("Supabase create daily task failed:", e)
@@ -1500,8 +1499,8 @@ function GoalTrackerApp() {
               id: task.id,
               title: task.title,
               description: task.description || "",
-              completed: !!task.completed_at, // Convert completed_at to boolean
-              goalId: task.category_id, // Use category_id instead of goal_id
+              completed: task.completed,
+              goalId: task.goal_id,
               time: task.target_date
                 ? new Date(task.target_date).toLocaleTimeString("en-US", {
                     hour: "numeric",
