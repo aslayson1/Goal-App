@@ -1500,10 +1500,10 @@ function GoalTrackerApp() {
               id: task.id,
               title: task.title,
               description: task.description || "",
-              completed: task.completed || false,
-              goalId: task.goal_id,
-              time: task.due_date
-                ? new Date(task.due_date).toLocaleTimeString("en-US", {
+              completed: !!task.completed_at, // Convert completed_at to boolean
+              goalId: task.category_id, // Use category_id instead of goal_id
+              time: task.target_date
+                ? new Date(task.target_date).toLocaleTimeString("en-US", {
                     hour: "numeric",
                     minute: "2-digit",
                     hour12: true,
@@ -1511,9 +1511,9 @@ function GoalTrackerApp() {
                 : "",
             }
 
-            // Determine if it's a weekly or daily task based on due_date
-            const dueDate = task.due_date ? new Date(task.due_date) : null
-            const isWeeklyTask = dueDate && dueDate.getDay() !== new Date().getDay()
+            // Determine if it's a weekly or daily task based on target_date
+            const targetDate = task.target_date ? new Date(task.target_date) : null
+            const isWeeklyTask = targetDate && targetDate.getDay() !== new Date().getDay()
 
             if (isWeeklyTask) {
               // Add to weekly tasks - use a default category if none specified
