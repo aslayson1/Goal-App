@@ -1341,7 +1341,7 @@ function GoalTrackerApp() {
         // Optionally add a week-derived ISO date if available: due_date: mondayISO
       })
     } catch (e) {
-      console.error("Supabase create weekly task failed", e)
+      console.error("Supabase create weekly task failed:", e instanceof Error ? e.message : String(e))
     }
 
     setNewWeeklyTask({
@@ -1385,7 +1385,7 @@ function GoalTrackerApp() {
         // Optionally: due_date: selectedDayISO
       })
     } catch (e) {
-      console.error("Supabase create daily task failed", e)
+      console.error("Supabase create daily task failed:", e instanceof Error ? e.message : String(e))
     }
 
     setNewDailyTask({
@@ -1429,7 +1429,7 @@ function GoalTrackerApp() {
       if (!user) return
       const { data, error } = await supabase.from("tasks").select("*").order("created_at", { ascending: false })
       if (error) {
-        console.error(error)
+        console.error("Failed to hydrate tasks:", error.message || String(error))
         return
       }
       console.log("Hydrated tasks from Supabase:", data)
@@ -1959,7 +1959,7 @@ function GoalTrackerApp() {
       if (!user) return
       const { data, error } = await supabase.from("tasks").select("*").order("created_at", { ascending: false })
       if (error) {
-        console.error(error)
+        console.error("Failed to hydrate tasks:", error.message || String(error))
         return
       }
       console.log("Hydrated tasks from Supabase:", data)
