@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase/client"
+import { createSupabaseServerClient } from "@/lib/supabase/server"
 
 export interface Category {
   id: string
@@ -10,6 +10,7 @@ export interface Category {
 }
 
 export async function getCategories(): Promise<Category[]> {
+  const supabase = createSupabaseServerClient()
   try {
     const { data, error } = await supabase.from("categories").select("*").order("name")
     if (error) throw error
@@ -24,6 +25,7 @@ export async function getCategories(): Promise<Category[]> {
 }
 
 export async function createCategory(name: string, color = "#3B82F6"): Promise<Category | null> {
+  const supabase = createSupabaseServerClient()
   try {
     const { data, error } = await supabase.from("categories").insert({ name, color }).select().single()
     if (error) throw error
@@ -38,6 +40,7 @@ export async function createCategory(name: string, color = "#3B82F6"): Promise<C
 }
 
 export async function updateCategory(id: string, updates: Partial<Pick<Category, "name" | "color">>): Promise<void> {
+  const supabase = createSupabaseServerClient()
   try {
     const { error } = await supabase
       .from("categories")
@@ -54,6 +57,7 @@ export async function updateCategory(id: string, updates: Partial<Pick<Category,
 }
 
 export async function deleteCategory(id: string): Promise<void> {
+  const supabase = createSupabaseServerClient()
   try {
     const { error } = await supabase.from("categories").delete().eq("id", id)
     if (error) throw error

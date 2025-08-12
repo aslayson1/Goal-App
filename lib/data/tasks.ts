@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase/client"
+import { createSupabaseServerClient } from "@/lib/supabase/server"
 
 export type TaskRow = {
   id: string
@@ -20,6 +20,7 @@ export async function createTask(row: {
   goal_id?: string | null
   task_type?: string | null
 }) {
+  const supabase = createSupabaseServerClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -49,6 +50,7 @@ export async function createTask(row: {
 }
 
 export async function setTaskCompleted(id: string, completed: boolean) {
+  const supabase = createSupabaseServerClient()
   try {
     const { data, error } = await supabase.from("tasks").update({ completed }).eq("id", id).select().single()
     if (error) throw error
@@ -63,6 +65,7 @@ export async function setTaskCompleted(id: string, completed: boolean) {
 }
 
 export async function listTasks(): Promise<TaskRow[]> {
+  const supabase = createSupabaseServerClient()
   try {
     const { data, error } = await supabase.from("tasks").select("*").order("created_at", { ascending: false })
     if (error) throw error
