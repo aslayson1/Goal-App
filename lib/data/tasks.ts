@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server"
+import { supabase } from "@/lib/supabase/client"
 
 export type TaskRow = {
   id: string
@@ -13,25 +13,22 @@ export type TaskRow = {
   updated_at: string
 }
 
-export async function createTask(row: {
-  title: string
-  description?: string | null
-  target_date?: string | null
-  goal_id?: string | null
-  task_type?: string | null
-}) {
-  const supabase = createSupabaseServerClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) throw new Error("Not authenticated")
-
+export async function createTask(
+  row: {
+    title: string
+    description?: string | null
+    target_date?: string | null
+    goal_id?: string | null
+    task_type?: string | null
+  },
+  userId: string,
+) {
   try {
     const { data, error } = await supabase
       .from("tasks")
       .insert([
         {
-          user_id: user.id,
+          user_id: userId,
           completed: false,
           ...row,
         },
@@ -50,7 +47,6 @@ export async function createTask(row: {
 }
 
 export async function setTaskCompleted(id: string, completed: boolean) {
-  const supabase = createSupabaseServerClient()
   try {
     const { data, error } = await supabase.from("tasks").update({ completed }).eq("id", id).select().single()
     if (error) throw error
@@ -65,7 +61,6 @@ export async function setTaskCompleted(id: string, completed: boolean) {
 }
 
 export async function listTasks(): Promise<TaskRow[]> {
-  const supabase = createSupabaseServerClient()
   try {
     const { data, error } = await supabase.from("tasks").select("*").order("created_at", { ascending: false })
     if (error) throw error
