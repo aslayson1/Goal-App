@@ -33,16 +33,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           error,
         } = await supabase.auth.getSession()
 
+        console.log("Initial session check:", { session: session?.user?.id, error })
+
         if (error) {
           console.error("Error getting session:", error)
           setUser(null)
         } else if (session?.user) {
+          console.log("Found existing session for user:", session.user.email)
           setUser({
             id: session.user.id,
             email: session.user.email ?? null,
             name: session.user.user_metadata?.name ?? session.user.user_metadata?.full_name ?? null,
           })
         } else {
+          console.log("No existing session found")
           setUser(null)
         }
       } catch (error) {
@@ -56,7 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth state changed:", event, session?.user?.id)
+      console.log("Auth state changed:", event, session?.user?.email)
 
       if (session?.user) {
         setUser({
@@ -81,7 +85,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [isLoading])
 
   const logout = async () => {
+    console.log("Logging out user")
     await supabase.auth.signOut()
+    setUser(null)
   }
 
   const value: AuthContextType = {
