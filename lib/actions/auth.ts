@@ -71,9 +71,6 @@ export async function signUp(prevState: any, formData: FormData) {
       email: email.toString(),
       password: password.toString(),
       options: {
-        emailRedirectTo:
-          process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
-          `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}`,
         data: {
           name: name?.toString() || email.toString().split("@")[0],
         },
@@ -85,7 +82,7 @@ export async function signUp(prevState: any, formData: FormData) {
     }
 
     return {
-      success: "Account created successfully! Please check your email to confirm your account, then you can sign in.",
+      success: "Account created successfully! You can now sign in.",
     }
   } catch (error) {
     console.error("Sign up error:", error)
