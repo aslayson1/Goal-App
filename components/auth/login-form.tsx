@@ -22,13 +22,20 @@ export function LoginForm() {
   const [showReset, setShowReset] = useState(false)
 
   useEffect(() => {
+    console.log("Login form state changed:", state, "pending:", pending)
     if (state?.success) {
+      console.log("Login successful, redirecting...")
       router.push("/")
     }
-  }, [state, router])
+  }, [state, router, pending])
+
+  const handleFormSubmit = (formData: FormData) => {
+    console.log("Form submitted with data:", Object.fromEntries(formData))
+    formAction(formData)
+  }
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form action={handleFormSubmit} className="space-y-4">
       {state?.error && (
         <Alert variant="destructive">
           <AlertDescription>
