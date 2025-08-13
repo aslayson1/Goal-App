@@ -28,8 +28,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const checkAuthState = async () => {
     try {
-      const demoUserCookie = document.cookie.split("; ").find((row) => row.startsWith("demo-user="))
+      // First check for Supabase session
+      const { data } = await supabase.auth.getUser()
+      const supabaseUser = data.user
 
+      if (supabaseUser) {
+        // If we have a Supabase user, use that and clear any demo cookie
+        document.cookie = "demo-user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
+        setUser({
+          id: supabaseUser.id,
+          email: supabaseUser.email ?? null,
+          name: supabaseUser.user_metadata?.name ?? supabaseUser.user_metadata?.full_name ?? null,
+        })
+        setIsLoading(false)
+        setIsInitialized(true)
+        return
+      }
+
+      // Only check demo cookie if no Supabase user
+      const demoUserCookie = document.cookie.split("; ").find((row) => row.startsWith("demo-user="))
       if (demoUserCookie) {
         const cookieValue = demoUserCookie.split("=")[1]
         if (cookieValue && cookieValue !== "") {
@@ -51,22 +68,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      const { data } = await supabase.auth.getUser()
-      const u = data.user
-
-      // Debug logging to see what we're getting from Supabase
-      console.log("Supabase user data:", u)
-      console.log("User metadata:", u?.user_metadata)
-
-      setUser(
-        u
-          ? {
-              id: u.id,
-              email: u.email ?? null,
-              name: u.user_metadata?.name ?? u.user_metadata?.full_name ?? null,
-            }
-          : null,
-      )
+      // No user found
+      setUser(null)
       setIsLoading(false)
       setIsInitialized(true)
     } catch (error) {
@@ -78,82 +81,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    const performInitialCheck = async () => {
-      await checkAuthState()
-      setTimeout(async () => {
-        await checkAuthState()
-      }, 100)
-    }
+    checkAuthState()
 
-    performInitialCheck()
-
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_e, session) => {
+    const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth state change event:", event)
       const u = session?.user
 
-      console.log("Auth state change - user:", u)
-      console.log("Auth state change - metadata:", u?.user_metadata)
-
-      setUser(
-        u
-          ? {
-              id: u.id,
-              email: u.email ?? null,
-              name: u.user_metadata?.name ?? u.user_metadata?.full_name ?? null,
+      if (u) {
+        // Clear demo cookie when Supabase user is active
+        document.cookie = "demo-user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
+        setUser({
+          id: u.id,
+          email: u.email ?? null,
+          name: u.user_metadata?.name ?? u.user_metadata?.full_name ?? null,
+        })
+      } else {
+        // Only check demo cookie if no Supabase session
+        const demoUserCookie = document.cookie.split("; ").find((row) => row.startsWith("demo-user="))
+        if (demoUserCookie) {
+          try {
+            const cookieValue = demoUserCookie.split("=")[1]
+            const decodedValue = decodeURIComponent(cookieValue)
+            const demoUserData = JSON.parse(decodedValue)
+            if (demoUserData && demoUserData.id) {
+              setUser(demoUserData)
+            } else {
+              setUser(null)
             }
-          : null,
-      )
-      setIsLoading(false)
-      setIsInitialized(true)
-
-      if (u && !u.user_metadata?.name && !u.user_metadata?.full_name) {
-        setTimeout(async () => {
-          await checkAuthState()
-        }, 1000)
-      }
-    })
-
-    const handleFocus = () => {
-      checkAuthState()
-    }
-    window.addEventListener("focus", handleFocus)
-
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        checkAuthState()
-      }
-    }
-    document.addEventListener("visibilitychange", handleVisibilityChange)
-
-    const handleStorageChange = () => {
-      if (isInitialized) {
-        checkAuthState()
-      }
-    }
-    window.addEventListener("storage", handleStorageChange)
-
-    let checkCount = 0
-    const cookieCheckInterval = setInterval(() => {
-      if (isInitialized) {
-        checkAuthState()
-        checkCount++
-        if (checkCount > 10) {
-          clearInterval(cookieCheckInterval)
-          const slowInterval = setInterval(() => {
-            if (isInitialized) {
-              checkAuthState()
-            }
-          }, 5000)
-          return () => clearInterval(slowInterval)
+          } catch {
+            setUser(null)
+          }
+        } else {
+          setUser(null)
         }
       }
-    }, 500)
+
+      setIsLoading(false)
+      setIsInitialized(true)
+    })
 
     return () => {
       sub.subscription.unsubscribe()
-      window.removeEventListener("focus", handleFocus)
-      document.removeEventListener("visibilitychange", handleVisibilityChange)
-      window.removeEventListener("storage", handleStorageChange)
-      clearInterval(cookieCheckInterval)
     }
   }, [])
 
