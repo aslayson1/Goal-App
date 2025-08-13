@@ -1520,9 +1520,7 @@ function GoalTrackerApp() {
                 : "",
             }
 
-            // Determine if it's a weekly or daily task based on target_date
-            const targetDate = task.target_date ? new Date(task.target_date) : null
-            const isWeeklyTask = targetDate && targetDate.getDay() !== new Date().getDay()
+            const isWeeklyTask = task.task_type === "weekly"
 
             if (isWeeklyTask) {
               // Add to weekly tasks - use a default category if none specified
@@ -1532,12 +1530,13 @@ function GoalTrackerApp() {
               }
               weeklyTasksFromDB[category].push(taskObj)
             } else {
-              // Add to daily tasks - use a default category if none specified
-              const category = "General"
-              if (!dailyTasksFromDB[category]) {
-                dailyTasksFromDB[category] = []
+              const targetDate = task.target_date ? new Date(task.target_date) : new Date()
+              const dayName = targetDate.toLocaleDateString("en-US", { weekday: "long" })
+
+              if (!dailyTasksFromDB[dayName]) {
+                dailyTasksFromDB[dayName] = []
               }
-              dailyTasksFromDB[category].push(taskObj)
+              dailyTasksFromDB[dayName].push(taskObj)
             }
           })
 
