@@ -65,10 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setUser(null)
       }
-
-      if (!isLoading) {
-        setIsLoading(false)
-      }
+      setIsLoading(false)
     })
 
     initializeAuth()
@@ -76,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       subscription.unsubscribe()
     }
-  }, [isLoading])
+  }, [])
 
   const logout = async () => {
     await supabase.auth.signOut()
