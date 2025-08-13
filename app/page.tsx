@@ -1201,6 +1201,9 @@ function GoalTrackerApp() {
 
   // Replace the existing useEffect for moveIncompleteTasks with this enhanced version
   useEffect(() => {
+    console.log("SUPABASE_URL:", process.env.NEXT_PUBLIC_SUPABASE_URL)
+    console.log("SUPABASE_ANON_KEY (first 12 chars):", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.substring(0, 12))
+
     // Move incomplete tasks on component mount
     moveIncompleteTasks()
 
