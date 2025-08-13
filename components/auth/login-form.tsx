@@ -7,16 +7,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useRouter } from "next/navigation"
 import { signIn, resetPassword } from "@/lib/actions/auth"
 
-let useCompatibleFormState: any
-try {
-  // Try to use the newer React.useActionState (for staging)
-  const { useActionState } = require("react")
-  useCompatibleFormState = useActionState
-} catch {
-  // Fall back to useFormState from react-dom (for production)
-  const { useFormState } = require("react-dom")
-  useCompatibleFormState = useFormState
-}
+import { useActionState } from "react"
+import { useFormState } from "react-dom"
+
+const useCompatibleFormState = typeof useActionState !== "undefined" ? useActionState : useFormState
 
 function SubmitButton({ pending }: { pending: boolean }) {
   return (
