@@ -27,8 +27,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true
+    let initialLoadComplete = false
 
-    const processAuthState = (session: any) => {
+    const processAuthState = (session: any, isInitialLoad = false) => {
       if (!mounted) return
 
       if (session?.user) {
@@ -67,6 +68,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(null)
         }
       }
+
+      if (isInitialLoad || initialLoadComplete) {
+        setIsLoading(false)
+      }
     }
 
     const initializeAuth = async () => {
@@ -75,11 +80,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           data: { session },
         } = await supabase.auth.getSession()
 
-        processAuthState(session)
-
-        if (mounted) {
-          setIsLoading(false)
-        }
+        processAuthState(session, true)
+        initialLoadComplete = true
       } catch (error) {
         console.error("Auth initialization error:", error)
         if (mounted) {
@@ -95,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!mounted) return
 
       console.log("Auth state change event:", event)
-      processAuthState(session)
+      processAuthState(session, false)
     })
 
     initializeAuth()
