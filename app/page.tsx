@@ -777,6 +777,11 @@ interface LongTermGoalsData {
   }
 }
 
+const isValidUUID = (str: string): boolean => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+  return uuidRegex.test(str)
+}
+
 // Add this helper function after the interfaces and before the main component
 const extractNumberFromTitle = (title: string): number => {
   if (!title.trim()) return 0
@@ -1388,6 +1393,11 @@ function GoalTrackerApp() {
       const today = new Date()
       const userId = user?.id || "00000000-0000-0000-0000-000000000001"
 
+      const validGoalId =
+        newDailyTask.goalId && newDailyTask.goalId.trim() !== "" && isValidUUID(newDailyTask.goalId.trim())
+          ? newDailyTask.goalId.trim()
+          : null
+
       const { data, error } = await supabase
         .from("tasks")
         .insert({
@@ -1395,7 +1405,7 @@ function GoalTrackerApp() {
           description: newDailyTask.description || null,
           target_date: today.toISOString().split("T")[0],
           task_type: "daily",
-          goal_id: newDailyTask.goalId && newDailyTask.goalId.trim() !== "" ? newDailyTask.goalId : null,
+          goal_id: validGoalId,
           category_id: null,
           user_id: userId,
           completed: false,
