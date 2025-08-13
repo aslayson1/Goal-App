@@ -2,7 +2,8 @@
 
 import { cookies } from "next/headers"
 import { mockLogin } from "@/lib/auth"
-import { createClient } from "@supabase/supabase-js"
+import { createSupabaseServerClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
 
 export async function signIn(prevState: any, formData: FormData) {
   if (!formData) {
@@ -26,13 +27,13 @@ export async function signIn(prevState: any, formData: FormData) {
         sameSite: "lax",
         maxAge: 60 * 60 * 24 * 7, // 7 days
       })
-      return { success: true, isDemo: true }
+      redirect("/")
     } catch (error: any) {
       return { error: error.message }
     }
   }
 
-  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+  const supabase = createSupabaseServerClient()
 
   try {
     const { error } = await supabase.auth.signInWithPassword({
@@ -44,7 +45,7 @@ export async function signIn(prevState: any, formData: FormData) {
       return { error: error.message }
     }
 
-    return { success: true }
+    redirect("/")
   } catch (error) {
     console.error("Login error:", error)
     return { error: "An unexpected error occurred. Please try again." }
@@ -64,12 +65,7 @@ export async function signUp(prevState: any, formData: FormData) {
     return { error: "Email and password are required" }
   }
 
-  const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  })
+  const supabaseAdmin = createSupabaseServerClient()
 
   try {
     const { data, error } = await supabaseAdmin.auth.admin.createUser({
