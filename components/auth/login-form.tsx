@@ -1,108 +1,70 @@
 "use client"
-import { useEffect, useState } from "react"
+
 import type React from "react"
 
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useRouter } from "next/navigation"
-import { signIn, resetPassword } from "@/lib/actions/auth"
-import { useActionState } from "react"
+import { signIn } from "@/lib/actions/auth"
 
-function SubmitButton({ pending }: { pending: boolean }) {
+function SubmitButton({ isLoading }: { isLoading: boolean }) {
   return (
-    <Button type="submit" className="w-full" disabled={pending}>
-      {pending ? "Signing in..." : "Sign In"}
+    <Button type="submit" className="w-full" disabled={isLoading}>
+      {isLoading ? "Signing in..." : "Sign In"}
     </Button>
   )
 }
 
 export function LoginForm() {
   const router = useRouter()
-  const [state, formAction, pending] = useActionState(signIn, null)
-  const [showReset, setShowReset] = useState(false)
+  const [state, setState] = useState<{ success?: boolean; error?: string } | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    console.log("Login form state changed:", state, "pending:", pending)
     if (state?.success) {
-      console.log("Login successful, redirecting...")
       router.push("/")
     }
-  }, [state, router, pending])
+  }, [state, router])
 
-  const handleFormSubmit = (formData: FormData) => {
-    console.log("Form submitted with data:", Object.fromEntries(formData))
-    console.log("Calling formAction...")
-    formAction(formData)
-  }
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setIsLoading(true)
 
-  const handleButtonClick = (e: React.MouseEvent) => {
-    console.log("Sign in button clicked!")
-    console.log("Form element:", e.currentTarget.closest("form"))
-    console.log("Button type:", e.currentTarget.getAttribute("type"))
+    try {
+      const formData = new FormData(e.currentTarget)
+      const result = await signIn(null, formData)
+      setState(result)
+    } catch (error) {
+      setState({ error: "An unexpected error occurred" })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
-    <form action={handleFormSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       {state?.error && (
         <Alert variant="destructive">
-          <AlertDescription>
-            {state.error}
-            {state.error.includes("Invalid login credentials") && (
-              <div className="mt-2">
-                <button type="button" onClick={() => setShowReset(!showReset)} className="text-sm underline">
-                  Forgot your password?
-                </button>
-              </div>
-            )}
-          </AlertDescription>
+          <AlertDescription>{state.error}</AlertDescription>
         </Alert>
-      )}
-
-      {state?.success && typeof state.success === "string" && (
-        <Alert>
-          <AlertDescription>{state.success}</AlertDescription>
-        </Alert>
-      )}
-
-      {showReset && (
-        <div className="p-4 bg-blue-50 rounded-lg">
-          <p className="text-sm text-blue-800 mb-2">Enter your email to receive a password reset link:</p>
-          <form
-            action={async (formData) => {
-              const result = await resetPassword(null, formData)
-              if (result.success) {
-                setShowReset(false)
-              }
-            }}
-            className="space-y-2"
-          >
-            <Input name="email" type="email" placeholder="Enter your email" required />
-            <Button type="submit" size="sm">
-              Send Reset Link
-            </Button>
-          </form>
-        </div>
       )}
 
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
-        <Input id="email" name="email" type="email" placeholder="Enter your email" required />
+        <Input id="email" name="email" type="email" defaultValue="demo@example.com" required />
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="password">Password</Label>
-        <Input id="password" name="password" type="password" placeholder="Enter your password" required />
+        <Input id="password" name="password" type="password" defaultValue="password" required />
       </div>
 
-      <Button type="submit" className="w-full" disabled={pending} onClick={handleButtonClick}>
-        {pending ? "Signing in..." : "Sign In"}
-      </Button>
+      <SubmitButton isLoading={isLoading} />
 
-      <div className="text-xs text-gray-500 text-center">
-        Demo: demo@example.com / password | Need an account? Use the Register tab above.
-      </div>
+      <div className="text-sm text-gray-600 text-center">Demo credentials: demo@example.com / password</div>
     </form>
   )
 }

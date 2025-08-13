@@ -1,7 +1,10 @@
 "use client"
 
-import { createSupabaseBrowserClient } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/client"
 import { useAuth } from "@/components/auth/auth-provider"
+// Adding Supabase imports for task persistence
+import { setTaskCompleted } from "@/lib/data/tasks"
+import { createTask } from "@/lib/data/tasks" // Import createTask
 import {
   Plus,
   ChevronDown,
@@ -965,7 +968,6 @@ function SortableDailyTaskItem({
 }
 
 function GoalTrackerApp() {
-  const supabase = createSupabaseBrowserClient()
   const { user } = useAuth()
   const [goalsData, setGoalsData] = useState<GoalsData>(initialGoalsData)
   const [weeklyTasks, setWeeklyTasks] = useState(initialWeeklyTasks)
@@ -1199,6 +1201,9 @@ function GoalTrackerApp() {
 
   // Replace the existing useEffect for moveIncompleteTasks with this enhanced version
   useEffect(() => {
+    console.log("SUPABASE_URL:", process.env.NEXT_PUBLIC_SUPABASE_URL)
+    console.log("SUPABASE_ANON_KEY (first 12 chars):", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.substring(0, 12))
+
     // Move incomplete tasks on component mount
     moveIncompleteTasks()
 
@@ -1325,37 +1330,17 @@ function GoalTrackerApp() {
       [weekKey]: [...(prev[weekKey] || []), newTask],
     }))
 
+    // Persist to Supabase
     try {
       const weekStartDate = new Date()
       weekStartDate.setDate(weekStartDate.getDate() + (currentWeek - 1) * 7)
-      const userId = user?.id || "00000000-0000-0000-0000-000000000001"
 
-      const { data, error } = await supabase
-        .from("tasks")
-        .insert({
-          title: newWeeklyTask.title,
-          description: newWeeklyTask.description || null,
-          user_id: userId,
-          goal_id: newWeeklyTask.goalId && newWeeklyTask.goalId.trim() !== "" ? newWeeklyTask.goalId : null,
-          target_date: weekStartDate.toISOString().split("T")[0],
-          task_type: "weekly",
-          completed: false,
-        })
-        .select()
-        .single()
-
-      if (error) throw error
-      console.log("Weekly task created successfully:", data)
-
-      setWeeklyTasks((prev) => ({
-        ...prev,
-        [weekKey]:
-          prev[weekKey]?.map((task) =>
-            task.id === taskId
-              ? { ...task, id: data.id, title: data.title, description: data.description || "" }
-              : task,
-          ) || [],
-      }))
+      await createTask({
+        title: newWeeklyTask.title,
+        goal_id: newWeeklyTask.goalId || null,
+        target_date: weekStartDate.toISOString().split("T")[0], // Use date format for target_date
+        task_type: "weekly",
+      })
     } catch (e) {
       console.error("Supabase create weekly task failed:", e instanceof Error ? e.message : String(e))
       // Revert optimistic update on error
@@ -1410,6 +1395,7 @@ function GoalTrackerApp() {
           target_date: today.toISOString().split("T")[0],
           task_type: "daily",
           goal_id: newDailyTask.goalId && newDailyTask.goalId.trim() !== "" ? newDailyTask.goalId : null,
+          category_id: null,
           user_id: userId,
           completed: false,
         })
@@ -1418,16 +1404,6 @@ function GoalTrackerApp() {
 
       if (error) throw error
       console.log("Task created successfully:", data)
-
-      setDailyTasks((prev) => ({
-        ...prev,
-        [selectedDay]:
-          prev[selectedDay]?.map((task) =>
-            task.id === taskId
-              ? { ...task, id: data.id, title: data.title, description: data.description || "" }
-              : task,
-          ) || [],
-      }))
     } catch (e) {
       console.error("Supabase create daily task failed:", e)
       if (e instanceof Error) {
@@ -1468,7 +1444,7 @@ function GoalTrackerApp() {
     // Persist to Supabase (if task has a database ID)
     try {
       if (currentTask.dbId) {
-        // Removed server-only setTaskCompleted call
+        await setTaskCompleted(currentTask.dbId, newCompleted)
       }
     } catch (e) {
       console.error("Failed to update task completion:", e instanceof Error ? e.message : String(e))
@@ -1496,7 +1472,7 @@ function GoalTrackerApp() {
     // Persist to Supabase (if task has a database ID)
     try {
       if (currentTask.dbId) {
-        // Removed server-only setTaskCompleted call
+        await setTaskCompleted(currentTask.dbId, newCompleted)
       }
     } catch (e) {
       console.error("Failed to update task completion:", e instanceof Error ? e.message : String(e))
@@ -1508,6 +1484,7 @@ function GoalTrackerApp() {
     }
   }
 
+  // Adding useEffect to hydrate tasks from Supabase
   useEffect(() => {
     ;(async () => {
       const {
