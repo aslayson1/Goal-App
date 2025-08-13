@@ -1,7 +1,7 @@
+-- Removed confirmed_at update since it's a generated column
 UPDATE auth.users 
 SET 
-  email_confirmed_at = NOW(),
-  confirmed_at = NOW()
+  email_confirmed_at = NOW()
 WHERE email ILIKE '%scott%' OR email ILIKE '%layson%';
 
 -- Check the result
