@@ -26,27 +26,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const getInitialSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
+    const initializeAuth = async () => {
+      try {
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession()
 
-      if (session?.user) {
-        setUser({
-          id: session.user.id,
-          email: session.user.email ?? null,
-          name: session.user.user_metadata?.name ?? session.user.user_metadata?.full_name ?? null,
-        })
-      } else {
+        if (error) {
+          console.error("Error getting session:", error)
+          setUser(null)
+        } else if (session?.user) {
+          setUser({
+            id: session.user.id,
+            email: session.user.email ?? null,
+            name: session.user.user_metadata?.name ?? session.user.user_metadata?.full_name ?? null,
+          })
+        } else {
+          setUser(null)
+        }
+      } catch (error) {
+        console.error("Error initializing auth:", error)
         setUser(null)
+      } finally {
+        setIsLoading(false)
       }
-
-      setIsLoading(false)
     }
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth state changed:", event, session?.user?.id)
+
       if (session?.user) {
         setUser({
           id: session.user.id,
@@ -56,15 +67,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setUser(null)
       }
-      setIsLoading(false)
+
+      if (!isLoading) {
+        setIsLoading(false)
+      }
     })
 
-    getInitialSession()
+    initializeAuth()
 
     return () => {
       subscription.unsubscribe()
     }
-  }, [])
+  }, [isLoading])
 
   const logout = async () => {
     await supabase.auth.signOut()
