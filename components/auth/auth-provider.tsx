@@ -27,13 +27,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true
-    let initialLoadComplete = false
 
     const processAuthState = (session: any) => {
       if (!mounted) return
 
       if (session?.user) {
-        // Clear demo cookie when Supabase user is active
         document.cookie = "demo-user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
         setUser({
           id: session.user.id,
@@ -41,7 +39,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           name: session.user.user_metadata?.name ?? session.user.user_metadata?.full_name ?? null,
         })
       } else {
-        // Only check demo cookie if no Supabase session
         const demoUserCookie = document.cookie.split("; ").find((row) => row.startsWith("demo-user="))
         if (demoUserCookie) {
           try {
@@ -70,36 +67,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(null)
         }
       }
-
-      if (!initialLoadComplete) {
-        initialLoadComplete = true
-        setIsLoading(false)
-      }
     }
 
     const initializeAuth = async () => {
       try {
-        // Get initial session
         const {
           data: { session },
         } = await supabase.auth.getSession()
 
         processAuthState(session)
+
+        if (mounted) {
+          setIsLoading(false)
+        }
       } catch (error) {
         console.error("Auth initialization error:", error)
         if (mounted) {
           setUser(null)
-          if (!initialLoadComplete) {
-            initialLoadComplete = true
-            setIsLoading(false)
-          }
+          setIsLoading(false)
         }
       }
     }
 
-    initializeAuth()
-
-    // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -108,6 +97,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log("Auth state change event:", event)
       processAuthState(session)
     })
+
+    initializeAuth()
 
     return () => {
       mounted = false
