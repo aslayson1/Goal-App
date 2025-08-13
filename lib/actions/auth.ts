@@ -64,20 +64,19 @@ export async function signUp(prevState: any, formData: FormData) {
     return { error: "Email and password are required" }
   }
 
-  const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  })
+  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
 
   try {
-    const { data, error } = await supabaseAdmin.auth.admin.createUser({
+    const { data, error } = await supabase.auth.signUp({
       email: email.toString(),
       password: password.toString(),
-      email_confirm: true, // Pre-confirm the email
-      user_metadata: {
-        name: name?.toString() || email.toString().split("@")[0],
+      options: {
+        emailRedirectTo:
+          process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
+          `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}`,
+        data: {
+          name: name?.toString() || email.toString().split("@")[0],
+        },
       },
     })
 
@@ -85,7 +84,9 @@ export async function signUp(prevState: any, formData: FormData) {
       return { error: error.message }
     }
 
-    return { success: "Account created successfully! You can now sign in." }
+    return {
+      success: "Account created successfully! Please check your email to confirm your account, then you can sign in.",
+    }
   } catch (error) {
     console.error("Sign up error:", error)
     return { error: "An unexpected error occurred. Please try again." }
