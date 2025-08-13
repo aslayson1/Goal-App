@@ -1384,8 +1384,6 @@ function GoalTrackerApp() {
       const today = new Date()
       const userId = user?.id || "00000000-0000-0000-0000-000000000001"
 
-      const categoryId = `cat-${newDailyTask.category.toLowerCase().replace(/\s+/g, "-")}-${Date.now().toString().slice(-8)}`
-
       const { data, error } = await supabase
         .from("tasks")
         .insert({
@@ -1394,7 +1392,7 @@ function GoalTrackerApp() {
           target_date: today.toISOString().split("T")[0],
           task_type: "daily",
           goal_id: newDailyTask.goalId && newDailyTask.goalId.trim() !== "" ? newDailyTask.goalId : null,
-          category_id: categoryId, // Use generated category_id instead of null
+          category_id: null, // Set to null instead of generating invalid UUID
           user_id: userId,
           completed: false,
         })
