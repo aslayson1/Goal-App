@@ -1402,7 +1402,6 @@ function GoalTrackerApp() {
         .from("tasks")
         .insert({
           title: newDailyTask.title,
-          description: newDailyTask.description || null,
           target_date: today.toISOString().split("T")[0],
           task_type: "daily",
           goal_id: validGoalId,
