@@ -216,3 +216,79 @@ export async function fetchTasksAction() {
 
   return data || []
 }
+
+export async function setTaskCompletedAction(taskId: string, completed: boolean) {
+  const cookieStore = cookies()
+
+  const demoUserCookie = cookieStore.get("demo-user")?.value
+  let userId: string
+  let supabaseClient
+
+  if (demoUserCookie) {
+    try {
+      const decodedValue = decodeURIComponent(demoUserCookie)
+      if (!decodedValue || decodedValue.trim() === "" || decodedValue === "undefined") {
+        throw new Error("Empty or invalid cookie value")
+      }
+      const demoUser = JSON.parse(decodedValue)
+      if (!demoUser || typeof demoUser !== "object" || !demoUser.id) {
+        throw new Error("Invalid demo user data structure")
+      }
+      userId = demoUser.id
+
+      supabaseClient = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        {
+          cookies: {
+            get(name: string) {
+              return cookieStore.get(name)?.value
+            },
+            set(name: string, value: string, options: any) {
+              cookieStore.set({ name, value, ...options })
+            },
+            remove(name: string, options: any) {
+              cookieStore.set({ name, value: "", ...options })
+            },
+          },
+        },
+      )
+    } catch (error) {
+      throw new Error("Invalid demo user session")
+    }
+  } else {
+    supabaseClient = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value
+          },
+          set(name: string, value: string, options: any) {
+            cookieStore.set({ name, value, ...options })
+          },
+          remove(name: string, options: any) {
+            cookieStore.set({ name, value: "", ...options })
+          },
+        },
+      },
+    )
+
+    const {
+      data: { user },
+    } = await supabaseClient.auth.getUser()
+
+    if (user) {
+      userId = user.id
+    } else {
+      throw new Error("User not authenticated")
+    }
+  }
+
+  const { error } = await supabaseClient.from("tasks").update({ completed }).eq("id", taskId).eq("user_id", userId)
+
+  if (error) {
+    throw new Error(`Failed to update task: ${error.message}`)
+  }
+}

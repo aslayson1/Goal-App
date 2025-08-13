@@ -3,8 +3,9 @@
 import { supabase } from "@/lib/supabase/client"
 import { useAuth } from "@/components/auth/auth-provider"
 // Adding Supabase imports for task persistence
-import { setTaskCompleted } from "@/lib/data/tasks"
-import { createTask } from "@/lib/data/tasks" // Import createTask
+import { setTaskCompletedAction, createTaskAction } from "@/lib/actions/tasks"
+// import { setTaskCompleted } from "@/lib/data/tasks"
+// import { createTask } from "@/lib/data/tasks" // Import createTask
 import {
   Plus,
   ChevronDown,
@@ -1335,7 +1336,7 @@ function GoalTrackerApp() {
       const weekStartDate = new Date()
       weekStartDate.setDate(weekStartDate.getDate() + (currentWeek - 1) * 7)
 
-      await createTask({
+      await createTaskAction({
         title: newWeeklyTask.title,
         goal_id: newWeeklyTask.goalId || null,
         target_date: weekStartDate.toISOString().split("T")[0], // Use date format for target_date
@@ -1444,7 +1445,7 @@ function GoalTrackerApp() {
     // Persist to Supabase (if task has a database ID)
     try {
       if (currentTask.dbId) {
-        await setTaskCompleted(currentTask.dbId, newCompleted)
+        await setTaskCompletedAction(currentTask.dbId, newCompleted)
       }
     } catch (e) {
       console.error("Failed to update task completion:", e instanceof Error ? e.message : String(e))
@@ -1472,7 +1473,7 @@ function GoalTrackerApp() {
     // Persist to Supabase (if task has a database ID)
     try {
       if (currentTask.dbId) {
-        await setTaskCompleted(currentTask.dbId, newCompleted)
+        await setTaskCompletedAction(currentTask.dbId, newCompleted)
       }
     } catch (e) {
       console.error("Failed to update task completion:", e instanceof Error ? e.message : String(e))
