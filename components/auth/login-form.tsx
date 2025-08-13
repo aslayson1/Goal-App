@@ -6,7 +6,17 @@ import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useRouter } from "next/navigation"
 import { signIn, resetPassword } from "@/lib/actions/auth"
-import { useFormState } from "react-dom"
+
+let useCompatibleFormState: any
+try {
+  // Try to use the newer React.useActionState (for staging)
+  const { useActionState } = require("react")
+  useCompatibleFormState = useActionState
+} catch {
+  // Fall back to useFormState from react-dom (for production)
+  const { useFormState } = require("react-dom")
+  useCompatibleFormState = useFormState
+}
 
 function SubmitButton({ pending }: { pending: boolean }) {
   return (
@@ -18,7 +28,7 @@ function SubmitButton({ pending }: { pending: boolean }) {
 
 export function LoginForm() {
   const router = useRouter()
-  const [state, formAction, pending] = useFormState(signIn, null)
+  const [state, formAction, pending] = useCompatibleFormState(signIn, null)
   const [showReset, setShowReset] = useState(false)
 
   useEffect(() => {
