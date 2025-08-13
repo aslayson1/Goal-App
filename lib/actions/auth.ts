@@ -29,7 +29,7 @@ export async function signIn(prevState: any, formData: FormData) {
       })
       redirect("/")
     } catch (error: any) {
-      return { error: error.message }
+      return { error: error?.message || String(error) }
     }
   }
 
@@ -46,9 +46,9 @@ export async function signIn(prevState: any, formData: FormData) {
     }
 
     redirect("/")
-  } catch (error) {
+  } catch (error: any) {
     console.error("Login error:", error)
-    return { error: "An unexpected error occurred. Please try again." }
+    return { error: error?.message || String(error) }
   }
 }
 
@@ -65,15 +65,16 @@ export async function signUp(prevState: any, formData: FormData) {
     return { error: "Email and password are required" }
   }
 
-  const supabaseAdmin = createSupabaseServerClient()
+  const supabase = createSupabaseServerClient()
 
   try {
-    const { data, error } = await supabaseAdmin.auth.admin.createUser({
+    const { data, error } = await supabase.auth.signUp({
       email: email.toString(),
       password: password.toString(),
-      email_confirm: true, // Pre-confirm the email
-      user_metadata: {
-        name: name?.toString() || email.toString().split("@")[0],
+      options: {
+        data: {
+          name: name?.toString() || email.toString().split("@")[0],
+        },
       },
     })
 
@@ -82,8 +83,8 @@ export async function signUp(prevState: any, formData: FormData) {
     }
 
     return { success: "Account created successfully! You can now sign in." }
-  } catch (error) {
+  } catch (error: any) {
     console.error("Sign up error:", error)
-    return { error: "An unexpected error occurred. Please try again." }
+    return { error: error?.message || String(error) }
   }
 }
