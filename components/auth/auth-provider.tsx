@@ -27,12 +27,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true
-    let initialLoadComplete = false
 
-    const processAuthState = (session: any, isInitialLoad = false) => {
+    const processAuthState = (session: any) => {
       if (!mounted) return
 
       if (session?.user) {
+        // Clear any demo user cookies when Supabase user is authenticated
         document.cookie = "demo-user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
         setUser({
           id: session.user.id,
@@ -40,6 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           name: session.user.user_metadata?.name ?? session.user.user_metadata?.full_name ?? null,
         })
       } else {
+        // Only check demo user if no Supabase session
         const demoUserCookie = document.cookie.split("; ").find((row) => row.startsWith("demo-user="))
         if (demoUserCookie) {
           try {
@@ -69,9 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      if (isInitialLoad || initialLoadComplete) {
-        setIsLoading(false)
-      }
+      setIsLoading(false)
     }
 
     const initializeAuth = async () => {
@@ -79,9 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const {
           data: { session },
         } = await supabase.auth.getSession()
-
-        processAuthState(session, true)
-        initialLoadComplete = true
+        processAuthState(session)
       } catch (error) {
         console.error("Auth initialization error:", error)
         if (mounted) {
@@ -95,9 +92,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return
-
       console.log("Auth state change event:", event)
-      processAuthState(session, false)
+      processAuthState(session)
     })
 
     initializeAuth()
