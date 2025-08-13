@@ -1,5 +1,5 @@
 "use client"
-import { useActionState } from "react"
+import { useFormState } from "react-dom"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -18,7 +18,7 @@ function SubmitButton({ pending }: { pending: boolean }) {
 
 export function LoginForm() {
   const router = useRouter()
-  const [state, formAction, pending] = useActionState(signIn, null)
+  const [state, formAction, pending] = useFormState(signIn, null)
   const [showReset, setShowReset] = useState(false)
 
   useEffect(() => {
