@@ -26,95 +26,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    let mounted = true
-
-    const processAuthState = (session: any) => {
-      if (!mounted) return
+    const getInitialSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
 
       if (session?.user) {
-        // Clear any demo user cookies when Supabase user is authenticated
-        document.cookie = "demo-user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
         setUser({
           id: session.user.id,
           email: session.user.email ?? null,
           name: session.user.user_metadata?.name ?? session.user.user_metadata?.full_name ?? null,
         })
       } else {
-        // Only check demo user if no Supabase session
-        const demoUserCookie = document.cookie.split("; ").find((row) => row.startsWith("demo-user="))
-        if (demoUserCookie) {
-          try {
-            const cookieValue = demoUserCookie.split("=")[1]
-            if (cookieValue && cookieValue !== "") {
-              const decodedValue = decodeURIComponent(cookieValue)
-              if (decodedValue && decodedValue.trim() !== "" && decodedValue !== "undefined") {
-                const demoUserData = JSON.parse(decodedValue)
-                if (demoUserData && typeof demoUserData === "object" && demoUserData.id) {
-                  setUser(demoUserData)
-                } else {
-                  setUser(null)
-                }
-              } else {
-                setUser(null)
-              }
-            } else {
-              setUser(null)
-            }
-          } catch (parseError) {
-            console.error("Failed to parse demo user cookie:", parseError)
-            document.cookie = "demo-user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
-            setUser(null)
-          }
-        } else {
-          setUser(null)
-        }
+        setUser(null)
       }
 
       setIsLoading(false)
     }
 
-    const initializeAuth = async () => {
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession()
-        processAuthState(session)
-      } catch (error) {
-        console.error("Auth initialization error:", error)
-        if (mounted) {
-          setUser(null)
-          setIsLoading(false)
-        }
-      }
-    }
-
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!mounted) return
-      console.log("Auth state change event:", event)
-      processAuthState(session)
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        setUser({
+          id: session.user.id,
+          email: session.user.email ?? null,
+          name: session.user.user_metadata?.name ?? session.user.user_metadata?.full_name ?? null,
+        })
+      } else {
+        setUser(null)
+      }
+      setIsLoading(false)
     })
 
-    initializeAuth()
+    getInitialSession()
 
     return () => {
-      mounted = false
       subscription.unsubscribe()
     }
   }, [])
 
   const logout = async () => {
-    setIsLoading(true)
-    try {
-      document.cookie = "demo-user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
-      await supabase.auth.signOut()
-      setUser(null)
-    } catch (error) {
-      console.error("Logout error:", error)
-    } finally {
-      setIsLoading(false)
-    }
+    await supabase.auth.signOut()
   }
 
   const value: AuthContextType = {
@@ -128,5 +81,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     logout,
   }
+
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
