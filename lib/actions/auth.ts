@@ -3,7 +3,6 @@
 import { cookies } from "next/headers"
 import { mockLogin } from "@/lib/auth"
 import { createSupabaseServerClient } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
 
 export async function signIn(prevState: any, formData: FormData) {
   if (!formData) {
@@ -27,7 +26,7 @@ export async function signIn(prevState: any, formData: FormData) {
         sameSite: "lax",
         maxAge: 60 * 60 * 24 * 7, // 7 days
       })
-      redirect("/")
+      return { success: true }
     } catch (error: any) {
       return { error: error?.message || String(error) }
     }
@@ -45,7 +44,7 @@ export async function signIn(prevState: any, formData: FormData) {
       return { error: error.message }
     }
 
-    redirect("/")
+    return { success: true }
   } catch (error: any) {
     console.error("Login error:", error)
     return { error: error?.message || String(error) }
