@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useRouter } from "next/navigation"
-import { signIn } from "@/lib/actions/auth"
+import { signIn, resendConfirmation } from "@/lib/actions/auth"
 
 function SubmitButton({ isLoading }: { isLoading: boolean }) {
   return (
@@ -22,6 +22,7 @@ export function LoginForm() {
   const router = useRouter()
   const [state, setState] = useState<{ success?: boolean; error?: string } | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [showResend, setShowResend] = useState(false)
 
   useEffect(() => {
     if (state?.success) {
@@ -44,12 +45,50 @@ export function LoginForm() {
     }
   }
 
+  const handleResendConfirmation = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setIsLoading(true)
+
+    try {
+      const formData = new FormData(e.currentTarget)
+      const result = await resendConfirmation(null, formData)
+      setState(result)
+    } catch (error) {
+      setState({ error: "An unexpected error occurred" })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {state?.error && (
         <Alert variant="destructive">
-          <AlertDescription>{state.error}</AlertDescription>
+          <AlertDescription>
+            {state.error}
+            {state.error.includes("Invalid login credentials") && (
+              <div className="mt-2">
+                <button type="button" onClick={() => setShowResend(!showResend)} className="text-sm underline">
+                  Need to confirm your email?
+                </button>
+              </div>
+            )}
+          </AlertDescription>
         </Alert>
+      )}
+
+      {showResend && (
+        <div className="p-4 bg-blue-50 rounded-lg">
+          <p className="text-sm text-blue-800 mb-2">
+            If you haven't confirmed your email yet, enter it below to resend the confirmation:
+          </p>
+          <form onSubmit={handleResendConfirmation} className="space-y-2">
+            <Input name="email" type="email" placeholder="Enter your email" required />
+            <Button type="submit" size="sm" disabled={isLoading}>
+              Resend Confirmation
+            </Button>
+          </form>
+        </div>
       )}
 
       <div className="space-y-2">

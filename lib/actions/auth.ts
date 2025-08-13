@@ -92,3 +92,38 @@ export async function signUp(prevState: any, formData: FormData) {
     return { error: "An unexpected error occurred. Please try again." }
   }
 }
+
+export async function resendConfirmation(prevState: any, formData: FormData) {
+  if (!formData) {
+    return { error: "Form data is missing" }
+  }
+
+  const email = formData.get("email")
+
+  if (!email) {
+    return { error: "Email is required" }
+  }
+
+  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+
+  try {
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: email.toString(),
+      options: {
+        emailRedirectTo:
+          process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
+          `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}`,
+      },
+    })
+
+    if (error) {
+      return { error: error.message }
+    }
+
+    return { success: "Confirmation email sent! Please check your email and click the confirmation link." }
+  } catch (error) {
+    console.error("Resend confirmation error:", error)
+    return { error: "An unexpected error occurred. Please try again." }
+  }
+}
