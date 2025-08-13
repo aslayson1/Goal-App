@@ -1389,12 +1389,13 @@ function GoalTrackerApp() {
         .insert({
           title: newDailyTask.title,
           description: newDailyTask.description || null,
-          due_date: today.toISOString().split("T")[0], // Using due_date instead of target_date
+          target_date: today.toISOString().split("T")[0],
           task_type: "daily",
           goal_id: newDailyTask.goalId && newDailyTask.goalId.trim() !== "" ? newDailyTask.goalId : null,
           category_id: null,
           user_id: userId,
           completed: false,
+          scope: "daily",
         })
         .select()
         .single()
