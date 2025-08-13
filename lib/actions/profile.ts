@@ -1,7 +1,6 @@
 "use server"
 
 import { createClient } from "@supabase/supabase-js"
-import { cookies } from "next/headers"
 
 export interface ProfileData {
   name: string
@@ -21,10 +20,7 @@ export async function updateUserProfile(profileData: ProfileData) {
       },
     })
 
-    // Get current user from regular client first
-    const cookieStore = cookies()
-    const { createServerActionClient } = await import("@supabase/auth-helpers-nextjs")
-    const supabase = createServerActionClient({ cookies: () => cookieStore })
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
 
     const {
       data: { user },
