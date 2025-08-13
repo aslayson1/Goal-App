@@ -24,76 +24,86 @@ export function useAuth() {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [isInitialized, setIsInitialized] = useState(false)
-
-  const checkAuthState = async () => {
-    try {
-      // First check for Supabase session
-      const { data } = await supabase.auth.getUser()
-      const supabaseUser = data.user
-
-      if (supabaseUser) {
-        // If we have a Supabase user, use that and clear any demo cookie
-        document.cookie = "demo-user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
-        setUser({
-          id: supabaseUser.id,
-          email: supabaseUser.email ?? null,
-          name: supabaseUser.user_metadata?.name ?? supabaseUser.user_metadata?.full_name ?? null,
-        })
-        setIsLoading(false)
-        setIsInitialized(true)
-        return
-      }
-
-      // Only check demo cookie if no Supabase user
-      const demoUserCookie = document.cookie.split("; ").find((row) => row.startsWith("demo-user="))
-      if (demoUserCookie) {
-        const cookieValue = demoUserCookie.split("=")[1]
-        if (cookieValue && cookieValue !== "") {
-          try {
-            const decodedValue = decodeURIComponent(cookieValue)
-            if (decodedValue && decodedValue.trim() !== "" && decodedValue !== "undefined") {
-              const demoUserData = JSON.parse(decodedValue)
-              if (demoUserData && typeof demoUserData === "object" && demoUserData.id) {
-                setUser(demoUserData)
-                setIsLoading(false)
-                setIsInitialized(true)
-                return
-              }
-            }
-          } catch (parseError) {
-            console.error("Failed to parse demo user cookie:", parseError)
-            document.cookie = "demo-user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
-          }
-        }
-      }
-
-      // No user found
-      setUser(null)
-      setIsLoading(false)
-      setIsInitialized(true)
-    } catch (error) {
-      console.error("Auth check error:", error)
-      setUser(null)
-      setIsLoading(false)
-      setIsInitialized(true)
-    }
-  }
 
   useEffect(() => {
-    checkAuthState()
+    let mounted = true
 
-    const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const initializeAuth = async () => {
+      try {
+        // Get initial session
+        const {
+          data: { session },
+        } = await supabase.auth.getSession()
+
+        if (!mounted) return
+
+        if (session?.user) {
+          // Clear demo cookie when Supabase user is active
+          document.cookie = "demo-user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
+          setUser({
+            id: session.user.id,
+            email: session.user.email ?? null,
+            name: session.user.user_metadata?.name ?? session.user.user_metadata?.full_name ?? null,
+          })
+        } else {
+          // Only check demo cookie if no Supabase session
+          const demoUserCookie = document.cookie.split("; ").find((row) => row.startsWith("demo-user="))
+          if (demoUserCookie) {
+            try {
+              const cookieValue = demoUserCookie.split("=")[1]
+              if (cookieValue && cookieValue !== "") {
+                const decodedValue = decodeURIComponent(cookieValue)
+                if (decodedValue && decodedValue.trim() !== "" && decodedValue !== "undefined") {
+                  const demoUserData = JSON.parse(decodedValue)
+                  if (demoUserData && typeof demoUserData === "object" && demoUserData.id) {
+                    setUser(demoUserData)
+                  } else {
+                    setUser(null)
+                  }
+                } else {
+                  setUser(null)
+                }
+              } else {
+                setUser(null)
+              }
+            } catch (parseError) {
+              console.error("Failed to parse demo user cookie:", parseError)
+              document.cookie = "demo-user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
+              setUser(null)
+            }
+          } else {
+            setUser(null)
+          }
+        }
+      } catch (error) {
+        console.error("Auth initialization error:", error)
+        if (mounted) {
+          setUser(null)
+        }
+      } finally {
+        if (mounted) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    initializeAuth()
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return
+
       console.log("Auth state change event:", event)
-      const u = session?.user
 
-      if (u) {
+      if (session?.user) {
         // Clear demo cookie when Supabase user is active
         document.cookie = "demo-user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
         setUser({
-          id: u.id,
-          email: u.email ?? null,
-          name: u.user_metadata?.name ?? u.user_metadata?.full_name ?? null,
+          id: session.user.id,
+          email: session.user.email ?? null,
+          name: session.user.user_metadata?.name ?? session.user.user_metadata?.full_name ?? null,
         })
       } else {
         // Only check demo cookie if no Supabase session
@@ -115,13 +125,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(null)
         }
       }
-
-      setIsLoading(false)
-      setIsInitialized(true)
     })
 
     return () => {
-      sub.subscription.unsubscribe()
+      mounted = false
+      subscription.unsubscribe()
     }
   }, [])
 
