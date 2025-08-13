@@ -3,7 +3,7 @@ SELECT
   id,
   title,
   target_date,
-  completed,
+  completed_at, -- using completed_at instead of completed
   created_at,
   user_id
 FROM tasks 
