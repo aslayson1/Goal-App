@@ -1,26 +1,26 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server"
+import { supabase } from "@/lib/supabase/client"
 
 export type TaskRow = {
   id: string
   user_id: string
   title: string
   description?: string | null
-  target_date?: string | null
-  completed: boolean
-  goal_id?: string | null
+  target_date?: string | null // Changed from due_date
+  completed: boolean // Changed from status string to boolean
+  category_id?: string | null
   task_type?: string | null
   created_at: string
   updated_at: string
+  completed_at?: string | null
 }
 
 export async function createTask(row: {
   title: string
   description?: string | null
-  target_date?: string | null
-  goal_id?: string | null
+  target_date?: string | null // Changed from due_date
+  category_id?: string | null
   task_type?: string | null
 }) {
-  const supabase = createSupabaseServerClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -32,7 +32,7 @@ export async function createTask(row: {
       .insert([
         {
           user_id: user.id,
-          completed: false,
+          completed: false, // Use boolean instead of status string
           ...row,
         },
       ])
@@ -50,9 +50,15 @@ export async function createTask(row: {
 }
 
 export async function setTaskCompleted(id: string, completed: boolean) {
-  const supabase = createSupabaseServerClient()
   try {
-    const { data, error } = await supabase.from("tasks").update({ completed }).eq("id", id).select().single()
+    const updateData: any = { completed }
+    if (completed) {
+      updateData.completed_at = new Date().toISOString()
+    } else {
+      updateData.completed_at = null
+    }
+
+    const { data, error } = await supabase.from("tasks").update(updateData).eq("id", id).select().single()
     if (error) throw error
     return data as TaskRow
   } catch (error: any) {
@@ -65,7 +71,6 @@ export async function setTaskCompleted(id: string, completed: boolean) {
 }
 
 export async function listTasks(): Promise<TaskRow[]> {
-  const supabase = createSupabaseServerClient()
   try {
     const { data, error } = await supabase.from("tasks").select("*").order("created_at", { ascending: false })
     if (error) throw error

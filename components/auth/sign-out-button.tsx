@@ -12,7 +12,7 @@ export function SignOutButton({ className }: { className?: string }) {
       className={className}
       onClick={async () => {
         await logout()
-        router.push("/login")
+        router.push("/")
       }}
       disabled={isLoading}
     >
