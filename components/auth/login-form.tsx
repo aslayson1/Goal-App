@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useRouter } from "next/navigation"
 import { signIn, resetPassword } from "@/lib/actions/auth"
-import { useActionState } from "react"
+import { useFormState } from "react-dom"
 
 function SubmitButton({ pending }: { pending: boolean }) {
   return (
@@ -18,7 +18,7 @@ function SubmitButton({ pending }: { pending: boolean }) {
 
 export function LoginForm() {
   const router = useRouter()
-  const [state, formAction, pending] = useActionState(signIn, null)
+  const [state, formAction, pending] = useFormState(signIn, null)
   const [showReset, setShowReset] = useState(false)
 
   useEffect(() => {
