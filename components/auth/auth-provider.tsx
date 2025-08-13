@@ -34,11 +34,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const cookieValue = demoUserCookie.split("=")[1]
         if (cookieValue && cookieValue !== "") {
           try {
-            const demoUserData = JSON.parse(decodeURIComponent(cookieValue))
-            setUser(demoUserData)
-            setIsLoading(false)
-            setIsInitialized(true)
-            return
+            const decodedValue = decodeURIComponent(cookieValue)
+            if (decodedValue && decodedValue.trim() !== "" && decodedValue !== "undefined") {
+              const demoUserData = JSON.parse(decodedValue)
+              if (demoUserData && typeof demoUserData === "object" && demoUserData.id) {
+                setUser(demoUserData)
+                setIsLoading(false)
+                setIsInitialized(true)
+                return
+              }
+            }
           } catch (parseError) {
             console.error("Failed to parse demo user cookie:", parseError)
             document.cookie = "demo-user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"

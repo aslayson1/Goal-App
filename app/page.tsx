@@ -1,7 +1,10 @@
 "use client"
 
+import { supabase } from "@/lib/supabase/client"
+import { useAuth } from "@/components/auth/auth-provider"
 // Adding Supabase imports for task persistence
 import { setTaskCompleted } from "@/lib/data/tasks"
+import { createTask } from "@/lib/data/tasks" // Import createTask
 import {
   Plus,
   ChevronDown,
@@ -45,6 +48,11 @@ import { DndContext, closestCenter } from "@dnd-kit/core"
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
+import { arrayMove } from "@dnd-kit/sortable"
+import type { DragEndEvent } from "@dnd-kit/core"
+import { useSensors, useSensor, PointerSensor, KeyboardSensor } from "@dnd-kit/core"
+import { sortableKeyboardCoordinates } from "@dnd-kit/sortable"
+import { useState, useEffect } from "react"
 
 // Custom CSS class for white checkbox background with thinner border
 const checkboxStyles =
@@ -929,7 +937,8 @@ function SortableDailyTaskItem({
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                     <MoreHorizontal className="h-4 w-4" />
-                  </DropdownMenuTrigger>
+                  </Button>
+                </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={onEdit}>
                     <Edit className="h-4 w-4 mr-2" />
@@ -958,7 +967,7 @@ function SortableDailyTaskItem({
   )
 }
 
-function GoalTrackerApp() {\
+function GoalTrackerApp() {
   const { user } = useAuth()
   const [goalsData, setGoalsData] = useState<GoalsData>(initialGoalsData)
   const [weeklyTasks, setWeeklyTasks] = useState(initialWeeklyTasks)
@@ -966,7 +975,7 @@ function GoalTrackerApp() {\
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set())
   const [activeView, setActiveView] = useState("daily")
   const [currentWeek, setCurrentWeek] = useState(4)
-  const [selectedDay, setSelectedDay] = useState(() => {\
+  const [selectedDay, setSelectedDay] = useState(() => {
     const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
     const today = new Date().getDay()
     return days[today]
@@ -974,18 +983,18 @@ function GoalTrackerApp() {\
 
   // Add state for long-term goals:
   const [longTermGoals, setLongTermGoals] = useState<LongTermGoalsData>(initialLongTermGoals)
-  const [showAddLongTermGoal, setShowAddLongTermGoal] = useState(false)\
+  const [showAddLongTermGoal, setShowAddLongTermGoal] = useState(false)
   const [selectedTimeframe, setSelectedTimeframe] = useState<"1-year" | "5-year">("1-year")
-  const [newLongTermGoal, setNewLongTermGoal] = useState({\
+  const [newLongTermGoal, setNewLongTermGoal] = useState({
     title: "",
     description: "",
     targetDate: "",
     category: "",
     notes: "",
-    milestones: [\
-      { title: "", targetDate: "" },\
-      { title: "", targetDate: "" },\
-      { title: "", targetDate: "" },\
+    milestones: [
+      { title: "", targetDate: "" },
+      { title: "", targetDate: "" },
+      { title: "", targetDate: "" },
       { title: "", targetDate: "" },
     ],
   })
@@ -995,14 +1004,14 @@ function GoalTrackerApp() {\
   const [showAddDailyTask, setShowAddDailyTask] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState("")
   const [showProfile, setShowProfile] = useState(false)
-  const [newGoal, setNewGoal] = useState({\
+  const [newGoal, setNewGoal] = useState({
     title: "",
     description: "",
     targetCount: 0,
     weeklyTarget: 0,
   })
 
-  const [newWeeklyTask, setNewWeeklyTask] = useState({\
+  const [newWeeklyTask, setNewWeeklyTask] = useState({
     title: "",
     description: "",
     category: "",
@@ -1011,7 +1020,7 @@ function GoalTrackerApp() {\
     estimatedHours: 1,
   })
 
-  const [newDailyTask, setNewDailyTask] = useState({\
+  const [newDailyTask, setNewDailyTask] = useState({
     title: "",
     description: "",
     category: "",
@@ -1022,30 +1031,30 @@ function GoalTrackerApp() {\
 
   const [showAddCategory, setShowAddCategory] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState("")
-\
-  const [editingGoal, setEditingGoal] = useState<{ category: string; goal: Goal } | null>(null)\
-  const [showDeleteGoal, setShowDeleteGoal] = useState<{ category: string; goalId: string; title: string } | null>(null)\
+
+  const [editingGoal, setEditingGoal] = useState<{ category: string; goal: Goal } | null>(null)
+  const [showDeleteGoal, setShowDeleteGoal] = useState<{ category: string; goalId: string; title: string } | null>(null)
   const [showDeleteCategory, setShowDeleteCategory] = useState<string | null>(null)
-\
-  const [editingWeeklyTask, setEditingWeeklyTask] = useState<WeeklyTask | null>(null)\
-  const [editingDailyTask, setEditingDailyTask] = useState<DailyTask | null>(null)\
-  const [showDeleteWeeklyTask, setShowDeleteWeeklyTask] = useState<{ taskId: string; title: string } | null>(null)\
+
+  const [editingWeeklyTask, setEditingWeeklyTask] = useState<WeeklyTask | null>(null)
+  const [editingDailyTask, setEditingDailyTask] = useState<DailyTask | null>(null)
+  const [showDeleteWeeklyTask, setShowDeleteWeeklyTask] = useState<{ taskId: string; title: string } | null>(null)
   const [showDeleteDailyTask, setShowDeleteDailyTask] = useState<{ day: string; taskId: string; title: string } | null>(
     null,
   )
-\
-  const [customCategoryColors, setCustomCategoryColors] = useState<{ [key: string]: string }>({})\
+
+  const [customCategoryColors, setCustomCategoryColors] = useState<{ [key: string]: string }>({})
   const [showEditCategory, setShowEditCategory] = useState<string | null>(null)
   const [editCategoryName, setEditCategoryName] = useState("")
   const [editCategoryColor, setEditCategoryColor] = useState("")
 
-  // Add these state variables after the existing state declarations (around line 680):\
-  const [editingLongTermGoal, setEditingLongTermGoal] = useState<{\
+  // Add these state variables after the existing state declarations (around line 680):
+  const [editingLongTermGoal, setEditingLongTermGoal] = useState<{
     timeframe: "1-year" | "5-year"
     category: string
     goal: LongTermGoal
-  } | null>(null)\
-  const [showDeleteLongTermGoal, setShowDeleteLongTermGoal] = useState<{\
+  } | null>(null)
+  const [showDeleteLongTermGoal, setShowDeleteLongTermGoal] = useState<{
     timeframe: "1-year" | "5-year"
     category: string
     goalId: string
@@ -1053,7 +1062,7 @@ function GoalTrackerApp() {\
   } | null>(null)
 
   // Helper function to get user initials
-  const getInitials = (name: string | null | undefined) => {\
+  const getInitials = (name: string | null | undefined) => {
     if (!name || typeof name !== "string") return "U"
     return name
       .split(" ")
@@ -1064,13 +1073,13 @@ function GoalTrackerApp() {\
 
   // Cal.com inspired color palette for category badges - each category gets a unique, distinct color
   const getCategoryColor = (category: string) => {
-    // Check for custom colors first\
-    if (customCategoryColors[category]) {\
+    // Check for custom colors first
+    if (customCategoryColors[category]) {
       return customCategoryColors[category]
     }
 
     const colors = {
-      "Layson Group\": \"bg-sky-100 text-sky-800 border-sky-200",\
+      "Layson Group": "bg-sky-100 text-sky-800 border-sky-200",
       Upside: "bg-violet-100 text-violet-800 border-violet-200",
       "Poplar Title": "bg-purple-100 text-purple-800 border-purple-200",
       "Relationships/Family": "bg-pink-100 text-pink-800 border-pink-200",
@@ -1375,7 +1384,7 @@ function GoalTrackerApp() {\
       const today = new Date()
       const userId = user?.id || "00000000-0000-0000-0000-000000000001"
 
-      const categoryId = `cat-${newDailyTask.category.toLowerCase().replace(/\s+/g, '-')}-${Date.now().toString().slice(-8)}`
+      const categoryId = `cat-${newDailyTask.category.toLowerCase().replace(/\s+/g, "-")}-${Date.now().toString().slice(-8)}`
 
       const { data, error } = await supabase
         .from("tasks")
@@ -1993,7 +2002,6 @@ function GoalTrackerApp() {\
         targetDate: m.targetDate,
       })),
     })
-    setShowAddLongTermGoal(true)
   }
 
   const saveEditedLongTermGoal = () => {

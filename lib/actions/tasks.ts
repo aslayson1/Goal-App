@@ -33,7 +33,14 @@ export async function createTaskAction(taskData: {
 
   if (demoUserCookie) {
     try {
-      const demoUser = JSON.parse(decodeURIComponent(demoUserCookie))
+      const decodedValue = decodeURIComponent(demoUserCookie)
+      if (!decodedValue || decodedValue.trim() === "" || decodedValue === "undefined") {
+        throw new Error("Empty or invalid cookie value")
+      }
+      const demoUser = JSON.parse(decodedValue)
+      if (!demoUser || typeof demoUser !== "object" || !demoUser.id) {
+        throw new Error("Invalid demo user data structure")
+      }
       userId = demoUser.id
       console.log("Using demo user with ID:", userId)
       console.log("Demo user data:", demoUser)
@@ -133,7 +140,14 @@ export async function fetchTasksAction() {
 
   if (demoUserCookie) {
     try {
-      const demoUser = JSON.parse(decodeURIComponent(demoUserCookie))
+      const decodedValue = decodeURIComponent(demoUserCookie)
+      if (!decodedValue || decodedValue.trim() === "" || decodedValue === "undefined") {
+        return []
+      }
+      const demoUser = JSON.parse(decodedValue)
+      if (!demoUser || typeof demoUser !== "object" || !demoUser.id) {
+        return []
+      }
       userId = demoUser.id
       console.log("Using demo user with ID:", userId)
 
