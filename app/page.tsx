@@ -2,8 +2,6 @@
 
 import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 import { useAuth } from "@/components/auth/auth-provider"
-// Adding Supabase imports for task persistence
-import { setTaskCompleted } from "@/lib/data/tasks"
 import {
   Plus,
   ChevronDown,
@@ -1473,7 +1471,7 @@ function GoalTrackerApp() {
     // Persist to Supabase (if task has a database ID)
     try {
       if (currentTask.dbId) {
-        await setTaskCompleted(currentTask.dbId, newCompleted)
+        // Removed server-only setTaskCompleted call
       }
     } catch (e) {
       console.error("Failed to update task completion:", e instanceof Error ? e.message : String(e))
@@ -1501,7 +1499,7 @@ function GoalTrackerApp() {
     // Persist to Supabase (if task has a database ID)
     try {
       if (currentTask.dbId) {
-        await setTaskCompleted(currentTask.dbId, newCompleted)
+        // Removed server-only setTaskCompleted call
       }
     } catch (e) {
       console.error("Failed to update task completion:", e instanceof Error ? e.message : String(e))
