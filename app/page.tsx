@@ -1398,6 +1398,7 @@ function GoalTrackerApp() {
           target_date: today.toISOString().split("T")[0],
           task_type: "daily",
           goal_id: newDailyTask.goalId && newDailyTask.goalId.trim() !== "" ? newDailyTask.goalId : null,
+          category_id: null, // Add category_id field that exists in database
           user_id: userId,
           completed: false,
         })
