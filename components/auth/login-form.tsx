@@ -1,5 +1,7 @@
 "use client"
 import { useEffect, useState } from "react"
+import type React from "react"
+
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -31,7 +33,14 @@ export function LoginForm() {
 
   const handleFormSubmit = (formData: FormData) => {
     console.log("Form submitted with data:", Object.fromEntries(formData))
+    console.log("Calling formAction...")
     formAction(formData)
+  }
+
+  const handleButtonClick = (e: React.MouseEvent) => {
+    console.log("Sign in button clicked!")
+    console.log("Form element:", e.currentTarget.closest("form"))
+    console.log("Button type:", e.currentTarget.getAttribute("type"))
   }
 
   return (
@@ -87,7 +96,9 @@ export function LoginForm() {
         <Input id="password" name="password" type="password" placeholder="Enter your password" required />
       </div>
 
-      <SubmitButton pending={pending} />
+      <Button type="submit" className="w-full" disabled={pending} onClick={handleButtonClick}>
+        {pending ? "Signing in..." : "Sign In"}
+      </Button>
 
       <div className="text-xs text-gray-500 text-center">
         Demo: demo@example.com / password | Need an account? Use the Register tab above.
