@@ -1387,17 +1387,13 @@ function GoalTrackerApp() {
         user_id: userId,
         completed: false,
       }
-      
+
       console.log("Inserting task with data:", insertData)
       console.log("Raw goalId from form:", newDailyTask.goalId)
       console.log("Validated goalId:", validGoalId)
       console.log("User ID:", userId)
 
-      const { data, error } = await supabase
-        .from("tasks")
-        .insert(insertData)
-        .select()
-        .single()
+      const { data, error } = await supabase.from("tasks").insert(insertData).select().single()
 
       if (error) throw error
       console.log("Task created successfully:", data)
@@ -2209,4 +2205,32 @@ function GoalTrackerApp() {
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                               <Plus className="h-4 w-4" />
-\
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setSelectedCategory(category)
+                                setShowAddGoal(true)
+                              }}
+                            >
+                              Add Goal
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  </CardHeader>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  )
+}
+
+export default function Page() {
+  return <GoalTrackerApp />
+}
