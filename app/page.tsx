@@ -2274,6 +2274,22 @@ function GoalTrackerApp() {
         .eq("user_id", user.id)
         .single()
 
+      const getNextDateForDay = (dayName: string) => {
+        const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+        const today = new Date()
+        const targetDayIndex = days.indexOf(dayName)
+        const todayIndex = today.getDay()
+
+        let daysUntilTarget = targetDayIndex - todayIndex
+        if (daysUntilTarget < 0) {
+          daysUntilTarget += 7 // Next week
+        }
+
+        const targetDate = new Date(today)
+        targetDate.setDate(today.getDate() + daysUntilTarget)
+        return targetDate.toISOString().split("T")[0]
+      }
+
       const { error } = await supabase.from("tasks").insert({
         id: taskId,
         user_id: user.id,
@@ -2281,7 +2297,7 @@ function GoalTrackerApp() {
         goal_id: newDailyTask.goalId || null,
         title: newDailyTask.title,
         task_type: "daily",
-        target_date: new Date().toISOString().split("T")[0], // Today's date
+        target_date: getNextDateForDay(selectedDay),
         completed: false,
       })
 
