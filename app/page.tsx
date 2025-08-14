@@ -1265,6 +1265,83 @@ function GoalTrackerApp() {
     }
   }
 
+  const loadTasksFromDB = async (userId: string) => {
+    try {
+      console.log("Loading tasks from database...")
+
+      // Load tasks from database
+      const { data: tasks, error } = await supabase
+        .from("tasks")
+        .select(
+          `
+        id,
+        title,
+        task_type,
+        target_date,
+        completed,
+        categories(name)
+      `,
+        )
+        .eq("user_id", userId)
+
+      if (error) {
+        console.error("Error loading tasks:", error)
+        return { dailyTasks: {}, weeklyTasks: {} }
+      }
+
+      console.log("Tasks loaded:", tasks)
+
+      // Initialize task structures
+      const dailyTasksData: { [key: string]: DailyTask[] } = {
+        Monday: [],
+        Tuesday: [],
+        Wednesday: [],
+        Thursday: [],
+        Friday: [],
+        Saturday: [],
+        Sunday: [],
+      }
+
+      const weeklyTasksData: { [key: string]: WeeklyTask[] } = {}
+      for (let i = 1; i <= 12; i++) {
+        weeklyTasksData[`Week ${i}`] = []
+      }
+
+      // Organize tasks by type and date
+      tasks?.forEach((dbTask) => {
+        const task: any = {
+          id: dbTask.id,
+          title: dbTask.title,
+          completed: dbTask.completed,
+          category: dbTask.categories?.name || "Uncategorized",
+        }
+
+        if (dbTask.task_type === "daily") {
+          // Get day name from target_date
+          const date = new Date(dbTask.target_date)
+          const dayName = date.toLocaleDateString("en-US", { weekday: "long" })
+          if (dailyTasksData[dayName]) {
+            dailyTasksData[dayName].push(task)
+          }
+        } else if (dbTask.task_type === "weekly") {
+          // For weekly tasks, we'll add them to the current week for now
+          // This could be enhanced to determine the correct week based on target_date
+          const currentWeekKey = `Week ${Math.ceil(
+            (new Date().getTime() - new Date(new Date().getFullYear(), 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000),
+          )}`
+          if (weeklyTasksData[currentWeekKey]) {
+            weeklyTasksData[currentWeekKey].push(task)
+          }
+        }
+      })
+
+      return { dailyTasks: dailyTasksData, weeklyTasks: weeklyTasksData }
+    } catch (error) {
+      console.error("Error in loadTasksFromDB:", error)
+      return { dailyTasks: {}, weeklyTasks: {} }
+    }
+  }
+
   const loadCategoriesAndGoalsFromDB = async (userId: string) => {
     try {
       console.log("Loading categories and goals from database...")
@@ -1283,7 +1360,8 @@ function GoalTrackerApp() {
       // Load goals
       const { data: goals, error: goalsError } = await supabase
         .from("goals")
-        .select(`
+        .select(
+          `
         id,
         title,
         description,
@@ -1292,7 +1370,8 @@ function GoalTrackerApp() {
         weekly_target,
         completed,
         categories(name)
-      `)
+      `,
+        )
         .eq("user_id", userId)
 
       if (goalsError) {
@@ -1322,6 +1401,8 @@ function GoalTrackerApp() {
             currentCount: dbGoal.current_progress,
             weeklyTarget: dbGoal.weekly_target,
             completed: dbGoal.completed,
+            notes: "",
+            category: categoryName,
           }
           categoriesData[categoryName].push(goal)
         }
@@ -1349,6 +1430,7 @@ function GoalTrackerApp() {
             console.log("Database connection successful!")
 
             const dbData = await loadCategoriesAndGoalsFromDB(user.id)
+            const taskData = await loadTasksFromDB(user.id)
 
             // Merge database data with existing initialGoalsData structure
             setGoalsData((prev) => {
@@ -1358,6 +1440,9 @@ function GoalTrackerApp() {
               })
               return merged
             })
+
+            setDailyTasks((prev) => ({ ...prev, ...taskData.dailyTasks }))
+            setWeeklyTasks((prev) => ({ ...prev, ...taskData.weeklyTasks }))
           }
         } catch (error) {
           console.error("Database check error:", error)
