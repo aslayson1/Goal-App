@@ -1396,7 +1396,7 @@ function GoalTrackerApp() {
 
     if (!selectedCategory || !newGoal.title) return
 
-    const goalId = `${selectedCategory.toLowerCase().replace(/[^a-z0-9]/g, "")}_${Date.now()}`
+    const goalId = crypto.randomUUID()
 
     // Update local state first (preserve existing UI behavior)
     setGoalsData((prev) => ({
