@@ -1021,7 +1021,10 @@ function GoalTrackerApp() {
 
         // Merge with existing state
         setWeeklyTasks((prev) => ({ ...prev, ...weeklyTasksFromDB }))
-        setDailyTasks((prev) => ({ ...prev, ...dailyTasksFromDB }))
+        setDailyTasks((prev) => {
+          const safeDaily = prev && typeof prev === "object" && !Array.isArray(prev) ? prev : initialDailyTasks
+          return { ...safeDaily, ...dailyTasksFromDB }
+        })
       } catch (error) {
         console.error("Failed to load data:", error)
       } finally {
