@@ -972,8 +972,6 @@ function SortableDailyTaskItem({
 function GoalTrackerApp() {
   const { user } = useAuth()
   const [goalsData, setGoalsData] = useState<GoalsData>(initialGoalsData)
-  const [weeklyTasks, setWeeklyTasks] = useState(initialWeeklyTasks)
-  const [dailyTasks, setDailyTasks] = useState(initialDailyTasks)
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set())
   const [activeView, setActiveView] = useState("daily")
   const [currentWeek, setCurrentWeek] = useState(4)
@@ -982,6 +980,9 @@ function GoalTrackerApp() {
     const today = new Date().getDay()
     return days[today]
   })
+
+  const [weeklyTasks, setWeeklyTasks] = useState<Record<string, WeeklyTask[]>>({})
+  const [dailyTasks, setDailyTasks] = useState<Record<string, DailyTask[]>>({})
 
   // Add state for long-term goals:
   const [longTermGoals, setLongTermGoals] = useState<LongTermGoalsData>(initialLongTermGoals)
