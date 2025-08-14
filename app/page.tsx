@@ -1,7 +1,4 @@
 "use client"
-
-// Adding Supabase imports for task persistence
-import { createTask, setTaskCompleted } from "@/lib/data/tasks"
 import { supabase } from "@/lib/supabase/client"
 
 import { useState, useEffect } from "react"
@@ -1393,370 +1390,7 @@ function GoalTrackerApp() {
     return [1, 100, 1000, 5000]
   }
 
-  const addWeeklyTask = async () => {
-    if (!newWeeklyTask.title || !newWeeklyTask.category) return
-
-    const taskId = `w${currentWeek}_${Date.now()}`
-    const weekKey = `Week ${currentWeek}`
-
-    // Optimistic update to local state
-    const newTask = {
-      id: taskId,
-      title: newWeeklyTask.title,
-      description: newWeeklyTask.description,
-      category: newWeeklyTask.category,
-      goalId: newWeeklyTask.goalId,
-      completed: false,
-      priority: newWeeklyTask.priority,
-      estimatedHours: newWeeklyTask.estimatedHours,
-    }
-
-    setWeeklyTasks((prev) => ({
-      ...prev,
-      [weekKey]: [...(prev[weekKey] || []), newTask],
-    }))
-
-    // Persist to Supabase
-    try {
-      const weekStartDate = new Date()
-      weekStartDate.setDate(weekStartDate.getDate() + (currentWeek - 1) * 7)
-
-      await createTask({
-        title: newWeeklyTask.title,
-        goal_id: newWeeklyTask.goalId || null,
-        target_date: weekStartDate.toISOString().split("T")[0], // Use date format for target_date
-        task_type: "weekly",
-        category_id: newWeeklyTask.category || null,
-      })
-    } catch (e) {
-      console.error("Supabase create weekly task failed:", e instanceof Error ? e.message : String(e))
-      // Revert optimistic update on error
-      setWeeklyTasks((prev) => ({
-        ...prev,
-        [weekKey]: prev[weekKey]?.filter((task) => task.id !== taskId) || [],
-      }))
-    }
-
-    setNewWeeklyTask({
-      title: "",
-      description: "",
-      category: "",
-      goalId: "",
-      priority: "medium",
-      estimatedHours: 1,
-    })
-    setShowAddWeeklyTask(false)
-  }
-
-  const addDailyTask = async () => {
-    if (!newDailyTask.title || !newDailyTask.category) return
-
-    const taskId = `${selectedDay.toLowerCase()}_${Date.now()}`
-
-    // Optimistic update to local state
-    const newTask = {
-      id: taskId,
-      title: newDailyTask.title,
-      description: newDailyTask.description,
-      category: newDailyTask.category,
-      goalId: newDailyTask.goalId,
-      completed: false,
-      timeBlock: newDailyTask.timeBlock,
-      estimatedMinutes: newDailyTask.estimatedMinutes,
-    }
-
-    setDailyTasks((prev) => ({
-      ...prev,
-      [selectedDay]: [...(prev[selectedDay] || []), newTask],
-    }))
-
-    // Persist to Supabase
-    try {
-      const today = new Date()
-      await createTask({
-        title: newDailyTask.title,
-        description: newDailyTask.description || null,
-        target_date: today.toISOString().split("T")[0], // Use date format for target_date
-        task_type: "daily",
-        category_id: newDailyTask.category || null,
-      })
-    } catch (e) {
-      console.error("Supabase create daily task failed:", e)
-      if (e instanceof Error) {
-        console.error("Error message:", e.message)
-        console.error("Error stack:", e.stack)
-      }
-      // Revert optimistic update on error
-      setDailyTasks((prev) => ({
-        ...prev,
-        [selectedDay]: prev[selectedDay]?.filter((task) => task.id !== taskId) || [],
-      }))
-    }
-
-    setNewDailyTask({
-      title: "",
-      description: "",
-      category: "",
-      goalId: "",
-      timeBlock: "",
-      estimatedMinutes: 30,
-    })
-    setShowAddDailyTask(false)
-  }
-
-  const toggleWeeklyTask = async (taskId: string) => {
-    const weekKey = `Week ${currentWeek}`
-    const currentTask = weeklyTasks[weekKey]?.find((task) => task.id === taskId)
-    if (!currentTask) return
-
-    const newCompleted = !currentTask.completed
-
-    // Optimistic update
-    setWeeklyTasks((prev) => ({
-      ...prev,
-      [weekKey]: prev[weekKey]?.map((task) => (task.id === taskId ? { ...task, completed: newCompleted } : task)) || [],
-    }))
-
-    // Persist to Supabase (if task has a database ID)
-    try {
-      if (currentTask.dbId) {
-        await setTaskCompleted(currentTask.dbId, newCompleted)
-      }
-    } catch (e) {
-      console.error("Failed to update task completion:", e instanceof Error ? e.message : String(e))
-      // Revert optimistic update on error
-      setWeeklyTasks((prev) => ({
-        ...prev,
-        [weekKey]:
-          prev[weekKey]?.map((task) => (task.id === taskId ? { ...task, completed: !newCompleted } : task)) || [],
-      }))
-    }
-  }
-
-  const toggleDailyTask = async (day: string, taskId: string) => {
-    const currentTask = dailyTasks[day]?.find((task) => task.id === taskId)
-    if (!currentTask) return
-
-    const newCompleted = !currentTask.completed
-
-    // Optimistic update
-    setDailyTasks((prev) => ({
-      ...prev,
-      [day]: prev[day]?.map((task) => (task.id === taskId ? { ...task, completed: newCompleted } : task)) || [],
-    }))
-
-    // Persist to Supabase (if task has a database ID)
-    try {
-      if (currentTask.dbId) {
-        await setTaskCompleted(currentTask.dbId, newCompleted)
-      }
-    } catch (e) {
-      console.error("Failed to update task completion:", e instanceof Error ? e.message : String(e))
-      // Revert optimistic update on error
-      setDailyTasks((prev) => ({
-        ...prev,
-        [day]: prev[day]?.map((task) => (task.id === taskId ? { ...task, completed: !newCompleted } : task)) || [],
-      }))
-    }
-  }
-
-  // Adding useEffect to hydrate tasks from Supabase
-  useEffect(() => {
-    ;(async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) return
-
-      try {
-        const { data, error } = await supabase.from("tasks").select("*").order("created_at", { ascending: false })
-        if (error) throw error
-        console.log("Hydrated tasks from Supabase:", data)
-
-        if (data && data.length > 0) {
-          // Separate tasks by type and merge into existing state
-          const weeklyTasksFromDB: any = {}
-          const dailyTasksFromDB: any = {}
-
-          data.forEach((task: any) => {
-            const taskObj = {
-              id: task.id,
-              title: task.title,
-              description: task.description || "",
-              completed: task.completed || false,
-              goalId: task.goal_id,
-              time: task.due_date
-                ? new Date(task.due_date).toLocaleTimeString("en-US", {
-                    hour: "numeric",
-                    minute: "2-digit",
-                    hour12: true,
-                  })
-                : "",
-            }
-
-            // Determine if it's a weekly or daily task based on due_date
-            const dueDate = task.due_date ? new Date(task.due_date) : null
-            const isWeeklyTask = dueDate && dueDate.getDay() !== new Date().getDay()
-
-            if (isWeeklyTask) {
-              // Add to weekly tasks - use a default category if none specified
-              const category = "General"
-              if (!weeklyTasksFromDB[category]) {
-                weeklyTasksFromDB[category] = []
-              }
-              weeklyTasksFromDB[category].push(taskObj)
-            } else {
-              // Add to daily tasks - use a default category if none specified
-              const category = "General"
-              if (!dailyTasksFromDB[category]) {
-                dailyTasksFromDB[category] = []
-              }
-              dailyTasksFromDB[category].push(taskObj)
-            }
-          })
-
-          // Merge with existing state
-          setWeeklyTasks((prev) => ({ ...prev, ...weeklyTasksFromDB }))
-          setDailyTasks((prev) => ({ ...prev, ...dailyTasksFromDB }))
-        }
-      } catch (error: any) {
-        if (error?.message?.includes("does not exist") || error?.message?.includes("schema cache")) {
-          console.warn("Tasks table not found, using local state only")
-        } else {
-          console.error("Failed to hydrate tasks:", error.message || String(error))
-        }
-      }
-    })()
-  }, [])
-
-  // Drag and drop handlers
-  const handleWeeklyTaskDragEnd = (event: DragEndEvent, category: string) => {
-    const { active, over } = event
-
-    if (!over || active.id === over.id) {
-      return
-    }
-
-    const weekKey = `Week ${currentWeek}`
-    const categoryTasks = (weeklyTasks[weekKey] || []).filter((task) => task.category === category)
-    const oldIndex = categoryTasks.findIndex((task) => task.id === active.id)
-    const newIndex = categoryTasks.findIndex((task) => task.id === over.id)
-
-    if (oldIndex !== -1 && newIndex !== -1) {
-      const reorderedTasks = arrayMove(categoryTasks, oldIndex, newIndex)
-
-      setWeeklyTasks((prev) => ({
-        ...prev,
-        [weekKey]: [...(prev[weekKey] || []).filter((task) => task.category !== category), ...reorderedTasks],
-      }))
-    }
-  }
-
-  const handleDailyTaskDragEnd = (event: DragEndEvent, category: string) => {
-    const { active, over } = event
-
-    if (!over || active.id === over.id) {
-      return
-    }
-
-    const categoryTasks = (dailyTasks[selectedDay] || []).filter((task) => task.category === category)
-    const oldIndex = categoryTasks.findIndex((task) => task.id === active.id)
-    const newIndex = categoryTasks.findIndex((task) => task.id === over.id)
-
-    if (oldIndex !== -1 && newIndex !== -1) {
-      const reorderedTasks = arrayMove(categoryTasks, oldIndex, newIndex)
-
-      setDailyTasks((prev) => ({
-        ...prev,
-        [selectedDay]: [...(prev[selectedDay] || []).filter((task) => task.category !== category), ...reorderedTasks],
-      }))
-    }
-  }
-
-  const updateNotes = (category: string, goalId: string, notes: string) => {
-    setGoalsData((prev) => ({
-      ...prev,
-      [category]: prev[category].map((goal) => (goal.id === goalId ? { ...goal, notes } : goal)),
-    }))
-  }
-
-  const toggleNotes = (goalId: string) => {
-    setExpandedNotes((prev) => {
-      const newSet = new Set(prev)
-      if (newSet.has(goalId)) {
-        newSet.delete(goalId)
-      } else {
-        newSet.add(goalId)
-      }
-      return newSet
-    })
-  }
-
-  const getProgressPercentage = (current: number, target: number) => {
-    return Math.min((current / target) * 100, 100)
-  }
-
-  const getWeeklyProgress = (goal: Goal) => {
-    const expectedProgress = goal.weeklyTarget * currentWeek
-    const actualProgress = goal.currentCount
-    return {
-      expected: expectedProgress,
-      actual: actualProgress,
-      onTrack: actualProgress >= expectedProgress * 0.8,
-    }
-  }
-
-  const getTotalProgress = () => {
-    let totalCurrent = 0
-    let totalTarget = 0
-
-    Object.values(goalsData)
-      .flat()
-      .forEach((goal) => {
-        const normalizedCurrent = goal.currentCount / goal.targetCount
-        const normalizedTarget = 1
-        totalCurrent += normalizedCurrent
-        totalTarget += normalizedTarget
-      })
-
-    return Math.round((totalCurrent / totalTarget) * 100)
-  }
-
-  const getCompletedGoals = () => {
-    return Object.values(goalsData)
-      .flat()
-      .filter((goal) => goal.currentCount >= goal.targetCount).length
-  }
-
-  const getTotalGoals = () => {
-    return Object.values(goalsData).flat().length
-  }
-
-  const getCompletedTasks = () => {
-    // Count completed weekly tasks
-    const weeklyTasksCompleted = Object.values(weeklyTasks)
-      .flat()
-      .filter((task) => task.completed).length
-
-    // Count completed daily tasks
-    const dailyTasksCompleted = Object.values(dailyTasks)
-      .flat()
-      .filter((task) => task.completed).length
-
-    return weeklyTasksCompleted + dailyTasksCompleted
-  }
-
-  const getTotalTasks = () => {
-    // Count total weekly tasks
-    const totalWeeklyTasks = Object.values(weeklyTasks).flat().length
-
-    // Count total daily tasks
-    const totalDailyTasks = Object.values(dailyTasks).flat().length
-
-    return totalWeeklyTasks + totalDailyTasks
-  }
-
-  const addNewGoal = () => {
+  const addNewGoal = async () => {
     const detectedNumber = extractNumberFromTitle(newGoal.title)
     const targetCount = detectedNumber > 0 ? newGoal.targetCount || detectedNumber : 1
 
@@ -1764,6 +1398,7 @@ function GoalTrackerApp() {
 
     const goalId = `${selectedCategory.toLowerCase().replace(/[^a-z0-9]/g, "")}_${Date.now()}`
 
+    // Update local state first (preserve existing UI behavior)
     setGoalsData((prev) => ({
       ...prev,
       [selectedCategory]: [
@@ -1780,6 +1415,46 @@ function GoalTrackerApp() {
         },
       ],
     }))
+
+    // Save to database
+    try {
+      if (!user?.id) {
+        console.error("User not authenticated")
+        return
+      }
+
+      // Find the category ID from the database
+      const { data: categories } = await supabase
+        .from("categories")
+        .select("id")
+        .eq("name", selectedCategory)
+        .eq("user_id", user.id)
+        .single()
+
+      if (!categories) {
+        console.error("Category not found in database")
+        return
+      }
+
+      const { error } = await supabase.from("goals").insert({
+        id: goalId,
+        user_id: user.id,
+        category_id: categories.id,
+        title: newGoal.title,
+        description: newGoal.description,
+        target_count: targetCount,
+        current_progress: 0,
+        weekly_target: newGoal.weeklyTarget || targetCount / 12,
+      })
+
+      if (error) {
+        console.error("Error saving goal to database:", error)
+      } else {
+        console.log("Goal saved to database successfully")
+      }
+    } catch (error) {
+      console.error("Error saving goal:", error)
+    }
 
     setNewGoal({ title: "", description: "", targetCount: 0, weeklyTarget: 0 })
     setSelectedCategory("")
@@ -2177,6 +1852,228 @@ function GoalTrackerApp() {
       },
     }))
     setShowDeleteLongTermGoal(null)
+  }
+
+  const getTotalProgress = () => {
+    let totalCurrent = 0
+    let totalTarget = 0
+
+    Object.values(goalsData).forEach((goals) => {
+      goals.forEach((goal) => {
+        totalCurrent += goal.currentCount
+        totalTarget += goal.targetCount
+      })
+    })
+
+    return totalTarget === 0 ? 0 : Math.round((totalCurrent / totalTarget) * 100)
+  }
+
+  const getTotalTasks = () => {
+    let totalTasks = 0
+    Object.values(weeklyTasks).forEach((tasks) => {
+      totalTasks += tasks.length
+    })
+    Object.values(dailyTasks).forEach((tasks) => {
+      totalTasks += tasks.length
+    })
+    return totalTasks
+  }
+
+  const getCompletedTasks = () => {
+    let completedTasks = 0
+    Object.values(weeklyTasks).forEach((tasks) => {
+      tasks.forEach((task) => {
+        if (task.completed) {
+          completedTasks++
+        }
+      })
+    })
+    Object.values(dailyTasks).forEach((tasks) => {
+      tasks.forEach((task) => {
+        if (task.completed) {
+          completedTasks++
+        }
+      })
+    })
+    return completedTasks
+  }
+
+  const getTotalGoals = () => {
+    let totalGoals = 0
+    Object.values(goalsData).forEach((goals) => {
+      totalGoals += goals.length
+    })
+    return totalGoals
+  }
+
+  const getCompletedGoals = () => {
+    let completedGoals = 0
+    Object.values(goalsData).forEach((goals) => {
+      goals.forEach((goal) => {
+        if (goal.currentCount >= goal.targetCount) {
+          completedGoals++
+        }
+      })
+    })
+    return completedGoals
+  }
+
+  const getProgressPercentage = (current: number, target: number) => {
+    return target === 0 ? 0 : (current / target) * 100
+  }
+
+  const getWeeklyProgress = (goal: Goal) => {
+    const weeklyTarget = goal.weeklyTarget || goal.targetCount / 12
+    const expectedProgress = weeklyTarget * currentWeek
+    const onTrack = goal.currentCount >= expectedProgress
+    return { weeklyTarget, expectedProgress, onTrack }
+  }
+
+  const toggleNotes = (goalId: string) => {
+    setExpandedNotes((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(goalId)) {
+        newSet.delete(goalId)
+      } else {
+        newSet.add(goalId)
+      }
+      return newSet
+    })
+  }
+
+  const updateNotes = (category: string, goalId: string, notes: string) => {
+    setGoalsData((prev) => ({
+      ...prev,
+      [category]: prev[category].map((goal) => (goal.id === goalId ? { ...goal, notes } : goal)),
+    }))
+  }
+
+  const handleWeeklyTaskDragEnd = (event: DragEndEvent, category: string) => {
+    const { active, over } = event
+
+    if (!over) return
+
+    if (active.id !== over.id) {
+      setWeeklyTasks((prev) => {
+        const oldIndex = prev[`Week ${currentWeek}`]?.findIndex((task) => task.id === active.id) || -1
+        const newIndex = prev[`Week ${currentWeek}`]?.findIndex((task) => task.id === over.id) || -1
+
+        if (oldIndex === -1 || newIndex === -1) return prev
+
+        const newItems = arrayMove(prev[`Week ${currentWeek}`], oldIndex, newIndex)
+
+        return {
+          ...prev,
+          [`Week ${currentWeek}`]: newItems,
+        }
+      })
+    }
+  }
+
+  const toggleWeeklyTask = (taskId: string) => {
+    setWeeklyTasks((prev) => ({
+      ...prev,
+      [`Week ${currentWeek}`]:
+        prev[`Week ${currentWeek}`]?.map((task) =>
+          task.id === taskId ? { ...task, completed: !task.completed } : task,
+        ) || [],
+    }))
+  }
+
+  const handleDailyTaskDragEnd = (event: DragEndEvent, category: string) => {
+    const { active, over } = event
+
+    if (!over) return
+
+    if (active.id !== over.id) {
+      setDailyTasks((prev) => {
+        const oldIndex = prev[selectedDay]?.findIndex((task) => task.id === active.id) || -1
+        const newIndex = prev[selectedDay]?.findIndex((task) => task.id === over.id) || -1
+
+        if (oldIndex === -1 || newIndex === -1) return prev
+
+        const newItems = arrayMove(prev[selectedDay], oldIndex, newIndex)
+
+        return {
+          ...prev,
+          [selectedDay]: newItems,
+        }
+      })
+    }
+  }
+
+  const toggleDailyTask = (selectedDay: string, taskId: string) => {
+    setDailyTasks((prev) => ({
+      ...prev,
+      [selectedDay]:
+        prev[selectedDay]?.map((task) => (task.id === taskId ? { ...task, completed: !task.completed } : task)) || [],
+    }))
+  }
+
+  const addWeeklyTask = () => {
+    if (!newWeeklyTask.title || !newWeeklyTask.category) return
+
+    const taskId = `w${currentWeek}_${newWeeklyTask.category.toLowerCase().replace(/[^a-z0-9]/g, "")}_${Date.now()}`
+
+    setWeeklyTasks((prev) => ({
+      ...prev,
+      [`Week ${currentWeek}`]: [
+        ...(prev[`Week ${currentWeek}`] || []),
+        {
+          id: taskId,
+          title: newWeeklyTask.title,
+          description: newWeeklyTask.description,
+          category: newWeeklyTask.category,
+          goalId: newWeeklyTask.goalId,
+          completed: false,
+          priority: newWeeklyTask.priority,
+          estimatedHours: newWeeklyTask.estimatedHours,
+        },
+      ],
+    }))
+
+    setNewWeeklyTask({
+      title: "",
+      description: "",
+      category: "",
+      goalId: "",
+      priority: "medium",
+      estimatedHours: 1,
+    })
+    setShowAddWeeklyTask(false)
+  }
+
+  const addDailyTask = () => {
+    if (!newDailyTask.title || !newDailyTask.category) return
+
+    const taskId = `${selectedDay.toLowerCase()}_${newDailyTask.category.toLowerCase().replace(/[^a-z0-9]/g, "")}_${Date.now()}`
+
+    setDailyTasks((prev) => ({
+      ...prev,
+      [selectedDay]: [
+        ...(prev[selectedDay] || []),
+        {
+          id: taskId,
+          title: newDailyTask.title,
+          description: newDailyTask.description,
+          category: newDailyTask.category,
+          goalId: newDailyTask.goalId,
+          completed: false,
+          timeBlock: newDailyTask.timeBlock,
+          estimatedMinutes: newDailyTask.estimatedMinutes,
+        },
+      ],
+    }))
+
+    setNewDailyTask({
+      title: "",
+      description: "",
+      category: "",
+      goalId: "",
+      timeBlock: "",
+      estimatedMinutes: 30,
+    })
+    setShowAddDailyTask(false)
   }
 
   return (
