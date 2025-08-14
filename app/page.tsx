@@ -2214,9 +2214,18 @@ function GoalTrackerApp() {
       const targetDate = getNextDateForDay(selectedDay)
       console.log("Target date calculated:", targetDate)
 
+      const { data: categories } = await supabase
+        .from("categories")
+        .select("id")
+        .eq("name", newDailyTask.category)
+        .eq("user_id", user.id)
+        .single()
+
       const taskData = {
         id: taskId,
         user_id: user.id,
+        category_id: categories?.id || null,
+        goal_id: newDailyTask.goalId || null,
         title: newDailyTask.title,
         description: newDailyTask.description || null,
         task_type: "daily",
