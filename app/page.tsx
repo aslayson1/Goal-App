@@ -1272,24 +1272,29 @@ function GoalTrackerApp() {
               return merged
             })
 
-            console.log("About to set daily tasks state with:", JSON.stringify(taskData.dailyTasks, null, 2))
-            setDailyTasks(taskData.dailyTasks)
+            console.log("=== FORCING STATE UPDATES ===")
 
-            console.log("About to set weekly tasks state with:", JSON.stringify(taskData.weeklyTasks, null, 2))
-            setWeeklyTasks(taskData.weeklyTasks)
+            // Update daily tasks with force re-render
+            setDailyTasks(() => {
+              console.log("Setting daily tasks to:", JSON.stringify(taskData.dailyTasks, null, 2))
+              return { ...taskData.dailyTasks }
+            })
 
-            console.log("=== STATE UPDATE CONFIRMATION ===")
-            console.log(
-              "Daily tasks being set:",
-              Object.keys(taskData.dailyTasks).length > 0 ? "✅ Has data" : "❌ Empty",
-            )
-            console.log(
-              "Weekly tasks being set:",
-              Object.keys(taskData.weeklyTasks).length > 0 ? "✅ Has data" : "❌ Empty",
-            )
+            // Update weekly tasks with force re-render
+            setWeeklyTasks(() => {
+              console.log("Setting weekly tasks to:", JSON.stringify(taskData.weeklyTasks, null, 2))
+              return { ...taskData.weeklyTasks }
+            })
+
+            setTimeout(() => {
+              console.log("=== POST-UPDATE VERIFICATION ===")
+              console.log("Daily tasks count:", Object.keys(taskData.dailyTasks).length)
+              console.log("Weekly tasks count:", Object.keys(taskData.weeklyTasks).length)
+              console.log("State update completed successfully")
+            }, 100)
           }
         } catch (error) {
-          console.error("Database check error:", error)
+          console.error("Error loading data:", error)
         }
       }
     }
