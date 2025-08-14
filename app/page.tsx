@@ -908,12 +908,17 @@ function GoalTrackerApp() {
 
   useEffect(() => {
     const loadData = async () => {
-      if (!user) return
+      if (!user) {
+        console.log("No user found, skipping data load")
+        return
+      }
 
+      console.log("Starting data load for user:", user.id)
       setIsLoading(true)
       try {
-        // Load categories first
+        console.log("Loading categories...")
         const categoriesData = await getCategories()
+        console.log("Categories loaded:", categoriesData)
         setCategories(categoriesData)
 
         // Create categories if they don't exist
@@ -922,12 +927,15 @@ function GoalTrackerApp() {
 
         for (const categoryName of requiredCategories) {
           if (!existingCategoryNames.includes(categoryName)) {
+            console.log("Creating missing category:", categoryName)
             await createCategory(categoryName)
           }
         }
 
         // Load goals and organize by category
+        console.log("Loading goals...")
         const goalsData = await getGoals()
+        console.log("Goals loaded:", goalsData)
         setDbGoals(goalsData)
 
         // Transform database goals to match UI structure
@@ -951,7 +959,9 @@ function GoalTrackerApp() {
         setGoalsData(organizedGoals)
 
         // Load long-term goals
+        console.log("Loading long-term goals...")
         const longTermGoalsData = await getLongTermGoals()
+        console.log("Long-term goals loaded:", longTermGoalsData)
         setDbLongTermGoals(longTermGoalsData)
 
         // Transform to UI structure
@@ -977,7 +987,9 @@ function GoalTrackerApp() {
         setLongTermGoals(organizedLongTermGoals)
 
         // Load tasks
+        console.log("Loading tasks...")
         const tasksData = await listTasks()
+        console.log("Tasks loaded:", tasksData)
 
         // Organize tasks by type and day/week
         const weeklyTasksFromDB: any = {}
@@ -1020,8 +1032,12 @@ function GoalTrackerApp() {
         // Merge with existing state
         setWeeklyTasks((prev) => ({ ...prev, ...weeklyTasksFromDB }))
         setDailyTasks((prev) => ({ ...prev, ...dailyTasksFromDB }))
+
+        console.log("Data loading completed successfully")
       } catch (error) {
         console.error("Failed to load data:", error)
+        console.error("Error details:", error instanceof Error ? error.message : String(error))
+        setIsLoading(false)
       } finally {
         setIsLoading(false)
       }
