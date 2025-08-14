@@ -2166,6 +2166,15 @@ function GoalTrackerApp() {
 
     const taskId = crypto.randomUUID()
 
+    const taskData = {
+      title: newDailyTask.title,
+      description: newDailyTask.description,
+      category: newDailyTask.category,
+      goalId: newDailyTask.goalId,
+      timeBlock: newDailyTask.timeBlock,
+      estimatedMinutes: newDailyTask.estimatedMinutes,
+    }
+
     // Update local state immediately
     setDailyTasks((prev) => ({
       ...prev,
@@ -2173,13 +2182,13 @@ function GoalTrackerApp() {
         ...(prev[selectedDay] || []),
         {
           id: taskId,
-          title: newDailyTask.title,
-          description: newDailyTask.description,
-          category: newDailyTask.category,
-          goalId: newDailyTask.goalId,
+          title: taskData.title,
+          description: taskData.description,
+          category: taskData.category,
+          goalId: taskData.goalId,
           completed: false,
-          timeBlock: newDailyTask.timeBlock,
-          estimatedMinutes: newDailyTask.estimatedMinutes,
+          timeBlock: taskData.timeBlock,
+          estimatedMinutes: taskData.estimatedMinutes,
         },
       ],
     }))
@@ -2205,13 +2214,13 @@ function GoalTrackerApp() {
       }
 
       console.log("User ID:", user.id)
-      console.log("Task title:", newDailyTask.title)
+      console.log("Task title:", taskData.title)
 
       const { data, error } = await supabase
         .from("tasks")
         .insert({
           user_id: user.id,
-          title: newDailyTask.title,
+          title: taskData.title,
           task_type: "daily",
           target_date: new Date().toISOString().split("T")[0],
           completed: false,
