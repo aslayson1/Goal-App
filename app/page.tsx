@@ -1531,6 +1531,200 @@ function GoalTrackerApp() {
     return [1, 100, 1000, 5000]
   }
 
+  const addNewGoal = async () => {
+    const detectedNumber = extractNumberFromTitle(newGoal.title)
+    const targetCount = detectedNumber > 0 ? newGoal.targetCount || detectedNumber : 1
+
+    if (!selectedCategory || !newGoal.title) return
+
+    const goalId = crypto.randomUUID()
+
+    const weeklyTargetValue = newGoal.weeklyTarget || Math.ceil(targetCount / 12)
+
+    // Update local state first (preserve existing UI behavior)
+    setGoalsData((prev) => ({
+      ...prev,
+      [selectedCategory]: [
+        ...prev[selectedCategory],
+        {
+          id: goalId,
+          title: newGoal.title,
+          description: newGoal.description,
+          targetCount: targetCount,
+          currentCount: 0,
+          notes: "",
+          weeklyTarget: weeklyTargetValue,
+          category: selectedCategory,
+        },
+      ],
+    }))
+
+    try {
+      if (!user?.id) {
+        console.error("User not authenticated")
+        return
+      }
+
+      // Find the category ID from the database
+      const { data: categories } = await supabase
+        .from("categories")
+        .select("id")
+        .eq("name", selectedCategory)
+        .eq("user_id", user.id)
+        .single()
+
+      if (!categories) {
+        console.error("Category not found in database")
+        return
+      }
+
+      const { error } = await supabase.from("goals").insert({
+        id: goalId,
+        user_id: user.id,
+        category_id: categories.id,
+        title: newGoal.title,
+        description: newGoal.description,
+        target_count: targetCount,
+        current_progress: 0,
+        weekly_target: weeklyTargetValue,
+      })
+
+      if (error) {
+        console.error("Error saving goal to database:", error)
+      } else {
+        console.log("Goal saved to database successfully")
+      }
+    } catch (error) {
+      console.error("Error saving goal:", error)
+    }
+
+    setNewGoal({ title: "", description: "", targetCount: 0, weeklyTarget: 0 })
+    setSelectedCategory("")
+    setShowAddGoal(false)
+  }
+
+  const addNewCategory = async () => {
+    if (!newCategoryName.trim()) return
+
+    // Convert to title case instead of uppercase
+    const categoryName = newCategoryName
+      .trim()
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" ")
+
+    if (goalsData[categoryName]) {
+      alert("Category already exists!")
+      return
+    }
+
+    try {
+      if (!user?.id) {
+        alert("User not authenticated. Please log in again.")
+        return
+      }
+
+      // Validate UUID format
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+      if (!uuidRegex.test(user.id)) {
+        console.error("Invalid user ID format:", user.id)
+        alert("Authentication error. Please log out and log in again.")
+        return
+      }
+
+      const { error } = await supabase.from("categories").insert([
+        {
+          user_id: user.id,
+          name: categoryName,
+          color: "#05a7b0", // Default teal color
+        },
+      ])
+
+      if (error) {
+        console.error("Error saving category:", error)
+        console.error("User ID being used:", user.id)
+        alert(`Failed to save category: ${error.message}`)
+        return
+      }
+
+      // Update local state
+      setGoalsData((prev) => ({
+        ...prev,
+        [categoryName]: [],
+      }))
+
+      setNewCategoryName("")
+      setShowAddCategory(false)
+      console.log("Category saved successfully:", categoryName)
+    } catch (error) {
+      console.error("Error adding category:", error)
+      alert("Failed to add category. Please try again.")
+    }
+  }
+
+  const editGoal = (category: string, goalId: string, updatedGoal: Partial<Goal>) => {
+    setGoalsData((prev) => ({
+      ...prev,
+      [category]: prev[category].map((goal) => (goal.id === goalId ? { ...goal, ...updatedGoal } : goal)),
+    }))
+  }
+
+  const deleteGoal = (category: string, goalId: string) => {
+    setGoalsData((prev) => ({
+      ...prev,
+      [category]: prev[category].filter((goal) => goal.id !== goalId),
+    }))
+    setShowDeleteGoal(null)
+  }
+
+  const updateGoal = () => {
+    if (!editingGoal) return
+
+    const weeklyTargetValue = newGoal.weeklyTarget || Math.ceil(newGoal.targetCount / 12)
+
+    editGoal(editingGoal.category, editingGoal.goal.id, {
+      title: newGoal.title,
+      description: newGoal.description,
+      targetCount: newGoal.targetCount,
+      weeklyTarget: weeklyTargetValue,
+    })
+
+    setNewGoal({ title: "", description: "", targetCount: 0, weeklyTarget: 0 })
+    setEditingGoal(null)
+  }
+
+  const saveEditedGoal = () => {
+    if (!editingGoal) return
+
+    updateGoal()
+    setEditingGoal(null)
+    setShowAddGoal(false)
+  }
+
+  const startEditingGoal = (category: string, goal: Goal) => {
+    setEditingGoal({ category, goal })
+    setNewGoal({
+      title: goal.title,
+      description: goal.description,
+      targetCount: goal.targetCount,
+      weeklyTarget: goal.weeklyTarget,
+    })
+    setShowAddGoal(true)
+  }
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case "high":
+        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+      case "medium":
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+      case "low":
+        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+      default:
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+    }
+  }
+
   const editWeeklyTask = (taskId: string, updatedTask: Partial<WeeklyTask>) => {
     setWeeklyTasks((prev) => ({
       ...prev,
@@ -1562,294 +1756,6 @@ function GoalTrackerApp() {
     setShowDeleteDailyTask(null)
   }
 
-  const addDailyTask = async () => {
-    if (!newDailyTask.title || !newDailyTask.category) return
-
-    const taskId = crypto.randomUUID()
-
-    // Update local state first
-    setDailyTasks((prev) => ({
-      ...prev,
-      [selectedDay]: [
-        ...(prev[selectedDay] || []),
-        {
-          id: taskId,
-          title: newDailyTask.title,
-          description: newDailyTask.description,
-          category: newDailyTask.category,
-          goalId: newDailyTask.goalId,
-          completed: false,
-          timeBlock: newDailyTask.timeBlock,
-          estimatedMinutes: newDailyTask.estimatedMinutes,
-        },
-      ],
-    }))
-
-    // Reset form immediately
-    setNewDailyTask({
-      title: "",
-      description: "",
-      category: "",
-      goalId: "",
-      timeBlock: "",
-      estimatedMinutes: 30,
-    })
-    setShowAddDailyTask(false)
-
-    // Simple database insert
-    try {
-      if (!user?.id) {
-        console.error("User not authenticated")
-        return
-      }
-
-      console.log("Attempting to save task to database...")
-
-      const { error } = await supabase.from("tasks").insert({
-        id: taskId,
-        user_id: user.id,
-        title: newDailyTask.title,
-        task_type: "daily",
-        target_date: new Date().toISOString().split("T")[0],
-        completed: false,
-      })
-
-      if (error) {
-        console.error("Database error:", error)
-      } else {
-        console.log("✅ Task saved successfully!")
-
-        // Verify it was saved
-        const { data: verification } = await supabase.from("tasks").select("*").eq("id", taskId).single()
-
-        console.log("Verification - task in database:", verification)
-      }
-    } catch (error) {
-      console.error("Error saving task:", error)
-    }
-  }
-
-  const addWeeklyTask = async () => {
-    if (!newWeeklyTask.title || !newWeeklyTask.category) return
-
-    const taskId = crypto.randomUUID()
-
-    setWeeklyTasks((prev) => ({
-      ...prev,
-      [`Week ${currentWeek}`]: [
-        ...(prev[`Week ${currentWeek}`] || []),
-        {
-          id: taskId,
-          title: newWeeklyTask.title,
-          description: newWeeklyTask.description,
-          category: newWeeklyTask.category,
-          goalId: newWeeklyTask.goalId,
-          completed: false,
-          priority: newWeeklyTask.priority,
-          estimatedHours: newWeeklyTask.estimatedHours,
-        },
-      ],
-    }))
-
-    // Simple database insert
-    try {
-      if (!user?.id) {
-        console.error("User not authenticated")
-        return
-      }
-
-      const { error } = await supabase.from("tasks").insert({
-        id: taskId,
-        user_id: user.id,
-        title: newWeeklyTask.title,
-        task_type: "weekly",
-        target_date: new Date().toISOString().split("T")[0],
-        completed: false,
-      })
-
-      if (error) {
-        console.error("Error saving weekly task:", error)
-      } else {
-        console.log("✅ Weekly task saved successfully!")
-      }
-    } catch (error) {
-      console.error("Error saving weekly task:", error)
-    }
-
-    setNewWeeklyTask({
-      title: "",
-      description: "",
-      category: "",
-      goalId: "",
-      priority: "medium",
-      estimatedHours: 1,
-    })
-    setShowAddWeeklyTask(false)
-  }
-
-  const getTotalProgress = () => {
-    let totalCurrent = 0
-    let totalTarget = 0
-
-    Object.values(goalsData).forEach((goals) => {
-      goals.forEach((goal) => {
-        totalCurrent += goal.currentCount
-        totalTarget += goal.targetCount
-      })
-    })
-
-    return totalTarget === 0 ? 0 : Math.round((totalCurrent / totalTarget) * 100)
-  }
-
-  const getCompletedTasks = () => {
-    let completedTasks = 0
-
-    Object.values(weeklyTasks).forEach((tasks) => {
-      tasks.forEach((task) => {
-        if (task.completed) {
-          completedTasks++
-        }
-      })
-    })
-
-    Object.values(dailyTasks).forEach((tasks) => {
-      tasks.forEach((task) => {
-        if (task.completed) {
-          completedTasks++
-        }
-      })
-    })
-
-    return completedTasks
-  }
-
-  const getTotalTasks = () => {
-    let totalTasks = 0
-
-    Object.values(weeklyTasks).forEach((tasks) => {
-      totalTasks += tasks.length
-    })
-
-    Object.values(dailyTasks).forEach((tasks) => {
-      totalTasks += tasks.length
-    })
-
-    return totalTasks
-  }
-
-  const getCompletedGoals = () => {
-    let completedGoals = 0
-
-    Object.values(goalsData).forEach((goals) => {
-      goals.forEach((goal) => {
-        if (goal.currentCount >= goal.targetCount) {
-          completedGoals++
-        }
-      })
-    })
-
-    return completedGoals
-  }
-
-  const getTotalGoals = () => {
-    let totalGoals = 0
-
-    Object.values(goalsData).forEach((goals) => {
-      totalGoals += goals.length
-    })
-
-    return totalGoals
-  }
-
-  const startEditingCategory = (category: string) => {
-    setShowEditCategory(category)
-    setEditCategoryName(category)
-    setEditCategoryColor(customCategoryColors[category] || getCategoryColor(category))
-  }
-
-  const getProgressPercentage = (current: number, target: number) => {
-    if (target === 0) return 0 // Prevent division by zero
-    return (current / target) * 100
-  }
-
-  const getWeeklyProgress = (goal: Goal) => {
-    const weeklyTarget = goal.weeklyTarget
-    const currentCount = goal.currentCount
-    const targetCount = goal.targetCount
-
-    const expectedProgress = weeklyTarget * currentWeek
-    const onTrack = currentCount >= expectedProgress
-
-    return {
-      expectedProgress,
-      onTrack,
-    }
-  }
-
-  const startEditingGoal = (category: string, goal: Goal) => {
-    setEditingGoal({ category, goal })
-    setSelectedCategory(category)
-    setNewGoal({
-      title: goal.title,
-      description: goal.description,
-      targetCount: goal.targetCount,
-      weeklyTarget: goal.weeklyTarget,
-    })
-    setShowAddGoal(true)
-  }
-
-  const toggleNotes = (goalId: string) => {
-    setExpandedNotes((prev) => {
-      const newSet = new Set(prev)
-      if (newSet.has(goalId)) {
-        newSet.delete(goalId)
-      } else {
-        newSet.add(goalId)
-      }
-      return newSet
-    })
-  }
-
-  const updateNotes = (category: string, goalId: string, notes: string) => {
-    setGoalsData((prev) => ({
-      ...prev,
-      [category]: prev[category].map((goal) => (goal.id === goalId ? { ...goal, notes } : goal)),
-    }))
-  }
-
-  const handleWeeklyTaskDragEnd = (event: DragEndEvent, category: string) => {
-    const { active, over } = event
-
-    if (!over) return
-
-    if (active.id !== over.id) {
-      setWeeklyTasks((prev) => {
-        const oldIndex = prev[`Week ${currentWeek}`].findIndex((task) => task.id === active.id)
-        const newIndex = prev[`Week ${currentWeek}`].findIndex((task) => task.id === over.id)
-
-        if (oldIndex === -1 || newIndex === -1) {
-          return prev
-        }
-
-        const updatedTasks = arrayMove(prev[`Week ${currentWeek}`], oldIndex, newIndex)
-
-        return {
-          ...prev,
-          [`Week ${currentWeek}`]: updatedTasks,
-        }
-      })
-    }
-  }
-
-  const toggleWeeklyTask = (taskId: string) => {
-    setWeeklyTasks((prev) => ({
-      ...prev,
-      [`Week ${currentWeek}`]: prev[`Week ${currentWeek}`].map((task) =>
-        task.id === taskId ? { ...task, completed: !task.completed } : task,
-      ),
-    }))
-  }
-
   const startEditingWeeklyTask = (task: WeeklyTask) => {
     setEditingWeeklyTask(task)
     setNewWeeklyTask({
@@ -1863,52 +1769,6 @@ function GoalTrackerApp() {
     setShowAddWeeklyTask(true)
   }
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "high":
-        return "bg-red-100 text-red-800 border-red-200"
-      case "medium":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200"
-      case "low":
-        return "bg-green-100 text-green-800 border-green-200"
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200"
-    }
-  }
-
-  const handleDailyTaskDragEnd = (event: DragEndEvent, category: string) => {
-    const { active, over } = event
-
-    if (!over) return
-
-    if (active.id !== over.id) {
-      setDailyTasks((prev) => {
-        const oldIndex = prev[selectedDay].findIndex((task) => task.id === active.id)
-        const newIndex = prev[selectedDay].findIndex((task) => task.id === over.id)
-
-        if (oldIndex === -1 || newIndex === -1) {
-          return prev
-        }
-
-        const updatedTasks = arrayMove(prev[selectedDay], oldIndex, newIndex)
-
-        return {
-          ...prev,
-          [selectedDay]: updatedTasks,
-        }
-      })
-    }
-  }
-
-  const toggleDailyTask = (selectedDay: string, taskId: string) => {
-    setDailyTasks((prev) => ({
-      ...prev,
-      [selectedDay]: prev[selectedDay].map((task) =>
-        task.id === taskId ? { ...task, completed: !task.completed } : task,
-      ),
-    }))
-  }
-
   const startEditingDailyTask = (task: DailyTask) => {
     setEditingDailyTask(task)
     setNewDailyTask({
@@ -1920,69 +1780,6 @@ function GoalTrackerApp() {
       estimatedMinutes: task.estimatedMinutes,
     })
     setShowAddDailyTask(true)
-  }
-
-  const startEditingLongTermGoal = (timeframe: "1-year" | "5-year", category: string, goal: LongTermGoal) => {
-    setEditingLongTermGoal({ timeframe, category, goal })
-    setSelectedTimeframe(timeframe)
-    setNewLongTermGoal({
-      title: goal.title,
-      description: goal.description,
-      targetDate: goal.targetDate,
-      category: goal.category,
-      notes: goal.notes,
-      milestones: goal.milestones.map((m) => ({ title: m.title, targetDate: m.targetDate })),
-    })
-    setShowAddLongTermGoal(true)
-  }
-
-  const saveEditedGoal = () => {
-    if (!editingGoal) return
-
-    setGoalsData((prev) => ({
-      ...prev,
-      [editingGoal.category]: prev[editingGoal.category].map((goal) =>
-        goal.id === editingGoal.goal.id
-          ? {
-              ...goal,
-              title: newGoal.title,
-              description: newGoal.description,
-              targetCount: newGoal.targetCount,
-              weeklyTarget: newGoal.weeklyTarget,
-            }
-          : goal,
-      ),
-    }))
-
-    setEditingGoal(null)
-    setShowAddGoal(false)
-    setNewGoal({ title: "", description: "", targetCount: 0, weeklyTarget: 0 })
-  }
-
-  const addNewGoal = () => {
-    if (!selectedCategory) return
-
-    const newGoalId = crypto.randomUUID()
-
-    setGoalsData((prev) => ({
-      ...prev,
-      [selectedCategory]: [
-        ...prev[selectedCategory],
-        {
-          id: newGoalId,
-          title: newGoal.title,
-          description: newGoal.description,
-          targetCount: newGoal.targetCount,
-          currentCount: 0,
-          notes: "",
-          weeklyTarget: newGoal.weeklyTarget,
-          category: selectedCategory,
-        },
-      ],
-    }))
-
-    setShowAddGoal(false)
-    setNewGoal({ title: "", description: "", targetCount: 0, weeklyTarget: 0 })
   }
 
   const saveEditedWeeklyTask = () => {
@@ -2024,148 +1821,141 @@ function GoalTrackerApp() {
     setShowAddDailyTask(false)
   }
 
-  const addNewCategory = async () => {
-    if (!newCategoryName.trim()) return
+  const colorOptions = [
+    { name: "Blue", value: "bg-blue-100 text-blue-800 border-blue-200" },
+    { name: "Sky", value: "bg-sky-100 text-sky-800 border-sky-200" },
+    { name: "Violet", value: "bg-violet-100 text-violet-800 border-violet-200" },
+    { name: "Purple", value: "bg-purple-100 text-purple-800 border-purple-200" },
+    { name: "Pink", value: "bg-pink-100 text-pink-800 border-pink-200" },
+    { name: "Rose", value: "bg-rose-100 text-rose-800 border-rose-200" },
+    { name: "Red", value: "bg-red-100 text-red-800 border-red-200" },
+    { name: "Orange", value: "bg-orange-100 text-orange-800 border-orange-200" },
+    { name: "Amber", value: "bg-amber-100 text-amber-800 border-amber-200" },
+    { name: "Yellow", value: "bg-yellow-100 text-yellow-800 border-yellow-200" },
+    { name: "Lime", value: "bg-lime-100 text-lime-800 border-lime-200" },
+    { name: "Green", value: "bg-green-100 text-green-800 border-green-200" },
+    { name: "Emerald", value: "bg-emerald-100 text-emerald-800 border-emerald-200" },
+    { name: "Teal", value: "bg-teal-100 text-teal-800 border-teal-200" },
+    { name: "Cyan", value: "bg-cyan-100 text-cyan-800 border-cyan-200" },
+    { name: "Slate", value: "bg-slate-100 text-slate-800 border-slate-200" },
+    { name: "Gray", value: "bg-gray-100 text-gray-800 border-gray-200" },
+    { name: "Stone", value: "bg-stone-100 text-stone-800 border-stone-200" },
+  ]
 
-    const newCategory = newCategoryName.trim()
-
-    setGoalsData((prev) => ({
-      ...prev,
-      [newCategory]: [],
-    }))
-
-    setShowAddCategory(false)
-    setNewCategoryName("")
-
-    // Save to database
-    try {
-      if (!user?.id) {
-        console.error("User not authenticated")
-        return
-      }
-
-      const { error } = await supabase.from("categories").insert({
-        user_id: user.id,
-        name: newCategory,
-      })
-
-      if (error) {
-        console.error("Error saving category:", error)
-      } else {
-        console.log("✅ Category saved successfully!")
-      }
-    } catch (error) {
-      console.error("Error saving category:", error)
-    }
-  }
-
-  const deleteGoal = (category: string, goalId: string) => {
-    setGoalsData((prev) => ({
-      ...prev,
-      [category]: prev[category].filter((goal) => goal.id !== goalId),
-    }))
-    setShowDeleteGoal(null)
-  }
-
-  const deleteCategory = (category: string) => {
-    const { [category]: _, ...rest } = goalsData // Destructure to remove
-    setGoalsData(rest)
-    setShowDeleteCategory(null)
-
-    // Delete from database
-    try {
-      if (!user?.id) {
-        console.error("User not authenticated")
-        return
-      }
-
-      supabase.from("categories").delete().eq("user_id", user.id).eq("name", category)
-    } catch (error) {
-      console.error("Error deleting category:", error)
-    }
+  const startEditingCategory = (category: string) => {
+    setShowEditCategory(category)
+    setEditCategoryName(category)
+    setEditCategoryColor(customCategoryColors[category] || getCategoryColor(category))
   }
 
   const saveEditedCategory = () => {
-    if (!showEditCategory) return
+    if (!showEditCategory || !editCategoryName.trim()) return
 
-    // Update local state
+    const oldCategoryName = showEditCategory
+    const newCategoryName = editCategoryName.trim()
+
+    // If name changed, update the goals data structure
+    if (oldCategoryName !== newCategoryName) {
+      setGoalsData((prev) => {
+        const updated = { ...prev }
+
+        // Move goals to new category name
+        if (updated[oldCategoryName]) {
+          updated[newCategoryName] = updated[oldCategoryName]
+          delete updated[oldCategoryName]
+        }
+
+        return updated
+      })
+
+      // Update tasks to use new category name
+      setWeeklyTasks((prev) => {
+        const updated = { ...prev }
+        Object.keys(updated).forEach((week) => {
+          updated[week] = updated[week].map((task) =>
+            task.category === oldCategoryName ? { ...task, category: newCategoryName } : task,
+          )
+        })
+        return updated
+      })
+
+      setDailyTasks((prev) => {
+        const updated = { ...prev }
+        Object.keys(updated).forEach((day) => {
+          updated[day] = updated[day].map((task) =>
+            task.category === oldCategoryName ? { ...task, category: newCategoryName } : task,
+          )
+        })
+        return updated
+      })
+
+      // Update custom colors
+      setCustomCategoryColors((prev) => {
+        const updated = { ...prev }
+        if (updated[oldCategoryName]) {
+          updated[newCategoryName] = updated[oldCategoryName]
+          delete updated[oldCategoryName]
+        }
+        return updated
+      })
+    }
+
+    // Update color
     setCustomCategoryColors((prev) => ({
       ...prev,
-      [showEditCategory]: editCategoryColor,
+      [newCategoryName]: editCategoryColor,
     }))
 
-    // Update category name in goalsData
-    setGoalsData((prev) => {
-      const updatedGoalsData: GoalsData = {}
-      Object.entries(prev).forEach(([category, goals]) => {
-        if (category === showEditCategory) {
-          updatedGoalsData[editCategoryName] = goals
-        } else {
-          updatedGoalsData[category] = goals
-        }
-      })
-      return updatedGoalsData
-    })
-
-    // Update category name in weeklyTasks
-    setWeeklyTasks((prev) => {
-      const updatedWeeklyTasks = { ...prev }
-      Object.keys(updatedWeeklyTasks).forEach((week) => {
-        updatedWeeklyTasks[week] = updatedWeeklyTasks[week].map((task) =>
-          task.category === showEditCategory ? { ...task, category: editCategoryName } : task,
-        )
-      })
-      return updatedWeeklyTasks
-    })
-
-    // Update category name in dailyTasks
-    setDailyTasks((prev) => {
-      const updatedDailyTasks = { ...prev }
-      Object.keys(updatedDailyTasks).forEach((day) => {
-        updatedDailyTasks[day] = updatedDailyTasks[day].map((task) =>
-          task.category === showEditCategory ? { ...task, category: editCategoryName } : task,
-        )
-      })
-      return updatedDailyTasks
-    })
-
-    // Close dialog and reset state
     setShowEditCategory(null)
     setEditCategoryName("")
     setEditCategoryColor("")
   }
 
-  const colorOptions = [
-    { name: "Sky", value: "bg-sky-100 text-sky-800 border-sky-200" },
-    { name: "Violet", value: "bg-violet-100 text-violet-800 border-violet-200" },
-    { name: "Purple", value: "bg-purple-100 text-purple-800 border-purple-200" },
-    { name: "Pink", value: "bg-pink-100 text-pink-800 border-pink-200" },
-    { name: "Lime", value: "bg-lime-100 text-lime-800 border-lime-200" },
-    { name: "Emerald", value: "bg-emerald-100 text-emerald-800 border-emerald-200" },
-    { name: "Amber", value: "bg-amber-100 text-amber-800 border-amber-200" },
-    { name: "Orange", value: "bg-orange-100 text-orange-800 border-orange-200" },
-    { name: "Teal", value: "bg-teal-100 text-teal-800 border-teal-200" },
-    { name: "Slate", value: "bg-slate-100 text-slate-800 border-slate-200" },
-    { name: "Rose", value: "bg-rose-100 text-rose-800 border-rose-200" },
-    { name: "Cyan", value: "bg-cyan-100 text-cyan-800 border-cyan-200" },
-    { name: "Green", value: "bg-green-100 text-green-800 border-green-200" },
-    { name: "Yellow", value: "bg-yellow-100 text-yellow-800 border-yellow-200" },
-    { name: "Red", value: "bg-red-100 text-red-800 border-red-200" },
-    { name: "Fuchsia", value: "bg-fuchsia-100 text-fuchsia-800 border-fuchsia-200" },
-    { name: "Stone", value: "bg-stone-100 text-stone-800 border-stone-200" },
-    { name: "Zinc", value: "bg-zinc-100 text-zinc-800 border-zinc-200" },
-    { name: "Neutral", value: "bg-neutral-100 text-neutral-800 border-neutral-200" },
-  ]
+  const deleteCategory = (category: string) => {
+    setGoalsData((prev) => {
+      const updated = { ...prev }
+      delete updated[category]
+      return updated
+    })
+
+    // Remove custom color if exists
+    setCustomCategoryColors((prev) => {
+      const updated = { ...prev }
+      delete updated[category]
+      return updated
+    })
+
+    setShowDeleteCategory(null)
+  }
+
+  // Add these functions after the existing helper functions (around line 1200):
+  const startEditingLongTermGoal = (timeframe: "1-year" | "5-year", category: string, goal: LongTermGoal) => {
+    setEditingLongTermGoal({ timeframe, category, goal })
+    setSelectedTimeframe(timeframe)
+    setNewLongTermGoal({
+      title: goal.title,
+      description: goal.description,
+      targetDate: goal.targetDate,
+      category: goal.category,
+      notes: goal.notes,
+      milestones: goal.milestones.map((m) => ({
+        title: m.title,
+        targetDate: m.targetDate,
+      })),
+    })
+  }
 
   const saveEditedLongTermGoal = () => {
     if (!editingLongTermGoal) return
 
+    const { timeframe, category, goal } = editingLongTermGoal
+
     setLongTermGoals((prev) => ({
       ...prev,
-      [editingLongTermGoal.timeframe]: {
-        ...prev[editingLongTermGoal.timeframe],
-        [editingLongTermGoal.category]: prev[editingLongTermGoal.timeframe][editingLongTermGoal.category].map((g) =>
-          g.id === editingLongTermGoal.goal.id
+      [timeframe]: {
+        ...prev[timeframe],
+        [category]: prev[timeframe][category].map((g) =>
+          g.id === goal.id
             ? {
                 ...g,
                 title: newLongTermGoal.title,
@@ -2173,20 +1963,20 @@ function GoalTrackerApp() {
                 targetDate: newLongTermGoal.targetDate,
                 category: newLongTermGoal.category,
                 notes: newLongTermGoal.notes,
-                milestones: newLongTermGoal.milestones.map((m, index) => ({
-                  id: g.milestones[index].id,
-                  title: m.title,
-                  completed: g.milestones[index].completed,
-                  targetDate: m.targetDate,
-                })),
+                milestones: newLongTermGoal.milestones
+                  .filter((m) => m.title && m.targetDate)
+                  .map((m, index) => ({
+                    id: `${g.id}_m${index + 1}`,
+                    title: m.title,
+                    completed: g.milestones[index]?.completed || false,
+                    targetDate: m.targetDate,
+                  })),
               }
             : g,
         ),
       },
     }))
 
-    setEditingLongTermGoal(null)
-    setShowAddLongTermGoal(false)
     setNewLongTermGoal({
       title: "",
       description: "",
@@ -2200,6 +1990,8 @@ function GoalTrackerApp() {
         { title: "", targetDate: "" },
       ],
     })
+    setEditingLongTermGoal(null)
+    setShowAddLongTermGoal(false)
   }
 
   const deleteLongTermGoal = (timeframe: "1-year" | "5-year", category: string, goalId: string) => {
@@ -2207,10 +1999,310 @@ function GoalTrackerApp() {
       ...prev,
       [timeframe]: {
         ...prev[timeframe],
-        [category]: prev[timeframe][category].filter((goal) => goal.id !== goalId),
+        [category]: prev[timeframe][category].filter((g) => g.id !== goalId),
       },
     }))
     setShowDeleteLongTermGoal(null)
+  }
+
+  const getTotalProgress = () => {
+    let totalCurrent = 0
+    let totalTarget = 0
+
+    Object.values(goalsData).forEach((goals) => {
+      goals.forEach((goal) => {
+        totalCurrent += goal.currentCount
+        totalTarget += goal.targetCount
+      })
+    })
+
+    return totalTarget === 0 ? 0 : Math.round((totalCurrent / totalTarget) * 100)
+  }
+
+  const getTotalTasks = () => {
+    let totalTasks = 0
+    Object.values(weeklyTasks).forEach((tasks) => {
+      totalTasks += tasks.length
+    })
+    Object.values(dailyTasks).forEach((tasks) => {
+      totalTasks += tasks.length
+    })
+    return totalTasks
+  }
+
+  const getCompletedTasks = () => {
+    let completedTasks = 0
+    Object.values(weeklyTasks).forEach((tasks) => {
+      tasks.forEach((task) => {
+        if (task.completed) {
+          completedTasks++
+        }
+      })
+    })
+    Object.values(dailyTasks).forEach((tasks) => {
+      tasks.forEach((task) => {
+        if (task.completed) {
+          completedTasks++
+        }
+      })
+    })
+    return completedTasks
+  }
+
+  const getTotalGoals = () => {
+    let totalGoals = 0
+    Object.values(goalsData).forEach((goals) => {
+      totalGoals += goals.length
+    })
+    return totalGoals
+  }
+
+  const getCompletedGoals = () => {
+    let completedGoals = 0
+    Object.values(goalsData).forEach((goals) => {
+      goals.forEach((goal) => {
+        if (goal.currentCount >= goal.targetCount) {
+          completedGoals++
+        }
+      })
+    })
+    return completedGoals
+  }
+
+  const getProgressPercentage = (current: number, target: number) => {
+    return target === 0 ? 0 : (current / target) * 100
+  }
+
+  const getWeeklyProgress = (goal: Goal) => {
+    const weeklyTarget = goal.weeklyTarget || Math.ceil(goal.targetCount / 12)
+    const expectedProgress = weeklyTarget * currentWeek
+    const onTrack = goal.currentCount >= expectedProgress
+    return { weeklyTarget, expectedProgress, onTrack }
+  }
+
+  const toggleNotes = (goalId: string) => {
+    setExpandedNotes((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(goalId)) {
+        newSet.delete(goalId)
+      } else {
+        newSet.add(goalId)
+      }
+      return newSet
+    })
+  }
+
+  const updateNotes = (category: string, goalId: string, notes: string) => {
+    setGoalsData((prev) => ({
+      ...prev,
+      [category]: prev[category].map((goal) => (goal.id === goalId ? { ...goal, notes } : goal)),
+    }))
+  }
+
+  const handleWeeklyTaskDragEnd = (event: DragEndEvent, category: string) => {
+    const { active, over } = event
+
+    if (!over) return
+
+    if (active.id !== over.id) {
+      setWeeklyTasks((prev) => {
+        const oldIndex = prev[`Week ${currentWeek}`]?.findIndex((task) => task.id === active.id) || -1
+        const newIndex = prev[`Week ${currentWeek}`]?.findIndex((task) => task.id === over.id) || -1
+
+        if (oldIndex === -1 || newIndex === -1) return prev
+
+        const newItems = arrayMove(prev[`Week ${currentWeek}`], oldIndex, newIndex)
+
+        return {
+          ...prev,
+          [`Week ${currentWeek}`]: newItems,
+        }
+      })
+    }
+  }
+
+  const toggleWeeklyTask = (taskId: string) => {
+    setWeeklyTasks((prev) => ({
+      ...prev,
+      [`Week ${currentWeek}`]:
+        prev[`Week ${currentWeek}`]?.map((task) =>
+          task.id === taskId ? { ...task, completed: !task.completed } : task,
+        ) || [],
+    }))
+  }
+
+  const handleDailyTaskDragEnd = (event: DragEndEvent, category: string) => {
+    const { active, over } = event
+
+    if (!over) return
+
+    if (active.id !== over.id) {
+      setDailyTasks((prev) => {
+        const oldIndex = prev[selectedDay]?.findIndex((task) => task.id === active.id) || -1
+        const newIndex = prev[selectedDay]?.findIndex((task) => task.id === over.id) || -1
+
+        if (oldIndex === -1 || newIndex === -1) return prev
+
+        const newItems = arrayMove(prev[selectedDay], oldIndex, newIndex)
+
+        return {
+          ...prev,
+          [selectedDay]: newItems,
+        }
+      })
+    }
+  }
+
+  const toggleDailyTask = (selectedDay: string, taskId: string) => {
+    setDailyTasks((prev) => ({
+      ...prev,
+      [selectedDay]:
+        prev[selectedDay]?.map((task) => (task.id === taskId ? { ...task, completed: !task.completed } : task)) || [],
+    }))
+  }
+
+  const addDailyTask = async () => {
+    if (!newDailyTask.title) return
+
+    const taskId = crypto.randomUUID()
+
+    // Update local state immediately
+    setDailyTasks((prev) => ({
+      ...prev,
+      [selectedDay]: [
+        ...(prev[selectedDay] || []),
+        {
+          id: taskId,
+          title: newDailyTask.title,
+          description: newDailyTask.description,
+          category: newDailyTask.category,
+          goalId: newDailyTask.goalId,
+          completed: false,
+          timeBlock: newDailyTask.timeBlock,
+          estimatedMinutes: newDailyTask.estimatedMinutes,
+        },
+      ],
+    }))
+
+    // Reset form
+    setNewDailyTask({
+      title: "",
+      description: "",
+      category: "",
+      goalId: "",
+      timeBlock: "",
+      estimatedMinutes: 30,
+    })
+    setShowAddDailyTask(false)
+
+    // Simple database insert - no complex lookups
+    try {
+      console.log("Starting simple task creation...")
+
+      if (!user?.id) {
+        console.error("No user ID available")
+        return
+      }
+
+      console.log("User ID:", user.id)
+      console.log("Task title:", newDailyTask.title)
+
+      const { data, error } = await supabase
+        .from("tasks")
+        .insert({
+          user_id: user.id,
+          title: newDailyTask.title,
+          task_type: "daily",
+          target_date: new Date().toISOString().split("T")[0],
+          completed: false,
+        })
+        .select()
+
+      if (error) {
+        console.error("Database error:", error)
+      } else {
+        console.log("Task saved successfully:", data)
+
+        // Verify it was saved
+        const { data: verification } = await supabase
+          .from("tasks")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+
+        console.log("Verification - latest task:", verification)
+      }
+    } catch (error) {
+      console.error("Unexpected error:", error)
+    }
+  }
+
+  const addWeeklyTask = async () => {
+    if (!newWeeklyTask.title || !newWeeklyTask.category) return
+
+    const taskId = crypto.randomUUID()
+
+    setWeeklyTasks((prev) => ({
+      ...prev,
+      [`Week ${currentWeek}`]: [
+        ...(prev[`Week ${currentWeek}`] || []),
+        {
+          id: taskId,
+          title: newWeeklyTask.title,
+          description: newWeeklyTask.description,
+          category: newWeeklyTask.category,
+          goalId: newWeeklyTask.goalId,
+          completed: false,
+          priority: newWeeklyTask.priority,
+          estimatedHours: newWeeklyTask.estimatedHours,
+        },
+      ],
+    }))
+
+    try {
+      if (!user?.id) {
+        console.error("User not authenticated")
+        return
+      }
+
+      // Find category ID from database
+      const { data: categories } = await supabase
+        .from("categories")
+        .select("id")
+        .eq("name", newWeeklyTask.category)
+        .eq("user_id", user.id)
+        .single()
+
+      const { error } = await supabase.from("tasks").insert({
+        id: taskId,
+        user_id: user.id,
+        category_id: categories?.id || null,
+        goal_id: newWeeklyTask.goalId || null,
+        title: newWeeklyTask.title,
+        task_type: "weekly",
+        target_date: new Date().toISOString().split("T")[0], // Current week
+        completed: false,
+      })
+
+      if (error) {
+        console.error("Error saving weekly task to database:", error.message)
+      } else {
+        console.log("Weekly task saved to database successfully")
+      }
+    } catch (error) {
+      console.error("Error saving weekly task to database:", error)
+    }
+
+    setNewWeeklyTask({
+      title: "",
+      description: "",
+      category: "",
+      goalId: "",
+      priority: "medium",
+      estimatedHours: 1,
+    })
+    setShowAddWeeklyTask(false)
   }
 
   return (
