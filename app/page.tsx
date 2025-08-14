@@ -1952,7 +1952,6 @@ function GoalTrackerApp() {
         targetDate: m.targetDate,
       })),
     })
-    setShowAddLongTermGoal(true)
   }
 
   const saveEditedLongTermGoal = () => {
@@ -2282,10 +2281,29 @@ function GoalTrackerApp() {
         .eq("user_id", user.id)
         .single()
 
-      if (categoryError) {
-        console.error("Error finding category:", categoryError)
+      if (categoryError || !categories) {
+        console.error("Category not found, creating it first:", categoryError)
+
+        // Create the category if it doesn't exist
+        const { data: newCategory, error: createError } = await supabase
+          .from("categories")
+          .insert({
+            user_id: user.id,
+            name: newDailyTask.category,
+            color: "#3B82F6", // Default blue color
+          })
+          .select("id")
+          .single()
+
+        if (createError) {
+          console.error("Error creating category:", createError)
+          return
+        }
+
+        console.log("Created new category:", newCategory)
+        const categories = newCategory
       } else {
-        console.log("Found category:", categories)
+        console.log("Found existing category:", categories)
       }
 
       const getNextDateForDay = (dayName: string) => {
@@ -2310,7 +2328,7 @@ function GoalTrackerApp() {
       const taskData = {
         id: taskId,
         user_id: user.id,
-        category_id: categories?.id || null,
+        category_id: categories.id, // Now guaranteed to have a valid category ID
         goal_id: newDailyTask.goalId || null,
         title: newDailyTask.title,
         task_type: "daily",
