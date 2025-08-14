@@ -40,6 +40,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 // Auth components
 import { useAuth } from "@/components/auth/auth-provider"
 import { UserProfile } from "@/components/profile/user-profile"
+import { AuthScreen } from "@/components/auth/auth-screen"
 import { SignOutButton } from "@/components/auth/sign-out-button"
 
 // Drag and Drop imports
@@ -1240,127 +1241,6 @@ function GoalTrackerApp() {
     return () => clearInterval(intervalId)
   }, [])
 
-  const loadCategoriesAndGoalsFromDB = async (userId: string) => {
-    try {
-      console.log("Loading categories and goals from database...")
-
-      // Load categories
-      const { data: categories, error: categoriesError } = await supabase
-        .from("categories")
-        .select("*")
-        .eq("user_id", userId)
-
-      if (categoriesError) {
-        console.error("Error loading categories:", categoriesError)
-        return {}
-      }
-
-      // Load goals
-      const { data: goals, error: goalsError } = await supabase.from("goals").select("*").eq("user_id", userId)
-
-      if (goalsError) {
-        console.error("Error loading goals:", goalsError)
-        return {}
-      }
-
-      // Organize goals by category
-      const organizedData: GoalsData = {}
-
-      categories?.forEach((category) => {
-        const categoryGoals = goals?.filter((goal) => goal.category_id === category.id) || []
-        organizedData[category.name] = categoryGoals.map((goal) => ({
-          id: goal.id,
-          title: goal.title,
-          description: goal.description || "",
-          targetCount: goal.target_count || 1,
-          currentCount: goal.current_progress || 0,
-          notes: goal.notes || "",
-          weeklyTarget: goal.weekly_target || Math.ceil((goal.target_count || 1) / 12),
-          category: category.name,
-        }))
-      })
-
-      console.log("Loaded categories and goals:", organizedData)
-      return organizedData
-    } catch (error) {
-      console.error("Exception loading categories and goals:", error)
-      return {}
-    }
-  }
-
-  const loadTasksFromDB = async (userId: string) => {
-    try {
-      console.log("Loading tasks from database...")
-
-      const { data: tasks, error } = await supabase
-        .from("tasks")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false })
-
-      if (error) {
-        console.error("Error loading tasks:", error)
-        return { dailyTasks: {}, weeklyTasks: {} }
-      }
-
-      console.log("Raw tasks from database:", tasks)
-
-      const dailyTasks: Record<string, DailyTask[]> = {}
-      const weeklyTasks: Record<string, WeeklyTask[]> = {}
-
-      tasks?.forEach((task) => {
-        if (task.task_type === "daily") {
-          // Get day name from target_date
-          const date = new Date(task.target_date)
-          const dayName = date.toLocaleDateString("en-US", { weekday: "long" })
-
-          if (!dailyTasks[dayName]) {
-            dailyTasks[dayName] = []
-          }
-
-          dailyTasks[dayName].push({
-            id: task.id,
-            title: task.title,
-            description: task.description || "",
-            category: "General", // Default category since we don't have category mapping
-            goalId: task.goal_id || "",
-            completed: task.completed || false,
-            timeBlock: "", // Not stored in database yet
-            estimatedMinutes: 30, // Default value
-          })
-        } else if (task.task_type === "weekly") {
-          // Calculate week number from target_date
-          const date = new Date(task.target_date)
-          const weekNumber = Math.ceil(date.getDate() / 7)
-          const weekKey = `Week ${weekNumber}`
-
-          if (!weeklyTasks[weekKey]) {
-            weeklyTasks[weekKey] = []
-          }
-
-          weeklyTasks[weekKey].push({
-            id: task.id,
-            title: task.title,
-            description: task.description || "",
-            category: "General", // Default category since we don't have category mapping
-            goalId: task.goal_id || "",
-            completed: task.completed || false,
-            priority: "medium", // Default value
-            estimatedHours: 1, // Default value
-          })
-        }
-      })
-
-      console.log("Organized daily tasks:", dailyTasks)
-      console.log("Organized weekly tasks:", weeklyTasks)
-
-      return { dailyTasks, weeklyTasks }
-    } catch (error) {
-      console.error("Exception loading tasks:", error)
-      return { dailyTasks: {}, weeklyTasks: {} }
-    }
-  }
-
   useEffect(() => {
     const checkDatabaseAndLoadData = async () => {
       if (user?.id) {
@@ -2094,12 +1974,19 @@ function GoalTrackerApp() {
     if (!over) return
 
     if (active.id !== over.id) {
-      setDailyTasks((prev) => ({
-        ...prev,
-        [selectedDay]:
-          prev[selectedDay]?.map((task) => (task.id === active.id ? { ...task, completed: !task.completed } : task)) ||
-          [],
-      }))
+      setDailyTasks((prev) => {
+        const oldIndex = prev[selectedDay]?.findIndex((task) => task.id === active.id) || -1
+        const newIndex = prev[selectedDay]?.findIndex((task) => task.id === over.id) || -1
+
+        if (oldIndex === -1 || newIndex === -1) return prev
+
+        const newItems = arrayMove(prev[selectedDay], oldIndex, newIndex)
+
+        return {
+          ...prev,
+          [selectedDay]: newItems,
+        }
+      })
     }
   }
 
@@ -2112,38 +1999,49 @@ function GoalTrackerApp() {
   }
 
   const addDailyTask = async () => {
-    console.log("=== DAILY TASK CREATION DEBUG START ===")
+    console.log("=== TASK CREATION DEBUG START ===")
+    console.log("1. Function called, newDailyTask:", newDailyTask)
 
     if (!newDailyTask.title) {
-      console.log("No title provided, exiting")
-      return
-    }
-
-    if (!user?.id) {
-      console.error("User not authenticated")
+      console.log("2. No title provided, exiting")
       return
     }
 
     const taskId = crypto.randomUUID()
-    console.log("Generated task ID:", taskId)
+    console.log("3. Generated task ID:", taskId)
 
-    // Update local state immediately for UI responsiveness
+    const taskData = {
+      title: newDailyTask.title,
+      description: newDailyTask.description,
+      category: newDailyTask.category,
+      goalId: newDailyTask.goalId,
+      timeBlock: newDailyTask.timeBlock,
+      estimatedMinutes: newDailyTask.estimatedMinutes,
+    }
+    console.log("4. Task data prepared:", taskData)
+
+    console.log("5. User object:", user)
+    console.log("6. User ID:", user?.id)
+    console.log("7. User authenticated:", !!user)
+
+    // Update local state immediately
     setDailyTasks((prev) => ({
       ...prev,
       [selectedDay]: [
         ...(prev[selectedDay] || []),
         {
           id: taskId,
-          title: newDailyTask.title,
-          description: newDailyTask.description,
-          category: newDailyTask.category,
-          goalId: newDailyTask.goalId,
+          title: taskData.title,
+          description: taskData.description,
+          category: taskData.category,
+          goalId: taskData.goalId,
           completed: false,
-          timeBlock: newDailyTask.timeBlock,
-          estimatedMinutes: newDailyTask.estimatedMinutes,
+          timeBlock: taskData.timeBlock,
+          estimatedMinutes: taskData.estimatedMinutes,
         },
       ],
     }))
+    console.log("8. Local state updated")
 
     // Reset form
     setNewDailyTask({
@@ -2155,52 +2053,71 @@ function GoalTrackerApp() {
       estimatedMinutes: 30,
     })
     setShowAddDailyTask(false)
+    console.log("9. Form reset and dialog closed")
 
-    // Save to database with consistent structure
+    // Simple database insert - no complex lookups
     try {
+      console.log("10. Starting database operation...")
+
+      if (!user?.id) {
+        console.error("11. ERROR: No user ID available")
+        console.log("User object:", user)
+        return
+      }
+
       const insertData = {
-        id: taskId,
         user_id: user.id,
-        title: newDailyTask.title,
-        description: newDailyTask.description || null,
+        title: taskData.title,
         task_type: "daily",
         target_date: new Date().toISOString().split("T")[0],
         completed: false,
-        scope: "daily",
       }
+      console.log("12. Insert data prepared:", insertData)
 
-      console.log("Inserting daily task:", insertData)
+      console.log("13. Calling supabase.from('tasks').insert()...")
       const { data, error } = await supabase.from("tasks").insert(insertData).select()
 
+      console.log("14. Database response - data:", data)
+      console.log("15. Database response - error:", error)
+
       if (error) {
-        console.error("Error saving daily task:", error)
+        console.error("16. DATABASE ERROR:", error)
+        console.error("Error message:", error.message)
+        console.error("Error details:", error.details)
+        console.error("Error hint:", error.hint)
       } else {
-        console.log("Daily task saved successfully:", data)
+        console.log("17. Task saved successfully:", data)
+
+        // Verify it was saved
+        console.log("18. Starting verification query...")
+        const { data: verification, error: verifyError } = await supabase
+          .from("tasks")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+
+        console.log("19. Verification data:", verification)
+        console.log("20. Verification error:", verifyError)
+
+        if (verification && verification.length > 0) {
+          console.log("21. SUCCESS: Task verified in database:", verification[0])
+        } else {
+          console.log("22. WARNING: Task not found in verification query")
+        }
       }
-    } catch (error) {
-      console.error("Exception saving daily task:", error)
+    } catch (err) {
+      console.error("23. EXCEPTION during database operation:", err)
     }
 
-    console.log("=== DAILY TASK CREATION DEBUG END ===")
+    console.log("=== TASK CREATION DEBUG END ===")
   }
 
   const addWeeklyTask = async () => {
-    console.log("=== WEEKLY TASK CREATION DEBUG START ===")
-
-    if (!newWeeklyTask.title || !newWeeklyTask.category) {
-      console.log("Missing required fields, exiting")
-      return
-    }
-
-    if (!user?.id) {
-      console.error("User not authenticated")
-      return
-    }
+    if (!newWeeklyTask.title || !newWeeklyTask.category) return
 
     const taskId = crypto.randomUUID()
-    console.log("Generated task ID:", taskId)
 
-    // Update local state immediately for UI responsiveness
     setWeeklyTasks((prev) => ({
       ...prev,
       [`Week ${currentWeek}`]: [
@@ -2218,7 +2135,40 @@ function GoalTrackerApp() {
       ],
     }))
 
-    // Reset form
+    try {
+      if (!user?.id) {
+        console.error("User not authenticated")
+        return
+      }
+
+      // Find category ID from database
+      const { data: categories } = await supabase
+        .from("categories")
+        .select("id")
+        .eq("name", newWeeklyTask.category)
+        .eq("user_id", user.id)
+        .single()
+
+      const { error } = await supabase.from("tasks").insert({
+        id: taskId,
+        user_id: user.id,
+        category_id: categories?.id || null,
+        goal_id: newWeeklyTask.goalId || null,
+        title: newWeeklyTask.title,
+        task_type: "weekly",
+        target_date: new Date().toISOString().split("T")[0], // Current week
+        completed: false,
+      })
+
+      if (error) {
+        console.error("Error saving weekly task to database:", error.message)
+      } else {
+        console.log("Weekly task saved to database successfully")
+      }
+    } catch (error) {
+      console.error("Error saving weekly task to database:", error)
+    }
+
     setNewWeeklyTask({
       title: "",
       description: "",
@@ -2228,33 +2178,6 @@ function GoalTrackerApp() {
       estimatedHours: 1,
     })
     setShowAddWeeklyTask(false)
-
-    // Save to database with consistent structure
-    try {
-      const insertData = {
-        id: taskId,
-        user_id: user.id,
-        title: newWeeklyTask.title,
-        description: newWeeklyTask.description || null,
-        task_type: "weekly",
-        target_date: new Date().toISOString().split("T")[0],
-        completed: false,
-        scope: "weekly",
-      }
-
-      console.log("Inserting weekly task:", insertData)
-      const { data, error } = await supabase.from("tasks").insert(insertData).select()
-
-      if (error) {
-        console.error("Error saving weekly task:", error)
-      } else {
-        console.log("Weekly task saved successfully:", data)
-      }
-    } catch (error) {
-      console.error("Exception saving weekly task:", error)
-    }
-
-    console.log("=== WEEKLY TASK CREATION DEBUG END ===")
   }
 
   return (
@@ -3480,7 +3403,7 @@ function GoalTrackerApp() {
                 <Label htmlFor="taskCategory">Category</Label>
                 <Select
                   value={newWeeklyTask.category}
-                  onChange={(value) => setNewWeeklyTask((prev) => ({ ...prev, category: value }))}
+                  onValueChange={(value) => setNewWeeklyTask((prev) => ({ ...prev, category: value }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select a category" />
@@ -4005,11 +3928,45 @@ function GoalTrackerApp() {
                             { title: "", targetDate: "" },
                           ],
                         })
+                        setShowAddLongTermGoal(false)
                       }
                 }
                 disabled={!newLongTermGoal.title || !newLongTermGoal.category || !newLongTermGoal.targetDate}
+                className="bg-black hover:bg-gray-800 text-white"
               >
                 {editingLongTermGoal ? "Save Changes" : "Add Goal"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Long-Term Goal Dialog */}
+        <Dialog open={!!showDeleteLongTermGoal} onOpenChange={() => setShowDeleteLongTermGoal(null)}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>
+                Delete {showDeleteLongTermGoal?.timeframe === "1-year" ? "1-Year" : "5-Year"} Goal
+              </DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete "{showDeleteLongTermGoal?.title}"? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowDeleteLongTermGoal(null)}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() =>
+                  showDeleteLongTermGoal &&
+                  deleteLongTermGoal(
+                    showDeleteLongTermGoal.timeframe,
+                    showDeleteLongTermGoal.category,
+                    showDeleteLongTermGoal.goalId,
+                  )
+                }
+              >
+                Delete Goal
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -4019,4 +3976,159 @@ function GoalTrackerApp() {
   )
 }
 
-export default GoalTrackerApp
+// Define the function
+async function loadCategoriesAndGoalsFromDB(userId: string) {
+  try {
+    const { data: categories, error: categoriesError } = await supabase
+      .from("categories")
+      .select("id, name")
+      .eq("user_id", userId)
+
+    if (categoriesError) {
+      console.error("Error fetching categories:", categoriesError)
+      return {}
+    }
+
+    const goalsByCategory: { [categoryName: string]: Goal[] } = {}
+
+    for (const category of categories) {
+      const { data: goals, error: goalsError } = await supabase
+        .from("goals")
+        .select("id, title, description, target_count, current_progress, weekly_target")
+        .eq("user_id", userId)
+        .eq("category_id", category.id)
+
+      if (goalsError) {
+        console.error(`Error fetching goals for category ${category.name}:`, goalsError)
+        continue
+      }
+
+      goalsByCategory[category.name] = goals.map((goal) => ({
+        id: goal.id,
+        title: goal.title,
+        description: goal.description,
+        targetCount: goal.target_count,
+        currentCount: goal.current_progress,
+        notes: "", // You might want to fetch notes as well
+        weeklyTarget: goal.weekly_target,
+        category: category.name,
+      }))
+    }
+
+    return goalsByCategory
+  } catch (error) {
+    console.error("Error in loadCategoriesAndGoalsFromDB:", error)
+    return {}
+  }
+}
+
+async function loadTasksFromDB(userId: string) {
+  try {
+    console.log("=== LOADING TASKS FROM DATABASE ===")
+    console.log("Fetching tasks for user ID:", userId)
+
+    const { data: tasks, error: tasksError } = await supabase.from("tasks").select("*").eq("user_id", userId)
+
+    if (tasksError) {
+      console.error("Error fetching tasks:", tasksError)
+      return { weeklyTasks: {}, dailyTasks: {} }
+    }
+
+    console.log("Raw tasks from database:", JSON.stringify(tasks, null, 2))
+    console.log("Number of tasks found:", tasks?.length || 0)
+
+    const weeklyTasks: Record<string, WeeklyTask[]> = {}
+    const dailyTasks: Record<string, DailyTask[]> = {}
+
+    tasks.forEach((task, index) => {
+      console.log(`Processing task ${index + 1}:`, JSON.stringify(task, null, 2))
+
+      if (task.task_type === "weekly") {
+        // Calculate week number from target_date
+        const date = new Date(task.target_date)
+        const weekNumber = Math.ceil(date.getDate() / 7)
+        const weekKey = `Week ${weekNumber}`
+        console.log(`Adding weekly task to ${weekKey}`)
+
+        const weeklyTask: WeeklyTask = {
+          id: task.id,
+          title: task.title || "",
+          description: task.description || "",
+          category: "Uncategorized", // Database doesn't store category yet
+          goalId: task.goal_id || "",
+          completed: task.completed || false,
+          priority: "medium",
+          estimatedHours: 1,
+        }
+
+        if (!weeklyTasks[weekKey]) {
+          weeklyTasks[weekKey] = []
+        }
+        weeklyTasks[weekKey].push(weeklyTask)
+      } else if (task.task_type === "daily") {
+        // Get day name from target_date
+        const date = new Date(task.target_date)
+        const day = date.toLocaleDateString("en-US", { weekday: "long" })
+        console.log(`Adding daily task to ${day}`)
+
+        const dailyTask: DailyTask = {
+          id: task.id,
+          title: task.title || "",
+          description: task.description || "",
+          category: "Uncategorized", // Database doesn't store category yet
+          goalId: task.goal_id || "",
+          completed: task.completed || false,
+          timeBlock: "9:00 AM",
+          estimatedMinutes: 30,
+        }
+
+        if (!dailyTasks[day]) {
+          dailyTasks[day] = []
+        }
+        dailyTasks[day].push(dailyTask)
+      }
+    })
+
+    console.log("=== FINAL ORGANIZED TASKS ===")
+    console.log("Organized daily tasks:", JSON.stringify(dailyTasks, null, 2))
+    console.log("Organized weekly tasks:", JSON.stringify(weeklyTasks, null, 2))
+
+    return { weeklyTasks, dailyTasks }
+  } catch (error) {
+    console.error("Error in loadTasksFromDB:", error)
+    return { weeklyTasks: {}, dailyTasks: {} }
+  }
+}
+
+// Helper function to get the week number
+Date.prototype.getWeek = function () {
+  var date = new Date(this.getTime())
+  date.setHours(0, 0, 0, 0)
+  // Thursday in current week decides the year.
+  date.setDate(date.getDate() + 3 - ((date.getDay() + 6) % 7))
+  // January 4 is always in week 1.
+  var week1 = new Date(date.getFullYear(), 0, 4)
+  // Adjust to Thursday in week 1 and count number of weeks from date to week1.
+  return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) / 7)
+}
+
+export default function Page() {
+  const { user, isLoading } = useAuth()
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#05a7b0] mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return <AuthScreen />
+  }
+
+  return <GoalTrackerApp />
+}
