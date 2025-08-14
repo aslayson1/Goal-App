@@ -2055,7 +2055,6 @@ function GoalTrackerApp() {
     setShowAddDailyTask(false)
     console.log("9. Form reset and dialog closed")
 
-    // Simple database insert - no complex lookups
     try {
       console.log("10. Starting database operation...")
 
@@ -2065,31 +2064,50 @@ function GoalTrackerApp() {
         return
       }
 
+      // Look up category ID if category is provided (same as weekly tasks)
+      let categoryId = null
+      if (taskData.category) {
+        console.log("12. Looking up category:", taskData.category)
+        const { data: categories } = await supabase
+          .from("categories")
+          .select("id")
+          .eq("name", taskData.category)
+          .eq("user_id", user.id)
+          .single()
+
+        categoryId = categories?.id || null
+        console.log("13. Category ID found:", categoryId)
+      }
+
       const insertData = {
+        id: taskId,
         user_id: user.id,
+        category_id: categoryId,
+        goal_id: taskData.goalId || null,
         title: taskData.title,
+        description: taskData.description,
         task_type: "daily",
         target_date: new Date().toISOString().split("T")[0],
         completed: false,
       }
-      console.log("12. Insert data prepared:", insertData)
+      console.log("14. Insert data prepared:", insertData)
 
-      console.log("13. Calling supabase.from('tasks').insert()...")
+      console.log("15. Calling supabase.from('tasks').insert()...")
       const { data, error } = await supabase.from("tasks").insert(insertData).select()
 
-      console.log("14. Database response - data:", data)
-      console.log("15. Database response - error:", error)
+      console.log("16. Database response - data:", data)
+      console.log("17. Database response - error:", error)
 
       if (error) {
-        console.error("16. DATABASE ERROR:", error)
+        console.error("18. DATABASE ERROR:", error)
         console.error("Error message:", error.message)
         console.error("Error details:", error.details)
         console.error("Error hint:", error.hint)
       } else {
-        console.log("17. Task saved successfully:", data)
+        console.log("19. Task saved successfully:", data)
 
         // Verify it was saved
-        console.log("18. Starting verification query...")
+        console.log("20. Starting verification query...")
         const { data: verification, error: verifyError } = await supabase
           .from("tasks")
           .select("*")
@@ -2097,17 +2115,17 @@ function GoalTrackerApp() {
           .order("created_at", { ascending: false })
           .limit(1)
 
-        console.log("19. Verification data:", verification)
-        console.log("20. Verification error:", verifyError)
+        console.log("21. Verification data:", verification)
+        console.log("22. Verification error:", verifyError)
 
         if (verification && verification.length > 0) {
-          console.log("21. SUCCESS: Task verified in database:", verification[0])
+          console.log("23. SUCCESS: Task verified in database:", verification[0])
         } else {
-          console.log("22. WARNING: Task not found in verification query")
+          console.log("24. WARNING: Task not found in verification query")
         }
       }
     } catch (err) {
-      console.error("23. EXCEPTION during database operation:", err)
+      console.error("25. EXCEPTION during database operation:", err)
     }
 
     console.log("=== TASK CREATION DEBUG END ===")
@@ -2155,8 +2173,9 @@ function GoalTrackerApp() {
         category_id: categories?.id || null,
         goal_id: newWeeklyTask.goalId || null,
         title: newWeeklyTask.title,
+        description: newWeeklyTask.description,
         task_type: "weekly",
-        target_date: new Date().toISOString().split("T")[0], // Current week
+        target_date: new Date().toISOString().split("T")[0],
         completed: false,
       })
 
