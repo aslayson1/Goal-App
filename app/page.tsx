@@ -2242,6 +2242,12 @@ function GoalTrackerApp() {
     if (!newDailyTask.title || !newDailyTask.category) return
 
     const taskId = crypto.randomUUID()
+    console.log("Creating daily task:", {
+      taskId,
+      title: newDailyTask.title,
+      category: newDailyTask.category,
+      selectedDay,
+    })
 
     setDailyTasks((prev) => ({
       ...prev,
@@ -2266,13 +2272,21 @@ function GoalTrackerApp() {
         return
       }
 
-      // Find category ID from database
-      const { data: categories } = await supabase
+      console.log("User authenticated:", user.id)
+
+      console.log("Looking up category:", newDailyTask.category)
+      const { data: categories, error: categoryError } = await supabase
         .from("categories")
         .select("id")
         .eq("name", newDailyTask.category)
         .eq("user_id", user.id)
         .single()
+
+      if (categoryError) {
+        console.error("Error finding category:", categoryError)
+      } else {
+        console.log("Found category:", categories)
+      }
 
       const getNextDateForDay = (dayName: string) => {
         const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
@@ -2290,19 +2304,25 @@ function GoalTrackerApp() {
         return targetDate.toISOString().split("T")[0]
       }
 
-      const { error } = await supabase.from("tasks").insert({
+      const targetDate = getNextDateForDay(selectedDay)
+      console.log("Target date calculated:", targetDate)
+
+      const taskData = {
         id: taskId,
         user_id: user.id,
         category_id: categories?.id || null,
         goal_id: newDailyTask.goalId || null,
         title: newDailyTask.title,
         task_type: "daily",
-        target_date: getNextDateForDay(selectedDay),
+        target_date: targetDate,
         completed: false,
-      })
+      }
+      console.log("Inserting task data:", taskData)
+
+      const { error } = await supabase.from("tasks").insert(taskData)
 
       if (error) {
-        console.error("Error saving daily task to database:", error.message)
+        console.error("Error saving daily task to database:", error.message, error)
       } else {
         console.log("Daily task saved to database successfully")
       }
