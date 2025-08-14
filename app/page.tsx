@@ -2165,13 +2165,8 @@ function GoalTrackerApp() {
     if (!newDailyTask.title || !newDailyTask.category) return
 
     const taskId = crypto.randomUUID()
-    console.log("Creating daily task:", {
-      taskId,
-      title: newDailyTask.title,
-      category: newDailyTask.category,
-      selectedDay,
-    })
 
+    // Update local state first (like successful goal creation)
     setDailyTasks((prev) => ({
       ...prev,
       [selectedDay]: [
@@ -2189,6 +2184,18 @@ function GoalTrackerApp() {
       ],
     }))
 
+    // Reset form and close dialog immediately (preserve UI responsiveness)
+    setNewDailyTask({
+      title: "",
+      description: "",
+      category: "",
+      goalId: "",
+      timeBlock: "",
+      estimatedMinutes: 30,
+    })
+    setShowAddDailyTask(false)
+
+    // Sync to database in background (like goal creation)
     try {
       if (!user?.id) {
         console.error("User not authenticated")
@@ -2203,7 +2210,7 @@ function GoalTrackerApp() {
 
         let daysUntilTarget = targetDayIndex - todayIndex
         if (daysUntilTarget < 0) {
-          daysUntilTarget += 7 // Next week
+          daysUntilTarget += 7
         }
 
         const targetDate = new Date(today)
@@ -2212,8 +2219,8 @@ function GoalTrackerApp() {
       }
 
       const targetDate = getNextDateForDay(selectedDay)
-      console.log("Target date calculated:", targetDate)
 
+      // Find category ID (like goal creation)
       const { data: categories } = await supabase
         .from("categories")
         .select("id")
@@ -2221,47 +2228,25 @@ function GoalTrackerApp() {
         .eq("user_id", user.id)
         .single()
 
-      const taskData = {
+      const { error } = await supabase.from("tasks").insert({
         id: taskId,
         user_id: user.id,
         category_id: categories?.id || null,
-        goal_id: newDailyTask.goalId || null,
         title: newDailyTask.title,
         description: newDailyTask.description || null,
         task_type: "daily",
         target_date: targetDate,
         completed: false,
-      }
-      console.log("Inserting complete task data:", taskData)
-
-      const { error } = await supabase.from("tasks").insert(taskData)
+      })
 
       if (error) {
-        console.error("Error saving daily task to database:", error.message, error)
+        console.error("Error saving daily task to database:", error)
       } else {
         console.log("Daily task saved to database successfully")
-
-        const { data: verifyTask } = await supabase.from("tasks").select("id, title").eq("id", taskId).single()
-
-        if (verifyTask) {
-          console.log("Task verified in database:", verifyTask)
-        } else {
-          console.error("Task not found in database after insert")
-        }
       }
     } catch (error) {
-      console.error("Error saving daily task to database:", error)
+      console.error("Error saving daily task:", error)
     }
-
-    setNewDailyTask({
-      title: "",
-      description: "",
-      category: "",
-      goalId: "",
-      timeBlock: "",
-      estimatedMinutes: 30,
-    })
-    setShowAddDailyTask(false)
   }
 
   const addWeeklyTask = async () => {
