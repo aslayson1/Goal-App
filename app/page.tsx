@@ -2015,8 +2015,6 @@ function GoalTrackerApp() {
       description: newDailyTask.description,
       category: newDailyTask.category,
       goalId: newDailyTask.goalId,
-      timeBlock: newDailyTask.timeBlock,
-      estimatedMinutes: newDailyTask.estimatedMinutes,
     }
     console.log("4. Task data prepared:", taskData)
 
@@ -2036,8 +2034,6 @@ function GoalTrackerApp() {
           category: taskData.category,
           goalId: taskData.goalId,
           completed: false,
-          timeBlock: taskData.timeBlock,
-          estimatedMinutes: taskData.estimatedMinutes,
         },
       ],
     }))
@@ -2049,8 +2045,6 @@ function GoalTrackerApp() {
       description: "",
       category: "",
       goalId: "",
-      timeBlock: "",
-      estimatedMinutes: 30,
     })
     setShowAddDailyTask(false)
     console.log("9. Form reset and dialog closed")
@@ -2147,8 +2141,6 @@ function GoalTrackerApp() {
           category: newWeeklyTask.category,
           goalId: newWeeklyTask.goalId,
           completed: false,
-          priority: newWeeklyTask.priority,
-          estimatedHours: newWeeklyTask.estimatedHours,
         },
       ],
     }))
@@ -2193,8 +2185,6 @@ function GoalTrackerApp() {
       description: "",
       category: "",
       goalId: "",
-      priority: "medium",
-      estimatedHours: 1,
     })
     setShowAddWeeklyTask(false)
   }
@@ -3448,8 +3438,6 @@ function GoalTrackerApp() {
                     description: "",
                     category: "",
                     goalId: "",
-                    priority: "medium",
-                    estimatedHours: 1,
                   })
                 }}
               >
@@ -3531,17 +3519,7 @@ function GoalTrackerApp() {
                   </div>
                 </div>
               )}
-              <div className="grid gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="timeBlock">Time Block (optional)</Label>
-                  <Input
-                    id="timeBlock"
-                    placeholder="e.g., 6:00 AM"
-                    value={newDailyTask.timeBlock}
-                    onChange={(e) => setNewDailyTask((prev) => ({ ...prev, timeBlock: e.target.value }))}
-                  />
-                </div>
-              </div>
+              <div className="grid gap-4"></div>
             </div>
             <DialogFooter>
               <Button
@@ -3554,8 +3532,6 @@ function GoalTrackerApp() {
                     description: "",
                     category: "",
                     goalId: "",
-                    timeBlock: "",
-                    estimatedMinutes: 30,
                   })
                 }}
               >
