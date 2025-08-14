@@ -14,6 +14,7 @@ import { useAuth } from "@/components/auth/auth-provider"
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { AuthScreen } from "@/components/auth/auth-screen"
+import { SignOutButton } from "@/components/auth/sign-out-button"
 
 // Custom CSS class for white checkbox background with thinner border
 const checkboxStyles =
@@ -1171,8 +1172,237 @@ function GoalTrackerApp() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-2xl font-bold mb-4">Goal Tracker</h1>
-        <p>Welcome to your goal tracker! The app is loading your data...</p>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold text-slate-800">Goal Tracker</h1>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-slate-600">Welcome back, {user?.email}</span>
+            <SignOutButton />
+          </div>
+        </div>
+
+        {/* Navigation Tabs */}
+        <div className="flex space-x-1 mb-6 bg-white rounded-lg p-1 shadow-sm">
+          {[
+            { id: "daily", label: "Daily Tasks" },
+            { id: "weekly", label: "Weekly Tasks" },
+            { id: "goals", label: "12-Week Goals" },
+            { id: "long-term", label: "Long-Term Goals" },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveView(tab.id)}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeView === tab.id
+                  ? "bg-blue-600 text-white"
+                  : "text-slate-600 hover:text-slate-800 hover:bg-slate-100"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Daily Tasks View */}
+        {activeView === "daily" && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold text-slate-800">Daily Tasks</h2>
+              <button
+                onClick={() => setShowAddDailyTask(true)}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Add Daily Task
+              </button>
+            </div>
+
+            <div className="grid gap-4">
+              {dailyTasks.map((task, index) => (
+                <div key={index} className="bg-white rounded-lg p-4 shadow-sm border">
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={task.completed}
+                      onChange={() => {
+                        const updated = [...dailyTasks]
+                        updated[index] = { ...task, completed: !task.completed }
+                        setDailyTasks(updated)
+                      }}
+                      className="w-5 h-5 text-blue-600"
+                    />
+                    <div className="flex-1">
+                      <h3
+                        className={`font-medium ${task.completed ? "line-through text-slate-500" : "text-slate-800"}`}
+                      >
+                        {task.title}
+                      </h3>
+                      {task.description && <p className="text-sm text-slate-600 mt-1">{task.description}</p>}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Weekly Tasks View */}
+        {activeView === "weekly" && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold text-slate-800">Weekly Tasks</h2>
+              <button
+                onClick={() => setShowAddWeeklyTask(true)}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Add Weekly Task
+              </button>
+            </div>
+
+            <div className="grid gap-4">
+              {weeklyTasks.map((task, index) => (
+                <div key={index} className="bg-white rounded-lg p-4 shadow-sm border">
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={task.completed}
+                      onChange={() => {
+                        const updated = [...weeklyTasks]
+                        updated[index] = { ...task, completed: !task.completed }
+                        setWeeklyTasks(updated)
+                      }}
+                      className="w-5 h-5 text-blue-600"
+                    />
+                    <div className="flex-1">
+                      <h3
+                        className={`font-medium ${task.completed ? "line-through text-slate-500" : "text-slate-800"}`}
+                      >
+                        {task.title}
+                      </h3>
+                      {task.description && <p className="text-sm text-slate-600 mt-1">{task.description}</p>}
+                      <div className="flex gap-4 mt-2 text-xs text-slate-500">
+                        <span>Category: {task.category}</span>
+                        <span>Priority: {task.priority}</span>
+                        <span>Est: {task.estimatedHours}h</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Goals View */}
+        {activeView === "goals" && (
+          <div className="space-y-6">
+            <h2 className="text-xl font-semibold text-slate-800">12-Week Goals</h2>
+
+            <div className="grid gap-6">
+              {Object.entries(goalsData).map(([category, goals]) => (
+                <div key={category} className="bg-white rounded-lg p-6 shadow-sm border">
+                  <h3 className="text-lg font-semibold text-slate-800 mb-4">{category}</h3>
+                  <div className="space-y-4">
+                    {goals.map((goal, index) => (
+                      <div key={index} className="border-l-4 border-blue-200 pl-4">
+                        <h4 className="font-medium text-slate-800">{goal.title}</h4>
+                        <p className="text-sm text-slate-600 mt-1">{goal.description}</p>
+                        <div className="mt-2">
+                          <div className="flex justify-between text-sm text-slate-600 mb-1">
+                            <span>Progress</span>
+                            <span>
+                              {goal.currentCount}/{goal.targetCount}
+                            </span>
+                          </div>
+                          <div className="w-full bg-slate-200 rounded-full h-2">
+                            <div
+                              className="bg-blue-600 h-2 rounded-full transition-all"
+                              style={{ width: `${(goal.currentCount / goal.targetCount) * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Long-term Goals View */}
+        {activeView === "long-term" && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold text-slate-800">Long-Term Goals</h2>
+              <button
+                onClick={() => setShowAddLongTermGoal(true)}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Add Long-Term Goal
+              </button>
+            </div>
+
+            <div className="flex gap-4 mb-6">
+              <button
+                onClick={() => setSelectedTimeframe("1-year")}
+                className={`px-4 py-2 rounded-lg ${
+                  selectedTimeframe === "1-year"
+                    ? "bg-blue-600 text-white"
+                    : "bg-white text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                1-Year Goals
+              </button>
+              <button
+                onClick={() => setSelectedTimeframe("5-year")}
+                className={`px-4 py-2 rounded-lg ${
+                  selectedTimeframe === "5-year"
+                    ? "bg-blue-600 text-white"
+                    : "bg-white text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                5-Year Goals
+              </button>
+            </div>
+
+            <div className="grid gap-4">
+              {longTermGoals[selectedTimeframe].map((goal, index) => (
+                <div key={index} className="bg-white rounded-lg p-6 shadow-sm border">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h3 className="text-lg font-semibold text-slate-800">{goal.title}</h3>
+                      <p className="text-slate-600 mt-1">{goal.description}</p>
+                      <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full mt-2">
+                        {goal.category}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h4 className="font-medium text-slate-700">Milestones:</h4>
+                    {goal.milestones.map((milestone, mIndex) => (
+                      <div key={mIndex} className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={milestone.completed}
+                          onChange={() => {
+                            const updated = { ...longTermGoals }
+                            updated[selectedTimeframe][index].milestones[mIndex].completed = !milestone.completed
+                            setLongTermGoals(updated)
+                          }}
+                          className="w-4 h-4 text-blue-600"
+                        />
+                        <span className={milestone.completed ? "line-through text-slate-500" : "text-slate-700"}>
+                          {milestone.title}
+                        </span>
+                        {milestone.targetDate && <span className="text-slate-500">({milestone.targetDate})</span>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
