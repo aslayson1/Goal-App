@@ -1206,7 +1206,7 @@ function GoalTrackerApp() {
         {activeView === "daily" && (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-slate-800">Daily Tasks</h2>
+              <h2 className="text-2xl font-bold text-slate-800">Daily Tasks - {selectedDay}</h2>
               <button
                 onClick={() => setShowAddDailyTask(true)}
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
@@ -1216,16 +1216,16 @@ function GoalTrackerApp() {
             </div>
 
             <div className="grid gap-4">
-              {dailyTasks.map((task, index) => (
+              {(dailyTasks[selectedDay] || []).map((task, index) => (
                 <div key={index} className="bg-white rounded-lg p-4 shadow-sm border">
                   <div className="flex items-center gap-3">
                     <input
                       type="checkbox"
                       checked={task.completed}
                       onChange={() => {
-                        const updated = [...dailyTasks]
-                        updated[index] = { ...task, completed: !task.completed }
-                        setDailyTasks(updated)
+                        const dayTasks = [...(dailyTasks[selectedDay] || [])]
+                        dayTasks[index] = { ...task, completed: !task.completed }
+                        setDailyTasks((prev) => ({ ...prev, [selectedDay]: dayTasks }))
                       }}
                       className="w-5 h-5 text-blue-600"
                     />
