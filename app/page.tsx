@@ -1,7 +1,10 @@
 "use client"
 
 // Adding Supabase imports for task persistence
-import { createTask, setTaskCompleted } from "@/lib/data/tasks"
+import { createTask, setTaskCompleted, listTasks } from "@/lib/data/tasks"
+import { getGoals } from "@/lib/data/goals"
+import { getCategories } from "@/lib/data/categories"
+import { getLongTermGoals } from "@/lib/data/long-term-goals"
 import { supabase } from "@/lib/supabase/client"
 
 import { useState, useEffect } from "react"
@@ -975,9 +978,11 @@ function SortableDailyTaskItem({
 
 function GoalTrackerApp() {
   const { user } = useAuth()
-  const [goalsData, setGoalsData] = useState<GoalsData>(initialGoalsData)
-  const [weeklyTasks, setWeeklyTasks] = useState(initialWeeklyTasks)
-  const [dailyTasks, setDailyTasks] = useState(initialDailyTasks)
+  const [goalsData, setGoalsData] = useState<GoalsData>({})
+  const [weeklyTasks, setWeeklyTasks] = useState({})
+  const [dailyTasks, setDailyTasks] = useState({})
+  const [categories, setCategories] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set())
   const [activeView, setActiveView] = useState("daily")
   const [currentWeek, setCurrentWeek] = useState(4)
@@ -1366,59 +1371,42 @@ function GoalTrackerApp() {
   }
 
   const addDailyTask = async () => {
-    if (!newDailyTask.title || !newDailyTask.category) return
+    if (!newDailyTask.title.trim()) return
 
-    const taskId = `${selectedDay.toLowerCase()}_${Date.now()}`
-
-    // Optimistic update to local state
-    const newTask = {
-      id: taskId,
+    const today = new Date()
+    const taskData = {
       title: newDailyTask.title,
-      description: newDailyTask.description,
-      category: newDailyTask.category,
-      goalId: newDailyTask.goalId,
-      completed: false,
-      timeBlock: newDailyTask.timeBlock,
-      estimatedMinutes: newDailyTask.estimatedMinutes,
+      description: newDailyTask.description || null,
+      target_date: today.toISOString().split("T")[0],
+      task_type: "daily" as const,
+      goal_id: newDailyTask.goalId && newDailyTask.goalId.trim() !== "" ? newDailyTask.goalId : null,
+      category_id: null,
     }
 
-    setDailyTasks((prev) => ({
-      ...prev,
-      [selectedDay]: [...(prev[selectedDay] || []), newTask],
-    }))
-
-    // Persist to Supabase
     try {
-      const today = new Date()
-      await createTask({
-        title: newDailyTask.title,
-        description: newDailyTask.description || null,
-        target_date: today.toISOString().split("T")[0], // Use date format for target_date
-        task_type: "daily",
-        category_id: newDailyTask.category || null,
-      })
-    } catch (e) {
-      console.error("Supabase create daily task failed:", e)
-      if (e instanceof Error) {
-        console.error("Error message:", e.message)
-        console.error("Error stack:", e.stack)
-      }
-      // Revert optimistic update on error
-      setDailyTasks((prev) => ({
-        ...prev,
-        [selectedDay]: prev[selectedDay]?.filter((task) => task.id !== taskId) || [],
-      }))
-    }
+      const createdTask = await createTask(taskData)
+      if (createdTask) {
+        const taskObj = {
+          id: createdTask.id,
+          title: createdTask.title,
+          description: createdTask.description || "",
+          completed: false,
+          goalId: createdTask.goal_id,
+          dbId: createdTask.id,
+          time: newDailyTask.time || "",
+        }
 
-    setNewDailyTask({
-      title: "",
-      description: "",
-      category: "",
-      goalId: "",
-      timeBlock: "",
-      estimatedMinutes: 30,
-    })
-    setShowAddDailyTask(false)
+        setDailyTasks((prev) => ({
+          ...prev,
+          [selectedDay]: [...(prev[selectedDay] || []), taskObj],
+        }))
+
+        setNewDailyTask({ title: "", description: "", goalId: "", time: "" })
+        setShowAddDailyTask(false)
+      }
+    } catch (error) {
+      console.error("Failed to create daily task:", error)
+    }
   }
 
   const toggleWeeklyTask = async (taskId: string) => {
@@ -1545,6 +1533,117 @@ function GoalTrackerApp() {
       }
     })()
   }, [])
+
+  useEffect(() => {
+    const loadAllData = async () => {
+      if (!user) return
+
+      setIsLoading(true)
+      try {
+        // Load categories first
+        const categoriesData = await getCategories()
+        setCategories(categoriesData)
+
+        // Load goals and organize by category
+        const goalsData = await getGoals()
+        const organizedGoals: GoalsData = {}
+
+        goalsData.forEach((goal) => {
+          const categoryName = categoriesData.find((cat) => cat.id === goal.category_id)?.name || "Uncategorized"
+          if (!organizedGoals[categoryName]) {
+            organizedGoals[categoryName] = []
+          }
+          organizedGoals[categoryName].push({
+            id: goal.id,
+            title: goal.title,
+            description: goal.description || "",
+            targetCount: goal.target_count,
+            weeklyTarget: goal.weekly_target,
+            currentProgress: goal.current_progress,
+            completed: goal.completed,
+            weeks: Array.from({ length: 12 }, (_, i) => ({
+              week: i + 1,
+              completed: goal.current_progress >= (i + 1) * goal.weekly_target,
+            })),
+          })
+        })
+        setGoalsData(organizedGoals)
+
+        // Load long-term goals
+        const longTermGoalsData = await getLongTermGoals()
+        const organizedLongTermGoals = {
+          "1-year": longTermGoalsData
+            .filter((g) => g.goal_type === "1_year")
+            .map((g) => ({
+              id: g.id,
+              title: g.title,
+              description: g.description || "",
+              completed: g.completed,
+            })),
+          "5-year": longTermGoalsData
+            .filter((g) => g.goal_type === "5_year")
+            .map((g) => ({
+              id: g.id,
+              title: g.title,
+              description: g.description || "",
+              completed: g.completed,
+            })),
+        }
+        setLongTermGoals(organizedLongTermGoals)
+
+        // Load tasks
+        const tasksData = await listTasks()
+        const organizedDailyTasks: any = {}
+        const organizedWeeklyTasks: any = {}
+
+        tasksData.forEach((task) => {
+          const taskObj = {
+            id: task.id,
+            title: task.title,
+            description: task.description || "",
+            completed: task.completed,
+            goalId: task.goal_id,
+            dbId: task.id,
+            time: task.target_date
+              ? new Date(task.target_date).toLocaleTimeString("en-US", {
+                  hour: "numeric",
+                  minute: "2-digit",
+                  hour12: true,
+                })
+              : "",
+          }
+
+          if (task.task_type === "weekly") {
+            const weekKey = `Week ${currentWeek}`
+            if (!organizedWeeklyTasks[weekKey]) {
+              organizedWeeklyTasks[weekKey] = []
+            }
+            organizedWeeklyTasks[weekKey].push(taskObj)
+          } else {
+            // Daily task - organize by day based on target_date
+            const targetDate = task.target_date ? new Date(task.target_date) : new Date()
+            const dayName = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][
+              targetDate.getDay()
+            ]
+
+            if (!organizedDailyTasks[dayName]) {
+              organizedDailyTasks[dayName] = []
+            }
+            organizedDailyTasks[dayName].push(taskObj)
+          }
+        })
+
+        setWeeklyTasks(organizedWeeklyTasks)
+        setDailyTasks(organizedDailyTasks)
+      } catch (error) {
+        console.error("Failed to load data:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadAllData()
+  }, [user, currentWeek])
 
   // Drag and drop handlers
   const handleWeeklyTaskDragEnd = (event: DragEndEvent, category: string) => {
@@ -2058,6 +2157,17 @@ function GoalTrackerApp() {
       },
     }))
     setShowDeleteLongTermGoal(null)
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading your goals...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
