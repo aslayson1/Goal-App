@@ -1293,27 +1293,6 @@ function GoalTrackerApp() {
     checkDatabaseAndLoadData()
   }, [user?.id])
 
-  const checkDatabaseConnection = async () => {
-    try {
-      const { data, error } = await supabase.from("categories").select("count").limit(1)
-      if (error) {
-        console.log("Database connection check failed:", error.message)
-        return false
-      }
-      console.log("Database connection successful")
-      return true
-    } catch (err) {
-      console.log("Database connection error:", err)
-      return false
-    }
-  }
-
-  useEffect(() => {
-    if (user) {
-      checkDatabaseConnection()
-    }
-  }, [user])
-
   // Drag and drop sensors
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -4056,19 +4035,21 @@ async function loadTasksFromDB(userId: string) {
       console.log(`Processing task ${index + 1}:`, JSON.stringify(task, null, 2))
 
       if (task.task_type === "weekly") {
-        // Assuming target_date represents the week
-        const weekKey = `Week ${new Date(task.target_date).getWeek()}`
+        // Calculate week number from target_date
+        const date = new Date(task.target_date)
+        const weekNumber = Math.ceil(date.getDate() / 7)
+        const weekKey = `Week ${weekNumber}`
         console.log(`Adding weekly task to ${weekKey}`)
 
         const weeklyTask: WeeklyTask = {
           id: task.id,
-          title: task.title,
+          title: task.title || "",
           description: task.description || "",
-          category: task.category || "Uncategorized", // Replace with actual category
+          category: "Uncategorized", // Database doesn't store category yet
           goalId: task.goal_id || "",
           completed: task.completed || false,
-          priority: "medium", // Replace with actual priority
-          estimatedHours: 1, // Replace with actual estimated hours
+          priority: "medium",
+          estimatedHours: 1,
         }
 
         if (!weeklyTasks[weekKey]) {
@@ -4076,19 +4057,20 @@ async function loadTasksFromDB(userId: string) {
         }
         weeklyTasks[weekKey].push(weeklyTask)
       } else if (task.task_type === "daily") {
-        // Assuming target_date represents the day
-        const day = new Date(task.target_date).toLocaleDateString("en-US", { weekday: "long" })
+        // Get day name from target_date
+        const date = new Date(task.target_date)
+        const day = date.toLocaleDateString("en-US", { weekday: "long" })
         console.log(`Adding daily task to ${day}`)
 
         const dailyTask: DailyTask = {
           id: task.id,
-          title: task.title,
+          title: task.title || "",
           description: task.description || "",
-          category: task.category || "Uncategorized", // Replace with actual category
+          category: "Uncategorized", // Database doesn't store category yet
           goalId: task.goal_id || "",
           completed: task.completed || false,
-          timeBlock: "9:00 AM", // Replace with actual time block
-          estimatedMinutes: 30, // Replace with actual estimated minutes
+          timeBlock: "9:00 AM",
+          estimatedMinutes: 30,
         }
 
         if (!dailyTasks[day]) {
