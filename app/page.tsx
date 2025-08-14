@@ -1278,6 +1278,13 @@ function GoalTrackerApp() {
             console.log("About to set weekly tasks state with:", JSON.stringify(taskData.weeklyTasks, null, 2))
             setWeeklyTasks(taskData.weeklyTasks)
 
+            setTimeout(() => {
+              console.log("=== STATE VERIFICATION AFTER LOADING ===")
+              console.log("Current dailyTasks state:", JSON.stringify(dailyTasks, null, 2))
+              console.log("Current weeklyTasks state:", JSON.stringify(weeklyTasks, null, 2))
+              console.log("State verification complete")
+            }, 100)
+
             // Verify state was updated
             setTimeout(() => {
               console.log("=== STATE VERIFICATION ===")
