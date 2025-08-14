@@ -1398,6 +1398,8 @@ function GoalTrackerApp() {
 
     const goalId = crypto.randomUUID()
 
+    const weeklyTargetValue = newGoal.weeklyTarget || Math.ceil(targetCount / 12)
+
     // Update local state first (preserve existing UI behavior)
     setGoalsData((prev) => ({
       ...prev,
@@ -1410,7 +1412,7 @@ function GoalTrackerApp() {
           targetCount: targetCount,
           currentCount: 0,
           notes: "",
-          weeklyTarget: newGoal.weeklyTarget || targetCount / 12,
+          weeklyTarget: weeklyTargetValue,
           category: selectedCategory,
         },
       ],
@@ -1444,7 +1446,7 @@ function GoalTrackerApp() {
         description: newGoal.description,
         target_count: targetCount,
         current_progress: 0,
-        weekly_target: newGoal.weeklyTarget || targetCount / 12,
+        weekly_target: weeklyTargetValue,
       })
 
       if (error) {
@@ -1536,18 +1538,28 @@ function GoalTrackerApp() {
     setShowDeleteGoal(null)
   }
 
-  const saveEditedGoal = () => {
+  const updateGoal = () => {
     if (!editingGoal) return
+
+    const weeklyTargetValue = newGoal.weeklyTarget || Math.ceil(newGoal.targetCount / 12)
 
     editGoal(editingGoal.category, editingGoal.goal.id, {
       title: newGoal.title,
       description: newGoal.description,
       targetCount: newGoal.targetCount,
-      weeklyTarget: newGoal.weeklyTarget || newGoal.targetCount / 12,
+      weeklyTarget: weeklyTargetValue,
     })
 
     setNewGoal({ title: "", description: "", targetCount: 0, weeklyTarget: 0 })
     setEditingGoal(null)
+  }
+
+  const saveEditedGoal = () => {
+    if (!editingGoal) return
+
+    updateGoal()
+    setEditingGoal(null)
+    setShowAddGoal(false)
   }
 
   const startEditingGoal = (category: string, goal: Goal) => {
@@ -1558,6 +1570,7 @@ function GoalTrackerApp() {
       targetCount: goal.targetCount,
       weeklyTarget: goal.weeklyTarget,
     })
+    setShowAddGoal(true)
   }
 
   const getPriorityColor = (priority: string) => {
@@ -1923,7 +1936,7 @@ function GoalTrackerApp() {
   }
 
   const getWeeklyProgress = (goal: Goal) => {
-    const weeklyTarget = goal.weeklyTarget || goal.targetCount / 12
+    const weeklyTarget = goal.weeklyTarget || Math.ceil(goal.targetCount / 12)
     const expectedProgress = weeklyTarget * currentWeek
     const onTrack = goal.currentCount >= expectedProgress
     return { weeklyTarget, expectedProgress, onTrack }
@@ -3176,12 +3189,11 @@ function GoalTrackerApp() {
                   onChange={(e) => {
                     const title = e.target.value
                     const detectedNumber = extractNumberFromTitle(title)
-
                     setNewGoal((prev) => ({
                       ...prev,
                       title,
                       targetCount: detectedNumber || prev.targetCount,
-                      weeklyTarget: detectedNumber ? detectedNumber / 12 : prev.weeklyTarget,
+                      weeklyTarget: detectedNumber ? Math.ceil(detectedNumber / 12) : prev.weeklyTarget,
                     }))
                   }}
                 />
