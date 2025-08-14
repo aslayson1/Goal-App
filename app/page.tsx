@@ -1258,7 +1258,10 @@ function GoalTrackerApp() {
             const dbData = await loadCategoriesAndGoalsFromDB(user.id)
             const taskData = await loadTasksFromDB(user.id)
 
-            console.log("About to update state with loaded task data:", taskData)
+            console.log("=== COMPREHENSIVE TASK LOADING DEBUG ===")
+            console.log("Raw task data from database:", JSON.stringify(taskData, null, 2))
+            console.log("Daily tasks structure:", JSON.stringify(taskData.dailyTasks, null, 2))
+            console.log("Weekly tasks structure:", JSON.stringify(taskData.weeklyTasks, null, 2))
 
             // Merge database data with existing initialGoalsData structure
             setGoalsData((prev) => {
@@ -1269,15 +1272,16 @@ function GoalTrackerApp() {
               return merged
             })
 
-            console.log("Setting daily tasks state to:", taskData.dailyTasks)
+            console.log("About to set daily tasks state with:", JSON.stringify(taskData.dailyTasks, null, 2))
             setDailyTasks(taskData.dailyTasks)
 
-            console.log("Setting weekly tasks state to:", taskData.weeklyTasks)
+            console.log("About to set weekly tasks state with:", JSON.stringify(taskData.weeklyTasks, null, 2))
             setWeeklyTasks(taskData.weeklyTasks)
 
             // Verify state was updated
             setTimeout(() => {
-              console.log("State update verification - checking if tasks are in state...")
+              console.log("=== STATE VERIFICATION ===")
+              console.log("Checking if tasks persisted in state after 100ms...")
             }, 100)
           }
         } catch (error) {
@@ -4030,9 +4034,11 @@ async function loadCategoriesAndGoalsFromDB(userId: string) {
   }
 }
 
-// Define the function
 async function loadTasksFromDB(userId: string) {
   try {
+    console.log("=== LOADING TASKS FROM DATABASE ===")
+    console.log("Fetching tasks for user ID:", userId)
+
     const { data: tasks, error: tasksError } = await supabase.from("tasks").select("*").eq("user_id", userId)
 
     if (tasksError) {
@@ -4040,13 +4046,20 @@ async function loadTasksFromDB(userId: string) {
       return { weeklyTasks: {}, dailyTasks: {} }
     }
 
+    console.log("Raw tasks from database:", JSON.stringify(tasks, null, 2))
+    console.log("Number of tasks found:", tasks?.length || 0)
+
     const weeklyTasks: Record<string, WeeklyTask[]> = {}
     const dailyTasks: Record<string, DailyTask[]> = {}
 
-    tasks.forEach((task) => {
+    tasks.forEach((task, index) => {
+      console.log(`Processing task ${index + 1}:`, JSON.stringify(task, null, 2))
+
       if (task.task_type === "weekly") {
         // Assuming target_date represents the week
         const weekKey = `Week ${new Date(task.target_date).getWeek()}`
+        console.log(`Adding weekly task to ${weekKey}`)
+
         const weeklyTask: WeeklyTask = {
           id: task.id,
           title: task.title,
@@ -4065,6 +4078,8 @@ async function loadTasksFromDB(userId: string) {
       } else if (task.task_type === "daily") {
         // Assuming target_date represents the day
         const day = new Date(task.target_date).toLocaleDateString("en-US", { weekday: "long" })
+        console.log(`Adding daily task to ${day}`)
+
         const dailyTask: DailyTask = {
           id: task.id,
           title: task.title,
@@ -4082,6 +4097,10 @@ async function loadTasksFromDB(userId: string) {
         dailyTasks[day].push(dailyTask)
       }
     })
+
+    console.log("=== FINAL ORGANIZED TASKS ===")
+    console.log("Organized daily tasks:", JSON.stringify(dailyTasks, null, 2))
+    console.log("Organized weekly tasks:", JSON.stringify(weeklyTasks, null, 2))
 
     return { weeklyTasks, dailyTasks }
   } catch (error) {
