@@ -1280,7 +1280,8 @@ function GoalTrackerApp() {
         return { dailyTasks: {}, weeklyTasks: {} }
       }
 
-      console.log("Tasks loaded:", tasks)
+      console.log("Raw tasks from database:", tasks)
+      console.log("Number of tasks loaded:", tasks?.length || 0)
 
       // Initialize task structures
       const dailyTasksData: { [key: string]: DailyTask[] } = {
@@ -1300,6 +1301,8 @@ function GoalTrackerApp() {
 
       // Organize tasks by type and date
       tasks?.forEach((dbTask) => {
+        console.log("Processing task:", dbTask)
+
         const task: any = {
           id: dbTask.id,
           title: dbTask.title,
@@ -1312,6 +1315,7 @@ function GoalTrackerApp() {
           // Get day name from target_date
           const date = new Date(dbTask.target_date)
           const dayName = date.toLocaleDateString("en-US", { weekday: "long" })
+          console.log(`Adding daily task "${dbTask.title}" to ${dayName}`)
           if (dailyTasksData[dayName]) {
             dailyTasksData[dayName].push(task)
           }
@@ -1320,11 +1324,20 @@ function GoalTrackerApp() {
           const currentWeekKey = `Week ${Math.ceil(
             (new Date().getTime() - new Date(new Date().getFullYear(), 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000),
           )}`
+          console.log(`Adding weekly task "${dbTask.title}" to ${currentWeekKey}`)
           if (weeklyTasksData[currentWeekKey]) {
             weeklyTasksData[currentWeekKey].push(task)
           }
         }
       })
+
+      console.log("Organized daily tasks:", dailyTasksData)
+      console.log("Organized weekly tasks:", weeklyTasksData)
+
+      // Count total tasks in organized structure
+      const dailyCount = Object.values(dailyTasksData).reduce((sum, dayTasks) => sum + dayTasks.length, 0)
+      const weeklyCount = Object.values(weeklyTasksData).reduce((sum, weekTasks) => sum + weekTasks.length, 0)
+      console.log(`Final task counts - Daily: ${dailyCount}, Weekly: ${weeklyCount}`)
 
       return { dailyTasks: dailyTasksData, weeklyTasks: weeklyTasksData }
     } catch (error) {
