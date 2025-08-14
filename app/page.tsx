@@ -884,6 +884,7 @@ function GoalTrackerApp() {
   })
 
   const [isLoading, setIsLoading] = useState(true)
+  const [loadingError, setLoadingError] = useState<string | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
   const [dbGoals, setDbGoals] = useState<Goal[]>([])
   const [dbLongTermGoals, setDbLongTermGoals] = useState<LongTermGoal[]>([])
@@ -910,11 +911,22 @@ function GoalTrackerApp() {
     const loadData = async () => {
       if (!user) {
         console.log("No user found, skipping data load")
+        setIsLoading(false)
         return
       }
 
       console.log("Starting data load for user:", user.id)
       setIsLoading(true)
+      setLoadingError(null)
+
+      const timeoutId = setTimeout(() => {
+        console.error("Data loading timed out after 15 seconds")
+        setLoadingError(
+          "Loading is taking longer than expected. Please check your connection and try refreshing the page.",
+        )
+        setIsLoading(false)
+      }, 15000)
+
       try {
         console.log("Loading categories...")
         const categoriesData = await getCategories()
@@ -1034,10 +1046,12 @@ function GoalTrackerApp() {
         setDailyTasks((prev) => ({ ...prev, ...dailyTasksFromDB }))
 
         console.log("Data loading completed successfully")
+        clearTimeout(timeoutId)
       } catch (error) {
         console.error("Failed to load data:", error)
         console.error("Error details:", error instanceof Error ? error.message : String(error))
-        setIsLoading(false)
+        setLoadingError(`Failed to load data: ${error instanceof Error ? error.message : String(error)}`)
+        clearTimeout(timeoutId)
       } finally {
         setIsLoading(false)
       }
@@ -1175,9 +1189,21 @@ function GoalTrackerApp() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center max-w-md mx-auto px-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading your goals and tasks...</p>
+          <p className="text-slate-600 mb-4">Loading your goals and tasks...</p>
+          {loadingError && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-left">
+              <p className="text-red-800 text-sm font-medium mb-2">Loading Error:</p>
+              <p className="text-red-700 text-sm">{loadingError}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="mt-3 px-4 py-2 bg-red-600 text-white rounded-md text-sm hover:bg-red-700"
+              >
+                Refresh Page
+              </button>
+            </div>
+          )}
         </div>
       </div>
     )
