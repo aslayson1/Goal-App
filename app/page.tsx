@@ -849,9 +849,12 @@ function SortableWeeklyTaskItem({
               {task.title}
             </h3>
             <div className="flex items-center space-x-2">
-              <Badge variant="secondary" className={getPriorityColor(task.priority)}>
-                {task.priority}
-              </Badge>
+              {task.timeBlock && (
+                <div className="flex items-center space-x-2">
+                  <Clock className="h-4 w-4 text-gray-400" />
+                  <span className="text-sm text-gray-500 font-mono">{task.timeBlock}</span>
+                </div>
+              )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -874,18 +877,14 @@ function SortableWeeklyTaskItem({
         </div>
       </div>
       <p className="text-sm text-gray-600 mb-2">{task.description}</p>
-      <div className="flex items-center justify-between text-xs text-gray-500">
-        <span className="flex items-center">
-          <Clock className="h-3 w-3 mr-1" />
-          {task.estimatedHours}h estimated
-        </span>
-        {task.completed && (
+      {task.completed && (
+        <div className="flex justify-end text-xs">
           <span className="flex items-center text-green-600">
             <CheckCircle className="h-3 w-3 mr-1" />
             Completed
           </span>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -1484,7 +1483,6 @@ function GoalTrackerApp() {
       ],
     }))
 
-    // Save to database
     try {
       if (!user?.id) {
         console.error("User not authenticated")
@@ -1558,7 +1556,6 @@ function GoalTrackerApp() {
         return
       }
 
-      // Save to database
       const { error } = await supabase.from("categories").insert([
         {
           user_id: user.id,
@@ -2089,10 +2086,10 @@ function GoalTrackerApp() {
     }))
   }
 
-  const addWeeklyTask = () => {
+  const addWeeklyTask = async () => {
     if (!newWeeklyTask.title || !newWeeklyTask.category) return
 
-    const taskId = `w${currentWeek}_${newWeeklyTask.category.toLowerCase().replace(/[^a-z0-9]/g, "")}_${Date.now()}`
+    const taskId = crypto.randomUUID()
 
     setWeeklyTasks((prev) => ({
       ...prev,
@@ -2111,6 +2108,40 @@ function GoalTrackerApp() {
       ],
     }))
 
+    try {
+      if (!user?.id) {
+        console.error("User not authenticated")
+        return
+      }
+
+      // Find category ID from database
+      const { data: categories } = await supabase
+        .from("categories")
+        .select("id")
+        .eq("name", newWeeklyTask.category)
+        .eq("user_id", user.id)
+        .single()
+
+      const { error } = await supabase.from("tasks").insert({
+        id: taskId,
+        user_id: user.id,
+        category_id: categories?.id || null,
+        goal_id: newWeeklyTask.goalId || null,
+        title: newWeeklyTask.title,
+        task_type: "weekly",
+        target_date: new Date().toISOString().split("T")[0], // Current week
+        completed: false,
+      })
+
+      if (error) {
+        console.error("Error saving weekly task to database:", error.message)
+      } else {
+        console.log("Weekly task saved to database successfully")
+      }
+    } catch (error) {
+      console.error("Error saving weekly task to database:", error)
+    }
+
     setNewWeeklyTask({
       title: "",
       description: "",
@@ -2122,10 +2153,10 @@ function GoalTrackerApp() {
     setShowAddWeeklyTask(false)
   }
 
-  const addDailyTask = () => {
+  const addDailyTask = async () => {
     if (!newDailyTask.title || !newDailyTask.category) return
 
-    const taskId = `${selectedDay.toLowerCase()}_${newDailyTask.category.toLowerCase().replace(/[^a-z0-9]/g, "")}_${Date.now()}`
+    const taskId = crypto.randomUUID()
 
     setDailyTasks((prev) => ({
       ...prev,
@@ -2143,6 +2174,40 @@ function GoalTrackerApp() {
         },
       ],
     }))
+
+    try {
+      if (!user?.id) {
+        console.error("User not authenticated")
+        return
+      }
+
+      // Find category ID from database
+      const { data: categories } = await supabase
+        .from("categories")
+        .select("id")
+        .eq("name", newDailyTask.category)
+        .eq("user_id", user.id)
+        .single()
+
+      const { error } = await supabase.from("tasks").insert({
+        id: taskId,
+        user_id: user.id,
+        category_id: categories?.id || null,
+        goal_id: newDailyTask.goalId || null,
+        title: newDailyTask.title,
+        task_type: "daily",
+        target_date: new Date().toISOString().split("T")[0], // Today's date
+        completed: false,
+      })
+
+      if (error) {
+        console.error("Error saving daily task to database:", error.message)
+      } else {
+        console.log("Daily task saved to database successfully")
+      }
+    } catch (error) {
+      console.error("Error saving daily task to database:", error)
+    }
 
     setNewDailyTask({
       title: "",
