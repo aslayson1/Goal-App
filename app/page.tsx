@@ -2162,9 +2162,16 @@ function GoalTrackerApp() {
   }
 
   const addDailyTask = async () => {
-    if (!newDailyTask.title) return
+    console.log("=== TASK CREATION DEBUG START ===")
+    console.log("1. Function called, newDailyTask:", newDailyTask)
+
+    if (!newDailyTask.title) {
+      console.log("2. No title provided, exiting")
+      return
+    }
 
     const taskId = crypto.randomUUID()
+    console.log("3. Generated task ID:", taskId)
 
     const taskData = {
       title: newDailyTask.title,
@@ -2174,6 +2181,11 @@ function GoalTrackerApp() {
       timeBlock: newDailyTask.timeBlock,
       estimatedMinutes: newDailyTask.estimatedMinutes,
     }
+    console.log("4. Task data prepared:", taskData)
+
+    console.log("5. User object:", user)
+    console.log("6. User ID:", user?.id)
+    console.log("7. User authenticated:", !!user)
 
     // Update local state immediately
     setDailyTasks((prev) => ({
@@ -2192,6 +2204,7 @@ function GoalTrackerApp() {
         },
       ],
     }))
+    console.log("8. Local state updated")
 
     // Reset form
     setNewDailyTask({
@@ -2203,48 +2216,64 @@ function GoalTrackerApp() {
       estimatedMinutes: 30,
     })
     setShowAddDailyTask(false)
+    console.log("9. Form reset and dialog closed")
 
     // Simple database insert - no complex lookups
     try {
-      console.log("Starting simple task creation...")
+      console.log("10. Starting database operation...")
 
       if (!user?.id) {
-        console.error("No user ID available")
+        console.error("11. ERROR: No user ID available")
+        console.log("User object:", user)
         return
       }
 
-      console.log("User ID:", user.id)
-      console.log("Task title:", taskData.title)
+      const insertData = {
+        user_id: user.id,
+        title: taskData.title,
+        task_type: "daily",
+        target_date: new Date().toISOString().split("T")[0],
+        completed: false,
+      }
+      console.log("12. Insert data prepared:", insertData)
 
-      const { data, error } = await supabase
-        .from("tasks")
-        .insert({
-          user_id: user.id,
-          title: taskData.title,
-          task_type: "daily",
-          target_date: new Date().toISOString().split("T")[0],
-          completed: false,
-        })
-        .select()
+      console.log("13. Calling supabase.from('tasks').insert()...")
+      const { data, error } = await supabase.from("tasks").insert(insertData).select()
+
+      console.log("14. Database response - data:", data)
+      console.log("15. Database response - error:", error)
 
       if (error) {
-        console.error("Database error:", error)
+        console.error("16. DATABASE ERROR:", error)
+        console.error("Error message:", error.message)
+        console.error("Error details:", error.details)
+        console.error("Error hint:", error.hint)
       } else {
-        console.log("Task saved successfully:", data)
+        console.log("17. Task saved successfully:", data)
 
         // Verify it was saved
-        const { data: verification } = await supabase
+        console.log("18. Starting verification query...")
+        const { data: verification, error: verifyError } = await supabase
           .from("tasks")
           .select("*")
           .eq("user_id", user.id)
           .order("created_at", { ascending: false })
           .limit(1)
 
-        console.log("Verification - latest task:", verification)
+        console.log("19. Verification data:", verification)
+        console.log("20. Verification error:", verifyError)
+
+        if (verification && verification.length > 0) {
+          console.log("21. SUCCESS: Task verified in database:", verification[0])
+        } else {
+          console.log("22. WARNING: Task not found in verification query")
+        }
       }
-    } catch (error) {
-      console.error("Unexpected error:", error)
+    } catch (err) {
+      console.error("23. EXCEPTION during database operation:", err)
     }
+
+    console.log("=== TASK CREATION DEBUG END ===")
   }
 
   const addWeeklyTask = async () => {
