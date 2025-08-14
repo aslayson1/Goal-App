@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { useAuth } from "@/components/auth/auth-provider"
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
+import { AuthScreen } from "@/components/auth/auth-screen"
 
 // Custom CSS class for white checkbox background with thinner border
 const checkboxStyles =
@@ -884,7 +885,6 @@ function GoalTrackerApp() {
   })
 
   const [isLoading, setIsLoading] = useState(true)
-  const [loadingError, setLoadingError] = useState<string | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
   const [dbGoals, setDbGoals] = useState<Goal[]>([])
   const [dbLongTermGoals, setDbLongTermGoals] = useState<LongTermGoal[]>([])
@@ -909,28 +909,12 @@ function GoalTrackerApp() {
 
   useEffect(() => {
     const loadData = async () => {
-      if (!user) {
-        console.log("No user found, skipping data load")
-        setIsLoading(false)
-        return
-      }
+      if (!user) return
 
-      console.log("Starting data load for user:", user.id)
       setIsLoading(true)
-      setLoadingError(null)
-
-      const timeoutId = setTimeout(() => {
-        console.error("Data loading timed out after 15 seconds")
-        setLoadingError(
-          "Loading is taking longer than expected. Please check your connection and try refreshing the page.",
-        )
-        setIsLoading(false)
-      }, 15000)
-
       try {
-        console.log("Loading categories...")
+        // Load categories first
         const categoriesData = await getCategories()
-        console.log("Categories loaded:", categoriesData)
         setCategories(categoriesData)
 
         // Create categories if they don't exist
@@ -939,15 +923,12 @@ function GoalTrackerApp() {
 
         for (const categoryName of requiredCategories) {
           if (!existingCategoryNames.includes(categoryName)) {
-            console.log("Creating missing category:", categoryName)
             await createCategory(categoryName)
           }
         }
 
         // Load goals and organize by category
-        console.log("Loading goals...")
         const goalsData = await getGoals()
-        console.log("Goals loaded:", goalsData)
         setDbGoals(goalsData)
 
         // Transform database goals to match UI structure
@@ -971,9 +952,7 @@ function GoalTrackerApp() {
         setGoalsData(organizedGoals)
 
         // Load long-term goals
-        console.log("Loading long-term goals...")
         const longTermGoalsData = await getLongTermGoals()
-        console.log("Long-term goals loaded:", longTermGoalsData)
         setDbLongTermGoals(longTermGoalsData)
 
         // Transform to UI structure
@@ -999,9 +978,7 @@ function GoalTrackerApp() {
         setLongTermGoals(organizedLongTermGoals)
 
         // Load tasks
-        console.log("Loading tasks...")
         const tasksData = await listTasks()
-        console.log("Tasks loaded:", tasksData)
 
         // Organize tasks by type and day/week
         const weeklyTasksFromDB: any = {}
@@ -1044,14 +1021,8 @@ function GoalTrackerApp() {
         // Merge with existing state
         setWeeklyTasks((prev) => ({ ...prev, ...weeklyTasksFromDB }))
         setDailyTasks((prev) => ({ ...prev, ...dailyTasksFromDB }))
-
-        console.log("Data loading completed successfully")
-        clearTimeout(timeoutId)
       } catch (error) {
         console.error("Failed to load data:", error)
-        console.error("Error details:", error instanceof Error ? error.message : String(error))
-        setLoadingError(`Failed to load data: ${error instanceof Error ? error.message : String(error)}`)
-        clearTimeout(timeoutId)
       } finally {
         setIsLoading(false)
       }
@@ -1186,140 +1157,44 @@ function GoalTrackerApp() {
     setShowAddDailyTask(false)
   }
 
-  const toggleDailyTask = (day: string, taskId: string) => {
-    setDailyTasks((prev) => ({
-      ...prev,
-      [day]: prev[day]?.map((task) => (task.id === taskId ? { ...task, completed: !task.completed } : task)) || [],
-    }))
-  }
-
-  const toggleWeeklyTask = (taskId: string) => {
-    setWeeklyTasks((prev) => ({
-      ...prev,
-      [`Week ${currentWeek}`]:
-        prev[`Week ${currentWeek}`]?.map((task) =>
-          task.id === taskId ? { ...task, completed: !task.completed } : task,
-        ) || [],
-    }))
-  }
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto px-4">
+        <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-slate-600 mb-4">Loading your goals and tasks...</p>
-          {loadingError && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-left">
-              <p className="text-red-800 text-sm font-medium mb-2">Loading Error:</p>
-              <p className="text-red-700 text-sm">{loadingError}</p>
-              <button
-                onClick={() => window.location.reload()}
-                className="mt-3 px-4 py-2 bg-red-600 text-white rounded-md text-sm hover:bg-red-700"
-              >
-                Refresh Page
-              </button>
-            </div>
-          )}
+          <p className="text-slate-600">Loading your goals and tasks...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Goal Tracker</h1>
-              <p className="text-gray-600 mt-1">Track your daily and weekly progress</p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Button variant={activeView === "daily" ? "default" : "outline"} onClick={() => setActiveView("daily")}>
-                Daily Tasks
-              </Button>
-              <Button variant={activeView === "weekly" ? "default" : "outline"} onClick={() => setActiveView("weekly")}>
-                Weekly Tasks
-              </Button>
-              <Button variant={activeView === "goals" ? "default" : "outline"} onClick={() => setActiveView("goals")}>
-                Goals
-              </Button>
-            </div>
-          </div>
-
-          {activeView === "daily" && (
-            <div className="space-y-6">
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Daily Tasks - {selectedDay}</h2>
-                <div className="space-y-3">
-                  {dailyTasks[selectedDay]?.map((task) => (
-                    <div key={task.id} className="flex items-center space-x-3 p-3 rounded-lg bg-gray-50">
-                      <Checkbox
-                        checked={task.completed}
-                        onCheckedChange={() => toggleDailyTask(selectedDay, task.id)}
-                        className={checkboxStyles}
-                      />
-                      <div className="flex-1">
-                        <h3
-                          className={`font-medium ${task.completed ? "line-through text-gray-500" : "text-gray-900"}`}
-                        >
-                          {task.title}
-                        </h3>
-                        {task.description && <p className="text-sm text-gray-600">{task.description}</p>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <Button onClick={() => setShowAddDailyTask(true)} className="mt-4">
-                  Add Daily Task
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {activeView === "weekly" && (
-            <div className="space-y-6">
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Weekly Tasks</h2>
-                <div className="space-y-3">
-                  {weeklyTasks[`Week ${currentWeek}`]?.map((task) => (
-                    <div key={task.id} className="flex items-center space-x-3 p-3 rounded-lg bg-gray-50">
-                      <Checkbox
-                        checked={task.completed}
-                        onCheckedChange={() => toggleWeeklyTask(task.id)}
-                        className={checkboxStyles}
-                      />
-                      <div className="flex-1">
-                        <h3
-                          className={`font-medium ${task.completed ? "line-through text-gray-500" : "text-gray-900"}`}
-                        >
-                          {task.title}
-                        </h3>
-                        {task.description && <p className="text-sm text-gray-600">{task.description}</p>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <Button onClick={() => setShowAddWeeklyTask(true)} className="mt-4">
-                  Add Weekly Task
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {activeView === "goals" && (
-            <div className="space-y-6">
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Goals Overview</h2>
-                <p className="text-gray-600">Goals functionality will be restored from database.</p>
-              </div>
-            </div>
-          )}
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4">
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-2xl font-bold mb-4">Goal Tracker</h1>
+        <p>Welcome to your goal tracker! The app is loading your data...</p>
       </div>
     </div>
   )
 }
 
-export default GoalTrackerApp
+export default function Page() {
+  const { user, isLoading } = useAuth()
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-slate-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return <AuthScreen />
+  }
+
+  return <GoalTrackerApp />
+}
