@@ -1266,8 +1266,77 @@ function GoalTrackerApp() {
     }
   }
 
+  const loadCategoriesAndGoalsFromDB = async (userId: string) => {
+    try {
+      console.log("Loading categories and goals from database...")
+
+      // Load categories
+      const { data: categories, error: categoriesError } = await supabase
+        .from("categories")
+        .select("name, color")
+        .eq("user_id", userId)
+
+      if (categoriesError) {
+        console.error("Error loading categories:", categoriesError)
+        return {}
+      }
+
+      // Load goals
+      const { data: goals, error: goalsError } = await supabase
+        .from("goals")
+        .select(`
+        id,
+        title,
+        description,
+        target_count,
+        current_progress,
+        weekly_target,
+        completed,
+        categories(name)
+      `)
+        .eq("user_id", userId)
+
+      if (goalsError) {
+        console.error("Error loading goals:", goalsError)
+      }
+
+      console.log("Categories loaded:", categories)
+      console.log("Goals loaded:", goals)
+
+      // Convert database data to the expected goalsData structure
+      const categoriesData: { [key: string]: Goal[] } = {}
+
+      // Initialize categories with empty arrays
+      categories?.forEach((category) => {
+        categoriesData[category.name] = []
+      })
+
+      // Add goals to their respective categories
+      goals?.forEach((dbGoal) => {
+        const categoryName = dbGoal.categories?.name
+        if (categoryName && categoriesData[categoryName]) {
+          const goal: Goal = {
+            id: dbGoal.id,
+            title: dbGoal.title,
+            description: dbGoal.description || "",
+            targetCount: dbGoal.target_count,
+            currentCount: dbGoal.current_progress,
+            weeklyTarget: dbGoal.weekly_target,
+            completed: dbGoal.completed,
+          }
+          categoriesData[categoryName].push(goal)
+        }
+      })
+
+      return categoriesData
+    } catch (error) {
+      console.error("Error in loadCategoriesAndGoalsFromDB:", error)
+      return {}
+    }
+  }
+
   useEffect(() => {
-    const checkDatabaseAndLoadCategories = async () => {
+    const checkDatabaseAndLoadData = async () => {
       if (user?.id) {
         console.log("User authenticated, checking database connection...")
 
@@ -1280,16 +1349,13 @@ function GoalTrackerApp() {
           } else {
             console.log("Database connection successful!")
 
-            // Load categories and merge with existing data
-            const dbCategories = await loadCategoriesFromDB(user.id)
+            const dbData = await loadCategoriesAndGoalsFromDB(user.id)
 
-            // Merge database categories with existing initialGoalsData structure
+            // Merge database data with existing initialGoalsData structure
             setGoalsData((prev) => {
               const merged = { ...prev }
-              Object.keys(dbCategories).forEach((categoryName) => {
-                if (!merged[categoryName]) {
-                  merged[categoryName] = []
-                }
+              Object.keys(dbData).forEach((categoryName) => {
+                merged[categoryName] = dbData[categoryName]
               })
               return merged
             })
@@ -1300,7 +1366,7 @@ function GoalTrackerApp() {
       }
     }
 
-    checkDatabaseAndLoadCategories()
+    checkDatabaseAndLoadData()
   }, [user?.id])
 
   const checkDatabaseConnection = async () => {
