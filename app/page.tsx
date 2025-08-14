@@ -1241,185 +1241,6 @@ function GoalTrackerApp() {
     return () => clearInterval(intervalId)
   }, [])
 
-  const loadCategoriesFromDB = async (userId: string) => {
-    try {
-      console.log("Loading categories from database...")
-      const { data: categories, error } = await supabase.from("categories").select("name, color").eq("user_id", userId)
-
-      if (error) {
-        console.error("Error loading categories:", error)
-        return {}
-      }
-
-      console.log("Categories loaded:", categories)
-
-      // Convert database categories to the expected goalsData structure
-      const categoriesData: { [key: string]: Goal[] } = {}
-      categories?.forEach((category) => {
-        categoriesData[category.name] = [] // Initialize with empty goals array
-      })
-
-      return categoriesData
-    } catch (error) {
-      console.error("Error in loadCategoriesFromDB:", error)
-      return {}
-    }
-  }
-
-  const loadTasksFromDB = async (userId: string) => {
-    try {
-      console.log("Loading tasks from database...")
-
-      // Load tasks from database - removed categories join since we're not saving category_id
-      const { data: tasks, error } = await supabase
-        .from("tasks")
-        .select("id, title, description, task_type, target_date, completed")
-        .eq("user_id", userId)
-
-      if (error) {
-        console.error("Error loading tasks:", error)
-        return { dailyTasks: {}, weeklyTasks: {} }
-      }
-
-      console.log("Raw tasks from database:", tasks)
-      console.log("Number of tasks loaded:", tasks?.length || 0)
-
-      // Initialize task structures
-      const dailyTasksData: { [key: string]: DailyTask[] } = {
-        Monday: [],
-        Tuesday: [],
-        Wednesday: [],
-        Thursday: [],
-        Friday: [],
-        Saturday: [],
-        Sunday: [],
-      }
-
-      const weeklyTasksData: { [key: string]: WeeklyTask[] } = {}
-      for (let i = 1; i <= 12; i++) {
-        weeklyTasksData[`Week ${i}`] = []
-      }
-
-      // Organize tasks by type and date
-      tasks?.forEach((dbTask) => {
-        console.log("Processing task:", dbTask)
-
-        const task: any = {
-          id: dbTask.id,
-          title: dbTask.title,
-          description: dbTask.description || "",
-          completed: dbTask.completed,
-          category: "General", // Default category since we're not storing category_id yet
-        }
-
-        if (dbTask.task_type === "daily") {
-          // Get day name from target_date
-          const date = new Date(dbTask.target_date)
-          const dayName = date.toLocaleDateString("en-US", { weekday: "long" })
-          console.log(`Adding daily task "${dbTask.title}" to ${dayName}`)
-          if (dailyTasksData[dayName]) {
-            dailyTasksData[dayName].push(task)
-          }
-        } else if (dbTask.task_type === "weekly") {
-          // For weekly tasks, we'll add them to the current week for now
-          const currentWeekKey = `Week ${Math.ceil(
-            (new Date().getTime() - new Date(new Date().getFullYear(), 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000),
-          )}`
-          console.log(`Adding weekly task "${dbTask.title}" to ${currentWeekKey}`)
-          if (weeklyTasksData[currentWeekKey]) {
-            weeklyTasksData[currentWeekKey].push(task)
-          }
-        }
-      })
-
-      console.log("Organized daily tasks:", dailyTasksData)
-      console.log("Organized weekly tasks:", weeklyTasksData)
-
-      // Count total tasks in organized structure
-      const dailyCount = Object.values(dailyTasksData).reduce((sum, dayTasks) => sum + dayTasks.length, 0)
-      const weeklyCount = Object.values(weeklyTasksData).reduce((sum, weekTasks) => sum + weekTasks.length, 0)
-      console.log(`Final task counts - Daily: ${dailyCount}, Weekly: ${weeklyCount}`)
-
-      return { dailyTasks: dailyTasksData, weeklyTasks: weeklyTasksData }
-    } catch (error) {
-      console.error("Error in loadTasksFromDB:", error)
-      return { dailyTasks: {}, weeklyTasks: {} }
-    }
-  }
-
-  const loadCategoriesAndGoalsFromDB = async (userId: string) => {
-    try {
-      console.log("Loading categories and goals from database...")
-
-      // Load categories
-      const { data: categories, error: categoriesError } = await supabase
-        .from("categories")
-        .select("name, color")
-        .eq("user_id", userId)
-
-      if (categoriesError) {
-        console.error("Error loading categories:", categoriesError)
-        return {}
-      }
-
-      // Load goals
-      const { data: goals, error: goalsError } = await supabase
-        .from("goals")
-        .select(
-          `
-        id,
-        title,
-        description,
-        target_count,
-        current_progress,
-        weekly_target,
-        completed,
-        categories(name)
-      `,
-        )
-        .eq("user_id", userId)
-
-      if (goalsError) {
-        console.error("Error loading goals:", goalsError)
-      }
-
-      console.log("Categories loaded:", categories)
-      console.log("Goals loaded:", goals)
-
-      // Convert database data to the expected goalsData structure
-      const categoriesData: { [key: string]: Goal[] } = {}
-
-      // Initialize categories with empty arrays
-      categories?.forEach((category) => {
-        categoriesData[category.name] = []
-      })
-
-      // Add goals to their respective categories
-      goals?.forEach((dbGoal) => {
-        const categoryName = dbGoal.categories?.name
-        if (categoryName && categoriesData[categoryName]) {
-          const goal: Goal = {
-            id: dbGoal.id,
-            title: dbGoal.title,
-            description: dbGoal.description || "",
-            targetCount: dbGoal.target_count,
-            currentCount: dbGoal.current_progress,
-            weeklyTarget: dbGoal.weekly_target,
-            completed: dbGoal.completed,
-            notes: "",
-            category: categoryName,
-          }
-          categoriesData[categoryName].push(goal)
-        }
-      })
-
-      return categoriesData
-    } catch (error) {
-      console.error("Error in loadCategoriesAndGoalsFromDB:", error)
-      return {}
-    }
-  }
-
   useEffect(() => {
     const checkDatabaseAndLoadData = async () => {
       if (user?.id) {
@@ -1437,6 +1258,8 @@ function GoalTrackerApp() {
             const dbData = await loadCategoriesAndGoalsFromDB(user.id)
             const taskData = await loadTasksFromDB(user.id)
 
+            console.log("About to update state with loaded task data:", taskData)
+
             // Merge database data with existing initialGoalsData structure
             setGoalsData((prev) => {
               const merged = { ...prev }
@@ -1446,8 +1269,16 @@ function GoalTrackerApp() {
               return merged
             })
 
-            setDailyTasks((prev) => ({ ...prev, ...taskData.dailyTasks }))
-            setWeeklyTasks((prev) => ({ ...prev, ...taskData.weeklyTasks }))
+            console.log("Setting daily tasks state to:", taskData.dailyTasks)
+            setDailyTasks(taskData.dailyTasks)
+
+            console.log("Setting weekly tasks state to:", taskData.weeklyTasks)
+            setWeeklyTasks(taskData.weeklyTasks)
+
+            // Verify state was updated
+            setTimeout(() => {
+              console.log("State update verification - checking if tasks are in state...")
+            }, 100)
           }
         } catch (error) {
           console.error("Database check error:", error)
@@ -4151,6 +3982,124 @@ function GoalTrackerApp() {
       </div>
     </div>
   )
+}
+
+// Define the function
+async function loadCategoriesAndGoalsFromDB(userId: string) {
+  try {
+    const { data: categories, error: categoriesError } = await supabase
+      .from("categories")
+      .select("id, name")
+      .eq("user_id", userId)
+
+    if (categoriesError) {
+      console.error("Error fetching categories:", categoriesError)
+      return {}
+    }
+
+    const goalsByCategory: { [categoryName: string]: Goal[] } = {}
+
+    for (const category of categories) {
+      const { data: goals, error: goalsError } = await supabase
+        .from("goals")
+        .select("id, title, description, target_count, current_progress, weekly_target")
+        .eq("user_id", userId)
+        .eq("category_id", category.id)
+
+      if (goalsError) {
+        console.error(`Error fetching goals for category ${category.name}:`, goalsError)
+        continue
+      }
+
+      goalsByCategory[category.name] = goals.map((goal) => ({
+        id: goal.id,
+        title: goal.title,
+        description: goal.description,
+        targetCount: goal.target_count,
+        currentCount: goal.current_progress,
+        notes: "", // You might want to fetch notes as well
+        weeklyTarget: goal.weekly_target,
+        category: category.name,
+      }))
+    }
+
+    return goalsByCategory
+  } catch (error) {
+    console.error("Error in loadCategoriesAndGoalsFromDB:", error)
+    return {}
+  }
+}
+
+// Define the function
+async function loadTasksFromDB(userId: string) {
+  try {
+    const { data: tasks, error: tasksError } = await supabase.from("tasks").select("*").eq("user_id", userId)
+
+    if (tasksError) {
+      console.error("Error fetching tasks:", tasksError)
+      return { weeklyTasks: {}, dailyTasks: {} }
+    }
+
+    const weeklyTasks: Record<string, WeeklyTask[]> = {}
+    const dailyTasks: Record<string, DailyTask[]> = {}
+
+    tasks.forEach((task) => {
+      if (task.task_type === "weekly") {
+        // Assuming target_date represents the week
+        const weekKey = `Week ${new Date(task.target_date).getWeek()}`
+        const weeklyTask: WeeklyTask = {
+          id: task.id,
+          title: task.title,
+          description: task.description || "",
+          category: task.category || "Uncategorized", // Replace with actual category
+          goalId: task.goal_id || "",
+          completed: task.completed || false,
+          priority: "medium", // Replace with actual priority
+          estimatedHours: 1, // Replace with actual estimated hours
+        }
+
+        if (!weeklyTasks[weekKey]) {
+          weeklyTasks[weekKey] = []
+        }
+        weeklyTasks[weekKey].push(weeklyTask)
+      } else if (task.task_type === "daily") {
+        // Assuming target_date represents the day
+        const day = new Date(task.target_date).toLocaleDateString("en-US", { weekday: "long" })
+        const dailyTask: DailyTask = {
+          id: task.id,
+          title: task.title,
+          description: task.description || "",
+          category: task.category || "Uncategorized", // Replace with actual category
+          goalId: task.goal_id || "",
+          completed: task.completed || false,
+          timeBlock: "9:00 AM", // Replace with actual time block
+          estimatedMinutes: 30, // Replace with actual estimated minutes
+        }
+
+        if (!dailyTasks[day]) {
+          dailyTasks[day] = []
+        }
+        dailyTasks[day].push(dailyTask)
+      }
+    })
+
+    return { weeklyTasks, dailyTasks }
+  } catch (error) {
+    console.error("Error in loadTasksFromDB:", error)
+    return { weeklyTasks: {}, dailyTasks: {} }
+  }
+}
+
+// Helper function to get the week number
+Date.prototype.getWeek = function () {
+  var date = new Date(this.getTime())
+  date.setHours(0, 0, 0, 0)
+  // Thursday in current week decides the year.
+  date.setDate(date.getDate() + 3 - ((date.getDay() + 6) % 7))
+  // January 4 is always in week 1.
+  var week1 = new Date(date.getFullYear(), 0, 4)
+  // Adjust to Thursday in week 1 and count number of weeks from date to week1.
+  return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) / 7)
 }
 
 export default function Page() {
