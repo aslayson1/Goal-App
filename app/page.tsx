@@ -2215,6 +2215,7 @@ function GoalTrackerApp() {
           task_type: "daily",
           target_date: new Date().toISOString().split("T")[0],
           completed: false,
+          scope: "daily",
         })
         .select()
 

@@ -4,13 +4,15 @@ INSERT INTO tasks (
   title,
   task_type,
   target_date,
-  completed
+  completed,
+  scope
 ) VALUES (
   (SELECT id FROM auth.users LIMIT 1),
   'Test Task Simple',
   'daily',
   CURRENT_DATE,
-  false
+  false,
+  'daily'
 );
 
 -- Verify the task was inserted
