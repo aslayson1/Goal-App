@@ -2308,6 +2308,565 @@ function GoalTrackerApp() {
   //   // Adjust to Thursday in week 1 and count number of weeks from date to week1.
   //   return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) / 7);
   // }
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center">
+              <h1 className="text-2xl font-bold text-gray-900">
+                Hi {user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User"},
+              </h1>
+            </div>
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-600">Here are your tasks for week {currentWeek} of 12.</span>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setShowAddGoal(true)}
+                  className="bg-black text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
+                >
+                  + Add Goal
+                </button>
+                <button
+                  onClick={() => setShowAddCategory(true)}
+                  className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium"
+                >
+                  + Add Category
+                </button>
+                <div className="relative">
+                  <button
+                    onClick={() => setShowProfile(!showProfile)}
+                    className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center text-sm font-medium text-gray-700"
+                  >
+                    {getInitials(user?.user_metadata?.full_name || user?.email)}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Progress Overview */}
+        <div className="mb-8">
+          <div className="bg-white rounded-lg p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Overall Progress</h2>
+              <div className="text-right">
+                <div className="text-3xl font-bold text-gray-900">{getTotalProgress()}%</div>
+                <div className="text-sm text-gray-600">{currentWeek} Weeks Left</div>
+              </div>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className="bg-[#05a7b0] h-2 rounded-full transition-all duration-300"
+                style={{ width: `${getTotalProgress()}%` }}
+              ></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Navigation Tabs */}
+        <div className="mb-6">
+          <div className="border-b border-gray-200">
+            <nav className="-mb-px flex space-x-8">
+              <button
+                onClick={() => setActiveView("daily")}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeView === "daily"
+                    ? "border-[#05a7b0] text-[#05a7b0]"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                Daily
+              </button>
+              <button
+                onClick={() => setActiveView("weekly")}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeView === "weekly"
+                    ? "border-[#05a7b0] text-[#05a7b0]"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                Weekly
+              </button>
+            </nav>
+          </div>
+        </div>
+
+        {/* Content based on active view */}
+        {activeView === "daily" && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Daily Tasks */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Daily Tasks</h3>
+                <select
+                  value={selectedDay}
+                  onChange={(e) => setSelectedDay(e.target.value)}
+                  className="border border-gray-300 rounded-md px-3 py-1 text-sm"
+                >
+                  {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((day) => (
+                    <option key={day} value={day}>
+                      {day}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-4">
+                {Object.keys(goalsData).map((category) => {
+                  const categoryTasks = dailyTasks[selectedDay]?.filter((task) => task.category === category) || []
+                  if (categoryTasks.length === 0) return null
+
+                  return (
+                    <div key={category} className="bg-white rounded-lg p-4 shadow-sm">
+                      <div className="flex items-center justify-between mb-3">
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-medium border ${getCategoryColor(category)}`}
+                        >
+                          {category}
+                        </span>
+                        <button
+                          onClick={() => {
+                            setSelectedCategory(category)
+                            setShowAddDailyTask(true)
+                          }}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          +
+                        </button>
+                      </div>
+
+                      <div className="space-y-2">
+                        {categoryTasks.map((task) => (
+                          <div key={task.id} className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded">
+                            <input
+                              type="checkbox"
+                              checked={task.completed}
+                              onChange={() => toggleDailyTask(selectedDay, task.id)}
+                              className="h-4 w-4 text-[#05a7b0] focus:ring-[#05a7b0] border-gray-300 rounded"
+                            />
+                            <div className="flex-1">
+                              <div
+                                className={`text-sm ${task.completed ? "line-through text-gray-500" : "text-gray-900"}`}
+                              >
+                                {task.title}
+                              </div>
+                              {task.description && <div className="text-xs text-gray-500">{task.description}</div>}
+                            </div>
+                          </div>
+                        ))}
+
+                        {categoryTasks.length === 0 && (
+                          <div className="text-center py-4 text-gray-500 text-sm">Click + to add your first task</div>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Goals Display */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">12-Week Goals</h3>
+              <div className="space-y-4">
+                {Object.entries(goalsData).map(([category, goals]) => (
+                  <div key={category} className="bg-white rounded-lg p-4 shadow-sm">
+                    <div className="flex items-center justify-between mb-3">
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-medium border ${getCategoryColor(category)}`}
+                      >
+                        {category}
+                      </span>
+                      <button
+                        onClick={() => {
+                          setSelectedCategory(category)
+                          setShowAddGoal(true)
+                        }}
+                        className="text-gray-400 hover:text-gray-600"
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    <div className="space-y-3">
+                      {goals.map((goal) => (
+                        <div key={goal.id} className="border border-gray-200 rounded-lg p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="font-medium text-gray-900">{goal.title}</h4>
+                            <span className="text-sm text-gray-600">
+                              {goal.currentCount}/{goal.targetCount}
+                            </span>
+                          </div>
+
+                          <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+                            <div
+                              className="bg-[#05a7b0] h-2 rounded-full transition-all duration-300"
+                              style={{ width: `${getProgressPercentage(goal.currentCount, goal.targetCount)}%` }}
+                            ></div>
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <div className="flex space-x-1">
+                              {getQuickIncrements(goal.targetCount).map((increment) => (
+                                <button
+                                  key={increment}
+                                  onClick={() => incrementGoal(category, goal.id, increment)}
+                                  className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded"
+                                >
+                                  +{increment}
+                                </button>
+                              ))}
+                            </div>
+                            <span className="text-xs text-gray-500">
+                              {Math.round(getProgressPercentage(goal.currentCount, goal.targetCount))}%
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeView === "weekly" && (
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Week {currentWeek} Tasks</h3>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => setCurrentWeek(Math.max(1, currentWeek - 1))}
+                  disabled={currentWeek <= 1}
+                  className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setCurrentWeek(Math.min(12, currentWeek + 1))}
+                  disabled={currentWeek >= 12}
+                  className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {Object.keys(goalsData).map((category) => {
+                const categoryTasks =
+                  weeklyTasks[`Week ${currentWeek}`]?.filter((task) => task.category === category) || []
+
+                return (
+                  <div key={category} className="bg-white rounded-lg p-4 shadow-sm">
+                    <div className="flex items-center justify-between mb-3">
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-medium border ${getCategoryColor(category)}`}
+                      >
+                        {category}
+                      </span>
+                      <button
+                        onClick={() => {
+                          setSelectedCategory(category)
+                          setShowAddWeeklyTask(true)
+                        }}
+                        className="text-gray-400 hover:text-gray-600"
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    <div className="space-y-2">
+                      {categoryTasks.map((task) => (
+                        <div key={task.id} className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded">
+                          <input
+                            type="checkbox"
+                            checked={task.completed}
+                            onChange={() => toggleWeeklyTask(task.id)}
+                            className="h-4 w-4 text-[#05a7b0] focus:ring-[#05a7b0] border-gray-300 rounded"
+                          />
+                          <div className="flex-1">
+                            <div
+                              className={`text-sm ${task.completed ? "line-through text-gray-500" : "text-gray-900"}`}
+                            >
+                              {task.title}
+                            </div>
+                            {task.description && <div className="text-xs text-gray-500">{task.description}</div>}
+                          </div>
+                        </div>
+                      ))}
+
+                      {categoryTasks.length === 0 && (
+                        <div className="text-center py-4 text-gray-500 text-sm">Click + to add your first task</div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* Add Goal Modal */}
+      {showAddGoal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">{editingGoal ? "Edit Goal" : "Add New Goal"}</h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Goal Title</label>
+                <input
+                  type="text"
+                  value={newGoal.title}
+                  onChange={(e) => setNewGoal({ ...newGoal, title: e.target.value })}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  placeholder="e.g., Read 12 books"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description (optional)</label>
+                <textarea
+                  value={newGoal.description}
+                  onChange={(e) => setNewGoal({ ...newGoal, description: e.target.value })}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  rows={3}
+                  placeholder="Brief description of the goal"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Target Count</label>
+                <input
+                  type="number"
+                  value={newGoal.targetCount}
+                  onChange={(e) => setNewGoal({ ...newGoal, targetCount: Number.parseInt(e.target.value) || 0 })}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  placeholder="12"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2"
+                >
+                  <option value="">Select a category</option>
+                  {Object.keys(goalsData).map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowAddGoal(false)
+                  setEditingGoal(null)
+                  setNewGoal({ title: "", description: "", targetCount: 0, weeklyTarget: 0 })
+                  setSelectedCategory("")
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={editingGoal ? saveEditedGoal : addNewGoal}
+                className="flex-1 px-4 py-2 bg-[#05a7b0] text-white rounded-md hover:bg-[#048a92]"
+              >
+                {editingGoal ? "Update Goal" : "Add Goal"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Category Modal */}
+      {showAddCategory && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">Add New Category</h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Category Name</label>
+                <input
+                  type="text"
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  placeholder="e.g., Business"
+                />
+              </div>
+            </div>
+
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowAddCategory(false)
+                  setNewCategoryName("")
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={addNewCategory}
+                className="flex-1 px-4 py-2 bg-[#05a7b0] text-white rounded-md hover:bg-[#048a92]"
+              >
+                Add Category
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Daily Task Modal */}
+      {showAddDailyTask && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">Add Daily Task</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Create a daily task for {selectedDay} in {selectedCategory}.
+            </p>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Task Title</label>
+                <input
+                  type="text"
+                  value={newDailyTask.title}
+                  onChange={(e) => setNewDailyTask({ ...newDailyTask, title: e.target.value })}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  placeholder="e.g., Morning workout"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description (optional)</label>
+                <textarea
+                  value={newDailyTask.description}
+                  onChange={(e) => setNewDailyTask({ ...newDailyTask, description: e.target.value })}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  rows={3}
+                  placeholder="Brief description of the task"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                <div className={`px-3 py-2 rounded-md border ${getCategoryColor(selectedCategory)}`}>
+                  {selectedCategory}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowAddDailyTask(false)
+                  setNewDailyTask({ title: "", description: "", category: "", goalId: "" })
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={addDailyTask}
+                className="flex-1 px-4 py-2 bg-[#05a7b0] text-white rounded-md hover:bg-[#048a92]"
+              >
+                Add Task
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Weekly Task Modal */}
+      {showAddWeeklyTask && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">Add Weekly Task</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Create a task to work on this week that contributes to your 12-week goals.
+            </p>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Task Title</label>
+                <input
+                  type="text"
+                  value={newWeeklyTask.title}
+                  onChange={(e) => setNewWeeklyTask({ ...newWeeklyTask, title: e.target.value })}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  placeholder="e.g., Complete pitch deck"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea
+                  value={newWeeklyTask.description}
+                  onChange={(e) => setNewWeeklyTask({ ...newWeeklyTask, description: e.target.value })}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  rows={3}
+                  placeholder="Brief description of the task"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2"
+                >
+                  <option value="">Select a category</option>
+                  {Object.keys(goalsData).map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowAddWeeklyTask(false)
+                  setNewWeeklyTask({ title: "", description: "", category: "", goalId: "" })
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={addWeeklyTask}
+                className="flex-1 px-4 py-2 bg-[#05a7b0] text-white rounded-md hover:bg-[#048a92]"
+              >
+                Add Task
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default function Page() {
