@@ -1786,7 +1786,7 @@ function GoalTrackerApp() {
     setShowAddGoal(false)
   }
 
-  const addNewCategory = () => {
+  const addNewCategory = async () => {
     if (!newCategoryName.trim()) return
 
     // Convert to title case instead of uppercase
@@ -1801,13 +1801,35 @@ function GoalTrackerApp() {
       return
     }
 
-    setGoalsData((prev) => ({
-      ...prev,
-      [categoryName]: [],
-    }))
+    try {
+      // Save to database
+      const { error } = await supabase.from("categories").insert([
+        {
+          user_id: user?.id,
+          name: categoryName,
+          color: "#05a7b0", // Default teal color
+        },
+      ])
 
-    setNewCategoryName("")
-    setShowAddCategory(false)
+      if (error) {
+        console.error("Error saving category:", error)
+        alert("Failed to save category. Please try again.")
+        return
+      }
+
+      // Update local state
+      setGoalsData((prev) => ({
+        ...prev,
+        [categoryName]: [],
+      }))
+
+      setNewCategoryName("")
+      setShowAddCategory(false)
+      console.log("Category saved successfully:", categoryName)
+    } catch (error) {
+      console.error("Error adding category:", error)
+      alert("Failed to add category. Please try again.")
+    }
   }
 
   const editGoal = (category: string, goalId: string, updatedGoal: Partial<Goal>) => {
