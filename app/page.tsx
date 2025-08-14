@@ -1802,10 +1802,23 @@ function GoalTrackerApp() {
     }
 
     try {
+      if (!user?.id) {
+        alert("User not authenticated. Please log in again.")
+        return
+      }
+
+      // Validate UUID format
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+      if (!uuidRegex.test(user.id)) {
+        console.error("Invalid user ID format:", user.id)
+        alert("Authentication error. Please log out and log in again.")
+        return
+      }
+
       // Save to database
       const { error } = await supabase.from("categories").insert([
         {
-          user_id: user?.id,
+          user_id: user.id,
           name: categoryName,
           color: "#05a7b0", // Default teal color
         },
@@ -1813,7 +1826,8 @@ function GoalTrackerApp() {
 
       if (error) {
         console.error("Error saving category:", error)
-        alert("Failed to save category. Please try again.")
+        console.error("User ID being used:", user.id)
+        alert(`Failed to save category: ${error.message}`)
         return
       }
 
