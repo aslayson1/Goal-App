@@ -2170,6 +2170,92 @@ function GoalTrackerApp() {
     }))
   }
 
+  const addDailyTask = async () => {
+    if (!newDailyTask.title || !newDailyTask.category) return
+
+    const taskId = crypto.randomUUID()
+    console.log("Creating daily task:", {
+      taskId,
+      title: newDailyTask.title,
+      category: newDailyTask.category,
+      selectedDay,
+    })
+
+    setDailyTasks((prev) => ({
+      ...prev,
+      [selectedDay]: [
+        ...(prev[selectedDay] || []),
+        {
+          id: taskId,
+          title: newDailyTask.title,
+          description: newDailyTask.description,
+          category: newDailyTask.category,
+          goalId: newDailyTask.goalId,
+          completed: false,
+          timeBlock: newDailyTask.timeBlock,
+          estimatedMinutes: newDailyTask.estimatedMinutes,
+        },
+      ],
+    }))
+
+    try {
+      if (!user?.id) {
+        console.error("User not authenticated")
+        return
+      }
+
+      const getNextDateForDay = (dayName: string) => {
+        const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+        const today = new Date()
+        const targetDayIndex = days.indexOf(dayName)
+        const todayIndex = today.getDay()
+
+        let daysUntilTarget = targetDayIndex - todayIndex
+        if (daysUntilTarget < 0) {
+          daysUntilTarget += 7 // Next week
+        }
+
+        const targetDate = new Date(today)
+        targetDate.setDate(today.getDate() + daysUntilTarget)
+        return targetDate.toISOString().split("T")[0]
+      }
+
+      const targetDate = getNextDateForDay(selectedDay)
+      console.log("Target date calculated:", targetDate)
+
+      const taskData = {
+        id: taskId,
+        user_id: user.id,
+        title: newDailyTask.title,
+        description: newDailyTask.description || null,
+        task_type: "daily",
+        target_date: targetDate,
+        completed: false,
+      }
+      console.log("Inserting complete task data:", taskData)
+
+      const { error } = await supabase.from("tasks").insert(taskData)
+
+      if (error) {
+        console.error("Error saving daily task to database:", error.message, error)
+      } else {
+        console.log("Daily task saved to database successfully")
+      }
+    } catch (error) {
+      console.error("Error saving daily task to database:", error)
+    }
+
+    setNewDailyTask({
+      title: "",
+      description: "",
+      category: "",
+      goalId: "",
+      timeBlock: "",
+      estimatedMinutes: 30,
+    })
+    setShowAddDailyTask(false)
+  }
+
   const addWeeklyTask = async () => {
     if (!newWeeklyTask.title || !newWeeklyTask.category) return
 
@@ -2235,90 +2321,6 @@ function GoalTrackerApp() {
       estimatedHours: 1,
     })
     setShowAddWeeklyTask(false)
-  }
-
-  const addDailyTask = async () => {
-    if (!newDailyTask.title || !newDailyTask.category) return
-
-    const taskId = crypto.randomUUID()
-    console.log("Creating daily task:", {
-      taskId,
-      title: newDailyTask.title,
-      category: newDailyTask.category,
-      selectedDay,
-    })
-
-    setDailyTasks((prev) => ({
-      ...prev,
-      [selectedDay]: [
-        ...(prev[selectedDay] || []),
-        {
-          id: taskId,
-          title: newDailyTask.title,
-          description: newDailyTask.description,
-          category: newDailyTask.category,
-          goalId: newDailyTask.goalId,
-          completed: false,
-          timeBlock: newDailyTask.timeBlock,
-          estimatedMinutes: newDailyTask.estimatedMinutes,
-        },
-      ],
-    }))
-
-    try {
-      if (!user?.id) {
-        console.error("User not authenticated")
-        return
-      }
-
-      const getNextDateForDay = (dayName: string) => {
-        const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
-        const today = new Date()
-        const targetDayIndex = days.indexOf(dayName)
-        const todayIndex = today.getDay()
-
-        let daysUntilTarget = targetDayIndex - todayIndex
-        if (daysUntilTarget < 0) {
-          daysUntilTarget += 7 // Next week
-        }
-
-        const targetDate = new Date(today)
-        targetDate.setDate(today.getDate() + daysUntilTarget)
-        return targetDate.toISOString().split("T")[0]
-      }
-
-      const targetDate = getNextDateForDay(selectedDay)
-      console.log("Target date calculated:", targetDate)
-
-      const taskData = {
-        user_id: user.id,
-        title: newDailyTask.title,
-        task_type: "daily",
-        target_date: targetDate,
-        completed: false,
-      }
-      console.log("Inserting minimal task data:", taskData)
-
-      const { error } = await supabase.from("tasks").insert(taskData)
-
-      if (error) {
-        console.error("Error saving daily task to database:", error.message, error)
-      } else {
-        console.log("Daily task saved to database successfully")
-      }
-    } catch (error) {
-      console.error("Error saving daily task to database:", error)
-    }
-
-    setNewDailyTask({
-      title: "",
-      description: "",
-      category: "",
-      goalId: "",
-      timeBlock: "",
-      estimatedMinutes: 30,
-    })
-    setShowAddDailyTask(false)
   }
 
   return (
