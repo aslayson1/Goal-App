@@ -2271,41 +2271,6 @@ function GoalTrackerApp() {
         return
       }
 
-      console.log("User authenticated:", user.id)
-
-      console.log("Looking up category:", newDailyTask.category)
-      const { data: categories, error: categoryError } = await supabase
-        .from("categories")
-        .select("id")
-        .eq("name", newDailyTask.category)
-        .eq("user_id", user.id)
-        .single()
-
-      if (categoryError || !categories) {
-        console.error("Category not found, creating it first:", categoryError)
-
-        // Create the category if it doesn't exist
-        const { data: newCategory, error: createError } = await supabase
-          .from("categories")
-          .insert({
-            user_id: user.id,
-            name: newDailyTask.category,
-            color: "#3B82F6", // Default blue color
-          })
-          .select("id")
-          .single()
-
-        if (createError) {
-          console.error("Error creating category:", createError)
-          return
-        }
-
-        console.log("Created new category:", newCategory)
-        const categories = newCategory
-      } else {
-        console.log("Found existing category:", categories)
-      }
-
       const getNextDateForDay = (dayName: string) => {
         const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
         const today = new Date()
@@ -2326,16 +2291,13 @@ function GoalTrackerApp() {
       console.log("Target date calculated:", targetDate)
 
       const taskData = {
-        id: taskId,
         user_id: user.id,
-        category_id: categories.id, // Now guaranteed to have a valid category ID
-        goal_id: newDailyTask.goalId || null,
         title: newDailyTask.title,
         task_type: "daily",
         target_date: targetDate,
         completed: false,
       }
-      console.log("Inserting task data:", taskData)
+      console.log("Inserting minimal task data:", taskData)
 
       const { error } = await supabase.from("tasks").insert(taskData)
 
