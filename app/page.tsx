@@ -1244,6 +1244,68 @@ function GoalTrackerApp() {
     return () => clearInterval(intervalId)
   }, [])
 
+  const loadCategoriesFromDB = async (userId: string) => {
+    try {
+      console.log("Loading categories from database...")
+      const { data: categories, error } = await supabase.from("categories").select("name, color").eq("user_id", userId)
+
+      if (error) {
+        console.error("Error loading categories:", error)
+        return {}
+      }
+
+      console.log("Categories loaded:", categories)
+
+      // Convert database categories to the expected goalsData structure
+      const categoriesData: { [key: string]: Goal[] } = {}
+      categories?.forEach((category) => {
+        categoriesData[category.name] = [] // Initialize with empty goals array
+      })
+
+      return categoriesData
+    } catch (error) {
+      console.error("Error in loadCategoriesFromDB:", error)
+      return {}
+    }
+  }
+
+  useEffect(() => {
+    const checkDatabaseAndLoadCategories = async () => {
+      if (user?.id) {
+        console.log("User authenticated, checking database connection...")
+
+        try {
+          // Test database connection
+          const { data, error } = await supabase.from("categories").select("count").limit(1)
+
+          if (error) {
+            console.error("Database connection failed:", error)
+          } else {
+            console.log("Database connection successful!")
+
+            // Load categories and merge with existing data
+            const dbCategories = await loadCategoriesFromDB(user.id)
+
+            // Merge database categories with existing initialGoalsData structure
+            setGoalsData((prev) => {
+              const merged = { ...prev }
+              Object.keys(dbCategories).forEach((categoryName) => {
+                if (!merged[categoryName]) {
+                  merged[categoryName] = []
+                }
+              })
+              return merged
+            })
+          }
+        } catch (error) {
+          console.error("Database check error:", error)
+        }
+      }
+    }
+
+    checkDatabaseAndLoadCategories()
+  }, [user?.id])
+
   const checkDatabaseConnection = async () => {
     try {
       const { data, error } = await supabase.from("categories").select("count").limit(1)
