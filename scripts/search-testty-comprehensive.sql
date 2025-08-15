@@ -1,51 +1,52 @@
--- Comprehensive search for "Testty" across all tables and columns in the database
+-- Creating a safe search that only queries tables that actually exist
+-- Dynamic search for "Testty" across all accessible tables in the database
 
--- First, let's see all tables in the database
-SELECT 'All tables in database:' as info;
-SELECT table_name 
+-- First, show all tables in the database
+SELECT 'All tables in database:' as info, table_name 
 FROM information_schema.tables 
 WHERE table_schema = 'public' 
 ORDER BY table_name;
 
--- Search in tasks table (all text columns)
+-- Search in tasks table (we know this exists)
 SELECT 'Searching tasks table:' as info;
-SELECT 'tasks' as table_name, id, title, description, task_type, target_date::text, created_at::text
+SELECT 'tasks' as table_name, id, title, 
+       COALESCE(description, 'NULL') as description,
+       task_type, target_date::text, created_at::text
 FROM tasks 
 WHERE title ILIKE '%testty%' 
-   OR description ILIKE '%testty%' 
+   OR COALESCE(description, '') ILIKE '%testty%' 
    OR task_type ILIKE '%testty%'
    OR target_date::text ILIKE '%testty%'
    OR created_at::text ILIKE '%testty%';
 
--- Search in categories table
+-- Search in categories table (we know this exists)
 SELECT 'Searching categories table:' as info;
 SELECT 'categories' as table_name, id, name, created_at::text
 FROM categories 
 WHERE name ILIKE '%testty%' 
    OR created_at::text ILIKE '%testty%';
 
--- Search in goals table (if it exists)
-SELECT 'Searching goals table:' as info;
-SELECT 'goals' as table_name, id, title, created_at::text
-FROM goals 
-WHERE title ILIKE '%testty%' 
-   OR created_at::text ILIKE '%testty%';
-
--- Search in long_term_goals table (if it exists)
-SELECT 'Searching long_term_goals table:' as info;
-SELECT 'long_term_goals' as table_name, id, title, created_at::text
-FROM long_term_goals 
-WHERE title ILIKE '%testty%' 
-   OR created_at::text ILIKE '%testty%';
-
--- Search in activity_log table (if it exists)
-SELECT 'Searching activity_log table:' as info;
-SELECT 'activity_log' as table_name, id, action_type, entity_type, details, created_at::text
-FROM activity_log 
-WHERE action_type ILIKE '%testty%' 
-   OR entity_type ILIKE '%testty%' 
-   OR details ILIKE '%testty%'
-   OR created_at::text ILIKE '%testty%';
+-- Try to search other tables only if they exist (using conditional logic)
+DO $$
+BEGIN
+    -- Check if goals table exists and search it
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'goals' AND table_schema = 'public') THEN
+        RAISE NOTICE 'Goals table exists, searching...';
+        PERFORM * FROM goals WHERE title ILIKE '%testty%' OR created_at::text ILIKE '%testty%';
+    END IF;
+    
+    -- Check if long_term_goals table exists and search it
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'long_term_goals' AND table_schema = 'public') THEN
+        RAISE NOTICE 'Long term goals table exists, searching...';
+        PERFORM * FROM long_term_goals WHERE title ILIKE '%testty%' OR created_at::text ILIKE '%testty%';
+    END IF;
+    
+    -- Check if activity_log table exists and search it
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'activity_log' AND table_schema = 'public') THEN
+        RAISE NOTICE 'Activity log table exists, searching...';
+        PERFORM * FROM activity_log WHERE details ILIKE '%testty%' OR created_at::text ILIKE '%testty%';
+    END IF;
+END $$;
 
 -- Final summary
-SELECT 'Search complete - any results above show where Testty was found' as summary;
+SELECT 'Search complete - check results above for any Testty occurrences' as summary;
