@@ -24,6 +24,9 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Label } from "@/components/ui/label"
 import {
   Dialog,
@@ -33,15 +36,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 // Auth components
 import { useAuth } from "@/components/auth/auth-provider"
-import { UserProfile } from "@/components/profile/user-profile"
-import { AuthScreen } from "@/components/auth/auth-screen"
 import { SignOutButton } from "@/components/auth/sign-out-button"
+import { AuthScreen } from "@/components/auth/auth-screen"
+import { UserProfile } from "@/components/auth/user-profile"
 
 // Drag and Drop imports
 import {
@@ -1263,14 +1263,7 @@ function GoalTrackerApp() {
             console.log("Daily tasks structure:", JSON.stringify(taskData.dailyTasks, null, 2))
             console.log("Weekly tasks structure:", JSON.stringify(taskData.weeklyTasks, null, 2))
 
-            // Merge database data with existing initialGoalsData structure
-            setGoalsData((prev) => {
-              const merged = { ...prev }
-              Object.keys(dbData).forEach((categoryName) => {
-                merged[categoryName] = dbData[categoryName]
-              })
-              return merged
-            })
+            setGoalsData(dbData)
 
             console.log("=== FORCING STATE UPDATES ===")
 
@@ -3311,7 +3304,7 @@ function GoalTrackerApp() {
                         <div className="flex items-start space-x-3">
                           <Checkbox
                             checked={goal.status === "completed"}
-                            onCheckedChange={(checked) => {
+                            onCheckedChange={async (checked) => {
                               setLongTermGoals((prev) => ({
                                 ...prev,
                                 "5-year": {
@@ -3442,131 +3435,112 @@ function GoalTrackerApp() {
           </TabsContent>
         </Tabs>
 
-        {/* User Profile Modal */}
-        {showProfile && <UserProfile onClose={() => setShowProfile(false)} />}
-
-        {/* All existing dialogs remain the same... */}
+        {/* Dialogs */}
         {/* Add Goal Dialog */}
         <Dialog open={showAddGoal} onOpenChange={setShowAddGoal}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>{editingGoal ? "Edit Goal" : "Add New Goal"}</DialogTitle>
               <DialogDescription>
-                {editingGoal
-                  ? "Update your goal details and targets."
-                  : "Create a new goal for your 12-week year. Choose a category and set your target."}
+                {editingGoal ? "Update your goal details" : "Create a new goal to track your progress"}
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="category">Category</Label>
-                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.keys(goalsData).map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="title">Goal Title</Label>
+                <Label htmlFor="goal-title">Goal Title</Label>
                 <Input
-                  id="title"
-                  placeholder="e.g., Read 12 books"
+                  id="goal-title"
+                  placeholder="e.g., Run 100 miles, Read 12 books"
                   value={newGoal.title}
-                  onChange={(e) => {
-                    const title = e.target.value
-                    const detectedNumber = extractNumberFromTitle(title)
-                    setNewGoal((prev) => ({
-                      ...prev,
-                      title,
-                      targetCount: detectedNumber || prev.targetCount,
-                      weeklyTarget: detectedNumber ? Math.ceil(detectedNumber / 12) : prev.weeklyTarget,
-                    }))
-                  }}
+                  onChange={(e) => setNewGoal((prev) => ({ ...prev, title: e.target.value }))}
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="description">Description</Label>
-                <Input
-                  id="description"
+                <Label htmlFor="goal-description">Description</Label>
+                <Textarea
+                  id="goal-description"
                   placeholder="Brief description of your goal"
                   value={newGoal.description}
                   onChange={(e) => setNewGoal((prev) => ({ ...prev, description: e.target.value }))}
                 />
               </div>
-              {extractNumberFromTitle(newGoal.title) > 0 && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="target">Target Count</Label>
-                    <Input
-                      id="target"
-                      type="number"
-                      placeholder="12"
-                      value={newGoal.targetCount || ""}
-                      onChange={(e) =>
-                        setNewGoal((prev) => ({
-                          ...prev,
-                          targetCount: Number.parseInt(e.target.value) || 0,
-                        }))
-                      }
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="weekly">Weekly Target</Label>
-                    <Input
-                      id="weekly"
-                      type="number"
-                      step="0.1"
-                      placeholder="1.0"
-                      value={newGoal.weeklyTarget || ""}
-                      onChange={(e) =>
-                        setNewGoal((prev) => ({
-                          ...prev,
-                          weeklyTarget: Number.parseFloat(e.target.value) || 0,
-                        }))
-                      }
-                    />
-                  </div>
+              {!editingGoal && (
+                <div className="grid gap-2">
+                  <Label htmlFor="goal-category">Category</Label>
+                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.keys(goalsData).map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
-
-              {extractNumberFromTitle(newGoal.title) > 0 && (
-                <p className="text-xs text-gray-500">
-                  Weekly target will auto-calculate if left empty (Target ÷ 12 weeks)
-                </p>
-              )}
-
-              {extractNumberFromTitle(newGoal.title) === 0 && newGoal.title.trim() && (
-                <p className="text-sm text-blue-600 bg-blue-50 p-3 rounded-lg">
-                  💡 <strong>Tip:</strong> Include a number in your goal title (e.g., "Read 12 books", "Save $5,000") to
-                  set targets and track progress.
-                </p>
-              )}
+              <div className="grid gap-2">
+                <Label htmlFor="goal-target">Target Count</Label>
+                <Input
+                  id="goal-target"
+                  type="number"
+                  placeholder="e.g., 100, 12, 1"
+                  value={newGoal.targetCount || ""}
+                  onChange={(e) =>
+                    setNewGoal((prev) => ({ ...prev, targetCount: Number.parseInt(e.target.value) || 0 }))
+                  }
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="goal-weekly">Weekly Target (optional)</Label>
+                <Input
+                  id="goal-weekly"
+                  type="number"
+                  step="0.1"
+                  placeholder="Auto-calculated if left empty"
+                  value={newGoal.weeklyTarget || ""}
+                  onChange={(e) =>
+                    setNewGoal((prev) => ({ ...prev, weeklyTarget: Number.parseFloat(e.target.value) || 0 }))
+                  }
+                />
+              </div>
             </div>
             <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowAddGoal(false)
-                  setEditingGoal(null)
-                  setNewGoal({ title: "", description: "", targetCount: 0, weeklyTarget: 0 })
-                }}
-              >
+              <Button variant="outline" onClick={() => setShowAddGoal(false)}>
                 Cancel
               </Button>
-              <Button
-                onClick={editingGoal ? saveEditedGoal : addNewGoal}
-                disabled={!selectedCategory || !newGoal.title}
-                className="bg-black hover:bg-gray-800 text-white"
-              >
-                {editingGoal ? "Save Changes" : "Add Goal"}
+              <Button onClick={editingGoal ? saveEditedGoal : addNewGoal}>
+                {editingGoal ? "Update Goal" : "Add Goal"}
               </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Add Category Dialog */}
+        <Dialog open={showAddCategory} onOpenChange={setShowAddCategory}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Add New Category</DialogTitle>
+              <DialogDescription>Create a new category to organize your goals</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="category-name">Category Name</Label>
+                <Input
+                  id="category-name"
+                  placeholder="e.g., Health, Business, Personal"
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowAddCategory(false)}>
+                Cancel
+              </Button>
+              <Button onClick={addNewCategory}>Add Category</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -3577,32 +3551,30 @@ function GoalTrackerApp() {
             <DialogHeader>
               <DialogTitle>{editingWeeklyTask ? "Edit Weekly Task" : "Add Weekly Task"}</DialogTitle>
               <DialogDescription>
-                {editingWeeklyTask
-                  ? "Update your weekly task details and settings."
-                  : "Create a task to work on this week that contributes to your 12-week goals."}
+                {editingWeeklyTask ? "Update your weekly task" : `Create a weekly task for Week ${currentWeek}`}
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="taskTitle">Task Title</Label>
+                <Label htmlFor="weekly-task-title">Task Title</Label>
                 <Input
-                  id="taskTitle"
-                  placeholder="e.g., Complete pitch deck"
+                  id="weekly-task-title"
+                  placeholder="e.g., Complete project proposal"
                   value={newWeeklyTask.title}
                   onChange={(e) => setNewWeeklyTask((prev) => ({ ...prev, title: e.target.value }))}
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="taskDescription">Description</Label>
-                <Input
-                  id="taskDescription"
+                <Label htmlFor="weekly-task-description">Description (optional)</Label>
+                <Textarea
+                  id="weekly-task-description"
                   placeholder="Brief description of the task"
                   value={newWeeklyTask.description}
                   onChange={(e) => setNewWeeklyTask((prev) => ({ ...prev, description: e.target.value }))}
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="taskCategory">Category</Label>
+                <Label htmlFor="weekly-task-category">Category</Label>
                 <Select
                   value={newWeeklyTask.category}
                   onValueChange={(value) => setNewWeeklyTask((prev) => ({ ...prev, category: value }))}
@@ -3621,26 +3593,11 @@ function GoalTrackerApp() {
               </div>
             </div>
             <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowAddWeeklyTask(false)
-                  setEditingWeeklyTask(null)
-                  setNewWeeklyTask({
-                    title: "",
-                    description: "",
-                    category: "",
-                    goalId: "",
-                  })
-                }}
-              >
+              <Button variant="outline" onClick={() => setShowAddWeeklyTask(false)}>
                 Cancel
               </Button>
-              <Button
-                onClick={editingWeeklyTask ? saveEditedWeeklyTask : addWeeklyTask}
-                disabled={!newWeeklyTask.title || !newWeeklyTask.category}
-              >
-                {editingWeeklyTask ? "Save Changes" : "Add Task"}
+              <Button onClick={editingWeeklyTask ? saveEditedWeeklyTask : addWeeklyTask}>
+                {editingWeeklyTask ? "Update Task" : "Add Task"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -3653,518 +3610,56 @@ function GoalTrackerApp() {
               <DialogTitle>{editingDailyTask ? "Edit Daily Task" : "Add Daily Task"}</DialogTitle>
               <DialogDescription>
                 {editingDailyTask
-                  ? "Update your daily task details and timing."
-                  : newDailyTask.category
-                    ? `Create a daily task for ${selectedDay} in ${newDailyTask.category}.`
-                    : `Create a daily task for ${selectedDay} that supports your weekly and 12-week goals.`}
+                  ? "Update your daily task"
+                  : `Create a daily task for ${selectedDay} in ${newDailyTask.category || "selected category"}.`}
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="dailyTaskTitle">Task Title</Label>
+                <Label htmlFor="daily-task-title">Task Title</Label>
                 <Input
-                  id="dailyTaskTitle"
+                  id="daily-task-title"
                   placeholder="e.g., Morning workout"
                   value={newDailyTask.title}
                   onChange={(e) => setNewDailyTask((prev) => ({ ...prev, title: e.target.value }))}
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="dailyTaskDescription">Description (optional)</Label>
-                <Input
-                  id="dailyTaskDescription"
+                <Label htmlFor="daily-task-description">Description (optional)</Label>
+                <Textarea
+                  id="daily-task-description"
                   placeholder="Brief description of the task"
                   value={newDailyTask.description}
                   onChange={(e) => setNewDailyTask((prev) => ({ ...prev, description: e.target.value }))}
                 />
               </div>
-              {/* Only show category dropdown if no category is pre-selected */}
-              {!newDailyTask.category && (
-                <div className="grid gap-2">
-                  <Label htmlFor="dailyTaskCategory">Category</Label>
-                  <Select
-                    value={newDailyTask.category}
-                    onValueChange={(value) => setNewDailyTask((prev) => ({ ...prev, category: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.keys(goalsData).map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-              {/* Show selected category as a badge if pre-selected */}
-              {newDailyTask.category && (
-                <div className="grid gap-2">
-                  <Label>Category</Label>
-                  <div className="flex items-center">
-                    <Badge
-                      className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(newDailyTask.category)}`}
-                    >
-                      {newDailyTask.category}
-                    </Badge>
-                  </div>
-                </div>
-              )}
-              <div className="grid gap-4"></div>
-            </div>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowAddDailyTask(false)
-                  setEditingDailyTask(null)
-                  setNewDailyTask({
-                    title: "",
-                    description: "",
-                    category: "",
-                    goalId: "",
-                  })
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={editingDailyTask ? saveEditedDailyTask : addDailyTask}
-                disabled={!newDailyTask.title || !newDailyTask.category}
-              >
-                {editingDailyTask ? "Save Changes" : "Add Task"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Add Category Dialog */}
-        <Dialog open={showAddCategory} onOpenChange={setShowAddCategory}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Add New Category</DialogTitle>
-              <DialogDescription>
-                Create a new category to organize your goals. Category names will be automatically converted to title
-                case.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="categoryName">Category Name</Label>
-                <Input
-                  id="categoryName"
-                  placeholder="e.g., Career Development"
-                  value={newCategoryName}
-                  onChange={(e) => setNewCategoryName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      addNewCategory()
-                    }
-                  }}
-                />
-              </div>
-              <p className="text-xs text-gray-500">
-                Examples: Career Development, Hobbies, Side Projects, Travel Goals
-              </p>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowAddCategory(false)}>
-                Cancel
-              </Button>
-              <Button onClick={addNewCategory} disabled={!newCategoryName.trim()}>
-                Add Category
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Delete Goal Dialog */}
-        <Dialog open={!!showDeleteGoal} onOpenChange={() => setShowDeleteGoal(null)}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Delete Goal</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to delete "{showDeleteGoal?.title}"? This action cannot be undone.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowDeleteGoal(null)}>
-                Cancel
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={() => showDeleteGoal && deleteGoal(showDeleteGoal.category, showDeleteGoal.goalId)}
-              >
-                Delete Goal
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Delete Category Dialog */}
-        <Dialog open={!!showDeleteCategory} onOpenChange={() => setShowDeleteCategory(null)}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Delete Category</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to delete the "{showDeleteCategory}" category? This action cannot be undone. You
-                can only delete empty categories.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowDeleteCategory(null)}>
-                Cancel
-              </Button>
-              <Button variant="destructive" onClick={() => showDeleteCategory && deleteCategory(showDeleteCategory)}>
-                Delete Category
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Delete Weekly Task Confirmation Dialog */}
-        <Dialog open={!!showDeleteWeeklyTask} onOpenChange={() => setShowDeleteWeeklyTask(null)}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Delete Weekly Task</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to delete "{showDeleteWeeklyTask?.title}"? This action cannot be undone.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowDeleteWeeklyTask(null)}>
-                Cancel
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={() => showDeleteWeeklyTask && deleteWeeklyTask(showDeleteWeeklyTask.taskId)}
-              >
-                Delete Task
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Delete Daily Task Confirmation Dialog */}
-        <Dialog open={!!showDeleteDailyTask} onOpenChange={() => setShowDeleteDailyTask(null)}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Delete Daily Task</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to delete "{showDeleteDailyTask?.title}"? This action cannot be undone.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowDeleteDailyTask(null)}>
-                Cancel
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={() =>
-                  showDeleteDailyTask && deleteDailyTask(showDeleteDailyTask.day, showDeleteDailyTask.taskId)
-                }
-              >
-                Delete Task
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Edit Category Dialog */}
-        <Dialog open={!!showEditCategory} onOpenChange={() => setShowEditCategory(null)}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Edit Category</DialogTitle>
-              <DialogDescription>Update the category name and choose a new color theme.</DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="editCategoryName">Category Name</Label>
-                <Input
-                  id="editCategoryName"
-                  value={editCategoryName}
-                  onChange={(e) => setEditCategoryName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      saveEditedCategory()
-                    }
-                  }}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label>Color Theme</Label>
-                <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto">
-                  {colorOptions.map((color) => (
-                    <button
-                      key={color.name}
-                      onClick={() => setEditCategoryColor(color.value)}
-                      className={`p-2 rounded-lg border-2 transition-all ${
-                        editCategoryColor === color.value
-                          ? "border-gray-400 ring-2 ring-blue-500"
-                          : "border-gray-200 hover:border-gray-300"
-                      }`}
-                    >
-                      <div className={`px-3 py-1 rounded-full text-xs font-medium border ${color.value}`}>
-                        {color.name}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="grid gap-2">
-                <Label>Preview</Label>
-                <div className="flex items-center">
-                  <Badge className={`px-3 py-1 rounded-full text-sm font-medium border ${editCategoryColor}`}>
-                    {editCategoryName || "Category Name"}
-                  </Badge>
-                </div>
+                <Label htmlFor="daily-task-category">Category</Label>
+                <Badge
+                  className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(newDailyTask.category)}`}
+                >
+                  {newDailyTask.category}
+                </Badge>
               </div>
             </div>
             <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowEditCategory(null)
-                  setEditCategoryName("")
-                  setEditCategoryColor("")
-                }}
-              >
+              <Button variant="outline" onClick={() => setShowAddDailyTask(false)}>
                 Cancel
               </Button>
-              <Button onClick={saveEditedCategory} disabled={!editCategoryName.trim()}>
-                Save Changes
+              <Button onClick={editingDailyTask ? saveEditedDailyTask : addDailyTask}>
+                {editingDailyTask ? "Update Task" : "Add Task"}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
 
-        {/* Add Long-Term Goal Dialog */}
-        <Dialog open={showAddLongTermGoal} onOpenChange={setShowAddLongTermGoal}>
-          <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {editingLongTermGoal ? "Edit Goal" : `Add ${selectedTimeframe === "1-year" ? "1-Year" : "5-Year"} Goal`}
-              </DialogTitle>
-              <DialogDescription>
-                {editingLongTermGoal
-                  ? "Update your long-term goal details and milestones."
-                  : "Create a long-term goal with milestones to track your progress over time."}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="longTermTitle">Goal Title</Label>
-                <Input
-                  id="longTermTitle"
-                  placeholder="e.g., Build a $10M business"
-                  value={newLongTermGoal.title}
-                  onChange={(e) => setNewLongTermGoal((prev) => ({ ...prev, title: e.target.value }))}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="longTermDescription">Description</Label>
-                <Textarea
-                  id="longTermDescription"
-                  placeholder="Detailed description of what you want to achieve..."
-                  value={newLongTermGoal.description}
-                  onChange={(e) => setNewLongTermGoal((prev) => ({ ...prev, description: e.target.value }))}
-                  className="min-h-[80px]"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="longTermCategory">Category</Label>
-                  <Select
-                    value={newLongTermGoal.category}
-                    onValueChange={(value) => setNewLongTermGoal((prev) => ({ ...prev, category: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Business">Business</SelectItem>
-                      <SelectItem value="Personal">Personal</SelectItem>
-                      <SelectItem value="Financial">Financial</SelectItem>
-                      <SelectItem value="Health">Health</SelectItem>
-                      <SelectItem value="Relationships">Relationships</SelectItem>
-                      <SelectItem value="Education">Education</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="longTermTargetDate">Target Date</Label>
-                  <Input
-                    id="longTermTargetDate"
-                    type="date"
-                    value={newLongTermGoal.targetDate}
-                    onChange={(e) => setNewLongTermGoal((prev) => ({ ...prev, targetDate: e.target.value }))}
-                  />
-                </div>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="longTermNotes">Notes (optional)</Label>
-                <Textarea
-                  id="longTermNotes"
-                  placeholder="Additional context, strategy, or thoughts..."
-                  value={newLongTermGoal.notes}
-                  onChange={(e) => setNewLongTermGoal((prev) => ({ ...prev, notes: e.target.value }))}
-                  className="min-h-[60px]"
-                />
-              </div>
-
-              {/* Milestones */}
-              <div className="grid gap-2">
-                <Label>Milestones (4 key checkpoints)</Label>
-                <div className="space-y-3">
-                  {newLongTermGoal.milestones.map((milestone, index) => (
-                    <div key={index} className="grid grid-cols-2 gap-2">
-                      <Input
-                        placeholder={`Milestone ${index + 1} title`}
-                        value={milestone.title}
-                        onChange={(e) => {
-                          const updatedMilestones = [...newLongTermGoal.milestones]
-                          updatedMilestones[index] = { ...updatedMilestones[index], title: e.target.value }
-                          setNewLongTermGoal((prev) => ({ ...prev, milestones: updatedMilestones }))
-                        }}
-                      />
-                      <Input
-                        type="date"
-                        value={milestone.targetDate}
-                        onChange={(e) => {
-                          const updatedMilestones = [...newLongTermGoal.milestones]
-                          updatedMilestones[index] = { ...updatedMilestones[index], targetDate: e.target.value }
-                          setNewLongTermGoal((prev) => ({ ...prev, milestones: updatedMilestones }))
-                        }}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowAddLongTermGoal(false)
-                  setEditingLongTermGoal(null)
-                  setNewLongTermGoal({
-                    title: "",
-                    description: "",
-                    targetDate: "",
-                    category: "",
-                    notes: "",
-                    milestones: [
-                      { title: "", targetDate: "" },
-                      { title: "", targetDate: "" },
-                      { title: "", targetDate: "" },
-                      { title: "", targetDate: "" },
-                    ],
-                  })
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={
-                  editingLongTermGoal
-                    ? saveEditedLongTermGoal
-                    : () => {
-                        if (!newLongTermGoal.title || !newLongTermGoal.category || !newLongTermGoal.targetDate) return
-
-                        const goalId = `${selectedTimeframe}_${newLongTermGoal.category.toLowerCase()}_${Date.now()}`
-                        const newGoal = {
-                          id: goalId,
-                          title: newLongTermGoal.title,
-                          description: newLongTermGoal.description,
-                          targetDate: newLongTermGoal.targetDate,
-                          category: newLongTermGoal.category,
-                          status: "in-progress" as const,
-                          notes: newLongTermGoal.notes,
-                          milestones: newLongTermGoal.milestones
-                            .filter((m) => m.title && m.targetDate)
-                            .map((m, index) => ({
-                              id: `${goalId}_m${index + 1}`,
-                              title: m.title,
-                              completed: false,
-                              targetDate: m.targetDate,
-                            })),
-                        }
-
-                        setLongTermGoals((prev) => ({
-                          ...prev,
-                          [selectedTimeframe]: {
-                            ...prev[selectedTimeframe],
-                            [newLongTermGoal.category]: [
-                              ...(prev[selectedTimeframe][newLongTermGoal.category] || []),
-                              newGoal,
-                            ],
-                          },
-                        }))
-
-                        setNewLongTermGoal({
-                          title: "",
-                          description: "",
-                          targetDate: "",
-                          category: "",
-                          notes: "",
-                          milestones: [
-                            { title: "", targetDate: "" },
-                            { title: "", targetDate: "" },
-                            { title: "", targetDate: "" },
-                            { title: "", targetDate: "" },
-                          ],
-                        })
-                        setShowAddLongTermGoal(false)
-                      }
-                }
-                disabled={!newLongTermGoal.title || !newLongTermGoal.category || !newLongTermGoal.targetDate}
-                className="bg-black hover:bg-gray-800 text-white"
-              >
-                {editingLongTermGoal ? "Save Changes" : "Add Goal"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Delete Long-Term Goal Dialog */}
-        <Dialog open={!!showDeleteLongTermGoal} onOpenChange={() => setShowDeleteLongTermGoal(null)}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>
-                Delete {showDeleteLongTermGoal?.timeframe === "1-year" ? "1-Year" : "5-Year"} Goal
-              </DialogTitle>
-              <DialogDescription>
-                Are you sure you want to delete "{showDeleteLongTermGoal?.title}"? This action cannot be undone.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowDeleteLongTermGoal(null)}>
-                Cancel
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={() =>
-                  showDeleteLongTermGoal &&
-                  deleteLongTermGoal(
-                    showDeleteLongTermGoal.timeframe,
-                    showDeleteLongTermGoal.category,
-                    showDeleteLongTermGoal.goalId,
-                  )
-                }
-              >
-                Delete Goal
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        {/* User Profile Dialog */}
+        {showProfile && <UserProfile onClose={() => setShowProfile(false)} />}
       </div>
     </div>
   )
 }
 
-// Define the function
 async function loadCategoriesAndGoalsFromDB(userId: string) {
   try {
     const { data: categories, error: categoriesError } = await supabase
@@ -4210,27 +3705,15 @@ async function loadCategoriesAndGoalsFromDB(userId: string) {
   }
 }
 
-// Helper function to get the week number
-Date.prototype.getWeek = function () {
-  var date = new Date(this.getTime())
-  date.setHours(0, 0, 0, 0)
-  // Thursday in current week decides the year.
-  date.setDate(date.getDate() + 3 - ((date.getDay() + 6) % 7))
-  // January 4 is always in week 1.
-  var week1 = new Date(date.getFullYear(), 0, 4)
-  // Adjust to Thursday in week 1 and count number of weeks from date to week1.
-  return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) / 7)
-}
-
 export default function Page() {
-  const { user, isLoading } = useAuth()
+  const { user, loading } = useAuth()
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#05a7b0] mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Goal Tracker</h1>
+          <p className="text-gray-600">Loading your goals and tasks...</p>
         </div>
       </div>
     )
