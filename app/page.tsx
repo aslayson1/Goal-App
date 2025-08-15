@@ -2497,7 +2497,7 @@ function GoalTrackerApp() {
             description: goal.description || "",
             targetDate: goal.target_date,
             category: goal.category,
-            status: goal.status,
+            status: goal.completed ? "completed" : "in-progress",
             notes: goal.notes || "",
             milestones: goal.milestones || [],
           })
