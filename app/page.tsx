@@ -2221,12 +2221,7 @@ function GoalTrackerApp() {
         const categoryName = task.categories?.name || "Uncategorized"
 
         if (task.task_type === "weekly") {
-          const currentDate = new Date()
-          const startOfYear = new Date(currentDate.getFullYear(), 0, 1)
-          const weekNumber = Math.ceil(
-            ((currentDate.getTime() - startOfYear.getTime()) / 86400000 + startOfYear.getDay() + 1) / 7,
-          )
-          const weekKey = `Week ${weekNumber}`
+          const weekKey = `Week ${currentWeek}`
           console.log(`Adding weekly task to current ${weekKey}`)
 
           const weeklyTask: WeeklyTask = {
