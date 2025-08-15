@@ -2461,6 +2461,63 @@ function GoalTrackerApp() {
     }
   }
 
+  const loadLongTermGoalsFromDB = async () => {
+    if (!user?.id) return
+
+    try {
+      const { data: longTermGoalsData, error } = await supabase
+        .from("long_term_goals")
+        .select("*")
+        .eq("user_id", user.id)
+
+      if (error) throw error
+
+      if (longTermGoalsData && longTermGoalsData.length > 0) {
+        // Group goals by timeframe and category
+        const groupedGoals: LongTermGoalsData = {
+          "1-year": {},
+          "5-year": {},
+        }
+
+        longTermGoalsData.forEach((goal) => {
+          const timeframe = goal.timeframe as "1-year" | "5-year"
+          const category = goal.category
+
+          if (!groupedGoals[timeframe][category]) {
+            groupedGoals[timeframe][category] = []
+          }
+
+          groupedGoals[timeframe][category].push({
+            id: goal.id,
+            title: goal.title,
+            description: goal.description || "",
+            targetDate: goal.target_date,
+            category: goal.category,
+            status: goal.status,
+            notes: goal.notes || "",
+            milestones: goal.milestones || [],
+          })
+        })
+
+        // Merge with initial data for categories that don't exist in database
+        const mergedGoals: LongTermGoalsData = {
+          "1-year": { ...initialLongTermGoals["1-year"], ...groupedGoals["1-year"] },
+          "5-year": { ...initialLongTermGoals["5-year"], ...groupedGoals["5-year"] },
+        }
+
+        setLongTermGoals(mergedGoals)
+      }
+    } catch (error) {
+      console.error("Error loading long-term goals:", error)
+    }
+  }
+
+  useEffect(() => {
+    if (user?.id) {
+      loadLongTermGoalsFromDB()
+    }
+  }, [user?.id])
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -3404,15 +3461,38 @@ function GoalTrackerApp() {
                           <Checkbox
                             checked={goal.status === "completed"}
                             onCheckedChange={async (checked) => {
-                              setLongTermGoals((prev) => ({
-                                ...prev,
-                                "5-year": {
-                                  ...prev["5-year"],
-                                  [category]: prev["5-year"][category].map((g) =>
-                                    g.id === goal.id ? { ...g, status: checked ? "completed" : "in-progress" } : g,
-                                  ),
-                                },
-                              }))
+                              const newStatus = checked ? "completed" : "in-progress"
+
+                              try {
+                                const { error } = await supabase
+                                  .from("long_term_goals")
+                                  .update({ status: newStatus })
+                                  .eq("id", goal.id)
+
+                                if (error) throw error
+
+                                setLongTermGoals((prev) => ({
+                                  ...prev,
+                                  "5-year": {
+                                    ...prev["5-year"],
+                                    [category]: prev["5-year"][category].map((g) =>
+                                      g.id === goal.id ? { ...g, status: newStatus } : g,
+                                    ),
+                                  },
+                                }))
+                              } catch (error) {
+                                console.error("Error updating long-term goal:", error)
+                                // Revert local state if database update fails
+                                setLongTermGoals((prev) => ({
+                                  ...prev,
+                                  "5-year": {
+                                    ...prev["5-year"],
+                                    [category]: prev["5-year"][category].map((g) =>
+                                      g.id === goal.id ? { ...g, status: goal.status } : g,
+                                    ),
+                                  },
+                                }))
+                              }
                             }}
                             className={`h-5 w-5 mt-0.5 flex-shrink-0 ${checkboxStyles}`}
                           />
