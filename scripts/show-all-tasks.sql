@@ -1,3 +1,4 @@
+-- Updated table name from task_events to tasks
 SELECT 
   id,
   title,
@@ -9,5 +10,5 @@ SELECT
   user_id,
   category_id,
   goal_id
-FROM task_events 
+FROM tasks 
 ORDER BY created_at DESC;
