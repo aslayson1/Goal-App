@@ -974,7 +974,26 @@ function GoalTrackerApp() {
   const [goalsData, setGoalsData] = useState<GoalsData>(initialGoalsData)
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set())
   const [activeView, setActiveView] = useState("daily")
-  const [currentWeek, setCurrentWeek] = useState(4)
+  const [currentWeek, setCurrentWeek] = useState(() => {
+    // Get or set the 12-week start date
+    const startDateKey = `goalTracker_startDate_${user?.id || "default"}`
+    let startDate = localStorage.getItem(startDateKey)
+
+    if (!startDate) {
+      // First time user - set start date to today
+      startDate = new Date().toISOString()
+      localStorage.setItem(startDateKey, startDate)
+    }
+
+    // Calculate current week based on start date
+    const start = new Date(startDate)
+    const today = new Date()
+    const daysDiff = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+    const weekNumber = Math.floor(daysDiff / 7) + 1
+
+    // Ensure week is between 1 and 12
+    return Math.min(Math.max(weekNumber, 1), 12)
+  })
   const [selectedDay, setSelectedDay] = useState(() => {
     const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
     const today = new Date().getDay()
@@ -1254,6 +1273,22 @@ function GoalTrackerApp() {
             console.error("Database connection failed:", error)
           } else {
             console.log("Database connection successful!")
+
+            const startDateKey = `goalTracker_startDate_${user.id}`
+            let startDate = localStorage.getItem(startDateKey)
+
+            if (!startDate) {
+              startDate = new Date().toISOString()
+              localStorage.setItem(startDateKey, startDate)
+            }
+
+            const start = new Date(startDate)
+            const today = new Date()
+            const daysDiff = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+            const weekNumber = Math.floor(daysDiff / 7) + 1
+            const calculatedWeek = Math.min(Math.max(weekNumber, 1), 12)
+
+            setCurrentWeek(calculatedWeek)
 
             const dbData = await loadCategoriesAndGoalsFromDB(user.id)
             const taskData = await loadTasksFromDB(user.id)
