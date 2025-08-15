@@ -3279,16 +3279,18 @@ function GoalTrackerApp() {
                           <Checkbox
                             checked={goal.status === "completed"}
                             onCheckedChange={async (checked) => {
-                              const newStatus = checked ? "completed" : "in-progress"
-
                               try {
                                 const { error } = await supabase
                                   .from("long_term_goals")
-                                  .update({ status: newStatus })
+                                  .update({
+                                    completed: !!checked,
+                                    completed_at: checked ? new Date().toISOString() : null,
+                                  })
                                   .eq("id", goal.id)
 
                                 if (error) throw error
 
+                                const newStatus = checked ? "completed" : "in-progress"
                                 setLongTermGoals((prev) => ({
                                   ...prev,
                                   "1-year": {
@@ -3461,16 +3463,18 @@ function GoalTrackerApp() {
                           <Checkbox
                             checked={goal.status === "completed"}
                             onCheckedChange={async (checked) => {
-                              const newStatus = checked ? "completed" : "in-progress"
-
                               try {
                                 const { error } = await supabase
                                   .from("long_term_goals")
-                                  .update({ status: newStatus })
+                                  .update({
+                                    completed: !!checked,
+                                    completed_at: checked ? new Date().toISOString() : null,
+                                  })
                                   .eq("id", goal.id)
 
                                 if (error) throw error
 
+                                const newStatus = checked ? "completed" : "in-progress"
                                 setLongTermGoals((prev) => ({
                                   ...prev,
                                   "5-year": {
