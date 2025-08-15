@@ -2227,7 +2227,7 @@ function GoalTrackerApp() {
             ((currentDate.getTime() - startOfYear.getTime()) / 86400000 + startOfYear.getDay() + 1) / 7,
           )
           const weekKey = `Week ${weekNumber}`
-          console.log(`Adding weekly task to ${weekKey}`)
+          console.log(`Adding weekly task to current ${weekKey}`)
 
           const weeklyTask: WeeklyTask = {
             id: task.id,
@@ -2247,7 +2247,7 @@ function GoalTrackerApp() {
         } else if (task.task_type === "daily") {
           const today = new Date()
           const day = today.toLocaleDateString("en-US", { weekday: "long" })
-          console.log(`Adding daily task to ${day}`)
+          console.log(`Adding daily task to current ${day}`)
 
           const dailyTask: DailyTask = {
             id: task.id,
