@@ -1389,11 +1389,10 @@ function GoalTrackerApp() {
         return
       }
 
-      // Update local state
-      setGoalsData((prev) => ({
-        ...prev,
-        [category]: prev[category].map((g) => (g.id === goalId ? { ...g, currentCount: newProgress } : g)),
-      }))
+      if (user) {
+        const updatedGoalsData = await loadCategoriesAndGoalsFromDB(user.id)
+        setGoalsData(updatedGoalsData)
+      }
     } catch (error) {
       console.error("Error updating goal completion:", error)
     }
