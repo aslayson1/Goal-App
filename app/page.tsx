@@ -2,7 +2,7 @@
 import { supabase } from "@/lib/supabase/client"
 
 import { useState, useEffect } from "react"
-import { MoreHorizontal, Edit, Trash2, CheckCircle, Clock, GripVertical } from "lucide-react"
+// import { MoreHorizontal, Edit, Trash2, CheckCircle, Clock, GripVertical } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -800,7 +800,25 @@ function SortableWeeklyTaskItem({
           {...listeners}
           className="cursor-grab active:cursor-grabbing p-1 hover:bg-gray-200 rounded"
         >
-          <GripVertical className="h-4 w-4 text-gray-400" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="lucide lucide-grip-vertical h-4 w-4 text-gray-400"
+          >
+            <circle cx="12" cy="5" r="1" />
+            <circle cx="12" cy="19" r="1" />
+            <circle cx="5" cy="5" r="1" />
+            <circle cx="5" cy="19" r="1" />
+            <circle cx="19" cy="5" r="1" />
+            <circle cx="19" cy="19" r="1" />
+          </svg>
         </div>
         <Checkbox checked={task.completed} onCheckedChange={onToggle} className={`${checkboxStyles}`} />
         <div className="flex-1 min-w-0">
@@ -811,23 +829,81 @@ function SortableWeeklyTaskItem({
             <div className="flex items-center space-x-2">
               {task.timeBlock && (
                 <div className="flex items-center space-x-2">
-                  <Clock className="h-4 w-4 text-gray-400" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="lucide lucide-clock h-4 w-4 text-gray-400"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                  </svg>
                   <span className="text-sm text-gray-500 font-mono">{task.timeBlock}</span>
                 </div>
               )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                    <MoreHorizontal className="h-4 w-4" />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="lucide lucide-more-horizontal h-4 w-4"
+                    >
+                      <circle cx="12" cy="12" r="1" />
+                      <circle cx="19" cy="12" r="1" />
+                      <circle cx="5" cy="12" r="1" />
+                    </svg>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={onEdit}>
-                    <Edit className="h-4 w-4 mr-2" />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="lucide lucide-edit h-4 w-4 mr-2"
+                    >
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z" />
+                    </svg>
                     Edit Task
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={onDelete} className="text-red-600">
-                    <Trash2 className="h-4 w-4 mr-2" />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="lucide lucide-trash-2 h-4 w-4 mr-2"
+                    >
+                      <path d="M3 6H5H21" />
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2V6" />
+                    </svg>
                     Delete Task
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -840,7 +916,21 @@ function SortableWeeklyTaskItem({
       {task.completed && (
         <div className="flex justify-end text-xs">
           <span className="flex items-center text-green-600">
-            <CheckCircle className="h-3 w-3 mr-1" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="lucide lucide-check-circle h-3 w-3 mr-1"
+            >
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+              <polyline points="22 4 12 14.01 9 11.01" />
+            </svg>
             Completed
           </span>
         </div>
@@ -880,7 +970,25 @@ function SortableDailyTaskItem({
           {...listeners}
           className="cursor-grab active:cursor-grabbing p-1 hover:bg-gray-200 rounded"
         >
-          <GripVertical className="h-4 w-4 text-gray-400" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="lucide lucide-grip-vertical h-4 w-4 text-gray-400"
+          >
+            <circle cx="12" cy="5" r="1" />
+            <circle cx="12" cy="19" r="1" />
+            <circle cx="5" cy="5" r="1" />
+            <circle cx="5" cy="19" r="1" />
+            <circle cx="19" cy="5" r="1" />
+            <circle cx="19" cy="19" r="1" />
+          </svg>
         </div>
         <Checkbox checked={task.completed} onCheckedChange={onToggle} className={`${checkboxStyles}`} />
         <div className="flex-1 min-w-0">
@@ -891,23 +999,81 @@ function SortableDailyTaskItem({
             <div className="flex items-center space-x-2">
               {task.timeBlock && (
                 <div className="flex items-center space-x-2">
-                  <Clock className="h-4 w-4 text-gray-400" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="lucide lucide-clock h-4 w-4 text-gray-400"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                  </svg>
                   <span className="text-sm text-gray-500 font-mono">{task.timeBlock}</span>
                 </div>
               )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                    <MoreHorizontal className="h-4 w-4" />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="lucide lucide-more-horizontal h-4 w-4"
+                    >
+                      <circle cx="12" cy="12" r="1" />
+                      <circle cx="19" cy="12" r="1" />
+                      <circle cx="5" cy="12" r="1" />
+                    </svg>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={onEdit}>
-                    <Edit className="h-4 w-4 mr-2" />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="lucide lucide-edit h-4 w-4 mr-2"
+                    >
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z" />
+                    </svg>
                     Edit Task
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={onDelete} className="text-red-600">
-                    <Trash2 className="h-4 w-4 mr-2" />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="lucide lucide-trash-2 h-4 w-4 mr-2"
+                    >
+                      <path d="M3 6H5H21" />
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2V6" />
+                    </svg>
                     Delete Task
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -920,7 +1086,21 @@ function SortableDailyTaskItem({
       {task.completed && (
         <div className="flex justify-end text-xs">
           <span className="flex items-center text-green-600">
-            <CheckCircle className="h-3 w-3 mr-1" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="lucide lucide-check-circle h-3 w-3 mr-1"
+            >
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+              <polyline points="22 4 12 14.01 9 11.01" />
+            </svg>
             Completed
           </span>
         </div>
