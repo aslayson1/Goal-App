@@ -1958,14 +1958,40 @@ function GoalTrackerApp() {
     }
   }
 
-  const toggleWeeklyTask = (taskId: string) => {
+  const toggleWeeklyTask = async (taskId: string) => {
+    // Find the current task to get its completion status
+    const currentTask = weeklyTasks[`Week ${currentWeek}`]?.find((task) => task.id === taskId)
+    if (!currentTask) return
+
+    const newCompletedStatus = !currentTask.completed
+
+    // Update local state immediately for UI feedback
     setWeeklyTasks((prev) => ({
       ...prev,
       [`Week ${currentWeek}`]:
         prev[`Week ${currentWeek}`]?.map((task) =>
-          task.id === taskId ? { ...task, completed: !task.completed } : task,
+          task.id === taskId ? { ...task, completed: newCompletedStatus } : task,
         ) || [],
     }))
+
+    // Update database
+    try {
+      const { error } = await supabase.from("tasks").update({ completed: newCompletedStatus }).eq("id", taskId)
+
+      if (error) {
+        console.error("Error updating task completion:", error)
+        // Revert local state on error
+        setWeeklyTasks((prev) => ({
+          ...prev,
+          [`Week ${currentWeek}`]:
+            prev[`Week ${currentWeek}`]?.map((task) =>
+              task.id === taskId ? { ...task, completed: currentTask.completed } : task,
+            ) || [],
+        }))
+      }
+    } catch (error) {
+      console.error("Error updating task completion:", error)
+    }
   }
 
   const handleDailyTaskDragEnd = (event: DragEndEvent, category: string) => {
@@ -1990,12 +2016,39 @@ function GoalTrackerApp() {
     }
   }
 
-  const toggleDailyTask = (selectedDay: string, taskId: string) => {
+  const toggleDailyTask = async (selectedDay: string, taskId: string) => {
+    // Find the current task to get its completion status
+    const currentTask = dailyTasks[selectedDay]?.find((task) => task.id === taskId)
+    if (!currentTask) return
+
+    const newCompletedStatus = !currentTask.completed
+
+    // Update local state immediately for UI feedback
     setDailyTasks((prev) => ({
       ...prev,
       [selectedDay]:
-        prev[selectedDay]?.map((task) => (task.id === taskId ? { ...task, completed: !task.completed } : task)) || [],
+        prev[selectedDay]?.map((task) => (task.id === taskId ? { ...task, completed: newCompletedStatus } : task)) ||
+        [],
     }))
+
+    // Update database
+    try {
+      const { error } = await supabase.from("tasks").update({ completed: newCompletedStatus }).eq("id", taskId)
+
+      if (error) {
+        console.error("Error updating task completion:", error)
+        // Revert local state on error
+        setDailyTasks((prev) => ({
+          ...prev,
+          [selectedDay]:
+            prev[selectedDay]?.map((task) =>
+              task.id === taskId ? { ...task, completed: currentTask.completed } : task,
+            ) || [],
+        }))
+      }
+    } catch (error) {
+      console.error("Error updating task completion:", error)
+    }
   }
 
   const addDailyTask = async () => {
