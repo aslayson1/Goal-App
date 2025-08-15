@@ -1328,31 +1328,53 @@ function GoalTrackerApp() {
     }))
   }
 
-  const toggleBinaryGoal = (category: string, goalId: string) => {
-    setGoalsData((prev) => ({
-      ...prev,
-      [category]: prev[category].map((goal) =>
-        goal.id === goalId ? { ...goal, currentCount: goal.currentCount === 0 ? goal.targetCount : 0 } : goal,
-      ),
-    }))
+  const toggleBinaryGoal = async (category: string, goalId: string) => {
+    const goal = goalsData[category]?.find((g) => g.id === goalId)
+    if (!goal) return
+
+    const newCurrentCount = goal.currentCount === 0 ? goal.targetCount : 0
+
+    try {
+      const { error } = await supabase.from("goals").update({ current_count: newCurrentCount }).eq("id", goalId)
+
+      if (error) throw error
+
+      setGoalsData((prev) => ({
+        ...prev,
+        [category]: prev[category].map((goal) =>
+          goal.id === goalId ? { ...goal, currentCount: newCurrentCount } : goal,
+        ),
+      }))
+    } catch (error) {
+      console.error("Error updating binary goal:", error)
+    }
   }
 
-  const toggleGoalCompletion = (category: string, goalId: string) => {
-    setGoalsData((prev) => ({
-      ...prev,
-      [category]: prev[category].map((goal) =>
-        goal.id === goalId
-          ? {
-              ...goal,
-              currentCount:
-                goal.currentCount >= goal.targetCount
-                  ? Math.max(0, goal.targetCount - 1)
-                  : // If complete, set to one less than target
-                    goal.targetCount, // If not complete, mark as complete
-            }
-          : goal,
-      ),
-    }))
+  const toggleGoalCompletion = async (category: string, goalId: string) => {
+    const goal = goalsData[category]?.find((g) => g.id === goalId)
+    if (!goal) return
+
+    const newCurrentCount = goal.currentCount >= goal.targetCount ? Math.max(0, goal.targetCount - 1) : goal.targetCount
+
+    try {
+      const { error } = await supabase.from("goals").update({ current_count: newCurrentCount }).eq("id", goalId)
+
+      if (error) throw error
+
+      setGoalsData((prev) => ({
+        ...prev,
+        [category]: prev[category].map((goal) =>
+          goal.id === goalId
+            ? {
+                ...goal,
+                currentCount: newCurrentCount,
+              }
+            : goal,
+        ),
+      }))
+    } catch (error) {
+      console.error("Error updating goal completion:", error)
+    }
   }
 
   const getGoalType = (targetCount: number) => {
@@ -3086,16 +3108,29 @@ function GoalTrackerApp() {
                         <div className="flex items-start space-x-3">
                           <Checkbox
                             checked={goal.status === "completed"}
-                            onCheckedChange={(checked) => {
-                              setLongTermGoals((prev) => ({
-                                ...prev,
-                                "1-year": {
-                                  ...prev["1-year"],
-                                  [category]: prev["1-year"][category].map((g) =>
-                                    g.id === goal.id ? { ...g, status: checked ? "completed" : "in-progress" } : g,
-                                  ),
-                                },
-                              }))
+                            onCheckedChange={async (checked) => {
+                              const newStatus = checked ? "completed" : "in-progress"
+
+                              try {
+                                const { error } = await supabase
+                                  .from("long_term_goals")
+                                  .update({ status: newStatus })
+                                  .eq("id", goal.id)
+
+                                if (error) throw error
+
+                                setLongTermGoals((prev) => ({
+                                  ...prev,
+                                  "1-year": {
+                                    ...prev["1-year"],
+                                    [category]: prev["1-year"][category].map((g) =>
+                                      g.id === goal.id ? { ...g, status: newStatus } : g,
+                                    ),
+                                  },
+                                }))
+                              } catch (error) {
+                                console.error("Error updating long-term goal:", error)
+                              }
                             }}
                             className={`h-5 w-5 mt-0.5 flex-shrink-0 ${checkboxStyles}`}
                           />
