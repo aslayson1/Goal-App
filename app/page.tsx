@@ -1,16 +1,14 @@
 "use client"
 import { supabase } from "@/lib/supabase/client"
-import { DialogFooter } from "@/components/ui/dialog"
 
-import { DialogDescription } from "@/components/ui/dialog"
-
-import { DialogTitle } from "@/components/ui/dialog"
-
-import { DialogHeader } from "@/components/ui/dialog"
-
-import { DialogContent } from "@/components/ui/dialog"
-
-import { Dialog } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog"
 
 import { useState, useEffect } from "react"
 import {
@@ -42,10 +40,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 // Drag and Drop imports
 import { KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core"
-import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable"
+import { arrayMove, sortableKeyboardCoordinates, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { DndContext, closestCenter, SortableContext, verticalListSortingStrategy } from "@dnd-kit/core"
+import { DndContext, closestCenter } from "@dnd-kit/core"
 
 // Auth components
 import { useAuth } from "@/components/auth/auth-provider"
