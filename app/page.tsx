@@ -1,31 +1,21 @@
 "use client"
-import { GripVertical } from "lucide-react"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Badge } from "@/components/ui/badge"
-import { useSortable } from "@dnd-kit/sortable"
-import { CSS } from "@dnd-kit/utilities"
-import { useState } from "react"
+import { supabase } from "@/lib/supabase/client"
+
+import { useState, useEffect } from "react"
+import { MoreHorizontal, Edit, Trash2, CheckCircle, Clock, GripVertical } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, MoreHorizontal, User, LogOut } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from "@dnd-kit/core"
-import { SortableContext, verticalListSortingStrategy, sortableKeyboardCoordinates, arrayMove } from "@dnd-kit/sortable"
+import { Checkbox } from "@/components/ui/checkbox"
+
+// Auth components
 import { useAuth } from "@/components/auth/auth-provider"
 import { AuthScreen } from "@/components/auth/auth-screen"
-import { supabase } from "@/lib/supabase/client"
+
+// Drag and Drop imports
+import { KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core"
+import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable"
+import { useSortable } from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
 
 // Custom CSS class for white checkbox background with thinner border
 const checkboxStyles =
@@ -818,29 +808,461 @@ function SortableWeeklyTaskItem({
             <h3 className={`font-medium ${task.completed ? "line-through text-gray-500" : "text-gray-900"}`}>
               {task.title}
             </h3>
-            <Badge className={`bg-${getPriorityColor(task.priority)} text-white`}>{task.priority}</Badge>
+            <div className="flex items-center space-x-2">
+              {task.timeBlock && (
+                <div className="flex items-center space-x-2">
+                  <Clock className="h-4 w-4 text-gray-400" />
+                  <span className="text-sm text-gray-500 font-mono">{task.timeBlock}</span>
+                </div>
+              )}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={onEdit}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit Task
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={onDelete} className="text-red-600">
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Task
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
-          <p className="text-sm text-gray-500">{task.description}</p>
         </div>
       </div>
+      <p className="text-sm text-gray-600 mb-2">{task.description}</p>
+      {task.completed && (
+        <div className="flex justify-end text-xs">
+          <span className="flex items-center text-green-600">
+            <CheckCircle className="h-3 w-3 mr-1" />
+            Completed
+          </span>
+        </div>
+      )}
     </div>
   )
 }
 
-// Main Component
-const Page = () => {
-  const { user, loading } = useAuth()
-  const [activeTab, setActiveTab] = useState("daily")
-  const [selectedDay, setSelectedDay] = useState("Monday")
-  const [selectedWeek, setSelectedWeek] = useState("Week 4")
-  const [goalsData, setGoalsData] = useState<GoalsData>(initialGoalsData)
-  const [longTermGoals, setLongTermGoals] = useState<LongTermGoalsData>(initialLongTermGoals)
-  const [weeklyTasks, setWeeklyTasks] = useState<{ [week: string]: WeeklyTask[] }>({
-    [selectedWeek]: initialWeeklyTasks[selectedWeek] || [],
-  })
-  const [dailyTasks, setDailyTasks] = useState<{ [day: string]: DailyTask[] }>(initialDailyTasks)
-  const [showProfile, setShowProfile] = useState(false)
+function SortableDailyTaskItem({
+  task,
+  onToggle,
+  onEdit,
+  onDelete,
+}: {
+  task: DailyTask
+  onToggle: () => void
+  onEdit: () => void
+  onDelete: () => void
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id })
 
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`p-3 rounded-lg bg-gray-50 border border-border ${isDragging ? "shadow-lg" : ""}`}
+    >
+      <div className="flex items-center space-x-3 mb-2">
+        <div
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing p-1 hover:bg-gray-200 rounded"
+        >
+          <GripVertical className="h-4 w-4 text-gray-400" />
+        </div>
+        <Checkbox checked={task.completed} onCheckedChange={onToggle} className={`${checkboxStyles}`} />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between">
+            <h3 className={`font-medium ${task.completed ? "line-through text-gray-500" : "text-gray-900"}`}>
+              {task.title}
+            </h3>
+            <div className="flex items-center space-x-2">
+              {task.timeBlock && (
+                <div className="flex items-center space-x-2">
+                  <Clock className="h-4 w-4 text-gray-400" />
+                  <span className="text-sm text-gray-500 font-mono">{task.timeBlock}</span>
+                </div>
+              )}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={onEdit}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit Task
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={onDelete} className="text-red-600">
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Task
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p className="text-sm text-gray-600 mb-2">{task.description}</p>
+      {task.completed && (
+        <div className="flex justify-end text-xs">
+          <span className="flex items-center text-green-600">
+            <CheckCircle className="h-3 w-3 mr-1" />
+            Completed
+          </span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function GoalTrackerApp() {
+  const { user } = useAuth()
+  const [goalsData, setGoalsData] = useState<GoalsData>(initialGoalsData)
+  const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set())
+  const [activeView, setActiveView] = useState("daily")
+  const [currentWeek, setCurrentWeek] = useState(4)
+  const [selectedDay, setSelectedDay] = useState(() => {
+    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+    const today = new Date().getDay()
+    return days[today]
+  })
+
+  const [weeklyTasks, setWeeklyTasks] = useState<Record<string, WeeklyTask[]>>({})
+  const [dailyTasks, setDailyTasks] = useState<Record<string, DailyTask[]>>({})
+
+  // Add state for long-term goals:
+  const [longTermGoals, setLongTermGoals] = useState<LongTermGoalsData>(initialLongTermGoals)
+  const [showAddLongTermGoal, setShowAddLongTermGoal] = useState(false)
+  const [selectedTimeframe, setSelectedTimeframe] = useState<"1-year" | "5-year">("1-year")
+  const [newLongTermGoal, setNewLongTermGoal] = useState({
+    title: "",
+    description: "",
+    targetDate: "",
+    category: "",
+    notes: "",
+    milestones: [
+      { title: "", targetDate: "" },
+      { title: "", targetDate: "" },
+      { title: "", targetDate: "" },
+      { title: "", targetDate: "" },
+    ],
+  })
+
+  const [showAddGoal, setShowAddGoal] = useState(false)
+  const [showAddWeeklyTask, setShowAddWeeklyTask] = useState(false)
+  const [showAddDailyTask, setShowAddDailyTask] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState("")
+  const [showProfile, setShowProfile] = useState(false)
+  const [newGoal, setNewGoal] = useState({
+    title: "",
+    description: "",
+    targetCount: 0,
+    weeklyTarget: 0,
+  })
+
+  const [newWeeklyTask, setNewWeeklyTask] = useState({
+    title: "",
+    description: "",
+    category: "",
+    goalId: "",
+    priority: "medium" as const,
+    estimatedHours: 1,
+  })
+
+  const [newDailyTask, setNewDailyTask] = useState({
+    title: "",
+    description: "",
+    category: "",
+    goalId: "",
+    timeBlock: "",
+    estimatedMinutes: 30,
+  })
+
+  const [showAddCategory, setShowAddCategory] = useState(false)
+  const [newCategoryName, setNewCategoryName] = useState("")
+
+  const [editingGoal, setEditingGoal] = useState<{ category: string; goal: Goal } | null>(null)
+  const [showDeleteGoal, setShowDeleteGoal] = useState<{ category: string; goalId: string; title: string } | null>(null)
+  const [showDeleteCategory, setShowDeleteCategory] = useState<string | null>(null)
+
+  const [editingWeeklyTask, setEditingWeeklyTask] = useState<WeeklyTask | null>(null)
+  const [editingDailyTask, setEditingDailyTask] = useState<DailyTask | null>(null)
+  const [showDeleteWeeklyTask, setShowDeleteWeeklyTask] = useState<{ taskId: string; title: string } | null>(null)
+  const [showDeleteDailyTask, setShowDeleteDailyTask] = useState<{ day: string; taskId: string; title: string } | null>(
+    null,
+  )
+
+  const [customCategoryColors, setCustomCategoryColors] = useState<{ [key: string]: string }>({})
+  const [showEditCategory, setShowEditCategory] = useState<string | null>(null)
+  const [editCategoryName, setEditCategoryName] = useState("")
+  const [editCategoryColor, setEditCategoryColor] = useState("")
+
+  // Add these state variables after the existing state declarations (around line 680):
+  const [editingLongTermGoal, setEditingLongTermGoal] = useState<{
+    timeframe: "1-year" | "5-year"
+    category: string
+    goal: LongTermGoal
+  } | null>(null)
+  const [showDeleteLongTermGoal, setShowDeleteLongTermGoal] = useState<{
+    timeframe: "1-year" | "5-year"
+    category: string
+    goalId: string
+    title: string
+  } | null>(null)
+
+  // Helper function to get user initials
+  const getInitials = (name: string | null | undefined) => {
+    if (!name || typeof name !== "string") return "U"
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+  }
+
+  // Cal.com inspired color palette for category badges - each category gets a unique, distinct color
+  const getCategoryColor = (category: string) => {
+    // Check for custom colors first
+    if (customCategoryColors[category]) {
+      return customCategoryColors[category]
+    }
+
+    const colors = {
+      "Layson Group": "bg-sky-100 text-sky-800 border-sky-200",
+      Upside: "bg-violet-100 text-violet-800 border-violet-200",
+      "Poplar Title": "bg-purple-100 text-purple-800 border-purple-200",
+      "Relationships/Family": "bg-pink-100 text-pink-800 border-pink-200",
+      "Physical/Nutrition/Health": "bg-lime-100 text-lime-800 border-lime-200",
+      "Spiritual/Contribution": "bg-emerald-100 text-emerald-800 border-emerald-200",
+      "Intellect/Education": "bg-amber-100 text-amber-800 border-amber-200",
+      "Lifestyle/Adventure": "bg-orange-100 text-orange-800 border-orange-200",
+      "Personal Finance/Material": "bg-teal-100 text-teal-800 border-teal-200",
+    }
+
+    // Extended unique color palette for new categories
+    const additionalColors = [
+      "bg-slate-100 text-slate-800 border-slate-200",
+      "bg-rose-100 text-rose-800 border-rose-200",
+      "bg-cyan-100 text-cyan-800 border-cyan-200",
+      "bg-emerald-100 text-emerald-800 border-emerald-200",
+      "bg-green-100 text-green-800 border-green-200",
+      "bg-yellow-100 text-yellow-800 border-yellow-200",
+      "bg-red-100 text-red-800 border-red-200",
+      "bg-sky-100 text-sky-800 border-sky-200",
+      "bg-fuchsia-100 text-fuchsia-800 border-fuchsia-200",
+      "bg-stone-100 text-stone-800 border-stone-200",
+      "bg-zinc-100 text-zinc-800 border-zinc-800 border-zinc-200",
+      "bg-neutral-100 text-neutral-800 border-neutral-200",
+    ]
+
+    // If category has a predefined color, use it
+    if (colors[category]) {
+      return colors[category]
+    }
+
+    // For new categories, assign a unique color from the additional palette
+    const existingCategories = Object.keys(colors)
+    const newCategoryIndex = Object.keys(colors).length + Object.keys(colors).filter((cat) => !colors[cat]).length
+
+    return additionalColors[newCategoryIndex % additionalColors.length]
+  }
+
+  // Enhance the moveIncompleteTasks function to be more robust
+  const moveIncompleteTasks = () => {
+    // Get current date information
+    const today = new Date()
+    const currentDayName = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][
+      today.getDay()
+    ]
+    const currentDayIndex = today.getDay()
+
+    // Check if we need to move to a new week
+    const lastWeekCheck = localStorage.getItem("lastWeekCheck")
+    const currentWeekOfYear = Math.ceil((today.getDate() - today.getDay() + 1) / 7)
+    const currentYear = today.getFullYear()
+    const weekYearKey = `${currentYear}-${currentWeekOfYear}`
+
+    if (lastWeekCheck !== weekYearKey) {
+      // It's a new week, move incomplete weekly tasks
+      const weekKey = `Week ${currentWeek}`
+      const nextWeekKey = `Week ${currentWeek + 1}`
+
+      // Get incomplete tasks from current week
+      const currentWeekTasks = weeklyTasks[weekKey] || []
+      const incompleteTasks = currentWeekTasks.filter((task) => !task.completed)
+
+      if (incompleteTasks.length > 0) {
+        setWeeklyTasks((prev) => {
+          const updated = { ...prev }
+
+          // Add incomplete tasks to next week with updated IDs
+          const updatedTasksForNextWeek = incompleteTasks.map((task) => ({
+            ...task,
+            id: `w${currentWeek + 1}_moved_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          }))
+
+          updated[nextWeekKey] = [...(prev[nextWeekKey] || []), ...updatedTasksForNextWeek]
+
+          return updated
+        })
+      }
+
+      // Update the week check
+      localStorage.setItem("lastWeekCheck", weekYearKey)
+    }
+
+    // Handle daily tasks - move all incomplete tasks from previous days to today
+    const allDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+
+    // Get all days before today
+    const previousDays = []
+    for (let i = 0; i < 7; i++) {
+      if (i !== currentDayIndex) {
+        previousDays.push(allDays[i])
+      }
+    }
+
+    let tasksToMove = []
+
+    // Collect incomplete tasks from all days
+    previousDays.forEach((day) => {
+      const dayTasks = dailyTasks[day] || []
+      const incompleteTasks = dayTasks.filter((task) => !task.completed)
+      tasksToMove = [...tasksToMove, ...incompleteTasks]
+    })
+
+    if (tasksToMove.length > 0) {
+      setDailyTasks((prev) => {
+        const updated = { ...prev }
+
+        // Add incomplete tasks to today with updated IDs
+        const updatedTasksForToday = tasksToMove.map((task) => ({
+          ...task,
+          id: `${currentDayName.toLowerCase()}_moved_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        }))
+
+        updated[currentDayName] = [...(prev[currentDayName] || []), ...updatedTasksForToday]
+
+        return updated
+      })
+    }
+  }
+
+  // Replace the existing useEffect for moveIncompleteTasks with this enhanced version
+  useEffect(() => {
+    // Move incomplete tasks on component mount
+    moveIncompleteTasks()
+
+    // Set up a check for day change to move tasks automatically
+    const checkForDayChange = () => {
+      const now = new Date()
+      const currentDay = now.getDay()
+      const currentDate = now.getDate()
+
+      // Store the current day and date in localStorage
+      const storedDay = localStorage.getItem("lastCheckDay")
+      const storedDate = localStorage.getItem("lastCheckDate")
+
+      // If the day has changed since last check, move incomplete tasks
+      if (storedDay !== null && storedDate !== null) {
+        const lastDay = Number.parseInt(storedDay)
+        const lastDate = Number.parseInt(storedDate)
+
+        if (lastDay !== currentDay || lastDate !== currentDate) {
+          moveIncompleteTasks()
+        }
+      }
+
+      // Update the stored day and date
+      localStorage.setItem("lastCheckDay", currentDay.toString())
+      localStorage.setItem("lastCheckDate", currentDate.toString())
+    }
+
+    // Check for day change on mount and set interval to check periodically
+    checkForDayChange()
+
+    // Check every hour for day changes (in case the app stays open overnight)
+    const intervalId = setInterval(checkForDayChange, 60 * 60 * 1000)
+
+    return () => clearInterval(intervalId)
+  }, [])
+
+  useEffect(() => {
+    const checkDatabaseAndLoadData = async () => {
+      if (user?.id) {
+        console.log("User authenticated, checking database connection...")
+
+        try {
+          // Test database connection
+          const { data, error } = await supabase.from("categories").select("count").limit(1)
+
+          if (error) {
+            console.error("Database connection failed:", error)
+          } else {
+            console.log("Database connection successful!")
+
+            const dbData = await loadCategoriesAndGoalsFromDB(user.id)
+            const taskData = await loadTasksFromDB(user.id)
+
+            console.log("=== COMPREHENSIVE TASK LOADING DEBUG ===")
+            console.log("Raw task data from database:", JSON.stringify(taskData, null, 2))
+            console.log("Daily tasks structure:", JSON.stringify(taskData.dailyTasks, null, 2))
+            console.log("Weekly tasks structure:", JSON.stringify(taskData.weeklyTasks, null, 2))
+
+            // Merge database data with existing initialGoalsData structure
+            setGoalsData((prev) => {
+              const merged = { ...prev }
+              Object.keys(dbData).forEach((categoryName) => {
+                merged[categoryName] = dbData[categoryName]
+              })
+              return merged
+            })
+
+            console.log("=== FORCING STATE UPDATES ===")
+
+            // Update daily tasks with force re-render
+            setDailyTasks(() => {
+              console.log("Setting daily tasks to:", JSON.stringify(taskData.dailyTasks, null, 2))
+              return { ...taskData.dailyTasks }
+            })
+
+            // Update weekly tasks with force re-render
+            setWeeklyTasks(() => {
+              console.log("Setting weekly tasks to:", JSON.stringify(taskData.weeklyTasks, null, 2))
+              return { ...taskData.weeklyTasks }
+            })
+
+            setTimeout(() => {
+              console.log("=== POST-UPDATE VERIFICATION ===")
+              console.log("Daily tasks count:", Object.keys(taskData.dailyTasks).length)
+              console.log("Weekly tasks count:", Object.keys(taskData.weeklyTasks).length)
+              console.log("State update completed successfully")
+            }, 100)
+          }
+        } catch (error) {
+          console.error("Error loading data:", error)
+        }
+      }
+    }
+
+    checkDatabaseAndLoadData()
+  }, [user?.id])
+
+  // Drag and drop sensors
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -848,363 +1270,1070 @@ const Page = () => {
     }),
   )
 
-  // Calculate progress metrics
-  const totalGoals = Object.values(goalsData).flat().length
-  const completedGoals = Object.values(goalsData)
-    .flat()
-    .filter((goal) => goal.currentCount >= goal.targetCount).length
-  const totalTasks = Object.values(dailyTasks).flat().length + Object.values(weeklyTasks).flat().length
-  const completedTasks =
-    Object.values(dailyTasks)
-      .flat()
-      .filter((task) => task.completed).length +
-    Object.values(weeklyTasks)
-      .flat()
-      .filter((task) => task.completed).length
-  const overallProgress = totalGoals > 0 ? Math.round((completedGoals / totalGoals) * 100) : 0
+  const incrementGoal = (category: string, goalId: string, amount = 1) => {
+    setGoalsData((prev) => ({
+      ...prev,
+      [category]: prev[category].map((goal) =>
+        goal.id === goalId ? { ...goal, currentCount: Math.min(goal.currentCount + amount, goal.targetCount) } : goal,
+      ),
+    }))
+  }
+
+  const updateGoalProgress = (category: string, goalId: string, newValue: number) => {
+    setGoalsData((prev) => ({
+      ...prev,
+      [category]: prev[category].map((goal) =>
+        goal.id === goalId ? { ...goal, currentCount: Math.min(Math.max(newValue, 0), goal.targetCount) } : goal,
+      ),
+    }))
+  }
+
+  const toggleBinaryGoal = (category: string, goalId: string) => {
+    setGoalsData((prev) => ({
+      ...prev,
+      [category]: prev[category].map((goal) =>
+        goal.id === goalId ? { ...goal, currentCount: goal.currentCount === 0 ? goal.targetCount : 0 } : goal,
+      ),
+    }))
+  }
+
+  const toggleGoalCompletion = (category: string, goalId: string) => {
+    setGoalsData((prev) => ({
+      ...prev,
+      [category]: prev[category].map((goal) =>
+        goal.id === goalId
+          ? {
+              ...goal,
+              currentCount:
+                goal.currentCount >= goal.targetCount
+                  ? Math.max(0, goal.targetCount - 1)
+                  : // If complete, set to one less than target
+                    goal.targetCount, // If not complete, mark as complete
+            }
+          : goal,
+      ),
+    }))
+  }
+
+  const getGoalType = (targetCount: number) => {
+    if (targetCount === 1) return "binary"
+    if (targetCount <= 20) return "small"
+    if (targetCount <= 100) return "medium"
+    return "large"
+  }
+
+  const getQuickIncrements = (targetCount: number) => {
+    if (targetCount <= 100) return [1, 5, 10]
+    if (targetCount <= 1000) return [1, 10, 50, 100]
+    return [1, 100, 1000, 5000]
+  }
+
+  const addNewGoal = async () => {
+    const detectedNumber = extractNumberFromTitle(newGoal.title)
+    const targetCount = detectedNumber > 0 ? newGoal.targetCount || detectedNumber : 1
+
+    if (!selectedCategory || !newGoal.title) return
+
+    const goalId = crypto.randomUUID()
+
+    const weeklyTargetValue = newGoal.weeklyTarget || Math.ceil(targetCount / 12)
+
+    // Update local state first (preserve existing UI behavior)
+    setGoalsData((prev) => ({
+      ...prev,
+      [selectedCategory]: [
+        ...prev[selectedCategory],
+        {
+          id: goalId,
+          title: newGoal.title,
+          description: newGoal.description,
+          targetCount: targetCount,
+          currentCount: 0,
+          notes: "",
+          weeklyTarget: weeklyTargetValue,
+          category: selectedCategory,
+        },
+      ],
+    }))
+
+    try {
+      if (!user?.id) {
+        console.error("User not authenticated")
+        return
+      }
+
+      // Find the category ID from the database
+      const { data: categories } = await supabase
+        .from("categories")
+        .select("id")
+        .eq("name", selectedCategory)
+        .eq("user_id", user.id)
+        .single()
+
+      if (!categories) {
+        console.error("Category not found in database")
+        return
+      }
+
+      const { error } = await supabase.from("goals").insert({
+        id: goalId,
+        user_id: user.id,
+        category_id: categories.id,
+        title: newGoal.title,
+        description: newGoal.description,
+        target_count: targetCount,
+        current_progress: 0,
+        weekly_target: weeklyTargetValue,
+      })
+
+      if (error) {
+        console.error("Error saving goal to database:", error)
+      } else {
+        console.log("Goal saved to database successfully")
+      }
+    } catch (error) {
+      console.error("Error saving goal:", error)
+    }
+
+    setNewGoal({ title: "", description: "", targetCount: 0, weeklyTarget: 0 })
+    setSelectedCategory("")
+    setShowAddGoal(false)
+  }
+
+  const addNewCategory = async () => {
+    if (!newCategoryName.trim()) return
+
+    // Convert to title case instead of uppercase
+    const categoryName = newCategoryName
+      .trim()
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" ")
+
+    if (goalsData[categoryName]) {
+      alert("Category already exists!")
+      return
+    }
+
+    try {
+      if (!user?.id) {
+        alert("User not authenticated. Please log in again.")
+        return
+      }
+
+      // Validate UUID format
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+      if (!uuidRegex.test(user.id)) {
+        console.error("Invalid user ID format:", user.id)
+        alert("Authentication error. Please log out and log in again.")
+        return
+      }
+
+      const { error } = await supabase.from("categories").insert([
+        {
+          user_id: user.id,
+          name: categoryName,
+          color: "#05a7b0", // Default teal color
+        },
+      ])
+
+      if (error) {
+        console.error("Error saving category:", error)
+        console.error("User ID being used:", user.id)
+        alert(`Failed to save category: ${error.message}`)
+        return
+      }
+
+      // Update local state
+      setGoalsData((prev) => ({
+        ...prev,
+        [categoryName]: [],
+      }))
+
+      setNewCategoryName("")
+      setShowAddCategory(false)
+      console.log("Category saved successfully:", categoryName)
+    } catch (error) {
+      console.error("Error adding category:", error)
+      alert("Failed to add category. Please try again.")
+    }
+  }
+
+  const editGoal = (category: string, goalId: string, updatedGoal: Partial<Goal>) => {
+    setGoalsData((prev) => ({
+      ...prev,
+      [category]: prev[category].map((goal) => (goal.id === goalId ? { ...goal, ...updatedGoal } : goal)),
+    }))
+  }
+
+  const deleteGoal = (category: string, goalId: string) => {
+    setGoalsData((prev) => ({
+      ...prev,
+      [category]: prev[category].filter((goal) => goal.id !== goalId),
+    }))
+    setShowDeleteGoal(null)
+  }
+
+  const updateGoal = () => {
+    if (!editingGoal) return
+
+    const weeklyTargetValue = newGoal.weeklyTarget || Math.ceil(newGoal.targetCount / 12)
+
+    editGoal(editingGoal.category, editingGoal.goal.id, {
+      title: newGoal.title,
+      description: newGoal.description,
+      targetCount: newGoal.targetCount,
+      weeklyTarget: weeklyTargetValue,
+    })
+
+    setNewGoal({ title: "", description: "", targetCount: 0, weeklyTarget: 0 })
+    setEditingGoal(null)
+  }
+
+  const saveEditedGoal = () => {
+    if (!editingGoal) return
+
+    updateGoal()
+    setEditingGoal(null)
+    setShowAddGoal(false)
+  }
+
+  const startEditingGoal = (category: string, goal: Goal) => {
+    setEditingGoal({ category, goal })
+    setNewGoal({
+      title: goal.title,
+      description: goal.description,
+      targetCount: goal.targetCount,
+      weeklyTarget: goal.weeklyTarget,
+    })
+    setShowAddGoal(true)
+  }
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "high":
-        return "red-500"
+        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
       case "medium":
-        return "yellow-500"
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
       case "low":
-        return "green-500"
+        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
       default:
-        return "gray-500"
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
     }
   }
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const editWeeklyTask = (taskId: string, updatedTask: Partial<WeeklyTask>) => {
+    setWeeklyTasks((prev) => ({
+      ...prev,
+      [`Week ${currentWeek}`]:
+        prev[`Week ${currentWeek}`]?.map((task) => (task.id === taskId ? { ...task, ...updatedTask } : task)) || [],
+    }))
+  }
+
+  const deleteWeeklyTask = (taskId: string) => {
+    setWeeklyTasks((prev) => ({
+      ...prev,
+      [`Week ${currentWeek}`]: prev[`Week ${currentWeek}`]?.filter((task) => task.id !== taskId) || [],
+    }))
+    setShowDeleteWeeklyTask(null)
+  }
+
+  const editDailyTask = (day: string, taskId: string, updatedTask: Partial<DailyTask>) => {
+    setDailyTasks((prev) => ({
+      ...prev,
+      [day]: prev[day]?.map((task) => (task.id === taskId ? { ...task, ...updatedTask } : task)) || [],
+    }))
+  }
+
+  const deleteDailyTask = (day: string, taskId: string) => {
+    setDailyTasks((prev) => ({
+      ...prev,
+      [day]: prev[day]?.filter((task) => task.id !== taskId) || [],
+    }))
+    setShowDeleteDailyTask(null)
+  }
+
+  const startEditingWeeklyTask = (task: WeeklyTask) => {
+    setEditingWeeklyTask(task)
+    setNewWeeklyTask({
+      title: task.title,
+      description: task.description,
+      category: task.category,
+      goalId: task.goalId,
+      priority: task.priority,
+      estimatedHours: task.estimatedHours,
+    })
+    setShowAddWeeklyTask(true)
+  }
+
+  const startEditingDailyTask = (task: DailyTask) => {
+    setEditingDailyTask(task)
+    setNewDailyTask({
+      title: task.title,
+      description: task.description,
+      category: task.category,
+      goalId: task.goalId,
+      timeBlock: task.timeBlock,
+      estimatedMinutes: task.estimatedMinutes,
+    })
+    setShowAddDailyTask(true)
+  }
+
+  const saveEditedWeeklyTask = () => {
+    if (!editingWeeklyTask) return
+
+    editWeeklyTask(editingWeeklyTask.id, {
+      title: newWeeklyTask.title,
+      description: newWeeklyTask.description,
+      category: newWeeklyTask.category,
+      goalId: newWeeklyTask.goalId,
+      priority: newWeeklyTask.priority,
+      estimatedHours: newWeeklyTask.estimatedHours,
+    })
+
+    setNewWeeklyTask({
+      title: "",
+      description: "",
+      category: "",
+      goalId: "",
+      priority: "medium",
+      estimatedHours: 1,
+    })
+    setEditingWeeklyTask(null)
+    setShowAddWeeklyTask(false)
+  }
+
+  const saveEditedDailyTask = () => {
+    if (!editingDailyTask) return
+
+    editDailyTask(selectedDay, editingDailyTask.id, {
+      title: newDailyTask.title,
+      description: newDailyTask.description,
+      category: newDailyTask.category,
+      goalId: newDailyTask.goalId,
+      timeBlock: newDailyTask.timeBlock,
+      estimatedMinutes: newDailyTask.estimatedMinutes,
+    })
+    setEditingDailyTask(null)
+    setShowAddDailyTask(false)
+  }
+
+  const colorOptions = [
+    { name: "Blue", value: "bg-blue-100 text-blue-800 border-blue-200" },
+    { name: "Sky", value: "bg-sky-100 text-sky-800 border-sky-200" },
+    { name: "Violet", value: "bg-violet-100 text-violet-800 border-violet-200" },
+    { name: "Purple", value: "bg-purple-100 text-purple-800 border-purple-200" },
+    { name: "Pink", value: "bg-pink-100 text-pink-800 border-pink-200" },
+    { name: "Rose", value: "bg-rose-100 text-rose-800 border-rose-200" },
+    { name: "Red", value: "bg-red-100 text-red-800 border-red-200" },
+    { name: "Orange", value: "bg-orange-100 text-orange-800 border-orange-200" },
+    { name: "Amber", value: "bg-amber-100 text-amber-800 border-amber-200" },
+    { name: "Yellow", value: "bg-yellow-100 text-yellow-800 border-yellow-200" },
+    { name: "Lime", value: "bg-lime-100 text-lime-800 border-lime-200" },
+    { name: "Green", value: "bg-green-100 text-green-800 border-green-200" },
+    { name: "Emerald", value: "bg-emerald-100 text-emerald-800 border-emerald-200" },
+    { name: "Teal", value: "bg-teal-100 text-teal-800 border-teal-200" },
+    { name: "Cyan", value: "bg-cyan-100 text-cyan-800 border-cyan-200" },
+    { name: "Slate", value: "bg-slate-100 text-slate-800 border-slate-200" },
+    { name: "Gray", value: "bg-gray-100 text-gray-800 border-gray-200" },
+    { name: "Stone", value: "bg-stone-100 text-stone-800 border-stone-200" },
+  ]
+
+  const startEditingCategory = (category: string) => {
+    setShowEditCategory(category)
+    setEditCategoryName(category)
+    setEditCategoryColor(customCategoryColors[category] || getCategoryColor(category))
+  }
+
+  const saveEditedCategory = () => {
+    if (!showEditCategory || !editCategoryName.trim()) return
+
+    const oldCategoryName = showEditCategory
+    const newCategoryName = editCategoryName.trim()
+
+    // If name changed, update the goals data structure
+    if (oldCategoryName !== newCategoryName) {
+      setGoalsData((prev) => {
+        const updated = { ...prev }
+
+        // Move goals to new category name
+        if (updated[oldCategoryName]) {
+          updated[newCategoryName] = updated[oldCategoryName]
+          delete updated[oldCategoryName]
+        }
+
+        return updated
+      })
+
+      // Update tasks to use new category name
+      setWeeklyTasks((prev) => {
+        const updated = { ...prev }
+        Object.keys(updated).forEach((week) => {
+          updated[week] = updated[week].map((task) =>
+            task.category === oldCategoryName ? { ...task, category: newCategoryName } : task,
+          )
+        })
+        return updated
+      })
+
+      setDailyTasks((prev) => {
+        const updated = { ...prev }
+        Object.keys(updated).forEach((day) => {
+          updated[day] = updated[day].map((task) =>
+            task.category === oldCategoryName ? { ...task, category: newCategoryName } : task,
+          )
+        })
+        return updated
+      })
+
+      // Update custom colors
+      setCustomCategoryColors((prev) => {
+        const updated = { ...prev }
+        if (updated[oldCategoryName]) {
+          updated[newCategoryName] = updated[oldCategoryName]
+          delete updated[oldCategoryName]
+        }
+        return updated
+      })
+    }
+
+    // Update color
+    setCustomCategoryColors((prev) => ({
+      ...prev,
+      [newCategoryName]: editCategoryColor,
+    }))
+
+    setShowEditCategory(null)
+    setEditCategoryName("")
+    setEditCategoryColor("")
+  }
+
+  const deleteCategory = (category: string) => {
+    setGoalsData((prev) => {
+      const updated = { ...prev }
+      delete updated[category]
+      return updated
+    })
+
+    // Remove custom color if exists
+    setCustomCategoryColors((prev) => {
+      const updated = { ...prev }
+      delete updated[category]
+      return updated
+    })
+
+    setShowDeleteCategory(null)
+  }
+
+  // Add these functions after the existing helper functions (around line 1200):
+  const startEditingLongTermGoal = (timeframe: "1-year" | "5-year", category: string, goal: LongTermGoal) => {
+    setEditingLongTermGoal({ timeframe, category, goal })
+    setSelectedTimeframe(timeframe)
+    setNewLongTermGoal({
+      title: goal.title,
+      description: goal.description,
+      targetDate: goal.targetDate,
+      category: goal.category,
+      notes: goal.notes,
+      milestones: goal.milestones.map((m) => ({
+        title: m.title,
+        targetDate: m.targetDate,
+      })),
+    })
+  }
+
+  const saveEditedLongTermGoal = () => {
+    if (!editingLongTermGoal) return
+
+    const { timeframe, category, goal } = editingLongTermGoal
+
+    setLongTermGoals((prev) => ({
+      ...prev,
+      [timeframe]: {
+        ...prev[timeframe],
+        [category]: prev[timeframe][category].map((g) =>
+          g.id === goal.id
+            ? {
+                ...g,
+                title: newLongTermGoal.title,
+                description: newLongTermGoal.description,
+                targetDate: newLongTermGoal.targetDate,
+                category: newLongTermGoal.category,
+                notes: newLongTermGoal.notes,
+                milestones: newLongTermGoal.milestones
+                  .filter((m) => m.title && m.targetDate)
+                  .map((m, index) => ({
+                    id: `${g.id}_m${index + 1}`,
+                    title: m.title,
+                    completed: g.milestones[index]?.completed || false,
+                    targetDate: m.targetDate,
+                  })),
+              }
+            : g,
+        ),
+      },
+    }))
+
+    setNewLongTermGoal({
+      title: "",
+      description: "",
+      targetDate: "",
+      category: "",
+      notes: "",
+      milestones: [
+        { title: "", targetDate: "" },
+        { title: "", targetDate: "" },
+        { title: "", targetDate: "" },
+        { title: "", targetDate: "" },
+      ],
+    })
+    setEditingLongTermGoal(null)
+    setShowAddLongTermGoal(false)
+  }
+
+  const deleteLongTermGoal = (timeframe: "1-year" | "5-year", category: string, goalId: string) => {
+    setLongTermGoals((prev) => ({
+      ...prev,
+      [timeframe]: {
+        ...prev[timeframe],
+        [category]: prev[timeframe][category].filter((g) => g.id !== goalId),
+      },
+    }))
+    setShowDeleteLongTermGoal(null)
+  }
+
+  const getTotalProgress = () => {
+    let totalCurrent = 0
+    let totalTarget = 0
+
+    Object.values(goalsData).forEach((goals) => {
+      goals.forEach((goal) => {
+        totalCurrent += goal.currentCount
+        totalTarget += goal.targetCount
+      })
+    })
+
+    return totalTarget === 0 ? 0 : Math.round((totalCurrent / totalTarget) * 100)
+  }
+
+  const getTotalTasks = () => {
+    let totalTasks = 0
+    Object.values(weeklyTasks).forEach((tasks) => {
+      totalTasks += tasks.length
+    })
+    Object.values(dailyTasks).forEach((tasks) => {
+      totalTasks += tasks.length
+    })
+    return totalTasks
+  }
+
+  const getCompletedTasks = () => {
+    let completedTasks = 0
+    Object.values(weeklyTasks).forEach((tasks) => {
+      tasks.forEach((task) => {
+        if (task.completed) {
+          completedTasks++
+        }
+      })
+    })
+    Object.values(dailyTasks).forEach((tasks) => {
+      tasks.forEach((task) => {
+        if (task.completed) {
+          completedTasks++
+        }
+      })
+    })
+    return completedTasks
+  }
+
+  const getTotalGoals = () => {
+    let totalGoals = 0
+    Object.values(goalsData).forEach((goals) => {
+      totalGoals += goals.length
+    })
+    return totalGoals
+  }
+
+  const getCompletedGoals = () => {
+    let completedGoals = 0
+    Object.values(goalsData).forEach((goals) => {
+      goals.forEach((goal) => {
+        if (goal.currentCount >= goal.targetCount) {
+          completedGoals++
+        }
+      })
+    })
+    return completedGoals
+  }
+
+  const getProgressPercentage = (current: number, target: number) => {
+    return target === 0 ? 0 : (current / target) * 100
+  }
+
+  const getWeeklyProgress = (goal: Goal) => {
+    const weeklyTarget = goal.weeklyTarget || Math.ceil(goal.targetCount / 12)
+    const expectedProgress = weeklyTarget * currentWeek
+    const onTrack = goal.currentCount >= expectedProgress
+    return { weeklyTarget, expectedProgress, onTrack }
+  }
+
+  const toggleNotes = (goalId: string) => {
+    setExpandedNotes((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(goalId)) {
+        newSet.delete(goalId)
+      } else {
+        newSet.add(goalId)
+      }
+      return newSet
+    })
+  }
+
+  const updateNotes = (category: string, goalId: string, notes: string) => {
+    setGoalsData((prev) => ({
+      ...prev,
+      [category]: prev[category].map((goal) => (goal.id === goalId ? { ...goal, notes } : goal)),
+    }))
+  }
+
+  const handleWeeklyTaskDragEnd = (event: DragEndEvent, category: string) => {
     const { active, over } = event
+
     if (!over) return
 
-    if (activeTab === "weekly") {
-      const tasks = weeklyTasks[selectedWeek] || []
-      const oldIndex = tasks.findIndex((task) => task.id === active.id)
-      const newIndex = tasks.findIndex((task) => task.id === over.id)
+    if (active.id !== over.id) {
+      setWeeklyTasks((prev) => {
+        const oldIndex = prev[`Week ${currentWeek}`]?.findIndex((task) => task.id === active.id) || -1
+        const newIndex = prev[`Week ${currentWeek}`]?.findIndex((task) => task.id === over.id) || -1
 
-      if (oldIndex !== newIndex) {
-        const newTasks = arrayMove(tasks, oldIndex, newIndex)
-        setWeeklyTasks((prev) => ({ ...prev, [selectedWeek]: newTasks }))
-      }
-    } else if (activeTab === "daily") {
-      const tasks = dailyTasks[selectedDay] || []
-      const oldIndex = tasks.findIndex((task) => task.id === active.id)
-      const newIndex = tasks.findIndex((task) => task.id === over.id)
+        if (oldIndex === -1 || newIndex === -1) return prev
 
-      if (oldIndex !== newIndex) {
-        const newTasks = arrayMove(tasks, oldIndex, newIndex)
-        setDailyTasks((prev) => ({ ...prev, [selectedDay]: newTasks }))
-      }
+        const newItems = arrayMove(prev[`Week ${currentWeek}`], oldIndex, newIndex)
+
+        return {
+          ...prev,
+          [`Week ${currentWeek}`]: newItems,
+        }
+      })
     }
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
-      </div>
-    )
+  const toggleWeeklyTask = (taskId: string) => {
+    setWeeklyTasks((prev) => ({
+      ...prev,
+      [`Week ${currentWeek}`]:
+        prev[`Week ${currentWeek}`]?.map((task) =>
+          task.id === taskId ? { ...task, completed: !task.completed } : task,
+        ) || [],
+    }))
   }
 
-  if (!user) {
-    return <AuthScreen />
+  const handleDailyTaskDragEnd = (event: DragEndEvent, category: string) => {
+    const { active, over } = event
+
+    if (!over) return
+
+    if (active.id !== over.id) {
+      setDailyTasks((prev) => {
+        const oldIndex = prev[selectedDay]?.findIndex((task) => task.id === active.id) || -1
+        const newIndex = prev[selectedDay]?.findIndex((task) => task.id === over.id) || -1
+
+        if (oldIndex === -1 || newIndex === -1) return prev
+
+        const newItems = arrayMove(prev[selectedDay], oldIndex, newIndex)
+
+        return {
+          ...prev,
+          [selectedDay]: newItems,
+        }
+      })
+    }
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-gray-900">Goal Tracker</h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={user.user_metadata?.avatar_url || "/placeholder.svg"} alt={user.email} />
-                      <AvatarFallback>
-                        <User className="h-4 w-4" />
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end" forceMount>
-                  <DropdownMenuItem onClick={() => setShowProfile(true)}>
-                    <User className="mr-2 h-4 w-4" />
-                    Profile
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => supabase.auth.signOut()}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sign out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+  const toggleDailyTask = (selectedDay: string, taskId: string) => {
+    setDailyTasks((prev) => ({
+      ...prev,
+      [selectedDay]:
+        prev[selectedDay]?.map((task) => (task.id === taskId ? { ...task, completed: !task.completed } : task)) || [],
+    }))
+  }
+
+  const addDailyTask = async () => {
+    console.log("=== TASK CREATION DEBUG START ===")
+    console.log("1. Function called, newDailyTask:", newDailyTask)
+
+    if (!newDailyTask.title) {
+      console.log("2. No title provided, exiting")
+      return
+    }
+
+    const taskId = crypto.randomUUID()
+    console.log("3. Generated task ID:", taskId)
+
+    const taskData = {
+      title: newDailyTask.title,
+      description: newDailyTask.description,
+      category: newDailyTask.category,
+      goalId: newDailyTask.goalId,
+    }
+    console.log("4. Task data prepared:", taskData)
+
+    console.log("5. User object:", user)
+    console.log("6. User ID:", user?.id)
+    console.log("7. User authenticated:", !!user)
+
+    // Update local state immediately
+    setDailyTasks((prev) => ({
+      ...prev,
+      [selectedDay]: [
+        ...(prev[selectedDay] || []),
+        {
+          id: taskId,
+          title: taskData.title,
+          description: taskData.description,
+          category: taskData.category,
+          goalId: taskData.goalId,
+          completed: false,
+        },
+      ],
+    }))
+    console.log("8. Local state updated")
+
+    // Reset form
+    setNewDailyTask({
+      title: "",
+      description: "",
+      category: "",
+      goalId: "",
+    })
+    setShowAddDailyTask(false)
+    console.log("9. Form reset and dialog closed")
+
+    try {
+      console.log("10. Starting database operation...")
+
+      if (!user?.id) {
+        console.error("11. ERROR: No user ID available")
+        console.log("User object:", user)
+        return
+      }
+
+      // Look up category ID if category is provided (same as weekly tasks)
+      let categoryId = null
+      if (taskData.category) {
+        console.log("12. Looking up category:", taskData.category)
+        const { data: categories } = await supabase
+          .from("categories")
+          .select("id")
+          .eq("name", taskData.category)
+          .eq("user_id", user.id)
+          .single()
+
+        categoryId = categories?.id || null
+        console.log("13. Category ID found:", categoryId)
+      }
+
+      const insertData = {
+        id: taskId,
+        user_id: user.id,
+        category_id: categoryId,
+        goal_id: taskData.goalId || null,
+        title: taskData.title,
+        description: taskData.description,
+        task_type: "daily",
+        target_date: new Date().toISOString().split("T")[0],
+        completed: false,
+      }
+      console.log("14. Insert data prepared:", insertData)
+
+      console.log("15. Calling supabase.from('tasks').insert()...")
+      const { data, error } = await supabase.from("tasks").insert(insertData).select()
+
+      console.log("16. Database response - data:", data)
+      console.log("17. Database response - error:", error)
+
+      if (error) {
+        console.error("18. DATABASE ERROR:", error)
+        console.error("Error message:", error.message)
+        console.error("Error details:", error.details)
+        console.error("Error hint:", error.hint)
+      } else {
+        console.log("19. Task saved successfully:", data)
+
+        // Verify it was saved
+        console.log("20. Starting verification query...")
+        const { data: verification, error: verifyError } = await supabase
+          .from("tasks")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+
+        console.log("21. Verification data:", verification)
+        console.log("22. Verification error:", verifyError)
+
+        if (verification && verification.length > 0) {
+          console.log("23. SUCCESS: Task verified in database:", verification[0])
+        } else {
+          console.log("24. WARNING: Task not found in verification query")
+        }
+      }
+    } catch (err) {
+      console.error("25. EXCEPTION during database operation:", err)
+    }
+
+    console.log("=== TASK CREATION DEBUG END ===")
+  }
+
+  const addWeeklyTask = async () => {
+    if (!newWeeklyTask.title || !newWeeklyTask.category) return
+
+    const taskId = crypto.randomUUID()
+
+    setWeeklyTasks((prev) => ({
+      ...prev,
+      [`Week ${currentWeek}`]: [
+        ...(prev[`Week ${currentWeek}`] || []),
+        {
+          id: taskId,
+          title: newWeeklyTask.title,
+          description: newWeeklyTask.description,
+          category: newWeeklyTask.category,
+          goalId: newWeeklyTask.goalId,
+          completed: false,
+        },
+      ],
+    }))
+
+    try {
+      if (!user?.id) {
+        console.error("User not authenticated")
+        return
+      }
+
+      // Find category ID from database
+      const { data: categories } = await supabase
+        .from("categories")
+        .select("id")
+        .eq("name", newWeeklyTask.category)
+        .eq("user_id", user.id)
+        .single()
+
+      const { error } = await supabase.from("tasks").insert({
+        id: taskId,
+        user_id: user.id,
+        category_id: categories?.id || null,
+        goal_id: newWeeklyTask.goalId || null,
+        title: newWeeklyTask.title,
+        description: newWeeklyTask.description,
+        task_type: "weekly",
+        target_date: new Date().toISOString().split("T")[0],
+        completed: false,
+      })
+
+      if (error) {
+        console.error("Error saving weekly task to database:", error.message)
+      } else {
+        console.log("Weekly task saved to database successfully")
+      }
+    } catch (error) {
+      console.error("Error saving weekly task to database:", error)
+    }
+
+    setNewWeeklyTask({
+      title: "",
+      description: "",
+      category: "",
+      goalId: "",
+    })
+    setShowAddWeeklyTask(false)
+  }
+
+  async function loadTasksFromDB(userId: string) {
+    try {
+      console.log("=== LOADING TASKS FROM DATABASE ===")
+      console.log("Fetching tasks for user ID:", userId)
+
+      // Join with categories table to get category names
+      const { data: tasks, error: tasksError } = await supabase
+        .from("tasks")
+        .select(`
+        *,
+        categories (
+          name
+        )
+      `)
+        .eq("user_id", userId)
+
+      if (tasksError) {
+        console.error("Error fetching tasks:", tasksError)
+        return { weeklyTasks: {}, dailyTasks: {} }
+      }
+
+      console.log("Raw tasks from database:", JSON.stringify(tasks, null, 2))
+      console.log("Number of tasks found:", tasks?.length || 0)
+
+      const weeklyTasks: Record<string, WeeklyTask[]> = {}
+      const dailyTasks: Record<string, DailyTask[]> = {}
+
+      tasks.forEach((task, index) => {
+        console.log(`Processing task ${index + 1}:`, JSON.stringify(task, null, 2))
+
+        // Get category name from joined data
+        const categoryName = task.categories?.name || "Uncategorized"
+
+        if (task.task_type === "weekly") {
+          // Use proper week calculation based on current date
+          const today = new Date()
+          const startOfYear = new Date(today.getFullYear(), 0, 1)
+          const weekNumber = Math.ceil(
+            ((today.getTime() - startOfYear.getTime()) / (1000 * 60 * 60 * 24) + startOfYear.getDay() + 1) / 7,
+          )
+          const weekKey = `Week ${weekNumber}`
+          console.log(`Adding weekly task to ${weekKey}`)
+
+          const weeklyTask: WeeklyTask = {
+            id: task.id,
+            title: task.title || "",
+            description: task.description || "",
+            category: categoryName,
+            goalId: task.goal_id || "",
+            completed: task.completed || false,
+            priority: "medium",
+            estimatedHours: 1,
+          }
+
+          if (!weeklyTasks[weekKey]) {
+            weeklyTasks[weekKey] = []
+          }
+          weeklyTasks[weekKey].push(weeklyTask)
+        } else if (task.task_type === "daily") {
+          // Show daily tasks on current day instead of historical target_date
+          const today = new Date()
+          const day = today.toLocaleDateString("en-US", { weekday: "long" })
+          console.log(`Adding daily task to ${day}`)
+
+          const dailyTask: DailyTask = {
+            id: task.id,
+            title: task.title || "",
+            description: task.description || "",
+            category: categoryName,
+            goalId: task.goal_id || "",
+            completed: task.completed || false,
+            timeBlock: "9:00 AM",
+            estimatedMinutes: 30,
+          }
+
+          if (!dailyTasks[day]) {
+            dailyTasks[day] = []
+          }
+          dailyTasks[day].push(dailyTask)
+        }
+      })
+
+      console.log("=== FINAL ORGANIZED TASKS ===")
+      console.log("Organized daily tasks:", JSON.stringify(dailyTasks, null, 2))
+      console.log("Organized weekly tasks:", JSON.stringify(weeklyTasks, null, 2))
+
+      return { weeklyTasks, dailyTasks }
+    } catch (error) {
+      console.error("Error in loadTasksFromDB:", error)
+      return { weeklyTasks: {}, dailyTasks: {} }
+    }
+  }
+
+  async function loadCategoriesAndGoalsFromDB(userId: string) {
+    try {
+      console.log("=== LOADING CATEGORIES AND GOALS FROM DATABASE ===")
+      console.log("Fetching categories and goals for user ID:", userId)
+
+      // Fetch categories
+      const { data: categories, error: categoriesError } = await supabase
+        .from("categories")
+        .select("*")
+        .eq("user_id", userId)
+
+      if (categoriesError) {
+        console.error("Error fetching categories:", categoriesError)
+        return {}
+      }
+
+      console.log("Categories from database:", JSON.stringify(categories, null, 2))
+
+      // Initialize data structure
+      const goalsData: GoalsData = {}
+
+      // Fetch goals for each category
+      for (const category of categories) {
+        const { data: goals, error: goalsError } = await supabase
+          .from("goals")
+          .select("*")
+          .eq("category_id", category.id)
+
+        if (goalsError) {
+          console.error(`Error fetching goals for category ${category.name}:`, goalsError)
+          continue
+        }
+
+        console.log(`Goals for category ${category.name}:`, JSON.stringify(goals, null, 2))
+
+        // Map goals to the data structure
+        goalsData[category.name] = goals.map((goal) => ({
+          id: goal.id,
+          title: goal.title,
+          description: goal.description,
+          targetCount: goal.target_count,
+          currentCount: goal.current_progress,
+          notes: goal.notes || "",
+          weeklyTarget: goal.weekly_target,
+          category: category.name,
+        }))
+      }
+
+      console.log("=== FINAL ORGANIZED GOALS DATA ===")
+      console.log("Organized goals data:", JSON.stringify(goalsData, null, 2))
+
+      return goalsData
+    } catch (error) {
+      console.error("Error in loadCategoriesAndGoalsFromDB:", error)
+      return {}
+    }
+  }
+
+  // Helper function to get the week number
+  Date.prototype.getWeek = function () {
+    var date = new Date(this.getTime())
+    date.setHours(0, 0, 0, 0)
+    // Thursday in current week decides the year.
+    date.setDate(date.getDate() + 3 - ((date.getDay() + 6) % 7))
+    // January 4 is always in week 1.
+    var week1 = new Date(date.getFullYear(), 0, 4)
+    // Adjust to Thursday in week 1 and count number of weeks from date to week1.
+    return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) / 7)
+  }
+
+  function Page() {
+    const { user, isLoading } = useAuth()
+
+    if (isLoading) {
+      return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#05a7b0] mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading...</p>
           </div>
         </div>
-      </header>
+      )
+    }
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Progress Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Overall Progress</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{overallProgress}%</div>
-              <Progress value={overallProgress} className="mt-2" />
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Tasks Completed</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {completedTasks}/{totalTasks}
-              </div>
-              <Progress value={totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0} className="mt-2" />
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Goals Completed</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {completedGoals}/{totalGoals}
-              </div>
-              <Progress value={totalGoals > 0 ? (completedGoals / totalGoals) * 100 : 0} className="mt-2" />
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Weeks Left</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">8</div>
-              <Progress value={33} className="mt-2" />
-            </CardContent>
-          </Card>
-        </div>
+    if (!user) {
+      return <AuthScreen />
+    }
 
-        {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="daily">Daily</TabsTrigger>
-            <TabsTrigger value="weekly">Weekly</TabsTrigger>
-            <TabsTrigger value="12-week">12-Week</TabsTrigger>
-            <TabsTrigger value="1-year">1-Year</TabsTrigger>
-            <TabsTrigger value="5-year">5-Year</TabsTrigger>
-          </TabsList>
+    return <GoalTrackerApp />
+  }
 
-          {/* Daily Tasks */}
-          <TabsContent value="daily" className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-3xl font-bold">Daily Tasks</h2>
-              <Select value={selectedDay} onValueChange={setSelectedDay}>
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((day) => (
-                    <SelectItem key={day} value={day}>
-                      {day}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {Object.keys(goalsData).map((category) => (
-                <Card key={category}>
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle className="text-lg">{category}</CardTitle>
-                    <Button size="sm" variant="outline">
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {(dailyTasks[selectedDay] || [])
-                      .filter((task) => task.category === category)
-                      .map((task) => (
-                        <div key={task.id} className="flex items-center space-x-3 p-3 rounded-lg bg-gray-50">
-                          <Checkbox checked={task.completed} className={checkboxStyles} />
-                          <div className="flex-1">
-                            <h3 className={`font-medium ${task.completed ? "line-through text-gray-500" : ""}`}>
-                              {task.title}
-                            </h3>
-                            <p className="text-sm text-gray-500">{task.description}</p>
-                          </div>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                              <DropdownMenuItem>Edit</DropdownMenuItem>
-                              <DropdownMenuItem>Delete</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      ))}
-                    {(dailyTasks[selectedDay] || []).filter((task) => task.category === category).length === 0 && (
-                      <p className="text-center text-gray-500 py-8">Click + to add your first task</p>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-
-          {/* Weekly Tasks */}
-          <TabsContent value="weekly" className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-3xl font-bold">{selectedWeek} Tasks</h2>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {Object.keys(goalsData).map((category) => (
-                <Card key={category}>
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle className="text-lg">{category}</CardTitle>
-                    <Button size="sm" variant="outline">
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                      <SortableContext
-                        items={(weeklyTasks[selectedWeek] || [])
-                          .filter((task) => task.category === category)
-                          .map((task) => task.id)}
-                        strategy={verticalListSortingStrategy}
-                      >
-                        {(weeklyTasks[selectedWeek] || [])
-                          .filter((task) => task.category === category)
-                          .map((task) => (
-                            <SortableWeeklyTaskItem
-                              key={task.id}
-                              task={task}
-                              onToggle={() => {}}
-                              onEdit={() => {}}
-                              onDelete={() => {}}
-                              getPriorityColor={getPriorityColor}
-                            />
-                          ))}
-                      </SortableContext>
-                    </DndContext>
-                    {(weeklyTasks[selectedWeek] || []).filter((task) => task.category === category).length === 0 && (
-                      <p className="text-center text-gray-500 py-8">Click + to add your first task</p>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-
-          {/* 12-Week Goals */}
-          <TabsContent value="12-week" className="space-y-6">
-            <h2 className="text-3xl font-bold">12-Week Goals</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {Object.entries(goalsData).map(([category, goals]) => (
-                <Card key={category}>
-                  <CardHeader>
-                    <CardTitle>{category}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {goals.map((goal) => (
-                      <div key={goal.id} className="space-y-2">
-                        <h3 className="font-medium">{goal.title}</h3>
-                        <Progress value={(goal.currentCount / goal.targetCount) * 100} />
-                        <p className="text-sm text-gray-500">
-                          {goal.currentCount} / {goal.targetCount}
-                        </p>
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-
-          {/* 1-Year Goals */}
-          <TabsContent value="1-year" className="space-y-6">
-            <h2 className="text-3xl font-bold">1-Year Goals</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {Object.entries(longTermGoals["1-year"]).map(([category, goals]) => (
-                <Card key={category}>
-                  <CardHeader>
-                    <CardTitle>{category}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {goals.map((goal) => (
-                      <div key={goal.id} className="space-y-2">
-                        <h3 className="font-medium">{goal.title}</h3>
-                        <p className="text-sm text-gray-600">{goal.description}</p>
-                        <div className="space-y-1">
-                          {goal.milestones.map((milestone) => (
-                            <div key={milestone.id} className="flex items-center space-x-2">
-                              <Checkbox checked={milestone.completed} className={checkboxStyles} />
-                              <span className={`text-sm ${milestone.completed ? "line-through text-gray-500" : ""}`}>
-                                {milestone.title}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-
-          {/* 5-Year Goals */}
-          <TabsContent value="5-year" className="space-y-6">
-            <h2 className="text-3xl font-bold">5-Year Goals</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {Object.entries(longTermGoals["5-year"]).map(([category, goals]) => (
-                <Card key={category}>
-                  <CardHeader>
-                    <CardTitle>{category}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {goals.map((goal) => (
-                      <div key={goal.id} className="space-y-2">
-                        <h3 className="font-medium">{goal.title}</h3>
-                        <p className="text-sm text-gray-600">{goal.description}</p>
-                        <div className="space-y-1">
-                          {goal.milestones.map((milestone) => (
-                            <div key={milestone.id} className="flex items-center space-x-2">
-                              <Checkbox checked={milestone.completed} className={checkboxStyles} />
-                              <span className={`text-sm ${milestone.completed ? "line-through text-gray-500" : ""}`}>
-                                {milestone.title}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-        </Tabs>
-      </main>
-    </div>
-  )
+  return Page
 }
 
-export default Page
+export default GoalTrackerApp
