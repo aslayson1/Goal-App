@@ -3,10 +3,17 @@ import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 export const supabase = (() => {
   // Check if we're in browser environment and have required env vars
   if (typeof window !== "undefined") {
-    try {
-      return createClientComponentClient()
-    } catch (error) {
-      console.error("Failed to create Supabase client:", error)
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+    if (supabaseUrl && supabaseAnonKey) {
+      try {
+        return createClientComponentClient()
+      } catch (error) {
+        console.error("Failed to create Supabase client:", error)
+      }
+    } else {
+      console.warn("Supabase environment variables not found - using dummy client")
     }
   }
 
@@ -63,5 +70,9 @@ export const supabase = (() => {
   }
 })()
 
-export const isSupabaseConfigured =
-  typeof window !== "undefined" && process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+export const isSupabaseConfigured = (() => {
+  if (typeof window === "undefined") return false
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  return !!(supabaseUrl && supabaseAnonKey)
+})()
