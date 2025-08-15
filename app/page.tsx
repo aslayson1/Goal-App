@@ -1357,7 +1357,7 @@ function GoalTrackerApp() {
     const newCurrentCount = goal.currentCount >= goal.targetCount ? Math.max(0, goal.targetCount - 1) : goal.targetCount
 
     try {
-      const { error } = await supabase.from("goals").update({ current_count: newCurrentCount }).eq("id", goalId)
+      const { error } = await supabase.from("goals").update({ current_progress: newCurrentCount }).eq("id", goalId)
 
       if (error) throw error
 
