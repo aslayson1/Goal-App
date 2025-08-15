@@ -1350,27 +1350,49 @@ function GoalTrackerApp() {
     }
   }
 
-  const toggleGoalCompletion = async (category: string, goalId: string) => {
-    const goal = goalsData[category]?.find((g) => g.id === goalId)
-    if (!goal) return
+  const toggleGoalCompletion = async (goalId: string, category: string) => {
+    // Check if this is a local goal (starts with letters) or database goal (UUID format)
+    const isLocalGoal = /^[a-zA-Z]/.test(goalId)
 
-    const newCurrentCount = goal.currentCount >= goal.targetCount ? Math.max(0, goal.targetCount - 1) : goal.targetCount
-
-    try {
-      const { error } = await supabase.from("goals").update({ current_progress: newCurrentCount }).eq("id", goalId)
-
-      if (error) throw error
-
+    if (isLocalGoal) {
+      // Handle local goals - just update local state
       setGoalsData((prev) => ({
         ...prev,
         [category]: prev[category].map((goal) =>
           goal.id === goalId
-            ? {
-                ...goal,
-                currentCount: newCurrentCount,
-              }
+            ? { ...goal, currentCount: goal.currentCount >= goal.targetCount ? 0 : goal.targetCount }
             : goal,
         ),
+      }))
+      return
+    }
+
+    // Handle database goals - update both local state and database
+    try {
+      const goal = goalsData[category]?.find((g) => g.id === goalId)
+      if (!goal) return
+
+      const newProgress = goal.currentCount >= goal.targetCount ? 0 : goal.targetCount
+      const isCompleted = newProgress >= goal.targetCount
+
+      // Update database
+      const { error } = await supabase
+        .from("goals")
+        .update({
+          current_progress: newProgress,
+          completed: isCompleted,
+        })
+        .eq("id", goalId)
+
+      if (error) {
+        console.error("Error updating goal completion:", error.message)
+        return
+      }
+
+      // Update local state
+      setGoalsData((prev) => ({
+        ...prev,
+        [category]: prev[category].map((g) => (g.id === goalId ? { ...g, currentCount: newProgress } : g)),
       }))
     } catch (error) {
       console.error("Error updating goal completion:", error)
@@ -2619,7 +2641,7 @@ function GoalTrackerApp() {
                             <div className="flex items-start space-x-3">
                               <Checkbox
                                 checked={isCompleted}
-                                onCheckedChange={() => toggleGoalCompletion(category, goal.id)}
+                                onCheckedChange={() => toggleGoalCompletion(goal.id, category)}
                                 className={`h-5 w-5 mt-0.5 flex-shrink-0 ${checkboxStyles}`}
                               />
                               <div className="flex-1 min-w-0">
