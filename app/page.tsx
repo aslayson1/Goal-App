@@ -4,9 +4,28 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { useAuth } from "@/hooks/useAuth"
 import { useState } from "react"
-import AuthScreen from "@/components/AuthScreen"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Plus, MoreHorizontal, User, LogOut } from "lucide-react"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core"
+import { SortableContext, verticalListSortingStrategy, sortableKeyboardCoordinates, arrayMove } from "@dnd-kit/sortable"
+import { useAuth } from "@/components/auth/auth-provider"
+import { AuthScreen } from "@/components/auth/auth-screen"
+import { supabase } from "@/lib/supabase/client"
 
 // Custom CSS class for white checkbox background with thinner border
 const checkboxStyles =
@@ -810,188 +829,380 @@ function SortableWeeklyTaskItem({
 
 // Main Component
 const Page = () => {
-  const { user, isLoading } = useAuth()
-  const [activeTab, setActiveTab] = useState("Daily")
+  const { user, loading } = useAuth()
+  const [activeTab, setActiveTab] = useState("daily")
   const [selectedDay, setSelectedDay] = useState("Monday")
   const [selectedWeek, setSelectedWeek] = useState("Week 4")
-  const [goals, setGoals] = useState<GoalsData>(initialGoalsData)
+  const [goalsData, setGoalsData] = useState<GoalsData>(initialGoalsData)
   const [longTermGoals, setLongTermGoals] = useState<LongTermGoalsData>(initialLongTermGoals)
-  const [weeklyTasks, setWeeklyTasks] = useState<Record<string, WeeklyTask[]>>({
-    "Week 4": initialWeeklyTasks["Week 4"],
+  const [weeklyTasks, setWeeklyTasks] = useState<{ [week: string]: WeeklyTask[] }>({
+    [selectedWeek]: initialWeeklyTasks[selectedWeek] || [],
   })
-  const [dailyTasks, setDailyTasks] = useState<Record<string, DailyTask[]>>(initialDailyTasks)
-  const [categories, setCategories] = useState<string[]>(Object.keys(initialGoalsData))
+  const [dailyTasks, setDailyTasks] = useState<{ [day: string]: DailyTask[] }>(initialDailyTasks)
+  const [showProfile, setShowProfile] = useState(false)
 
-  // Show loading spinner while checking authentication
-  if (isLoading) {
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  )
+
+  // Calculate progress metrics
+  const totalGoals = Object.values(goalsData).flat().length
+  const completedGoals = Object.values(goalsData)
+    .flat()
+    .filter((goal) => goal.currentCount >= goal.targetCount).length
+  const totalTasks = Object.values(dailyTasks).flat().length + Object.values(weeklyTasks).flat().length
+  const completedTasks =
+    Object.values(dailyTasks)
+      .flat()
+      .filter((task) => task.completed).length +
+    Object.values(weeklyTasks)
+      .flat()
+      .filter((task) => task.completed).length
+  const overallProgress = totalGoals > 0 ? Math.round((completedGoals / totalGoals) * 100) : 0
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case "high":
+        return "red-500"
+      case "medium":
+        return "yellow-500"
+      case "low":
+        return "green-500"
+      default:
+        return "gray-500"
+    }
+  }
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+    if (!over) return
+
+    if (activeTab === "weekly") {
+      const tasks = weeklyTasks[selectedWeek] || []
+      const oldIndex = tasks.findIndex((task) => task.id === active.id)
+      const newIndex = tasks.findIndex((task) => task.id === over.id)
+
+      if (oldIndex !== newIndex) {
+        const newTasks = arrayMove(tasks, oldIndex, newIndex)
+        setWeeklyTasks((prev) => ({ ...prev, [selectedWeek]: newTasks }))
+      }
+    } else if (activeTab === "daily") {
+      const tasks = dailyTasks[selectedDay] || []
+      const oldIndex = tasks.findIndex((task) => task.id === active.id)
+      const newIndex = tasks.findIndex((task) => task.id === over.id)
+
+      if (oldIndex !== newIndex) {
+        const newTasks = arrayMove(tasks, oldIndex, newIndex)
+        setDailyTasks((prev) => ({ ...prev, [selectedDay]: newTasks }))
+      }
+    }
+  }
+
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#05a7b0]"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
       </div>
     )
   }
 
-  // Show login screen if not authenticated
   if (!user) {
     return <AuthScreen />
   }
 
-  // Main dashboard UI
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Hi {user.user_metadata?.full_name || "User"},</h1>
-            <p className="text-gray-600">Here are your tasks for week 4 of 12.</p>
-          </div>
-          <div className="flex items-center space-x-4">
-            <button className="bg-black text-white px-4 py-2 rounded-lg">+ Add Goal</button>
-            <button className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg">+ Add Category</button>
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center">
+              <h1 className="text-2xl font-bold text-gray-900">Goal Tracker</h1>
+            </div>
+            <div className="flex items-center space-x-4">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user.user_metadata?.avatar_url || "/placeholder.svg"} alt={user.email} />
+                      <AvatarFallback>
+                        <User className="h-4 w-4" />
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <DropdownMenuItem onClick={() => setShowProfile(true)}>
+                    <User className="mr-2 h-4 w-4" />
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => supabase.auth.signOut()}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sign out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Progress Overview */}
-      <div className="px-6 py-6">
-        <div className="grid grid-cols-4 gap-6 mb-8">
-          <div className="text-center">
-            <div className="text-4xl font-bold text-gray-900">0%</div>
-            <div className="text-sm text-gray-600 flex items-center justify-center mt-1">
-              <div className="w-2 h-2 bg-[#05a7b0] rounded-full mr-2"></div>
-              Overall Progress
-            </div>
-          </div>
-          <div className="text-center">
-            <div className="text-4xl font-bold text-gray-900">0/1</div>
-            <div className="text-sm text-gray-600 flex items-center justify-center mt-1">
-              <div className="w-2 h-2 bg-[#05a7b0] rounded-full mr-2"></div>
-              Tasks Completed
-            </div>
-          </div>
-          <div className="text-center">
-            <div className="text-4xl font-bold text-gray-900">1/35</div>
-            <div className="text-sm text-gray-600 flex items-center justify-center mt-1">
-              <div className="w-2 h-2 bg-[#05a7b0] rounded-full mr-2"></div>
-              Goals Completed
-            </div>
-          </div>
-          <div className="text-center">
-            <div className="text-4xl font-bold text-gray-900">8</div>
-            <div className="text-sm text-gray-600 flex items-center justify-center mt-1">
-              <div className="w-2 h-2 bg-[#05a7b0] rounded-full mr-2"></div>
-              Weeks Left
-            </div>
-          </div>
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Progress Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Overall Progress</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{overallProgress}%</div>
+              <Progress value={overallProgress} className="mt-2" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Tasks Completed</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {completedTasks}/{totalTasks}
+              </div>
+              <Progress value={totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0} className="mt-2" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Goals Completed</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {completedGoals}/{totalGoals}
+              </div>
+              <Progress value={totalGoals > 0 ? (completedGoals / totalGoals) * 100 : 0} className="mt-2" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Weeks Left</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">8</div>
+              <Progress value={33} className="mt-2" />
+            </CardContent>
+          </Card>
         </div>
 
         {/* Tabs */}
-        <div className="flex space-x-8 mb-6">
-          {["Daily", "Weekly", "12-Week", "1-Year", "5-Year"].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`pb-2 border-b-2 font-medium ${
-                activeTab === tab
-                  ? "border-[#05a7b0] text-[#05a7b0]"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="daily">Daily</TabsTrigger>
+            <TabsTrigger value="weekly">Weekly</TabsTrigger>
+            <TabsTrigger value="12-week">12-Week</TabsTrigger>
+            <TabsTrigger value="1-year">1-Year</TabsTrigger>
+            <TabsTrigger value="5-year">5-Year</TabsTrigger>
+          </TabsList>
 
-        {/* Daily Tasks View */}
-        {activeTab === "Daily" && (
-          <div>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">Daily Tasks</h2>
-              <select
-                value={selectedDay}
-                onChange={(e) => setSelectedDay(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2"
-              >
-                {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((day) => (
-                  <option key={day} value={day}>
-                    {day}
-                  </option>
-                ))}
-              </select>
+          {/* Daily Tasks */}
+          <TabsContent value="daily" className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-3xl font-bold">Daily Tasks</h2>
+              <Select value={selectedDay} onValueChange={setSelectedDay}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((day) => (
+                    <SelectItem key={day} value={day}>
+                      {day}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
-              {categories.map((category) => (
-                <div key={category} className="bg-white rounded-lg border border-gray-200 p-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-medium text-gray-900">{category}</h3>
-                    <button className="text-gray-400 hover:text-gray-600">+</button>
-                  </div>
-                  <div className="space-y-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {Object.keys(goalsData).map((category) => (
+                <Card key={category}>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle className="text-lg">{category}</CardTitle>
+                    <Button size="sm" variant="outline">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
                     {(dailyTasks[selectedDay] || [])
                       .filter((task) => task.category === category)
                       .map((task) => (
-                        <div key={task.id} className="flex items-center space-x-2 p-2 rounded border">
+                        <div key={task.id} className="flex items-center space-x-3 p-3 rounded-lg bg-gray-50">
                           <Checkbox checked={task.completed} className={checkboxStyles} />
                           <div className="flex-1">
-                            <div className="font-medium text-sm">{task.title}</div>
-                            <div className="text-xs text-gray-500">{task.description}</div>
+                            <h3 className={`font-medium ${task.completed ? "line-through text-gray-500" : ""}`}>
+                              {task.title}
+                            </h3>
+                            <p className="text-sm text-gray-500">{task.description}</p>
                           </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                              <DropdownMenuItem>Edit</DropdownMenuItem>
+                              <DropdownMenuItem>Delete</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       ))}
                     {(dailyTasks[selectedDay] || []).filter((task) => task.category === category).length === 0 && (
-                      <div className="text-center text-gray-500 py-4">Click + to add your first task</div>
+                      <p className="text-center text-gray-500 py-8">Click + to add your first task</p>
                     )}
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
-          </div>
-        )}
+          </TabsContent>
 
-        {/* Weekly Tasks View */}
-        {activeTab === "Weekly" && (
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">Week 4 Tasks</h2>
-            <div className="grid grid-cols-2 gap-6">
-              {categories.map((category) => (
-                <div key={category} className="bg-white rounded-lg border border-gray-200 p-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-medium text-gray-900">{category}</h3>
-                    <button className="text-gray-400 hover:text-gray-600">+</button>
-                  </div>
-                  <div className="space-y-2">
-                    {(weeklyTasks[selectedWeek] || [])
-                      .filter((task) => task.category === category)
-                      .map((task) => (
-                        <div key={task.id} className="flex items-center space-x-2 p-2 rounded border">
-                          <Checkbox checked={task.completed} className={checkboxStyles} />
-                          <div className="flex-1">
-                            <div className="font-medium text-sm">{task.title}</div>
-                            <div className="text-xs text-gray-500">{task.description}</div>
-                          </div>
-                        </div>
-                      ))}
+          {/* Weekly Tasks */}
+          <TabsContent value="weekly" className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-3xl font-bold">{selectedWeek} Tasks</h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {Object.keys(goalsData).map((category) => (
+                <Card key={category}>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle className="text-lg">{category}</CardTitle>
+                    <Button size="sm" variant="outline">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                      <SortableContext
+                        items={(weeklyTasks[selectedWeek] || [])
+                          .filter((task) => task.category === category)
+                          .map((task) => task.id)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        {(weeklyTasks[selectedWeek] || [])
+                          .filter((task) => task.category === category)
+                          .map((task) => (
+                            <SortableWeeklyTaskItem
+                              key={task.id}
+                              task={task}
+                              onToggle={() => {}}
+                              onEdit={() => {}}
+                              onDelete={() => {}}
+                              getPriorityColor={getPriorityColor}
+                            />
+                          ))}
+                      </SortableContext>
+                    </DndContext>
                     {(weeklyTasks[selectedWeek] || []).filter((task) => task.category === category).length === 0 && (
-                      <div className="text-center text-gray-500 py-4">Click + to add your first task</div>
+                      <p className="text-center text-gray-500 py-8">Click + to add your first task</p>
                     )}
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
-          </div>
-        )}
+          </TabsContent>
 
-        {/* Other tab views would go here */}
-        {activeTab === "12-Week" && (
-          <div className="text-center text-gray-500 py-8">12-Week goals view coming soon</div>
-        )}
+          {/* 12-Week Goals */}
+          <TabsContent value="12-week" className="space-y-6">
+            <h2 className="text-3xl font-bold">12-Week Goals</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Object.entries(goalsData).map(([category, goals]) => (
+                <Card key={category}>
+                  <CardHeader>
+                    <CardTitle>{category}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {goals.map((goal) => (
+                      <div key={goal.id} className="space-y-2">
+                        <h3 className="font-medium">{goal.title}</h3>
+                        <Progress value={(goal.currentCount / goal.targetCount) * 100} />
+                        <p className="text-sm text-gray-500">
+                          {goal.currentCount} / {goal.targetCount}
+                        </p>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
 
-        {activeTab === "1-Year" && <div className="text-center text-gray-500 py-8">1-Year goals view coming soon</div>}
+          {/* 1-Year Goals */}
+          <TabsContent value="1-year" className="space-y-6">
+            <h2 className="text-3xl font-bold">1-Year Goals</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {Object.entries(longTermGoals["1-year"]).map(([category, goals]) => (
+                <Card key={category}>
+                  <CardHeader>
+                    <CardTitle>{category}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {goals.map((goal) => (
+                      <div key={goal.id} className="space-y-2">
+                        <h3 className="font-medium">{goal.title}</h3>
+                        <p className="text-sm text-gray-600">{goal.description}</p>
+                        <div className="space-y-1">
+                          {goal.milestones.map((milestone) => (
+                            <div key={milestone.id} className="flex items-center space-x-2">
+                              <Checkbox checked={milestone.completed} className={checkboxStyles} />
+                              <span className={`text-sm ${milestone.completed ? "line-through text-gray-500" : ""}`}>
+                                {milestone.title}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
 
-        {activeTab === "5-Year" && <div className="text-center text-gray-500 py-8">5-Year goals view coming soon</div>}
-      </div>
+          {/* 5-Year Goals */}
+          <TabsContent value="5-year" className="space-y-6">
+            <h2 className="text-3xl font-bold">5-Year Goals</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {Object.entries(longTermGoals["5-year"]).map(([category, goals]) => (
+                <Card key={category}>
+                  <CardHeader>
+                    <CardTitle>{category}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {goals.map((goal) => (
+                      <div key={goal.id} className="space-y-2">
+                        <h3 className="font-medium">{goal.title}</h3>
+                        <p className="text-sm text-gray-600">{goal.description}</p>
+                        <div className="space-y-1">
+                          {goal.milestones.map((milestone) => (
+                            <div key={milestone.id} className="flex items-center space-x-2">
+                              <Checkbox checked={milestone.completed} className={checkboxStyles} />
+                              <span className={`text-sm ${milestone.completed ? "line-through text-gray-500" : ""}`}>
+                                {milestone.title}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+        </Tabs>
+      </main>
     </div>
   )
 }
