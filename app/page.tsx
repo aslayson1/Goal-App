@@ -4,6 +4,9 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
+import { useAuth } from "@/hooks/useAuth"
+import { useState } from "react"
+import AuthScreen from "@/components/AuthScreen"
 
 // Custom CSS class for white checkbox background with thinner border
 const checkboxStyles =
@@ -807,8 +810,190 @@ function SortableWeeklyTaskItem({
 
 // Main Component
 const Page = () => {
-  // Your main component logic here
-  return <div>{/* Your JSX code here */}</div>
+  const { user, isLoading } = useAuth()
+  const [activeTab, setActiveTab] = useState("Daily")
+  const [selectedDay, setSelectedDay] = useState("Monday")
+  const [selectedWeek, setSelectedWeek] = useState("Week 4")
+  const [goals, setGoals] = useState<GoalsData>(initialGoalsData)
+  const [longTermGoals, setLongTermGoals] = useState<LongTermGoalsData>(initialLongTermGoals)
+  const [weeklyTasks, setWeeklyTasks] = useState<Record<string, WeeklyTask[]>>({
+    "Week 4": initialWeeklyTasks["Week 4"],
+  })
+  const [dailyTasks, setDailyTasks] = useState<Record<string, DailyTask[]>>(initialDailyTasks)
+  const [categories, setCategories] = useState<string[]>(Object.keys(initialGoalsData))
+
+  // Show loading spinner while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#05a7b0]"></div>
+      </div>
+    )
+  }
+
+  // Show login screen if not authenticated
+  if (!user) {
+    return <AuthScreen />
+  }
+
+  // Main dashboard UI
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Hi {user.user_metadata?.full_name || "User"},</h1>
+            <p className="text-gray-600">Here are your tasks for week 4 of 12.</p>
+          </div>
+          <div className="flex items-center space-x-4">
+            <button className="bg-black text-white px-4 py-2 rounded-lg">+ Add Goal</button>
+            <button className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg">+ Add Category</button>
+          </div>
+        </div>
+      </header>
+
+      {/* Progress Overview */}
+      <div className="px-6 py-6">
+        <div className="grid grid-cols-4 gap-6 mb-8">
+          <div className="text-center">
+            <div className="text-4xl font-bold text-gray-900">0%</div>
+            <div className="text-sm text-gray-600 flex items-center justify-center mt-1">
+              <div className="w-2 h-2 bg-[#05a7b0] rounded-full mr-2"></div>
+              Overall Progress
+            </div>
+          </div>
+          <div className="text-center">
+            <div className="text-4xl font-bold text-gray-900">0/1</div>
+            <div className="text-sm text-gray-600 flex items-center justify-center mt-1">
+              <div className="w-2 h-2 bg-[#05a7b0] rounded-full mr-2"></div>
+              Tasks Completed
+            </div>
+          </div>
+          <div className="text-center">
+            <div className="text-4xl font-bold text-gray-900">1/35</div>
+            <div className="text-sm text-gray-600 flex items-center justify-center mt-1">
+              <div className="w-2 h-2 bg-[#05a7b0] rounded-full mr-2"></div>
+              Goals Completed
+            </div>
+          </div>
+          <div className="text-center">
+            <div className="text-4xl font-bold text-gray-900">8</div>
+            <div className="text-sm text-gray-600 flex items-center justify-center mt-1">
+              <div className="w-2 h-2 bg-[#05a7b0] rounded-full mr-2"></div>
+              Weeks Left
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex space-x-8 mb-6">
+          {["Daily", "Weekly", "12-Week", "1-Year", "5-Year"].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`pb-2 border-b-2 font-medium ${
+                activeTab === tab
+                  ? "border-[#05a7b0] text-[#05a7b0]"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        {/* Daily Tasks View */}
+        {activeTab === "Daily" && (
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-gray-900">Daily Tasks</h2>
+              <select
+                value={selectedDay}
+                onChange={(e) => setSelectedDay(e.target.value)}
+                className="border border-gray-300 rounded-lg px-3 py-2"
+              >
+                {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((day) => (
+                  <option key={day} value={day}>
+                    {day}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-6">
+              {categories.map((category) => (
+                <div key={category} className="bg-white rounded-lg border border-gray-200 p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-medium text-gray-900">{category}</h3>
+                    <button className="text-gray-400 hover:text-gray-600">+</button>
+                  </div>
+                  <div className="space-y-2">
+                    {(dailyTasks[selectedDay] || [])
+                      .filter((task) => task.category === category)
+                      .map((task) => (
+                        <div key={task.id} className="flex items-center space-x-2 p-2 rounded border">
+                          <Checkbox checked={task.completed} className={checkboxStyles} />
+                          <div className="flex-1">
+                            <div className="font-medium text-sm">{task.title}</div>
+                            <div className="text-xs text-gray-500">{task.description}</div>
+                          </div>
+                        </div>
+                      ))}
+                    {(dailyTasks[selectedDay] || []).filter((task) => task.category === category).length === 0 && (
+                      <div className="text-center text-gray-500 py-4">Click + to add your first task</div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Weekly Tasks View */}
+        {activeTab === "Weekly" && (
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">Week 4 Tasks</h2>
+            <div className="grid grid-cols-2 gap-6">
+              {categories.map((category) => (
+                <div key={category} className="bg-white rounded-lg border border-gray-200 p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-medium text-gray-900">{category}</h3>
+                    <button className="text-gray-400 hover:text-gray-600">+</button>
+                  </div>
+                  <div className="space-y-2">
+                    {(weeklyTasks[selectedWeek] || [])
+                      .filter((task) => task.category === category)
+                      .map((task) => (
+                        <div key={task.id} className="flex items-center space-x-2 p-2 rounded border">
+                          <Checkbox checked={task.completed} className={checkboxStyles} />
+                          <div className="flex-1">
+                            <div className="font-medium text-sm">{task.title}</div>
+                            <div className="text-xs text-gray-500">{task.description}</div>
+                          </div>
+                        </div>
+                      ))}
+                    {(weeklyTasks[selectedWeek] || []).filter((task) => task.category === category).length === 0 && (
+                      <div className="text-center text-gray-500 py-4">Click + to add your first task</div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Other tab views would go here */}
+        {activeTab === "12-Week" && (
+          <div className="text-center text-gray-500 py-8">12-Week goals view coming soon</div>
+        )}
+
+        {activeTab === "1-Year" && <div className="text-center text-gray-500 py-8">1-Year goals view coming soon</div>}
+
+        {activeTab === "5-Year" && <div className="text-center text-gray-500 py-8">5-Year goals view coming soon</div>}
+      </div>
+    </div>
+  )
 }
 
 export default Page
