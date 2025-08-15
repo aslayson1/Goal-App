@@ -1,5 +1,18 @@
 "use client"
 import { supabase } from "@/lib/supabase/client"
+import { DialogFooter } from "@/components/ui/dialog"
+
+import { Label } from "@/components/ui/label"
+
+import { DialogDescription } from "@/components/ui/dialog"
+
+import { DialogTitle } from "@/components/ui/dialog"
+
+import { DialogHeader } from "@/components/ui/dialog"
+
+import { DialogContent } from "@/components/ui/dialog"
+
+import { Dialog } from "@/components/ui/dialog"
 
 import { useState, useEffect } from "react"
 import {
@@ -27,15 +40,6 @@ import { Input } from "@/components/ui/input"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Label } from "@/components/ui/label"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 
 // Auth components
 import { useAuth } from "@/components/auth/auth-provider"
@@ -3279,17 +3283,37 @@ function GoalTrackerApp() {
                           <Checkbox
                             checked={goal.status === "completed"}
                             onCheckedChange={async (checked) => {
-                              try {
-                                const { error } = await supabase
-                                  .from("long_term_goals")
-                                  .update({
-                                    completed: !!checked,
-                                    completed_at: checked ? new Date().toISOString() : null,
-                                  })
-                                  .eq("id", goal.id)
+                              const isValidUUID =
+                                /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(goal.id)
 
-                                if (error) throw error
+                              if (isValidUUID) {
+                                // Database goal - update both database and local state
+                                try {
+                                  const { error } = await supabase
+                                    .from("long_term_goals")
+                                    .update({
+                                      completed: !!checked,
+                                      completed_at: checked ? new Date().toISOString() : null,
+                                    })
+                                    .eq("id", goal.id)
 
+                                  if (error) throw error
+
+                                  const newStatus = checked ? "completed" : "in-progress"
+                                  setLongTermGoals((prev) => ({
+                                    ...prev,
+                                    "1-year": {
+                                      ...prev["1-year"],
+                                      [category]: prev["1-year"][category].map((g) =>
+                                        g.id === goal.id ? { ...g, status: newStatus } : g,
+                                      ),
+                                    },
+                                  }))
+                                } catch (error) {
+                                  console.error("Error updating long-term goal:", error)
+                                }
+                              } else {
+                                // Local goal - update only local state
                                 const newStatus = checked ? "completed" : "in-progress"
                                 setLongTermGoals((prev) => ({
                                   ...prev,
@@ -3300,8 +3324,6 @@ function GoalTrackerApp() {
                                     ),
                                   },
                                 }))
-                              } catch (error) {
-                                console.error("Error updating long-term goal:", error)
                               }
                             }}
                             className={`h-5 w-5 mt-0.5 flex-shrink-0 ${checkboxStyles}`}
@@ -3392,16 +3414,16 @@ function GoalTrackerApp() {
                                       },
                                     }))
                                   }}
-                                  className={checkboxStyles}
+                                  className={`h-4 w-4 ${checkboxStyles}`}
                                 />
-                                <div className="flex-1 min-w-0">
+                                <div className="flex-1">
                                   <p
                                     className={`text-sm ${milestone.completed ? "line-through text-gray-500" : "text-gray-700"}`}
                                   >
                                     {milestone.title}
                                   </p>
                                   <p className="text-xs text-gray-500">
-                                    {new Date(milestone.targetDate).toLocaleDateString()}
+                                    Due: {new Date(milestone.targetDate).toLocaleDateString()}
                                   </p>
                                 </div>
                               </div>
@@ -3409,10 +3431,9 @@ function GoalTrackerApp() {
                           </div>
                         </div>
 
-                        {/* Notes */}
                         {goal.notes && (
                           <div className="pt-2 border-t border-gray-200">
-                            <p className="text-xs text-gray-600">{goal.notes}</p>
+                            <p className="text-sm text-gray-600">{goal.notes}</p>
                           </div>
                         )}
                       </div>
@@ -3463,17 +3484,47 @@ function GoalTrackerApp() {
                           <Checkbox
                             checked={goal.status === "completed"}
                             onCheckedChange={async (checked) => {
-                              try {
-                                const { error } = await supabase
-                                  .from("long_term_goals")
-                                  .update({
-                                    completed: !!checked,
-                                    completed_at: checked ? new Date().toISOString() : null,
-                                  })
-                                  .eq("id", goal.id)
+                              const isValidUUID =
+                                /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(goal.id)
 
-                                if (error) throw error
+                              if (isValidUUID) {
+                                // Database goal - update both database and local state
+                                try {
+                                  const { error } = await supabase
+                                    .from("long_term_goals")
+                                    .update({
+                                      completed: !!checked,
+                                      completed_at: checked ? new Date().toISOString() : null,
+                                    })
+                                    .eq("id", goal.id)
 
+                                  if (error) throw error
+
+                                  const newStatus = checked ? "completed" : "in-progress"
+                                  setLongTermGoals((prev) => ({
+                                    ...prev,
+                                    "5-year": {
+                                      ...prev["5-year"],
+                                      [category]: prev["5-year"][category].map((g) =>
+                                        g.id === goal.id ? { ...g, status: newStatus } : g,
+                                      ),
+                                    },
+                                  }))
+                                } catch (error) {
+                                  console.error("Error updating long-term goal:", error)
+                                  // Revert local state if database update fails
+                                  setLongTermGoals((prev) => ({
+                                    ...prev,
+                                    "5-year": {
+                                      ...prev["5-year"],
+                                      [category]: prev["5-year"][category].map((g) =>
+                                        g.id === goal.id ? { ...g, status: goal.status } : g,
+                                      ),
+                                    },
+                                  }))
+                                }
+                              } else {
+                                // Local goal - update only local state
                                 const newStatus = checked ? "completed" : "in-progress"
                                 setLongTermGoals((prev) => ({
                                   ...prev,
@@ -3481,18 +3532,6 @@ function GoalTrackerApp() {
                                     ...prev["5-year"],
                                     [category]: prev["5-year"][category].map((g) =>
                                       g.id === goal.id ? { ...g, status: newStatus } : g,
-                                    ),
-                                  },
-                                }))
-                              } catch (error) {
-                                console.error("Error updating long-term goal:", error)
-                                // Revert local state if database update fails
-                                setLongTermGoals((prev) => ({
-                                  ...prev,
-                                  "5-year": {
-                                    ...prev["5-year"],
-                                    [category]: prev["5-year"][category].map((g) =>
-                                      g.id === goal.id ? { ...g, status: goal.status } : g,
                                     ),
                                   },
                                 }))
@@ -3586,16 +3625,16 @@ function GoalTrackerApp() {
                                       },
                                     }))
                                   }}
-                                  className={checkboxStyles}
+                                  className={`h-4 w-4 ${checkboxStyles}`}
                                 />
-                                <div className="flex-1 min-w-0">
+                                <div className="flex-1">
                                   <p
                                     className={`text-sm ${milestone.completed ? "line-through text-gray-500" : "text-gray-700"}`}
                                   >
                                     {milestone.title}
                                   </p>
                                   <p className="text-xs text-gray-500">
-                                    {new Date(milestone.targetDate).toLocaleDateString()}
+                                    Due: {new Date(milestone.targetDate).toLocaleDateString()}
                                   </p>
                                 </div>
                               </div>
@@ -3603,10 +3642,9 @@ function GoalTrackerApp() {
                           </div>
                         </div>
 
-                        {/* Notes */}
                         {goal.notes && (
                           <div className="pt-2 border-t border-gray-200">
-                            <p className="text-xs text-gray-600">{goal.notes}</p>
+                            <p className="text-sm text-gray-600">{goal.notes}</p>
                           </div>
                         )}
                       </div>
@@ -3618,41 +3656,28 @@ function GoalTrackerApp() {
           </TabsContent>
         </Tabs>
 
-        {/* Dialogs */}
         {/* Add Goal Dialog */}
         <Dialog open={showAddGoal} onOpenChange={setShowAddGoal}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>{editingGoal ? "Edit Goal" : "Add New Goal"}</DialogTitle>
               <DialogDescription>
-                {editingGoal ? "Update your goal details" : "Create a new goal to track your progress"}
+                {editingGoal
+                  ? "Update your goal details below."
+                  : selectedCategory
+                    ? `Add a new goal to ${selectedCategory}`
+                    : "Add a new goal to your 12-week plan"}
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="goal-title">Goal Title</Label>
-                <Input
-                  id="goal-title"
-                  placeholder="e.g., Run 100 miles, Read 12 books"
-                  value={newGoal.title}
-                  onChange={(e) => setNewGoal((prev) => ({ ...prev, title: e.target.value }))}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="goal-description">Description</Label>
-                <Textarea
-                  id="goal-description"
-                  placeholder="Brief description of your goal"
-                  value={newGoal.description}
-                  onChange={(e) => setNewGoal((prev) => ({ ...prev, description: e.target.value }))}
-                />
-              </div>
-              {!editingGoal && (
-                <div className="grid gap-2">
-                  <Label htmlFor="goal-category">Category</Label>
+              {!editingGoal && !selectedCategory && (
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="category" className="text-right">
+                    Category
+                  </Label>
                   <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a category" />
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
                       {Object.keys(goalsData).map((category) => (
@@ -3664,37 +3689,68 @@ function GoalTrackerApp() {
                   </Select>
                 </div>
               )}
-              <div className="grid gap-2">
-                <Label htmlFor="goal-target">Target Count</Label>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="title" className="text-right">
+                  Title
+                </Label>
                 <Input
-                  id="goal-target"
+                  id="title"
+                  value={newGoal.title}
+                  onChange={(e) => setNewGoal((prev) => ({ ...prev, title: e.target.value }))}
+                  className="col-span-3"
+                  placeholder="e.g., Run 120 miles"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="description" className="text-right">
+                  Description
+                </Label>
+                <Textarea
+                  id="description"
+                  value={newGoal.description}
+                  onChange={(e) => setNewGoal((prev) => ({ ...prev, description: e.target.value }))}
+                  className="col-span-3"
+                  placeholder="Brief description of your goal"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="targetCount" className="text-right">
+                  Target
+                </Label>
+                <Input
+                  id="targetCount"
                   type="number"
-                  placeholder="e.g., 100, 12, 1"
                   value={newGoal.targetCount || ""}
                   onChange={(e) =>
                     setNewGoal((prev) => ({ ...prev, targetCount: Number.parseInt(e.target.value) || 0 }))
                   }
+                  className="col-span-3"
+                  placeholder="Target number (auto-detected from title)"
                 />
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="goal-weekly">Weekly Target (optional)</Label>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="weeklyTarget" className="text-right">
+                  Weekly Target
+                </Label>
                 <Input
-                  id="goal-weekly"
+                  id="weeklyTarget"
                   type="number"
                   step="0.1"
-                  placeholder="Auto-calculated if left empty"
                   value={newGoal.weeklyTarget || ""}
                   onChange={(e) =>
                     setNewGoal((prev) => ({ ...prev, weeklyTarget: Number.parseFloat(e.target.value) || 0 }))
                   }
+                  className="col-span-3"
+                  placeholder={`Suggested: ${Math.ceil((newGoal.targetCount || 1) / 12)}`}
                 />
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowAddGoal(false)}>
-                Cancel
-              </Button>
-              <Button onClick={editingGoal ? saveEditedGoal : addNewGoal}>
+              <Button
+                type="submit"
+                onClick={editingGoal ? saveEditedGoal : addNewGoal}
+                disabled={!newGoal.title || (!editingGoal && !selectedCategory)}
+              >
                 {editingGoal ? "Update Goal" : "Add Goal"}
               </Button>
             </DialogFooter>
@@ -3706,24 +3762,26 @@ function GoalTrackerApp() {
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>Add New Category</DialogTitle>
-              <DialogDescription>Create a new category to organize your goals</DialogDescription>
+              <DialogDescription>Create a new category to organize your goals and tasks.</DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="category-name">Category Name</Label>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="categoryName" className="text-right">
+                  Name
+                </Label>
                 <Input
-                  id="category-name"
-                  placeholder="e.g., Health, Business, Personal"
+                  id="categoryName"
                   value={newCategoryName}
                   onChange={(e) => setNewCategoryName(e.target.value)}
+                  className="col-span-3"
+                  placeholder="e.g., Health & Fitness"
                 />
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowAddCategory(false)}>
-                Cancel
+              <Button type="submit" onClick={addNewCategory} disabled={!newCategoryName.trim()}>
+                Add Category
               </Button>
-              <Button onClick={addNewCategory}>Add Category</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -3734,36 +3792,46 @@ function GoalTrackerApp() {
             <DialogHeader>
               <DialogTitle>{editingWeeklyTask ? "Edit Weekly Task" : "Add Weekly Task"}</DialogTitle>
               <DialogDescription>
-                {editingWeeklyTask ? "Update your weekly task" : `Create a weekly task for Week ${currentWeek}`}
+                {editingWeeklyTask
+                  ? "Update your weekly task details."
+                  : "Create a task to work on this week that contributes to your 12-week goals."}
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="weekly-task-title">Task Title</Label>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="taskTitle" className="text-right">
+                  Task Title
+                </Label>
                 <Input
-                  id="weekly-task-title"
-                  placeholder="e.g., Complete project proposal"
+                  id="taskTitle"
                   value={newWeeklyTask.title}
                   onChange={(e) => setNewWeeklyTask((prev) => ({ ...prev, title: e.target.value }))}
+                  className="col-span-3"
+                  placeholder="e.g., Complete pitch deck"
                 />
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="weekly-task-description">Description (optional)</Label>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="taskDescription" className="text-right">
+                  Description
+                </Label>
                 <Textarea
-                  id="weekly-task-description"
-                  placeholder="Brief description of the task"
+                  id="taskDescription"
                   value={newWeeklyTask.description}
                   onChange={(e) => setNewWeeklyTask((prev) => ({ ...prev, description: e.target.value }))}
+                  className="col-span-3"
+                  placeholder="Brief description of the task"
                 />
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="weekly-task-category">Category</Label>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="taskCategory" className="text-right">
+                  Category
+                </Label>
                 <Select
                   value={newWeeklyTask.category}
                   onValueChange={(value) => setNewWeeklyTask((prev) => ({ ...prev, category: value }))}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a category" />
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
                     {Object.keys(goalsData).map((category) => (
@@ -3776,10 +3844,11 @@ function GoalTrackerApp() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowAddWeeklyTask(false)}>
-                Cancel
-              </Button>
-              <Button onClick={editingWeeklyTask ? saveEditedWeeklyTask : addWeeklyTask}>
+              <Button
+                type="submit"
+                onClick={editingWeeklyTask ? saveEditedWeeklyTask : addWeeklyTask}
+                disabled={!newWeeklyTask.title || !newWeeklyTask.category}
+              >
                 {editingWeeklyTask ? "Update Task" : "Add Task"}
               </Button>
             </DialogFooter>
@@ -3793,43 +3862,65 @@ function GoalTrackerApp() {
               <DialogTitle>{editingDailyTask ? "Edit Daily Task" : "Add Daily Task"}</DialogTitle>
               <DialogDescription>
                 {editingDailyTask
-                  ? "Update your daily task"
-                  : `Create a daily task for ${selectedDay} in ${newDailyTask.category || "selected category"}.`}
+                  ? "Update your daily task details."
+                  : `Create a daily task for ${selectedDay} in ${newDailyTask.category || "your selected category"}.`}
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="daily-task-title">Task Title</Label>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="dailyTaskTitle" className="text-right">
+                  Task Title
+                </Label>
                 <Input
-                  id="daily-task-title"
-                  placeholder="e.g., Morning workout"
+                  id="dailyTaskTitle"
                   value={newDailyTask.title}
                   onChange={(e) => setNewDailyTask((prev) => ({ ...prev, title: e.target.value }))}
+                  className="col-span-3"
+                  placeholder="e.g., Morning workout"
                 />
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="daily-task-description">Description (optional)</Label>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="dailyTaskDescription" className="text-right">
+                  Description (optional)
+                </Label>
                 <Textarea
-                  id="daily-task-description"
-                  placeholder="Brief description of the task"
+                  id="dailyTaskDescription"
                   value={newDailyTask.description}
                   onChange={(e) => setNewDailyTask((prev) => ({ ...prev, description: e.target.value }))}
+                  className="col-span-3"
+                  placeholder="Brief description of the task"
                 />
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="daily-task-category">Category</Label>
-                <Badge
-                  className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(newDailyTask.category)}`}
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="dailyTaskCategory" className="text-right">
+                  Category
+                </Label>
+                <Select
+                  value={newDailyTask.category}
+                  onValueChange={(value) => setNewDailyTask((prev) => ({ ...prev, category: value }))}
                 >
-                  {newDailyTask.category}
-                </Badge>
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.keys(goalsData).map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setShowAddDailyTask(false)}>
                 Cancel
               </Button>
-              <Button onClick={editingDailyTask ? saveEditedDailyTask : addDailyTask}>
+              <Button
+                type="submit"
+                onClick={editingDailyTask ? saveEditedDailyTask : addDailyTask}
+                disabled={!newDailyTask.title}
+              >
                 {editingDailyTask ? "Update Task" : "Add Task"}
               </Button>
             </DialogFooter>
@@ -3847,48 +3938,54 @@ async function loadCategoriesAndGoalsFromDB(userId: string) {
   try {
     const { data: categories, error: categoriesError } = await supabase
       .from("categories")
-      .select("id, name")
+      .select(`
+        id,
+        name,
+        color,
+        goals (
+          id,
+          title,
+          description,
+          target_count,
+          current_progress,
+          weekly_target,
+          completed
+        )
+      `)
       .eq("user_id", userId)
 
     if (categoriesError) {
       console.error("Error fetching categories:", categoriesError)
-      return {}
+      return initialGoalsData
     }
 
-    const goalsByCategory: { [categoryName: string]: Goal[] } = {}
+    const goalsData: GoalsData = {}
 
-    for (const category of categories) {
-      const { data: goals, error: goalsError } = await supabase
-        .from("goals")
-        .select("id, title, description, target_count, current_progress, weekly_target")
-        .eq("user_id", userId)
-        .eq("category_id", category.id)
-
-      if (goalsError) {
-        console.error(`Error fetching goals for category ${category.name}:`, goalsError)
-        continue
-      }
-
-      goalsByCategory[category.name] = goals.map((goal) => ({
+    categories.forEach((category) => {
+      const categoryGoals = category.goals.map((goal) => ({
         id: goal.id,
         title: goal.title,
-        description: goal.description,
+        description: goal.description || "",
         targetCount: goal.target_count,
         currentCount: goal.current_progress,
-        notes: "", // You might want to fetch notes as well
+        notes: "",
         weeklyTarget: goal.weekly_target,
         category: category.name,
       }))
-    }
 
-    return goalsByCategory
+      goalsData[category.name] = categoryGoals
+    })
+
+    // Merge with initial data for categories that don't exist in database
+    const mergedData = { ...initialGoalsData, ...goalsData }
+    return mergedData
   } catch (error) {
-    console.error("Error in loadCategoriesAndGoalsFromDB:", error)
-    return {}
+    console.error("Error loading categories and goals:", error)
+    return initialGoalsData
   }
 }
 
-export default function Page() {
+function Page() {
   const { user, loading } = useAuth()
 
   if (loading) {
@@ -3908,3 +4005,5 @@ export default function Page() {
 
   return <GoalTrackerApp />
 }
+
+export default Page
