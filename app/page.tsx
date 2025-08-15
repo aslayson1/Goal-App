@@ -3414,23 +3414,24 @@ function GoalTrackerApp() {
                                       },
                                     }))
                                   }}
-                                  className={`h-4 w-4 ${checkboxStyles}`}
+                                  className={`h-5 w-5 mt-0.5 flex-shrink-0 ${checkboxStyles}`}
                                 />
                                 <div className="flex-1">
-                                  <p
+                                  <span
                                     className={`text-sm ${milestone.completed ? "line-through text-gray-500" : "text-gray-700"}`}
                                   >
                                     {milestone.title}
-                                  </p>
-                                  <p className="text-xs text-gray-500">
-                                    Due: {new Date(milestone.targetDate).toLocaleDateString()}
-                                  </p>
+                                  </span>
+                                  <span className="text-xs text-gray-500 ml-2">
+                                    {new Date(milestone.targetDate).toLocaleDateString()}
+                                  </span>
                                 </div>
                               </div>
                             ))}
                           </div>
                         </div>
 
+                        {/* Notes */}
                         {goal.notes && (
                           <div className="pt-2 border-t border-gray-200">
                             <p className="text-sm text-gray-600">{goal.notes}</p>
@@ -3512,16 +3513,6 @@ function GoalTrackerApp() {
                                   }))
                                 } catch (error) {
                                   console.error("Error updating long-term goal:", error)
-                                  // Revert local state if database update fails
-                                  setLongTermGoals((prev) => ({
-                                    ...prev,
-                                    "5-year": {
-                                      ...prev["5-year"],
-                                      [category]: prev["5-year"][category].map((g) =>
-                                        g.id === goal.id ? { ...g, status: goal.status } : g,
-                                      ),
-                                    },
-                                  }))
                                 }
                               } else {
                                 // Local goal - update only local state
@@ -3625,23 +3616,24 @@ function GoalTrackerApp() {
                                       },
                                     }))
                                   }}
-                                  className={`h-4 w-4 ${checkboxStyles}`}
+                                  className={`h-5 w-5 mt-0.5 flex-shrink-0 ${checkboxStyles}`}
                                 />
                                 <div className="flex-1">
-                                  <p
+                                  <span
                                     className={`text-sm ${milestone.completed ? "line-through text-gray-500" : "text-gray-700"}`}
                                   >
                                     {milestone.title}
-                                  </p>
-                                  <p className="text-xs text-gray-500">
-                                    Due: {new Date(milestone.targetDate).toLocaleDateString()}
-                                  </p>
+                                  </span>
+                                  <span className="text-xs text-gray-500 ml-2">
+                                    {new Date(milestone.targetDate).toLocaleDateString()}
+                                  </span>
                                 </div>
                               </div>
                             ))}
                           </div>
                         </div>
 
+                        {/* Notes */}
                         {goal.notes && (
                           <div className="pt-2 border-t border-gray-200">
                             <p className="text-sm text-gray-600">{goal.notes}</p>
@@ -3781,6 +3773,91 @@ function GoalTrackerApp() {
             <DialogFooter>
               <Button type="submit" onClick={addNewCategory} disabled={!newCategoryName.trim()}>
                 Add Category
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Add Long-Term Goal Dialog */}
+        <Dialog open={showAddLongTermGoal} onOpenChange={setShowAddLongTermGoal}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Add {selectedTimeframe} Goal</DialogTitle>
+              <DialogDescription>
+                Create a long-term goal with milestones to track your progress over time.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4 max-h-96 overflow-y-auto">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="longTermTitle" className="text-right">
+                  Title
+                </Label>
+                <Input
+                  id="longTermTitle"
+                  value={newLongTermGoal.title}
+                  onChange={(e) => setNewLongTermGoal((prev) => ({ ...prev, title: e.target.value }))}
+                  className="col-span-3"
+                  placeholder="e.g., Complete a marathon"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="longTermDescription" className="text-right">
+                  Description
+                </Label>
+                <Textarea
+                  id="longTermDescription"
+                  value={newLongTermGoal.description}
+                  onChange={(e) => setNewLongTermGoal((prev) => ({ ...prev, description: e.target.value }))}
+                  className="col-span-3"
+                  placeholder="Detailed description of your goal"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="longTermCategory" className="text-right">
+                  Category
+                </Label>
+                <Select
+                  value={newLongTermGoal.category}
+                  onValueChange={(value) => setNewLongTermGoal((prev) => ({ ...prev, category: value }))}
+                >
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Business">Business</SelectItem>
+                    <SelectItem value="Personal">Personal</SelectItem>
+                    <SelectItem value="Financial">Financial</SelectItem>
+                    <SelectItem value="Health">Health</SelectItem>
+                    <SelectItem value="Relationships">Relationships</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="longTermTargetDate" className="text-right">
+                  Target Date
+                </Label>
+                <Input
+                  id="longTermTargetDate"
+                  type="date"
+                  value={newLongTermGoal.targetDate}
+                  onChange={(e) => setNewLongTermGoal((prev) => ({ ...prev, targetDate: e.target.value }))}
+                  className="col-span-3"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowAddLongTermGoal(false)}>
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                onClick={() => {
+                  // Add the long-term goal logic here
+                  setShowAddLongTermGoal(false)
+                }}
+                disabled={!newLongTermGoal.title || !newLongTermGoal.category}
+              >
+                Add Goal
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -3932,56 +4009,66 @@ function GoalTrackerApp() {
       </div>
     </div>
   )
-}
 
-async function loadCategoriesAndGoalsFromDB(userId: string) {
-  try {
-    const { data: categories, error: categoriesError } = await supabase
-      .from("categories")
-      .select(`
-        id,
-        name,
-        color,
-        goals (
-          id,
-          title,
-          description,
-          target_count,
-          current_progress,
-          weekly_target,
-          completed
-        )
-      `)
-      .eq("user_id", userId)
+  async function loadCategoriesAndGoalsFromDB(userId: string) {
+    try {
+      const { data: categories, error: categoriesError } = await supabase
+        .from("categories")
+        .select("*")
+        .eq("user_id", userId)
 
-    if (categoriesError) {
-      console.error("Error fetching categories:", categoriesError)
+      if (categoriesError) {
+        console.error("Error fetching categories:", categoriesError)
+        return initialGoalsData
+      }
+
+      const { data: goals, error: goalsError } = await supabase
+        .from("goals")
+        .select(`
+          *,
+          categories (
+            name
+          )
+        `)
+        .eq("user_id", userId)
+
+      if (goalsError) {
+        console.error("Error fetching goals:", goalsError)
+        return initialGoalsData
+      }
+
+      // Organize goals by category
+      const organizedGoals: GoalsData = {}
+
+      // Initialize categories
+      categories.forEach((category) => {
+        organizedGoals[category.name] = []
+      })
+
+      // Add goals to their categories
+      goals.forEach((goal) => {
+        const categoryName = goal.categories?.name || "Uncategorized"
+        if (!organizedGoals[categoryName]) {
+          organizedGoals[categoryName] = []
+        }
+
+        organizedGoals[categoryName].push({
+          id: goal.id,
+          title: goal.title,
+          description: goal.description || "",
+          targetCount: goal.target_count || 1,
+          currentCount: goal.current_progress || 0,
+          notes: goal.notes || "",
+          weeklyTarget: goal.weekly_target || 1,
+          category: categoryName,
+        })
+      })
+
+      return organizedGoals
+    } catch (error) {
+      console.error("Error loading categories and goals:", error)
       return initialGoalsData
     }
-
-    const goalsData: GoalsData = {}
-
-    categories.forEach((category) => {
-      const categoryGoals = category.goals.map((goal) => ({
-        id: goal.id,
-        title: goal.title,
-        description: goal.description || "",
-        targetCount: goal.target_count,
-        currentCount: goal.current_progress,
-        notes: "",
-        weeklyTarget: goal.weekly_target,
-        category: category.name,
-      }))
-
-      goalsData[category.name] = categoryGoals
-    })
-
-    // Merge with initial data for categories that don't exist in database
-    const mergedData = { ...initialGoalsData, ...goalsData }
-    return mergedData
-  } catch (error) {
-    console.error("Error loading categories and goals:", error)
-    return initialGoalsData
   }
 }
 
