@@ -29,10 +29,10 @@ import { AuthScreen } from "@/components/auth/auth-screen"
 
 // Drag and Drop imports
 import { KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core"
-import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable"
+import { arrayMove, sortableKeyboardCoordinates, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { DndContext, closestCenter, SortableContext, verticalListSortingStrategy } from "@dnd-kit/core"
+import { DndContext, closestCenter } from "@dnd-kit/core"
 
 // Custom CSS class for white checkbox background with thinner border
 const checkboxStyles =
