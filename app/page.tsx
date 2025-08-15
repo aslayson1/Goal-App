@@ -1303,22 +1303,74 @@ function GoalTrackerApp() {
     }),
   )
 
-  const incrementGoal = (category: string, goalId: string, amount = 1) => {
+  const incrementGoal = async (category: string, goalId: string, amount = 1) => {
+    const goal = goalsData[category]?.find((g) => g.id === goalId)
+    if (!goal) return
+
+    const newCount = Math.min(goal.currentCount + amount, goal.targetCount)
+
+    // Update local state immediately for UI feedback
     setGoalsData((prev) => ({
       ...prev,
-      [category]: prev[category].map((goal) =>
-        goal.id === goalId ? { ...goal, currentCount: Math.min(goal.currentCount + amount, goal.targetCount) } : goal,
-      ),
+      [category]: prev[category].map((goal) => (goal.id === goalId ? { ...goal, currentCount: newCount } : goal)),
     }))
+
+    // Check if this is a database goal (has UUID format) vs local goal
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(goalId)
+
+    if (isUUID) {
+      try {
+        const { error } = await supabase.from("goals").update({ current_progress: newCount }).eq("id", goalId)
+
+        if (error) {
+          console.error("Error updating goal progress:", error)
+          // Revert local state on error
+          setGoalsData((prev) => ({
+            ...prev,
+            [category]: prev[category].map((goal) =>
+              goal.id === goalId ? { ...goal, currentCount: goal.currentCount } : goal,
+            ),
+          }))
+        }
+      } catch (error) {
+        console.error("Error updating goal progress:", error)
+      }
+    }
   }
 
-  const updateGoalProgress = (category: string, goalId: string, newValue: number) => {
+  const updateGoalProgress = async (category: string, goalId: string, newValue: number) => {
+    const goal = goalsData[category]?.find((g) => g.id === goalId)
+    if (!goal) return
+
+    const clampedValue = Math.min(Math.max(newValue, 0), goal.targetCount)
+
+    // Update local state immediately for UI feedback
     setGoalsData((prev) => ({
       ...prev,
-      [category]: prev[category].map((goal) =>
-        goal.id === goalId ? { ...goal, currentCount: Math.min(Math.max(newValue, 0), goal.targetCount) } : goal,
-      ),
+      [category]: prev[category].map((goal) => (goal.id === goalId ? { ...goal, currentCount: clampedValue } : goal)),
     }))
+
+    // Check if this is a database goal (has UUID format) vs local goal
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(goalId)
+
+    if (isUUID) {
+      try {
+        const { error } = await supabase.from("goals").update({ current_progress: clampedValue }).eq("id", goalId)
+
+        if (error) {
+          console.error("Error updating goal progress:", error)
+          // Revert local state on error
+          setGoalsData((prev) => ({
+            ...prev,
+            [category]: prev[category].map((goal) =>
+              goal.id === goalId ? { ...goal, currentCount: goal.currentCount } : goal,
+            ),
+          }))
+        }
+      } catch (error) {
+        console.error("Error updating goal progress:", error)
+      }
+    }
   }
 
   const toggleBinaryGoal = async (category: string, goalId: string) => {
