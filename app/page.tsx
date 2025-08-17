@@ -1969,6 +1969,86 @@ function GoalTrackerApp() {
     setShowAddLongTermGoal(false)
   }
 
+  const addLongTermGoal = async () => {
+    if (!newLongTermGoal.title || !newLongTermGoal.category || !user?.id) return
+
+    try {
+      // Save to database
+      const { data, error } = await supabase
+        .from("long_term_goals")
+        .insert([
+          {
+            user_id: user.id,
+            title: newLongTermGoal.title,
+            description: newLongTermGoal.description,
+            target_date: newLongTermGoal.targetDate,
+            category: newLongTermGoal.category,
+            timeframe: selectedTimeframe,
+            notes: newLongTermGoal.notes,
+            milestones: newLongTermGoal.milestones
+              .filter((m) => m.title && m.targetDate)
+              .map((m, index) => ({
+                id: `milestone_${index + 1}`,
+                title: m.title,
+                completed: false,
+                targetDate: m.targetDate,
+              })),
+            completed: false,
+          },
+        ])
+        .select()
+
+      if (error) throw error
+
+      // Update local state
+      if (data && data[0]) {
+        const newGoal = {
+          id: data[0].id,
+          title: newLongTermGoal.title,
+          description: newLongTermGoal.description,
+          targetDate: newLongTermGoal.targetDate,
+          category: newLongTermGoal.category,
+          status: "in-progress" as const,
+          notes: newLongTermGoal.notes,
+          milestones: newLongTermGoal.milestones
+            .filter((m) => m.title && m.targetDate)
+            .map((m, index) => ({
+              id: `${data[0].id}_m${index + 1}`,
+              title: m.title,
+              completed: false,
+              targetDate: m.targetDate,
+            })),
+        }
+
+        setLongTermGoals((prev) => ({
+          ...prev,
+          [selectedTimeframe]: {
+            ...prev[selectedTimeframe],
+            [newLongTermGoal.category]: [...(prev[selectedTimeframe][newLongTermGoal.category] || []), newGoal],
+          },
+        }))
+      }
+
+      // Reset form and close dialog
+      setNewLongTermGoal({
+        title: "",
+        description: "",
+        targetDate: "",
+        category: "",
+        notes: "",
+        milestones: [
+          { title: "", targetDate: "" },
+          { title: "", targetDate: "" },
+          { title: "", targetDate: "" },
+          { title: "", targetDate: "" },
+        ],
+      })
+      setShowAddLongTermGoal(false)
+    } catch (error) {
+      console.error("Error adding long-term goal:", error)
+    }
+  }
+
   const deleteLongTermGoal = (timeframe: "1-year" | "5-year", category: string, goalId: string) => {
     setLongTermGoals((prev) => ({
       ...prev,
@@ -3886,10 +3966,7 @@ function GoalTrackerApp() {
               </Button>
               <Button
                 type="submit"
-                onClick={() => {
-                  // Add the long-term goal logic here
-                  setShowAddLongTermGoal(false)
-                }}
+                onClick={addLongTermGoal} // Connected to actual function instead of placeholder
                 disabled={!newLongTermGoal.title || !newLongTermGoal.category}
               >
                 Add Goal
