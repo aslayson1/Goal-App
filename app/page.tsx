@@ -2554,8 +2554,9 @@ function GoalTrackerApp() {
         }
 
         longTermGoalsData.forEach((goal) => {
-          const timeframe = goal.goal_type as "1-year" | "5-year"
-          const category = goal.category
+          // Convert database goal_type format to display format
+          const timeframe = goal.goal_type === "1_year" ? "1-year" : "5-year"
+          const category = "Business" // Default category since database doesn't store categories
 
           if (!groupedGoals[timeframe][category]) {
             groupedGoals[timeframe][category] = []
@@ -2565,11 +2566,11 @@ function GoalTrackerApp() {
             id: goal.id,
             title: goal.title,
             description: goal.description || "",
-            targetDate: goal.target_date,
-            category: goal.category,
+            targetDate: "", // Database doesn't store target_date
+            category: category,
             status: goal.completed ? "completed" : "in-progress",
-            notes: goal.notes || "",
-            milestones: goal.milestones || [],
+            notes: "", // Database doesn't store notes
+            milestones: [], // Database doesn't store milestones
           })
         })
 
