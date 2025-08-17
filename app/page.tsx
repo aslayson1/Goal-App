@@ -2,8 +2,6 @@
 import { supabase } from "@/lib/supabase/client"
 import { DialogFooter } from "@/components/ui/dialog"
 
-import { Label } from "@/components/ui/label"
-
 import { DialogDescription } from "@/components/ui/dialog"
 
 import { DialogTitle } from "@/components/ui/dialog"
@@ -14,6 +12,7 @@ import { DialogContent } from "@/components/ui/dialog"
 
 import { Dialog } from "@/components/ui/dialog"
 
+import { Label } from "@/components/ui/label"
 import { useState, useEffect } from "react"
 import {
   Plus,
@@ -3780,69 +3779,105 @@ function GoalTrackerApp() {
 
         {/* Add Long-Term Goal Dialog */}
         <Dialog open={showAddLongTermGoal} onOpenChange={setShowAddLongTermGoal}>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
-              <DialogTitle>Add {selectedTimeframe} Goal</DialogTitle>
+              <DialogTitle>Add {selectedTimeframe === "5-year" ? "5-Year" : "1-Year"} Goal</DialogTitle>
               <DialogDescription>
                 Create a long-term goal with milestones to track your progress over time.
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4 max-h-96 overflow-y-auto">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="longTermTitle" className="text-right">
-                  Title
-                </Label>
+            <div className="grid gap-6 py-4 max-h-[500px] overflow-y-auto">
+              <div className="space-y-2">
+                <Label htmlFor="longTermTitle">Goal Title</Label>
                 <Input
                   id="longTermTitle"
                   value={newLongTermGoal.title}
                   onChange={(e) => setNewLongTermGoal((prev) => ({ ...prev, title: e.target.value }))}
-                  className="col-span-3"
-                  placeholder="e.g., Complete a marathon"
+                  placeholder="e.g., Build a $10M business"
                 />
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="longTermDescription" className="text-right">
-                  Description
-                </Label>
+
+              <div className="space-y-2">
+                <Label htmlFor="longTermDescription">Description</Label>
                 <Textarea
                   id="longTermDescription"
                   value={newLongTermGoal.description}
                   onChange={(e) => setNewLongTermGoal((prev) => ({ ...prev, description: e.target.value }))}
-                  className="col-span-3"
-                  placeholder="Detailed description of your goal"
+                  placeholder="Detailed description of what you want to achieve..."
+                  rows={3}
                 />
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="longTermCategory" className="text-right">
-                  Category
-                </Label>
-                <Select
-                  value={newLongTermGoal.category}
-                  onValueChange={(value) => setNewLongTermGoal((prev) => ({ ...prev, category: value }))}
-                >
-                  <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Business">Business</SelectItem>
-                    <SelectItem value="Personal">Personal</SelectItem>
-                    <SelectItem value="Financial">Financial</SelectItem>
-                    <SelectItem value="Health">Health</SelectItem>
-                    <SelectItem value="Relationships">Relationships</SelectItem>
-                  </SelectContent>
-                </Select>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="longTermCategory">Category</Label>
+                  <Select
+                    value={newLongTermGoal.category}
+                    onValueChange={(value) => setNewLongTermGoal((prev) => ({ ...prev, category: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Business">Business</SelectItem>
+                      <SelectItem value="Personal">Personal</SelectItem>
+                      <SelectItem value="Financial">Financial</SelectItem>
+                      <SelectItem value="Health">Health</SelectItem>
+                      <SelectItem value="Relationships">Relationships</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="longTermTargetDate">Target Date</Label>
+                  <Input
+                    id="longTermTargetDate"
+                    type="date"
+                    value={newLongTermGoal.targetDate}
+                    onChange={(e) => setNewLongTermGoal((prev) => ({ ...prev, targetDate: e.target.value }))}
+                  />
+                </div>
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="longTermTargetDate" className="text-right">
-                  Target Date
-                </Label>
-                <Input
-                  id="longTermTargetDate"
-                  type="date"
-                  value={newLongTermGoal.targetDate}
-                  onChange={(e) => setNewLongTermGoal((prev) => ({ ...prev, targetDate: e.target.value }))}
-                  className="col-span-3"
+
+              <div className="space-y-2">
+                <Label htmlFor="longTermNotes">Notes (optional)</Label>
+                <Textarea
+                  id="longTermNotes"
+                  value={newLongTermGoal.notes}
+                  onChange={(e) => setNewLongTermGoal((prev) => ({ ...prev, notes: e.target.value }))}
+                  placeholder="Additional context, strategy, or thoughts..."
+                  rows={3}
                 />
+              </div>
+
+              <div className="space-y-4">
+                <Label className="text-base font-medium">Milestones (4 key checkpoints)</Label>
+                {newLongTermGoal.milestones.map((milestone, index) => (
+                  <div key={index} className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <Input
+                        value={milestone.title}
+                        onChange={(e) => {
+                          const updatedMilestones = [...newLongTermGoal.milestones]
+                          updatedMilestones[index].title = e.target.value
+                          setNewLongTermGoal((prev) => ({ ...prev, milestones: updatedMilestones }))
+                        }}
+                        placeholder={`Milestone ${index + 1} title`}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Input
+                        type="date"
+                        value={milestone.targetDate}
+                        onChange={(e) => {
+                          const updatedMilestones = [...newLongTermGoal.milestones]
+                          updatedMilestones[index].targetDate = e.target.value
+                          setNewLongTermGoal((prev) => ({ ...prev, milestones: updatedMilestones }))
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
             <DialogFooter>
