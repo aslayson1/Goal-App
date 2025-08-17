@@ -1973,6 +1973,8 @@ function GoalTrackerApp() {
     if (!newLongTermGoal.title || !user?.id) return
 
     try {
+      const goalType = selectedTimeframe === "1-year" ? "1_year" : "5_year"
+
       // Save to database
       const { data, error } = await supabase
         .from("long_term_goals")
@@ -1981,7 +1983,7 @@ function GoalTrackerApp() {
             user_id: user.id,
             title: newLongTermGoal.title,
             description: newLongTermGoal.description,
-            goal_type: selectedTimeframe, // Use goal_type instead of timeframe
+            goal_type: goalType, // Use converted goal_type value
             completed: false,
           },
         ])
