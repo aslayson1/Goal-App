@@ -1970,7 +1970,7 @@ function GoalTrackerApp() {
   }
 
   const addLongTermGoal = async () => {
-    if (!newLongTermGoal.title || !newLongTermGoal.category || !user?.id) return
+    if (!newLongTermGoal.title || !user?.id) return
 
     try {
       // Save to database
@@ -1981,18 +1981,7 @@ function GoalTrackerApp() {
             user_id: user.id,
             title: newLongTermGoal.title,
             description: newLongTermGoal.description,
-            target_date: newLongTermGoal.targetDate,
-            category: newLongTermGoal.category,
-            timeframe: selectedTimeframe,
-            notes: newLongTermGoal.notes,
-            milestones: newLongTermGoal.milestones
-              .filter((m) => m.title && m.targetDate)
-              .map((m, index) => ({
-                id: `milestone_${index + 1}`,
-                title: m.title,
-                completed: false,
-                targetDate: m.targetDate,
-              })),
+            goal_type: selectedTimeframe, // Use goal_type instead of timeframe
             completed: false,
           },
         ])
@@ -2563,7 +2552,7 @@ function GoalTrackerApp() {
         }
 
         longTermGoalsData.forEach((goal) => {
-          const timeframe = goal.timeframe as "1-year" | "5-year"
+          const timeframe = goal.goal_type as "1-year" | "5-year"
           const category = goal.category
 
           if (!groupedGoals[timeframe][category]) {
