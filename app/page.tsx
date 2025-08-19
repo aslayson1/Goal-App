@@ -1,17 +1,5 @@
 "use client"
 import { supabase } from "@/lib/supabase/client"
-import { DialogFooter } from "@/components/ui/dialog"
-
-import { DialogDescription } from "@/components/ui/dialog"
-
-import { DialogTitle } from "@/components/ui/dialog"
-
-import { DialogHeader } from "@/components/ui/dialog"
-
-import { DialogContent } from "@/components/ui/dialog"
-
-import { Dialog } from "@/components/ui/dialog"
-
 import { Label } from "@/components/ui/label"
 import { useState, useEffect } from "react"
 import {
@@ -59,6 +47,15 @@ import {
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
+
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog"
 
 // Custom CSS class for white checkbox background with thinner border
 const checkboxStyles =
@@ -1098,6 +1095,8 @@ function GoalTrackerApp() {
 
   // Cal.com inspired color palette for category badges - each category gets a unique, distinct color
   const getCategoryColor = (category: string) => {
+    return "bg-black text-white border-black"
+
     // Check for custom colors first
     if (customCategoryColors[category]) {
       return customCategoryColors[category]
@@ -1440,8 +1439,11 @@ function GoalTrackerApp() {
   }
 
   const toggleGoalCompletion = async (goalId: string, category: string) => {
-    // Check if this is a local goal (starts with letters) or database goal (UUID format)
-    const isLocalGoal = /^[a-zA-Z]/.test(goalId)
+    console.log("[v0] toggleGoalCompletion called", { goalId, category })
+
+    // Check if this is a local goal (non-UUID) or database goal (UUID format)
+    const isLocalGoal = !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(goalId)
+    console.log("[v0] isLocalGoal:", isLocalGoal)
 
     if (isLocalGoal) {
       // Handle local goals - just update local state
@@ -1459,37 +1461,55 @@ function GoalTrackerApp() {
     // Handle database goals - update both local state and database
     try {
       const goal = goalsData[category]?.find((g) => g.id === goalId)
+      console.log("[v0] Found goal:", goal)
       if (!goal) return
 
       const newProgress = goal.currentCount >= goal.targetCount ? 0 : goal.targetCount
       const isCompleted = newProgress >= goal.targetCount
+      console.log("[v0] Goal completion logic:", {
+        currentCount: goal.currentCount,
+        targetCount: goal.targetCount,
+        newProgress,
+        isCompleted,
+      })
 
       setGoalsData((prev) => ({
         ...prev,
         [category]: prev[category].map((goal) => (goal.id === goalId ? { ...goal, currentCount: newProgress } : goal)),
       }))
 
-      // Update database
+      console.log("[v0] Updating database with:", {
+        current_progress: newProgress,
+        completed: isCompleted,
+        completed_at: isCompleted ? new Date().toISOString() : null,
+      })
+
       const { error } = await supabase
         .from("goals")
         .update({
           current_progress: newProgress,
           completed: isCompleted,
+          completed_at: isCompleted ? new Date().toISOString() : null,
+          updated_at: new Date().toISOString(),
         })
         .eq("id", goalId)
 
       if (error) {
-        console.error("Error updating goal completion:", error.message)
+        console.error("[v0] Error updating goal completion:", error.message)
         setGoalsData((prev) => ({
           ...prev,
           [category]: prev[category].map((goal) =>
-            goal.id === goalId ? { ...goal, currentCount: goal.currentCount } : goal,
+            goal.id === goalId
+              ? { ...goal, currentCount: goal.currentCount >= goal.targetCount ? goal.targetCount : 0 }
+              : goal,
           ),
         }))
         return
       }
+
+      console.log("[v0] Database update successful")
     } catch (error) {
-      console.error("Error updating goal completion:", error)
+      console.error("[v0] Error updating goal completion:", error)
     }
   }
 
@@ -3440,14 +3460,7 @@ function GoalTrackerApp() {
                                     Edit Goal
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
-                                    onClick={() =>
-                                      setShowDeleteLongTermGoal({
-                                        timeframe: "1-year",
-                                        category,
-                                        goalId: goal.id,
-                                        title: goal.title,
-                                      })
-                                    }
+                                    onClick={() => deleteLongTermGoal("1-year", category, goal.id)}
                                     className="text-red-600"
                                   >
                                     <Trash2 className="h-4 w-4 mr-2" />
@@ -3642,14 +3655,7 @@ function GoalTrackerApp() {
                                     Edit Goal
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
-                                    onClick={() =>
-                                      setShowDeleteLongTermGoal({
-                                        timeframe: "5-year",
-                                        category,
-                                        goalId: goal.id,
-                                        title: goal.title,
-                                      })
-                                    }
+                                    onClick={() => deleteLongTermGoal("5-year", category, goal.id)}
                                     className="text-red-600"
                                   >
                                     <Trash2 className="h-4 w-4 mr-2" />
@@ -3844,6 +3850,63 @@ function GoalTrackerApp() {
             <DialogFooter>
               <Button type="submit" onClick={addNewCategory} disabled={!newCategoryName.trim()}>
                 Add Category
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={!!showEditCategory} onOpenChange={() => setShowEditCategory(null)}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Edit Category</DialogTitle>
+              <DialogDescription>Update the category name and color.</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="editCategoryName" className="text-right">
+                  Name
+                </Label>
+                <Input
+                  id="editCategoryName"
+                  value={editCategoryName}
+                  onChange={(e) => setEditCategoryName(e.target.value)}
+                  className="col-span-3"
+                  placeholder="Category name"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="editCategoryColor" className="text-right">
+                  Color
+                </Label>
+                <div className="col-span-3 flex items-center gap-2">
+                  <Input
+                    id="editCategoryColor"
+                    type="color"
+                    value={editCategoryColor}
+                    onChange={(e) => setEditCategoryColor(e.target.value)}
+                    className="w-16 h-8 p-1 border rounded"
+                  />
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="px-2 py-1 rounded text-sm border"
+                      style={{
+                        backgroundColor: editCategoryColor + "20",
+                        borderColor: editCategoryColor,
+                        color: editCategoryColor,
+                      }}
+                    >
+                      {editCategoryName || "Preview"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowEditCategory(null)}>
+                Cancel
+              </Button>
+              <Button type="submit" onClick={saveEditedCategory} disabled={!editCategoryName.trim()}>
+                Save Changes
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -4078,7 +4141,7 @@ function GoalTrackerApp() {
                 </Label>
                 <Select
                   value={newDailyTask.category}
-                  onValueChange={(value) => setNewDailyTask((prev) => ({ ...prev, category: value }))}
+                  onChange={(value) => setNewDailyTask((prev) => ({ ...prev, category: value }))}
                 >
                   <SelectTrigger className="col-span-3">
                     <SelectValue placeholder="Select category" />
@@ -4196,5 +4259,73 @@ function Page() {
 
   return <GoalTrackerApp />
 }
+
+
+
+const deleteGoal = async (category: string, goalId: string) => {
+  // Optimistic UI snapshot
+  const prevList = (goalsData?.[category] ?? []).slice();
+  setGoalsData((prev: any) => ({
+    ...prev,
+    [category]: (prev?.[category] ?? []).filter((g: any) => g.id !== goalId),
+  }));
+  try {
+    // Close any delete dialog state if present
+    if (typeof setShowDeleteGoal === "function") setShowDeleteGoal(null);
+  } catch {}
+
+  // Only delete from DB for UUID ids
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(goalId);
+  if (!isUUID) return;
+
+  try {
+    const { error } = await supabase.from("goals").delete().eq("id", goalId);
+    if (error) throw error;
+  } catch (err) {
+    console.error("Failed to delete goal in DB:", err);
+    // Rollback UI
+    setGoalsData((prev: any) => ({ ...prev, [category]: prevList }));
+  }
+};
+
+
+
+const deleteLongTermGoal = async (
+  timeframe: "1-year" | "5-year",
+  category: string,
+  goalId: string
+) => {
+  const prevList = (longTermGoals?.[timeframe]?.[category] ?? []).slice();
+
+  // Optimistic UI
+  setLongTermGoals((prev: any) => ({
+    ...prev,
+    [timeframe]: {
+      ...prev?.[timeframe],
+      [category]: (prev?.[timeframe]?.[category] ?? []).filter((g: any) => g.id !== goalId),
+    },
+  }));
+  try {
+    if (typeof setShowDeleteLongTermGoal === "function") setShowDeleteLongTermGoal(null);
+  } catch {}
+
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(goalId);
+  if (!isUUID) return;
+
+  try {
+    const { error } = await supabase.from("long_term_goals").delete().eq("id", goalId);
+    if (error) throw error;
+  } catch (err) {
+    console.error("Failed to delete long-term goal in DB:", err);
+    // Rollback UI
+    setLongTermGoals((prev: any) => ({
+      ...prev,
+      [timeframe]: {
+        ...prev?.[timeframe],
+        [category]: prevList,
+      },
+    }));
+  }
+};
 
 export default Page
