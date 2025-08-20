@@ -1793,11 +1793,10 @@ function GoalTrackerApp() {
 
       setWeeklyTasks((prev) => ({
         ...prev,
-        [`Week ${currentWeek}`]: prev[`Week ${currentWeek}`]?.filter((task) => task.id !== taskId) || [],
+        [`Week ${currentWeek}`]: prev[`Week ${currentWeek}`]?.filter((t) => t.id !== taskId) ?? [],
       }))
     } catch (error) {
       console.error("Error deleting weekly task:", error)
-      // Keep the task in UI if database deletion fails
     } finally {
       setShowDeleteWeeklyTask(null)
     }
@@ -4256,7 +4255,13 @@ function GoalTrackerApp() {
         {/* Other dialogs and modals remain the same */}
         {showProfile && <UserProfile onClose={() => setShowProfile(false)} />}
 
-        <AlertDialog open={!!showDeleteWeeklyTask} onOpenChange={() => setShowDeleteWeeklyTask(null)}>
+        <AlertDialog
+          open={!!showDeleteWeeklyTask}
+          onOpenChange={(open) => {
+            if (!open) setShowDeleteWeeklyTask(null)
+          }}
+          key={showDeleteWeeklyTask ?? "weekly-delete"}
+        >
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Delete Task</AlertDialogTitle>
