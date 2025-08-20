@@ -1767,7 +1767,6 @@ function GoalTrackerApp() {
         .update({
           title: updatedTask.title,
           description: updatedTask.description,
-          category_id: updatedTask.category,
           goal_id: updatedTask.goalId,
         })
         .eq("id", taskId)
