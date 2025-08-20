@@ -1908,67 +1908,102 @@ function GoalTrackerApp() {
     setEditCategoryColor(customCategoryColors[category] || getCategoryColor(category))
   }
 
-  const saveEditedCategory = () => {
+  const saveEditedCategory = async () => {
     if (!showEditCategory || !editCategoryName.trim()) return
 
     const oldCategoryName = showEditCategory
     const newCategoryName = editCategoryName.trim()
 
-    // If name changed, update the goals data structure
-    if (oldCategoryName !== newCategoryName) {
-      setGoalsData((prev) => {
-        const updated = { ...prev }
+    try {
+      // Find the category in the database and update it
+      const { createClient } = require("@supabase/supabase-js")
+      const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+      const { data: categories, error: fetchError } = await supabase
+        .from("categories")
+        .select("id")
+        .eq("name", oldCategoryName)
+        .eq("user_id", (await supabase.auth.getUser()).data.user?.id)
+        .single()
 
-        // Move goals to new category name
-        if (updated[oldCategoryName]) {
-          updated[newCategoryName] = updated[oldCategoryName]
-          delete updated[oldCategoryName]
+      if (fetchError) {
+        console.error("Error finding category:", fetchError)
+        return
+      }
+
+      if (categories) {
+        const { error: updateError } = await supabase
+          .from("categories")
+          .update({
+            name: newCategoryName,
+            color: editCategoryColor,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", categories.id)
+
+        if (updateError) {
+          console.error("Database error updating category:", updateError)
+          return
         }
+      }
 
-        return updated
-      })
+      // If name changed, update the goals data structure
+      if (oldCategoryName !== newCategoryName) {
+        setGoalsData((prev) => {
+          const updated = { ...prev }
 
-      // Update tasks to use new category name
-      setWeeklyTasks((prev) => {
-        const updated = { ...prev }
-        Object.keys(updated).forEach((week) => {
-          updated[week] = updated[week].map((task) =>
-            task.category === oldCategoryName ? { ...task, category: newCategoryName } : task,
-          )
+          // Move goals to new category name
+          if (updated[oldCategoryName]) {
+            updated[newCategoryName] = updated[oldCategoryName]
+            delete updated[oldCategoryName]
+          }
+
+          return updated
         })
-        return updated
-      })
 
-      setDailyTasks((prev) => {
-        const updated = { ...prev }
-        Object.keys(updated).forEach((day) => {
-          updated[day] = updated[day].map((task) =>
-            task.category === oldCategoryName ? { ...task, category: newCategoryName } : task,
-          )
+        // Update tasks to use new category name
+        setWeeklyTasks((prev) => {
+          const updated = { ...prev }
+          Object.keys(updated).forEach((week) => {
+            updated[week] = updated[week].map((task) =>
+              task.category === oldCategoryName ? { ...task, category: newCategoryName } : task,
+            )
+          })
+          return updated
         })
-        return updated
-      })
 
-      // Update custom colors
-      setCustomCategoryColors((prev) => {
-        const updated = { ...prev }
-        if (updated[oldCategoryName]) {
-          updated[newCategoryName] = updated[oldCategoryName]
-          delete updated[oldCategoryName]
-        }
-        return updated
-      })
+        setDailyTasks((prev) => {
+          const updated = { ...prev }
+          Object.keys(updated).forEach((day) => {
+            updated[day] = updated[day].map((task) =>
+              task.category === oldCategoryName ? { ...task, category: newCategoryName } : task,
+            )
+          })
+          return updated
+        })
+
+        // Update custom colors
+        setCustomCategoryColors((prev) => {
+          const updated = { ...prev }
+          if (updated[oldCategoryName]) {
+            updated[newCategoryName] = updated[oldCategoryName]
+            delete updated[oldCategoryName]
+          }
+          return updated
+        })
+      }
+
+      // Update color
+      setCustomCategoryColors((prev) => ({
+        ...prev,
+        [newCategoryName]: editCategoryColor,
+      }))
+
+      setShowEditCategory(null)
+      setEditCategoryName("")
+      setEditCategoryColor("")
+    } catch (error) {
+      console.error("Error updating category:", error)
     }
-
-    // Update color
-    setCustomCategoryColors((prev) => ({
-      ...prev,
-      [newCategoryName]: editCategoryColor,
-    }))
-
-    setShowEditCategory(null)
-    setEditCategoryName("")
-    setEditCategoryColor("")
   }
 
   const deleteCategory = async (category: string) => {
