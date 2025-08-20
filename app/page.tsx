@@ -2539,11 +2539,11 @@ function GoalTrackerApp() {
       const { data: tasks, error: tasksError } = await supabase
         .from("tasks")
         .select(`
-        *,
-        categories (
-          name
-        )
-      `)
+          *,
+          categories (
+            name
+          )
+        `)
         .eq("user_id", userId)
 
       if (tasksError) {
@@ -2692,11 +2692,11 @@ function GoalTrackerApp() {
       const { data: goals, error: goalsError } = await supabase
         .from("goals")
         .select(`
-          *,
-          categories (
-            name
-          )
-        `)
+            *,
+            categories (
+              name
+            )
+          `)
         .eq("user_id", userId)
 
       if (goalsError) {
