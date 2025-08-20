@@ -1,4 +1,4 @@
-import { createBrowserClient } from "@supabase/ssr"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 
 export const supabase = (() => {
   // Check if we're in browser environment and have required env vars
@@ -8,7 +8,7 @@ export const supabase = (() => {
 
     if (supabaseUrl && supabaseAnonKey) {
       try {
-        return createBrowserClient(supabaseUrl, supabaseAnonKey)
+        return createClientComponentClient()
       } catch (error) {
         console.error("Failed to create Supabase client:", error)
       }
