@@ -1761,18 +1761,19 @@ function GoalTrackerApp() {
 
   const editWeeklyTask = async (taskId: string, updatedTask: Partial<WeeklyTask>) => {
     try {
-      // Update in database first
-      await supabase
+      const { error } = await supabase
         .from("tasks")
         .update({
           title: updatedTask.title,
           description: updatedTask.description,
-          category: updatedTask.category,
-          goal_id: updatedTask.goalId,
-          priority: updatedTask.priority,
-          estimated_hours: updatedTask.estimatedHours,
+          // Remove category, priority, estimated_hours as they don't exist in database schema
         })
         .eq("id", taskId)
+
+      if (error) {
+        console.error("Database error updating weekly task:", error)
+        return
+      }
 
       // Update local state only if database update succeeds
       setWeeklyTasks((prev) => ({
@@ -1920,7 +1921,6 @@ function GoalTrackerApp() {
         .select("id")
         .eq("name", oldCategoryName)
         .eq("user_id", (await supabase.auth.getUser()).data.user?.id)
-        .single()
 
       if (fetchError) {
         console.error("Error finding category:", fetchError)
