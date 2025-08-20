@@ -1788,35 +1788,17 @@ function GoalTrackerApp() {
   }
 
   const deleteWeeklyTask = async (taskId: string) => {
-    console.log("[v0] Starting weekly task deletion for ID:", taskId)
     try {
-      console.log("[v0] Deleting from database...")
-      const { error } = await supabase.from("tasks").delete().eq("id", taskId)
+      await supabase.from("tasks").delete().eq("id", taskId)
 
-      if (error) {
-        console.error("[v0] Database deletion error:", error)
-        throw error
-      }
-
-      console.log("[v0] Database deletion successful, updating UI state...")
-      setWeeklyTasks((prev) => {
-        const currentWeekKey = `Week ${currentWeek}`
-        const currentWeekTasks = prev[currentWeekKey] || []
-        const updatedTasks = currentWeekTasks.filter((task) => task.id !== taskId)
-
-        return {
-          ...prev,
-          [currentWeekKey]: updatedTasks,
-        }
-      })
-      console.log("[v0] UI state updated successfully")
-    } catch (error) {
-      console.error("[v0] Error deleting weekly task:", error)
-      // Keep the task in UI if database deletion fails
-    } finally {
-      console.log("[v0] Resetting dialog state...")
+      setWeeklyTasks((prev) => ({
+        ...prev,
+        [`Week ${currentWeek}`]: prev[`Week ${currentWeek}`]?.filter((task) => task.id !== taskId) || [],
+      }))
       setShowDeleteWeeklyTask(null)
-      console.log("[v0] Weekly task deletion process complete")
+    } catch (error) {
+      console.error("Error deleting weekly task:", error)
+      // Keep the task in UI if database deletion fails
     }
   }
 
@@ -3396,8 +3378,8 @@ function GoalTrackerApp() {
                 <div className="col-span-2 text-center py-12">
                   <p className="text-gray-500 mb-4">No weekly tasks yet</p>
                   <p className="text-sm text-gray-400">Use the + buttons in each category to add tasks</p>
-                </div>\
-              })}
+                </div>
+              )}
             </div>
           </TabsContent>
 
@@ -4273,7 +4255,7 @@ function GoalTrackerApp() {
         {/* Other dialogs and modals remain the same */}
         {showProfile && <UserProfile onClose={() => setShowProfile(false)} />}
 
-        <AlertDialog open={!!showDeleteWeeklyTask} onOpenChange={(open) => !open && setShowDeleteWeeklyTask(null)}>
+        <AlertDialog open={!!showDeleteWeeklyTask} onOpenChange={() => setShowDeleteWeeklyTask(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Delete Task</AlertDialogTitle>
@@ -4316,3 +4298,6 @@ function Page() {
   }
 
   return <GoalTrackerApp />
+}
+
+export default Page
