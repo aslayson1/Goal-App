@@ -2610,4 +2610,38 @@ function GoalTrackerApp() {
               />
             </div>
             {newLongTermGoal.milestones.map((milestone, index) => (
-\
+              <div key={index} className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor={`milestone-${index}`} className="text-right">
+                  Milestone {index + 1}
+                </Label>
+                <Input
+                  id={`milestone-${index}`}
+                  value={milestone}
+                  onChange={(e) => {
+                    const updatedMilestones = [...newLongTermGoal.milestones]
+                    updatedMilestones[index] = e.target.value
+                    setNewLongTermGoal({ ...newLongTermGoal, milestones: updatedMilestones })
+                  }}
+                  className="col-span-2"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const updatedMilestones = newLongTermGoal.milestones.filter((_, i) => i !== index)
+                    setNewLongTermGoal({ ...newLongTermGoal, milestones: updatedMilestones })
+                  }}
+                >
+                  Remove
+                </Button>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button type="submit">
+              Add Goal
+            </Button>
+          </DialogFooter>
+        </DialogContent>\
+      </Dialog>
