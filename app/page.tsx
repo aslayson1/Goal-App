@@ -1759,12 +1759,31 @@ function GoalTrackerApp() {
     }
   }
 
-  const editWeeklyTask = (taskId: string, updatedTask: Partial<WeeklyTask>) => {
-    setWeeklyTasks((prev) => ({
-      ...prev,
-      [`Week ${currentWeek}`]:
-        prev[`Week ${currentWeek}`]?.map((task) => (task.id === taskId ? { ...task, ...updatedTask } : task)) || [],
-    }))
+  const editWeeklyTask = async (taskId: string, updatedTask: Partial<WeeklyTask>) => {
+    try {
+      // Update in database first
+      await supabase
+        .from("tasks")
+        .update({
+          title: updatedTask.title,
+          description: updatedTask.description,
+          category: updatedTask.category,
+          goal_id: updatedTask.goalId,
+          priority: updatedTask.priority,
+          estimated_hours: updatedTask.estimatedHours,
+        })
+        .eq("id", taskId)
+
+      // Update local state only if database update succeeds
+      setWeeklyTasks((prev) => ({
+        ...prev,
+        [`Week ${currentWeek}`]:
+          prev[`Week ${currentWeek}`]?.map((task) => (task.id === taskId ? { ...task, ...updatedTask } : task)) || [],
+      }))
+    } catch (error) {
+      console.error("Error updating weekly task:", error)
+      // Don't update local state if database update fails
+    }
   }
 
   const deleteWeeklyTask = async (taskId: string) => {
