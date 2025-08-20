@@ -12,5 +12,3 @@ export function createSupabaseServerClient() {
     headers: { get: (k: string) => headers().get(k) ?? undefined },
   })
 }
-
-export const createClient = createSupabaseServerClient
