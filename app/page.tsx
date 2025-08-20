@@ -4086,6 +4086,94 @@ function GoalTrackerApp() {
           </DialogContent>
         </Dialog>
 
+        <Dialog open={showAddWeeklyTask} onOpenChange={setShowAddWeeklyTask}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>{editingWeeklyTask ? "Edit" : "Add"} Weekly Task</DialogTitle>
+              <DialogDescription>
+                {editingWeeklyTask ? "Update your weekly task" : "Create a new weekly task"}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="weekly-task-title">Task Title</Label>
+                <Input
+                  id="weekly-task-title"
+                  placeholder="e.g., Review project proposals"
+                  value={newWeeklyTask.title}
+                  onChange={(e) => setNewWeeklyTask((prev) => ({ ...prev, title: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="weekly-task-description">Description</Label>
+                <Textarea
+                  id="weekly-task-description"
+                  placeholder="Describe the task..."
+                  value={newWeeklyTask.description}
+                  onChange={(e) => setNewWeeklyTask((prev) => ({ ...prev, description: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="weekly-task-category">Category</Label>
+                <Select
+                  value={newWeeklyTask.category}
+                  onValueChange={(value) => setNewWeeklyTask((prev) => ({ ...prev, category: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.keys(goalsData).map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="weekly-task-priority">Priority</Label>
+                <Select
+                  value={newWeeklyTask.priority}
+                  onValueChange={(value) =>
+                    setNewWeeklyTask((prev) => ({ ...prev, priority: value as "low" | "medium" | "high" }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="weekly-task-hours">Estimated Hours</Label>
+                <Input
+                  id="weekly-task-hours"
+                  type="number"
+                  min="1"
+                  max="40"
+                  value={newWeeklyTask.estimatedHours}
+                  onChange={(e) =>
+                    setNewWeeklyTask((prev) => ({ ...prev, estimatedHours: Number.parseInt(e.target.value) || 1 }))
+                  }
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowAddWeeklyTask(false)}>
+                Cancel
+              </Button>
+              <Button onClick={editingWeeklyTask ? saveEditedWeeklyTask : addWeeklyTask}>
+                {editingWeeklyTask ? "Save Changes" : "Add Task"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         {/* Other dialogs and modals remain the same */}
         {showProfile && <UserProfile onClose={() => setShowProfile(false)} />}
 
