@@ -1795,10 +1795,11 @@ function GoalTrackerApp() {
         ...prev,
         [`Week ${currentWeek}`]: prev[`Week ${currentWeek}`]?.filter((task) => task.id !== taskId) || [],
       }))
-      setShowDeleteWeeklyTask(null)
     } catch (error) {
       console.error("Error deleting weekly task:", error)
       // Keep the task in UI if database deletion fails
+    } finally {
+      setShowDeleteWeeklyTask(null)
     }
   }
 
