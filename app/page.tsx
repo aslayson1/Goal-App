@@ -4255,7 +4255,7 @@ function GoalTrackerApp() {
         {/* Other dialogs and modals remain the same */}
         {showProfile && <UserProfile onClose={() => setShowProfile(false)} />}
 
-        <AlertDialog open={!!showDeleteWeeklyTask} onOpenChange={() => setShowDeleteWeeklyTask(null)}>
+        <AlertDialog open={!!showDeleteWeeklyTask} onOpenChange={(open) => !open && setShowDeleteWeeklyTask(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Delete Task</AlertDialogTitle>
