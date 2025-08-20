@@ -2644,6 +2644,8 @@ function GoalTrackerApp() {
       description: "",
       category: "",
       goalId: "",
+      priority: "medium" as const,
+      estimatedHours: 1,
     })
     setShowAddWeeklyTask(false)
   }
