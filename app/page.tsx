@@ -1915,9 +1915,6 @@ function GoalTrackerApp() {
     const newCategoryName = editCategoryName.trim()
 
     try {
-      // Find the category in the database and update it
-      const { createClient } = require("@supabase/supabase-js")
-      const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
       const { data: categories, error: fetchError } = await supabase
         .from("categories")
         .select("id")
