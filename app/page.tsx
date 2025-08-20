@@ -1757,12 +1757,19 @@ function GoalTrackerApp() {
     }))
   }
 
-  const deleteWeeklyTask = (taskId: string) => {
-    setWeeklyTasks((prev) => ({
-      ...prev,
-      [`Week ${currentWeek}`]: prev[`Week ${currentWeek}`]?.filter((task) => task.id !== taskId) || [],
-    }))
-    setShowDeleteWeeklyTask(null)
+  const deleteWeeklyTask = async (taskId: string) => {
+    try {
+      await supabase.from("tasks").delete().eq("id", taskId)
+
+      setWeeklyTasks((prev) => ({
+        ...prev,
+        [`Week ${currentWeek}`]: prev[`Week ${currentWeek}`]?.filter((task) => task.id !== taskId) || [],
+      }))
+      setShowDeleteWeeklyTask(null)
+    } catch (error) {
+      console.error("Error deleting weekly task:", error)
+      // Keep the task in UI if database deletion fails
+    }
   }
 
   const editDailyTask = (day: string, taskId: string, updatedTask: Partial<DailyTask>) => {
