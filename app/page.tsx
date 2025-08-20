@@ -51,7 +51,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 // Auth components
 import { useAuth } from "@/components/auth/auth-provider"
 import { SignOutButton } from "@/components/auth/sign-out-button"
-import { AuthScreen } from "@/components/auth/auth-screen"
 import { UserProfile } from "@/components/auth/user-profile"
 
 // Drag and Drop imports
@@ -877,7 +876,14 @@ function SortableWeeklyTaskItem({
                     <Edit className="h-4 w-4 mr-2" />
                     Edit Task
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={onDelete} className="text-red-600">
+                  <DropdownMenuItem
+                    onClick={() => {
+                      requestAnimationFrame(() => {
+                        setShowDeleteWeeklyTask({ taskId: task.id, title: task.title })
+                      })
+                    }}
+                    className="text-red-600"
+                  >
                     <Trash2 className="h-4 w-4 mr-2" />
                     Delete Task
                   </DropdownMenuItem>
@@ -1788,17 +1794,19 @@ function GoalTrackerApp() {
   }
 
   const deleteWeeklyTask = async (taskId: string) => {
+    setShowDeleteWeeklyTask(null)
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+
     try {
-      await supabase.from("tasks").delete().eq("id", taskId)
+      const { error } = await supabase.from("tasks").delete().eq("id", taskId)
+      if (error) throw error
 
       setWeeklyTasks((prev) => ({
         ...prev,
-        [`Week ${currentWeek}`]: prev[`Week ${currentWeek}`]?.filter((task) => task.id !== taskId) || [],
+        [`Week ${currentWeek}`]: prev[`Week ${currentWeek}`]?.filter((t) => t.id !== taskId) ?? [],
       }))
-      setShowDeleteWeeklyTask(null)
     } catch (error) {
       console.error("Error deleting weekly task:", error)
-      // Keep the task in UI if database deletion fails
     }
   }
 
@@ -3122,7 +3130,9 @@ function GoalTrackerApp() {
                                           Edit Goal
                                         </DropdownMenuItem>
                                         <DropdownMenuItem
-                                          onClick={() => deleteGoal(category, goal.id)}
+                                          onClick={() => {
+                                            setShowDeleteGoal({ category, goalId: goal.id, title: goal.title })
+                                          }}
                                           className="text-red-600"
                                         >
                                           <Trash2 className="h-4 w-4 mr-2" />
@@ -3314,7 +3324,11 @@ function GoalTrackerApp() {
                               task={task}
                               onToggle={() => toggleWeeklyTask(task.id)}
                               onEdit={() => startEditingWeeklyTask(task)}
-                              onDelete={() => setShowDeleteWeeklyTask({ taskId: task.id, title: task.title })}
+                              onDelete={() => {
+                                requestAnimationFrame(() => {
+                                  setShowDeleteWeeklyTask({ taskId: task.id, title: task.title })
+                                })
+                              }}
                               getPriorityColor={getPriorityColor}
                             />
                           ))}
@@ -4256,7 +4270,13 @@ function GoalTrackerApp() {
         {/* Other dialogs and modals remain the same */}
         {showProfile && <UserProfile onClose={() => setShowProfile(false)} />}
 
-        <AlertDialog open={!!showDeleteWeeklyTask} onOpenChange={() => setShowDeleteWeeklyTask(null)}>
+        <AlertDialog
+          open={!!showDeleteWeeklyTask}
+          onOpenChange={(open) => {
+            if (!open) setShowDeleteWeeklyTask(null)
+          }}
+          modal={false}
+        >
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Delete Task</AlertDialogTitle>
@@ -4275,30 +4295,34 @@ function GoalTrackerApp() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </div>
-    </div>
-  )
-}
 
-function Page() {
-  const { user, loading } = useAuth()
+        <AlertDialog
+          open={!!showDeleteGoal}
+          onOpenChange={(open) => {
+            if (!open) setShowDeleteGoal(null)
+          }}
+          modal={false}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Goal</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete "{showDeleteGoal?.title}"? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => showDeleteGoal && deleteGoal(showDeleteGoal.category, showDeleteGoal.goalId)}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (!user) {
-    return <AuthScreen />
-  }
-
-  return <GoalTrackerApp />
-}
-
-export default Page
+        <AlertDialog
+          open={!!showDeleteCategory}
+          onOpenChange={(open) => {
+            if (!open) setShowDeleteCategory(null)
