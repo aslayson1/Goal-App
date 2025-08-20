@@ -1842,10 +1842,10 @@ function GoalTrackerApp() {
     setShowAddDailyTask(true)
   }
 
-  const saveEditedWeeklyTask = () => {
+  const saveEditedWeeklyTask = async () => {
     if (!editingWeeklyTask) return
 
-    editWeeklyTask(editingWeeklyTask.id, {
+    await editWeeklyTask(editingWeeklyTask.id, {
       title: newWeeklyTask.title,
       description: newWeeklyTask.description,
       category: newWeeklyTask.category,
