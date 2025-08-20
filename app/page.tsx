@@ -1762,19 +1762,17 @@ function GoalTrackerApp() {
   const editWeeklyTask = async (taskId: string, updatedTask: Partial<WeeklyTask>) => {
     try {
       // Update in database first
-      const { error } = await supabase
+      await supabase
         .from("tasks")
         .update({
           title: updatedTask.title,
           description: updatedTask.description,
+          category: updatedTask.category,
           goal_id: updatedTask.goalId,
+          priority: updatedTask.priority,
+          estimated_hours: updatedTask.estimatedHours,
         })
         .eq("id", taskId)
-
-      if (error) {
-        console.error("Database error updating weekly task:", error)
-        return
-      }
 
       // Update local state only if database update succeeds
       setWeeklyTasks((prev) => ({
@@ -1844,10 +1842,10 @@ function GoalTrackerApp() {
     setShowAddDailyTask(true)
   }
 
-  const saveEditedWeeklyTask = async () => {
+  const saveEditedWeeklyTask = () => {
     if (!editingWeeklyTask) return
 
-    await editWeeklyTask(editingWeeklyTask.id, {
+    editWeeklyTask(editingWeeklyTask.id, {
       title: newWeeklyTask.title,
       description: newWeeklyTask.description,
       category: newWeeklyTask.category,
@@ -4172,6 +4170,50 @@ function GoalTrackerApp() {
               <Button onClick={editingWeeklyTask ? saveEditedWeeklyTask : addWeeklyTask}>
                 {editingWeeklyTask ? "Save Changes" : "Add Task"}
               </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showEditCategory !== null} onOpenChange={() => setShowEditCategory(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Category</DialogTitle>
+              <DialogDescription>Update the category name and color.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="edit-category-name">Category Name</Label>
+                <Input
+                  id="edit-category-name"
+                  value={editCategoryName}
+                  onChange={(e) => setEditCategoryName(e.target.value)}
+                  placeholder="Enter category name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-category-color">Category Color</Label>
+                <Select value={editCategoryColor} onValueChange={setEditCategoryColor}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a color" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {colorOptions.map((color) => (
+                      <SelectItem key={color.name} value={color.value}>
+                        <div className="flex items-center">
+                          <div className={`w-4 h-4 rounded mr-2 ${color.value}`} />
+                          {color.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowEditCategory(null)}>
+                Cancel
+              </Button>
+              <Button onClick={saveEditedCategory}>Save Changes</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
