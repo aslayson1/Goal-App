@@ -1,9 +1,9 @@
 "use server"
 
-import { createServerActionClient } from "@supabase/auth-helpers-nextjs"
 import { cookies } from "next/headers"
 import { mockLogin } from "@/lib/auth"
 import { createClient } from "@supabase/supabase-js"
+import { createClient as createServerClient } from "@/lib/supabase/server"
 
 export async function signIn(prevState: any, formData: FormData) {
   if (!formData) {
@@ -33,8 +33,7 @@ export async function signIn(prevState: any, formData: FormData) {
     }
   }
 
-  const cookieStore = cookies()
-  const supabase = createServerActionClient({ cookies: () => cookieStore })
+  const supabase = createServerClient()
 
   try {
     const { error } = await supabase.auth.signInWithPassword({
