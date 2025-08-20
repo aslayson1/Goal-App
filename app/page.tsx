@@ -1,5 +1,5 @@
 "use client"
-import { supabase } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/client"
 import { useState, useEffect } from "react"
 import {
   Plus,
@@ -938,6 +938,8 @@ function SortableDailyTaskItem({
 }
 
 function GoalTrackerApp() {
+  const supabase = createClient()
+
   const { user } = useAuth()
   const [goalsData, setGoalsData] = useState<GoalsData>(initialGoalsData)
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set())
@@ -1237,7 +1239,7 @@ function GoalTrackerApp() {
 
         try {
           // Test database connection
-          const { data, error } = await supabase.from("categories").select("count").limit(1)
+          const { data, error } = await createClient().from("categories").select("count").limit(1)
 
           if (error) {
             console.error("Database connection failed:", error)
@@ -1325,7 +1327,7 @@ function GoalTrackerApp() {
 
     if (isUUID) {
       try {
-        const { error } = await supabase.from("goals").update({ current_progress: newCount }).eq("id", goalId)
+        const { error } = await createClient().from("goals").update({ current_progress: newCount }).eq("id", goalId)
 
         if (error) {
           console.error("Error updating goal progress:", error)
@@ -1360,7 +1362,7 @@ function GoalTrackerApp() {
 
     if (isUUID) {
       try {
-        const { error } = await supabase.from("goals").update({ current_progress: clampedValue }).eq("id", goalId)
+        const { error } = await createClient().from("goals").update({ current_progress: clampedValue }).eq("id", goalId)
 
         if (error) {
           console.error("Error updating goal progress:", error)
@@ -1385,7 +1387,7 @@ function GoalTrackerApp() {
     const newCurrentCount = goal.currentCount === 0 ? goal.targetCount : 0
 
     try {
-      const { error } = await supabase
+      const { error } = await createClient()
         .from("goals")
         .update({
           current_progress: newCurrentCount,
@@ -1452,7 +1454,7 @@ function GoalTrackerApp() {
         completed_at: isCompleted ? new Date().toISOString() : null,
       })
 
-      const { error } = await supabase
+      const { error } = await createClient()
         .from("goals")
         .update({
           current_progress: newProgress,
@@ -1529,7 +1531,7 @@ function GoalTrackerApp() {
       }
 
       // Find the category ID from the database
-      const { data: categories } = await supabase
+      const { data: categories } = await createClient()
         .from("categories")
         .select("id")
         .eq("name", selectedCategory)
@@ -1541,7 +1543,7 @@ function GoalTrackerApp() {
         return
       }
 
-      const { error } = await supabase.from("goals").insert({
+      const { error } = await createClient().from("goals").insert({
         id: goalId,
         user_id: user.id,
         category_id: categories.id,
@@ -1595,13 +1597,15 @@ function GoalTrackerApp() {
         return
       }
 
-      const { error } = await supabase.from("categories").insert([
-        {
-          user_id: user.id,
-          name: categoryName,
-          color: "#05a7b0", // Default teal color
-        },
-      ])
+      const { error } = await createClient()
+        .from("categories")
+        .insert([
+          {
+            user_id: user.id,
+            name: categoryName,
+            color: "#05a7b0", // Default teal color
+          },
+        ])
 
       if (error) {
         console.error("Error saving category:", error)
@@ -1710,7 +1714,7 @@ function GoalTrackerApp() {
 
     // Delete from database
     try {
-      const { error } = await supabase.from("tasks").delete().eq("id", taskId)
+      const { error } = await createClient().from("tasks").delete().eq("id", taskId)
 
       if (error) {
         console.error("Error deleting weekly task:", error)
@@ -1755,7 +1759,7 @@ function GoalTrackerApp() {
 
     // Delete from database
     try {
-      const { error } = await supabase.from("tasks").delete().eq("id", taskId)
+      const { error } = await createClient().from("tasks").delete().eq("id", taskId)
 
       if (error) {
         console.error("Error deleting daily task:", error)
@@ -2020,7 +2024,7 @@ function GoalTrackerApp() {
       const goalType = selectedTimeframe === "1-year" ? "1_year" : "5_year"
 
       // Save to database
-      const { data, error } = await supabase
+      const { data, error } = await createClient()
         .from("long_term_goals")
         .insert([
           {
@@ -2101,7 +2105,7 @@ function GoalTrackerApp() {
 
     // Delete from database
     try {
-      const { error } = await supabase.from("long_term_goals").delete().eq("id", goalId)
+      const { error } = await createClient().from("long_term_goals").delete().eq("id", goalId)
 
       if (error) {
         console.error("Error deleting long-term goal:", error)
@@ -2265,7 +2269,7 @@ function GoalTrackerApp() {
 
     // Update database
     try {
-      const { error } = await supabase.from("tasks").update({ completed: newCompletedStatus }).eq("id", taskId)
+      const { error } = await createClient().from("tasks").update({ completed: newCompletedStatus }).eq("id", taskId)
 
       if (error) {
         console.error("Error updating task completion:", error)
@@ -2322,7 +2326,7 @@ function GoalTrackerApp() {
 
     // Update database
     try {
-      const { error } = await supabase.from("tasks").update({ completed: newCompletedStatus }).eq("id", taskId)
+      const { error } = await createClient().from("tasks").update({ completed: newCompletedStatus }).eq("id", taskId)
 
       if (error) {
         console.error("Error updating task completion:", error)
@@ -2404,7 +2408,7 @@ function GoalTrackerApp() {
       let categoryId = null
       if (taskData.category) {
         console.log("12. Looking up category:", taskData.category)
-        const { data: categories } = await supabase
+        const { data: categories } = await createClient()
           .from("categories")
           .select("id")
           .eq("name", taskData.category)
@@ -2429,7 +2433,7 @@ function GoalTrackerApp() {
       console.log("14. Insert data prepared:", insertData)
 
       console.log("15. Calling supabase.from('tasks').insert()...")
-      const { data, error } = await supabase.from("tasks").insert(insertData).select()
+      const { data, error } = await createClient().from("tasks").insert(insertData).select()
 
       console.log("16. Database response - data:", data)
       console.log("17. Database response - error:", error)
@@ -2444,7 +2448,7 @@ function GoalTrackerApp() {
 
         // Verify it was saved
         console.log("20. Starting verification query...")
-        const { data: verification, error: verifyError } = await supabase
+        const { data: verification, error: verifyError } = await createClient()
           .from("tasks")
           .select("*")
           .eq("user_id", user.id)
@@ -2494,24 +2498,26 @@ function GoalTrackerApp() {
       }
 
       // Find category ID from database
-      const { data: categories } = await supabase
+      const { data: categories } = await createClient()
         .from("categories")
         .select("id")
         .eq("name", newWeeklyTask.category)
         .eq("user_id", user.id)
         .single()
 
-      const { error } = await supabase.from("tasks").insert({
-        id: taskId,
-        user_id: user.id,
-        category_id: categories?.id || null,
-        goal_id: newWeeklyTask.goalId || null,
-        title: newWeeklyTask.title,
-        description: newWeeklyTask.description,
-        task_type: "weekly",
-        target_date: new Date().toISOString().split("T")[0],
-        completed: false,
-      })
+      const { error } = await createClient()
+        .from("tasks")
+        .insert({
+          id: taskId,
+          user_id: user.id,
+          category_id: categories?.id || null,
+          goal_id: newWeeklyTask.goalId || null,
+          title: newWeeklyTask.title,
+          description: newWeeklyTask.description,
+          task_type: "weekly",
+          target_date: new Date().toISOString().split("T")[0],
+          completed: false,
+        })
 
       if (error) {
         console.error("Error saving weekly task to database:", error.message)
@@ -2536,7 +2542,7 @@ function GoalTrackerApp() {
       console.log("=== LOADING TASKS FROM DATABASE ===")
       console.log("Fetching tasks for user ID:", userId)
 
-      const { data: tasks, error: tasksError } = await supabase
+      const { data: tasks, error: tasksError } = await createClient()
         .from("tasks")
         .select(`
           *,
@@ -2619,7 +2625,7 @@ function GoalTrackerApp() {
     if (!user?.id) return
 
     try {
-      const { data: longTermGoalsData, error } = await supabase
+      const { data: longTermGoalsData, error } = await createClient()
         .from("long_term_goals")
         .select("*")
         .eq("user_id", user.id)
@@ -2678,7 +2684,7 @@ function GoalTrackerApp() {
       console.log("Loading categories and goals from database for user:", userId)
 
       // Load categories
-      const { data: categories, error: categoriesError } = await supabase
+      const { data: categories, error: categoriesError } = await createClient()
         .from("categories")
         .select("*")
         .eq("user_id", userId)
@@ -2689,7 +2695,7 @@ function GoalTrackerApp() {
       }
 
       // Load goals
-      const { data: goals, error: goalsError } = await supabase
+      const { data: goals, error: goalsError } = await createClient()
         .from("goals")
         .select(`
             *,
