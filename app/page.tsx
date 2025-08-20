@@ -1788,17 +1788,25 @@ function GoalTrackerApp() {
   }
 
   const deleteWeeklyTask = async (taskId: string) => {
-    try {
-      await supabase.from("tasks").delete().eq("id", taskId)
+    // Close the dialog immediately to release the overlay/focus trap
+    setShowDeleteWeeklyTask(null)
 
+    // Allow Radix/portal to unmount cleanly before removing the list item
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+
+    try {
+      // Perform the actual delete in Supabase
+      const { error } = await supabase.from("tasks").delete().eq("id", taskId)
+      if (error) throw error
+
+      // Update local Weekly tasks state (same logic as before)
       setWeeklyTasks((prev) => ({
         ...prev,
         [`Week ${currentWeek}`]: prev[`Week ${currentWeek}`]?.filter((t) => t.id !== taskId) ?? [],
       }))
     } catch (error) {
       console.error("Error deleting weekly task:", error)
-    } finally {
-      setShowDeleteWeeklyTask(null)
+      // (Optional: add toast/rollback here if desired)
     }
   }
 
