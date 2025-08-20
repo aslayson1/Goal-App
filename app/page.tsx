@@ -853,15 +853,6 @@ function SortableWeeklyTaskItem({
           </div>
         </div>
       </div>
-      <p className="text-sm text-gray-600 mb-2">{task.description}</p>
-      {task.completed && (
-        <div className="flex justify-end text-xs">
-          <span className="flex items-center text-green-600">
-            <CheckCircle className="h-3 w-3 mr-1" />
-            Completed
-          </span>
-        </div>
-      )}
     </div>
   )
 }
@@ -2935,6 +2926,279 @@ function GoalTrackerApp() {
                   </Button>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Time Period Navigation */}
+        <div className="flex space-x-1 mb-8 bg-white rounded-lg p-1 shadow-sm border">
+          {["daily", "weekly", "12-week", "1-year", "5-year"].map((view) => (
+            <Button
+              key={view}
+              variant={activeView === view ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setActiveView(view)}
+              className={`capitalize ${
+                activeView === view
+                  ? "bg-black text-white hover:bg-gray-800"
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+              }`}
+            >
+              {view === "12-week" ? "12-Week" : view === "1-year" ? "1-Year" : view === "5-year" ? "5-Year" : view}
+            </Button>
+          ))}
+        </div>
+
+        {/* Content based on active view */}
+        {activeView === "daily" && (
+          <div>
+            {/* Day Selection */}
+            <div className="flex space-x-2 mb-6 overflow-x-auto">
+              {["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].map((day) => (
+                <Button
+                  key={day}
+                  variant={selectedDay === day ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedDay(day)}
+                  className={`whitespace-nowrap ${selectedDay === day ? "bg-black text-white" : "text-gray-600"}`}
+                >
+                  {day}
+                </Button>
+              ))}
+            </div>
+
+            {/* Daily Tasks */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-gray-900">Daily Tasks - {selectedDay}</h2>
+                <Button variant="outline" size="sm" onClick={() => setShowAddDailyTask(true)} className="text-sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Task
+                </Button>
+              </div>
+
+              {/* Daily task list would go here */}
+              <Card className="border-0 shadow-sm">
+                <CardContent className="p-6">
+                  <p className="text-gray-500 text-center">No daily tasks for {selectedDay} yet.</p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
+
+        {activeView === "weekly" && (
+          <div>
+            {/* Week Selection */}
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Weekly Tasks - Week {currentWeek}</h2>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentWeek(Math.max(1, currentWeek - 1))}
+                  disabled={currentWeek === 1}
+                >
+                  Previous Week
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentWeek(Math.min(12, currentWeek + 1))}
+                  disabled={currentWeek === 12}
+                >
+                  Next Week
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setShowAddWeeklyTask(true)} className="text-sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Task
+                </Button>
+              </div>
+            </div>
+
+            {/* Weekly task list would go here */}
+            <Card className="border-0 shadow-sm">
+              <CardContent className="p-6">
+                <p className="text-gray-500 text-center">No weekly tasks for Week {currentWeek} yet.</p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {activeView === "12-week" && (
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">12-Week Goals</h2>
+            </div>
+
+            {/* Goals by Category */}
+            <div className="space-y-6">
+              {Object.entries(goalsData).map(([category, goals]) => (
+                <Card key={category} className="border-0 shadow-sm">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-gray-900">{category}</h3>
+                      <span className="text-sm text-gray-500">
+                        {goals.length} goal{goals.length !== 1 ? "s" : ""}
+                      </span>
+                    </div>
+
+                    <div className="space-y-4">
+                      {goals.map((goal) => (
+                        <div key={goal.id} className="border rounded-lg p-4 bg-gray-50">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <h4 className="font-medium text-gray-900 mb-2">{goal.title}</h4>
+                              <p className="text-sm text-gray-600 mb-3">{goal.description}</p>
+
+                              {/* Progress */}
+                              <div className="flex items-center space-x-4 mb-3">
+                                <div className="flex-1">
+                                  <div className="flex items-center justify-between mb-1">
+                                    <span className="text-sm font-medium text-gray-700">Progress</span>
+                                    <span className="text-sm text-gray-500">
+                                      {goal.currentCount}/{goal.targetCount}
+                                    </span>
+                                  </div>
+                                  <Progress
+                                    value={(goal.currentCount / goal.targetCount) * 100}
+                                    className="h-2 [&>div]:bg-[#05a7b0]"
+                                  />
+                                </div>
+                              </div>
+
+                              {goal.notes && <p className="text-sm text-gray-500 italic">{goal.notes}</p>}
+                            </div>
+
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => startEditingGoal(category, goal)}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit Goal
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => deleteGoal(category, goal.id)}>
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete Goal
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {(activeView === "1-year" || activeView === "5-year") && (
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">
+                {activeView === "1-year" ? "1-Year" : "5-Year"} Goals
+              </h2>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSelectedTimeframe(activeView as "1-year" | "5-year")
+                  setShowAddLongTermGoal(true)
+                }}
+                className="text-sm"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add {activeView === "1-year" ? "1-Year" : "5-Year"} Goal
+              </Button>
+            </div>
+
+            {/* Long-term Goals */}
+            <div className="space-y-6">
+              {Object.entries(longTermGoals[activeView as "1-year" | "5-year"]).map(([category, goals]) => (
+                <Card key={category} className="border-0 shadow-sm">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-gray-900">{category}</h3>
+                      <span className="text-sm text-gray-500">
+                        {goals.length} goal{goals.length !== 1 ? "s" : ""}
+                      </span>
+                    </div>
+
+                    <div className="space-y-4">
+                      {goals.map((goal) => (
+                        <div key={goal.id} className="border rounded-lg p-4 bg-gray-50">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <h4 className="font-medium text-gray-900 mb-2">{goal.title}</h4>
+                              <p className="text-sm text-gray-600 mb-3">{goal.description}</p>
+
+                              {goal.targetDate && (
+                                <p className="text-sm text-gray-500 mb-3">
+                                  Target: {new Date(goal.targetDate).toLocaleDateString()}
+                                </p>
+                              )}
+
+                              {goal.notes && <p className="text-sm text-gray-500 italic">{goal.notes}</p>}
+
+                              {/* Milestones */}
+                              {goal.milestones && goal.milestones.length > 0 && (
+                                <div className="mt-4">
+                                  <h5 className="text-sm font-medium text-gray-700 mb-2">Milestones</h5>
+                                  <div className="space-y-2">
+                                    {goal.milestones.map((milestone, index) => (
+                                      <div key={index} className="flex items-center space-x-2">
+                                        <Checkbox checked={milestone.completed} className={checkboxStyles} />
+                                        <span className="text-sm text-gray-600">{milestone.title}</span>
+                                        {milestone.targetDate && (
+                                          <span className="text-xs text-gray-400">
+                                            ({new Date(milestone.targetDate).toLocaleDateString()})
+                                          </span>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    startEditingLongTermGoal(activeView as "1-year" | "5-year", category, goal)
+                                  }
+                                >
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit Goal
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    deleteLongTermGoal(activeView as "1-year" | "5-year", category, goal.id)
+                                  }
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete Goal
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </div>
         )}
