@@ -1762,7 +1762,7 @@ function GoalTrackerApp() {
   const editWeeklyTask = async (taskId: string, updatedTask: Partial<WeeklyTask>) => {
     try {
       // Update in database first
-      await supabase
+      const { error } = await supabase
         .from("tasks")
         .update({
           title: updatedTask.title,
@@ -1773,6 +1773,11 @@ function GoalTrackerApp() {
           estimated_hours: updatedTask.estimatedHours,
         })
         .eq("id", taskId)
+
+      if (error) {
+        console.error("Database error updating weekly task:", error)
+        return
+      }
 
       // Update local state only if database update succeeds
       setWeeklyTasks((prev) => ({
