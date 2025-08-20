@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { LoginForm } from "./login-form"
 import { RegisterForm } from "./register-form"
 
-export function AuthScreen() {
+export default function AuthScreen() {
   const [activeTab, setActiveTab] = useState("login")
 
   return (

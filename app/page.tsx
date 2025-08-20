@@ -26,6 +26,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 // Auth components
 import { useAuth } from "@/components/auth/auth-provider"
 import { SignOutButton } from "@/components/auth/sign-out-button"
+import AuthScreen from "@/components/auth/auth-screen"
 
 // Drag and Drop imports
 import { KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core"
@@ -2957,7 +2958,7 @@ function Page() {
   }
 
   if (!user) {
-    return <div>Please sign in to access your goals.</div>
+    return <AuthScreen />
   }
 
   return <GoalTrackerApp />
