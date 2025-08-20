@@ -1,18 +1,15 @@
 "use client"
 import { supabase } from "@/lib/supabase/client"
-import { DialogFooter } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog"
 
 import { Label } from "@/components/ui/label"
-
-import { DialogDescription } from "@/components/ui/dialog"
-
-import { DialogTitle } from "@/components/ui/dialog"
-
-import { DialogHeader } from "@/components/ui/dialog"
-
-import { DialogContent } from "@/components/ui/dialog"
-
-import { Dialog } from "@/components/ui/dialog"
 
 import { useState, useEffect } from "react"
 import {
@@ -1682,10 +1679,32 @@ function GoalTrackerApp() {
     }
   }
 
-  const updateGoal = () => {
+  const updateGoal = async () => {
     if (!editingGoal) return
 
     const weeklyTargetValue = newGoal.weeklyTarget || Math.ceil(newGoal.targetCount / 12)
+
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(editingGoal.goal.id)
+
+    if (isUUID) {
+      try {
+        const { error } = await supabase
+          .from("goals")
+          .update({
+            title: newGoal.title,
+            description: newGoal.description,
+            target_count: newGoal.targetCount,
+            weekly_target: weeklyTargetValue,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", editingGoal.goal.id)
+
+        if (error) throw error
+      } catch (error) {
+        console.error("Error updating goal in database:", error)
+        // Continue with local update even if database fails
+      }
+    }
 
     editGoal(editingGoal.category, editingGoal.goal.id, {
       title: newGoal.title,
