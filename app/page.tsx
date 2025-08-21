@@ -2217,15 +2217,21 @@ function GoalTrackerApp() {
     }
   }
 
-  const deleteLongTermGoal = (timeframe: "1-year" | "5-year", category: string, goalId: string) => {
-    setLongTermGoals((prev) => ({
-      ...prev,
-      [timeframe]: {
-        ...prev[timeframe],
-        [category]: prev[timeframe][category].filter((g) => g.id !== goalId),
-      },
-    }))
-    setShowDeleteLongTermGoal(null)
+  const deleteLongTermGoal = async (timeframe: "1-year" | "5-year", category: string, goalId: string) => {
+    try {
+      await supabase.from("long_term_goals").delete().eq("id", goalId)
+      setLongTermGoals((prev) => ({
+        ...prev,
+        [timeframe]: {
+          ...prev[timeframe],
+          [category]: prev[timeframe][category].filter((g) => g.id !== goalId),
+        },
+      }))
+      setShowDeleteLongTermGoal(null)
+    } catch (error) {
+      console.error("Error deleting long-term goal:", error)
+      // Keep the goal in UI if database deletion fails
+    }
   }
 
   const getTotalProgress = () => {
@@ -4313,11 +4319,4 @@ export default function Page() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-4 border-gray-300 border-t-blue-500"></div>
-      </div>
-    )
-  }
-
-  return <GoalTrackerApp />
-}
+      <div className=\"min-h-screen flex items-
