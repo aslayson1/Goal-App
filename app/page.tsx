@@ -41,6 +41,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 // Auth components
 import { useAuth } from "@/components/auth/auth-provider"
 import { SignOutButton } from "@/components/auth/sign-out-button"
+import { AuthScreen } from "@/components/auth/auth-screen"
+import { createClient } from "@/lib/supabase/client"
 
 // Drag and Drop imports
 import {
@@ -4187,4 +4189,127 @@ function GoalTrackerApp() {
             <DialogFooter>
               <Button variant="outline" onClick={() => setShowAddWeeklyTask(false)}>
                 Cancel
-\
+              </Button>
+              <Button onClick={editingWeeklyTask ? saveEditedWeeklyTask : addWeeklyTask}>
+                {editingWeeklyTask ? "Save Changes" : "Add Task"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showAddDailyTask} onOpenChange={setShowAddDailyTask}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Add Daily Task</DialogTitle>
+              <DialogDescription>Create a new daily task</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="daily-task-title">Task Title</Label>
+                <Input
+                  id="daily-task-title"
+                  placeholder="e.g., Review project proposals"
+                  value={newDailyTask.title}
+                  onChange={(e) => setNewDailyTask((prev) => ({ ...prev, title: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="daily-task-description">Description</Label>
+                <Textarea
+                  id="daily-task-description"
+                  placeholder="Describe the task..."
+                  value={newDailyTask.description}
+                  onChange={(e) => setNewDailyTask((prev) => ({ ...prev, description: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="daily-task-category">Category</Label>
+                <Select
+                  value={newDailyTask.category}
+                  onValueChange={(value) => setNewDailyTask((prev) => ({ ...prev, category: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.keys(goalsData).map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="daily-task-timeblock">Time Block</Label>
+                <Select
+                  value={newDailyTask.timeBlock}
+                  onValueChange={(value) => setNewDailyTask((prev) => ({ ...prev, timeBlock: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select time block" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="morning">Morning</SelectItem>
+                    <SelectItem value="afternoon">Afternoon</SelectItem>
+                    <SelectItem value="evening">Evening</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="daily-task-minutes">Estimated Minutes</Label>
+                <Input
+                  id="daily-task-minutes"
+                  type="number"
+                  min="5"
+                  max="480"
+                  value={newDailyTask.estimatedMinutes}
+                  onChange={(e) =>
+                    setNewDailyTask((prev) => ({ ...prev, estimatedMinutes: Number.parseInt(e.target.value) || 30 }))
+                  }
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowAddDailyTask(false)}>
+                Cancel
+              </Button>
+              <Button onClick={addDailyTask}>Add Task</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </div>
+  )
+}
+
+export default function Page() {
+  const [user, setUser] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const getUser = async () => {
+      const supabase = createClient()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      setUser(user)
+      setLoading(false)
+    }
+    getUser()
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return <AuthScreen />
+  }
+
+  return <GoalTrackerApp />
+}
