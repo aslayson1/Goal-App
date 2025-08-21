@@ -7,6 +7,18 @@ import { MoreHorizontal, Edit, Trash2, CheckCircle, Clock, GripVertical } from "
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Checkbox } from "@/components/ui/checkbox"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 // Auth components
 import { useAuth } from "@/components/auth/auth-provider"
@@ -2070,7 +2082,9 @@ function GoalTrackerApp() {
                 <div key={category} className="bg-white rounded-lg border border-gray-200 p-6">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-2">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getCategoryColor(category)}`}>
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-medium border ${getCategoryColor(category)}`}
+                      >
                         {category}
                       </span>
                     </div>
@@ -2238,4 +2252,845 @@ function GoalTrackerApp() {
                         <div className="flex items-start justify-between mb-2">
                           <h4 className="font-medium text-gray-900 flex-1">{goal.title}</h4>
                           <DropdownMenu>
-\
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 ml-2">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => startEditingLongTermGoal("1-year", category, goal)}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit Goal
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  setShowDeleteLongTermGoal({
+                                    timeframe: "1-year",
+                                    category,
+                                    goalId: goal.id,
+                                    title: goal.title,
+                                  })
+                                }
+                                className="text-red-600"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete Goal
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+
+                        <p className="text-sm text-gray-600 mb-3">{goal.description}</p>
+                        <p className="text-sm text-gray-500 mb-3">Target Date: {goal.targetDate}</p>
+
+                        {goal.milestones.map((milestone) => (
+                          <div
+                            key={milestone.id}
+                            className="flex items-center justify-between py-2 border-b border-gray-200"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                checked={milestone.completed}
+                                onCheckedChange={() => toggleMilestone("1-year", category, goal.id, milestone.id)}
+                                className={checkboxStyles}
+                              />
+                              <span
+                                className={`text-sm ${milestone.completed ? "line-through text-gray-500" : "text-gray-700"}`}
+                              >
+                                {milestone.title}
+                              </span>
+                            </div>
+                            <span className="text-xs text-gray-500">Target: {milestone.targetDate}</span>
+                          </div>
+                        ))}
+
+                        {goal.notes && (
+                          <div>
+                            <Button
+                              onClick={() => toggleGoalExpansion(goal.id)}
+                              variant="ghost"
+                              size="sm"
+                              className="text-xs text-gray-500 p-0 h-auto"
+                            >
+                              {expandedNotes.has(goal.id) ? "Hide notes" : "Show notes"}
+                            </Button>
+                            {expandedNotes.has(goal.id) && (
+                              <p className="text-xs text-gray-600 mt-2 p-2 bg-gray-50 rounded">{goal.notes}</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+
+                    {goals.length === 0 && (
+                      <p className="text-sm text-gray-500 text-center py-8">No goals yet. Add your first goal!</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {activeView === "5-year" && (
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-gray-900">5-Year Goals</h2>
+              <Button
+                onClick={() => {
+                  setSelectedTimeframe("5-year")
+                  setShowAddLongTermGoal(true)
+                }}
+                className="bg-black text-white hover:bg-gray-800"
+              >
+                Add Goal
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {Object.entries(longTermGoals["5-year"]).map(([category, goals]) => (
+                <div key={category} className="bg-white rounded-lg border border-gray-200 p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-medium text-gray-900">{category}</h3>
+                    <Button
+                      onClick={() => {
+                        setSelectedTimeframe("5-year")
+                        setNewLongTermGoal((prev) => ({ ...prev, category }))
+                        setShowAddLongTermGoal(true)
+                      }}
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 p-0 hover:bg-gray-100"
+                    >
+                      +
+                    </Button>
+                  </div>
+
+                  <div className="space-y-4">
+                    {goals.map((goal) => (
+                      <div key={goal.id} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <h4 className="font-medium text-gray-900 flex-1">{goal.title}</h4>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 ml-2">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => startEditingLongTermGoal("5-year", category, goal)}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit Goal
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  setShowDeleteLongTermGoal({
+                                    timeframe: "5-year",
+                                    category,
+                                    goalId: goal.id,
+                                    title: goal.title,
+                                  })
+                                }
+                                className="text-red-600"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete Goal
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+
+                        <p className="text-sm text-gray-600 mb-3">{goal.description}</p>
+                        <p className="text-sm text-gray-500 mb-3">Target Date: {goal.targetDate}</p>
+
+                        {goal.milestones.map((milestone) => (
+                          <div
+                            key={milestone.id}
+                            className="flex items-center justify-between py-2 border-b border-gray-200"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                checked={milestone.completed}
+                                onCheckedChange={() => toggleMilestone("5-year", category, goal.id, milestone.id)}
+                                className={checkboxStyles}
+                              />
+                              <span
+                                className={`text-sm ${milestone.completed ? "line-through text-gray-500" : "text-gray-700"}`}
+                              >
+                                {milestone.title}
+                              </span>
+                            </div>
+                            <span className="text-xs text-gray-500">Target: {milestone.targetDate}</span>
+                          </div>
+                        ))}
+
+                        {goal.notes && (
+                          <div>
+                            <Button
+                              onClick={() => toggleGoalExpansion(goal.id)}
+                              variant="ghost"
+                              size="sm"
+                              className="text-xs text-gray-500 p-0 h-auto"
+                            >
+                              {expandedNotes.has(goal.id) ? "Hide notes" : "Show notes"}
+                            </Button>
+                            {expandedNotes.has(goal.id) && (
+                              <p className="text-xs text-gray-600 mt-2 p-2 bg-gray-50 rounded">{goal.notes}</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+
+                    {goals.length === 0 && (
+                      <p className="text-sm text-gray-500 text-center py-8">No goals yet. Add your first goal!</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Modals */}
+      <Dialog open={showAddGoal} onOpenChange={setShowAddGoal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>{editingGoal ? "Edit Goal" : "Add New Goal"}</DialogTitle>
+            <DialogDescription>Make changes to your goal here. Click save when you're done.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="category" className="text-right">
+                Category
+              </Label>
+              <Select value={selectedCategory} onValueChange={setSelectedCategory} id="category" className="col-span-3">
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.keys(goalsData).map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="title" className="text-right">
+                Title
+              </Label>
+              <Input
+                type="text"
+                id="title"
+                value={newGoal.title}
+                onChange={(e) => setNewGoal({ ...newGoal, title: e.target.value })}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="description" className="text-right">
+                Description
+              </Label>
+              <Textarea
+                id="description"
+                value={newGoal.description}
+                onChange={(e) => setNewGoal({ ...newGoal, description: e.target.value })}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="targetCount" className="text-right">
+                Target Count
+              </Label>
+              <Input
+                type="number"
+                id="targetCount"
+                value={newGoal.targetCount}
+                onChange={(e) => setNewGoal({ ...newGoal, targetCount: Number.parseInt(e.target.value) })}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="weeklyTarget" className="text-right">
+                Weekly Target
+              </Label>
+              <Input
+                type="number"
+                id="weeklyTarget"
+                value={newGoal.weeklyTarget}
+                onChange={(e) => setNewGoal({ ...newGoal, weeklyTarget: Number.parseFloat(e.target.value) })}
+                className="col-span-3"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="submit" onClick={editingGoal ? saveEditedGoal : addGoal}>
+              {editingGoal ? "Update Goal" : "Save Goal"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showAddWeeklyTask} onOpenChange={setShowAddWeeklyTask}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>{editingWeeklyTask ? "Edit Weekly Task" : "Add New Weekly Task"}</DialogTitle>
+            <DialogDescription>Make changes to your task here. Click save when you're done.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="category" className="text-right">
+                Category
+              </Label>
+              <Select
+                value={newWeeklyTask.category}
+                onValueChange={(value) => setNewWeeklyTask({ ...newWeeklyTask, category: value })}
+                id="category"
+                className="col-span-3"
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.keys(goalsData).map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="goalId" className="text-right">
+                Goal
+              </Label>
+              <Select
+                value={newWeeklyTask.goalId}
+                onValueChange={(value) => setNewWeeklyTask({ ...newWeeklyTask, goalId: value })}
+                id="goalId"
+                className="col-span-3"
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a goal" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(goalsData[selectedCategory] || []).map((goal) => (
+                    <SelectItem key={goal.id} value={goal.id}>
+                      {goal.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="title" className="text-right">
+                Title
+              </Label>
+              <Input
+                type="text"
+                id="title"
+                value={newWeeklyTask.title}
+                onChange={(e) => setNewWeeklyTask({ ...newWeeklyTask, title: e.target.value })}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="description" className="text-right">
+                Description
+              </Label>
+              <Textarea
+                id="description"
+                value={newWeeklyTask.description}
+                onChange={(e) => setNewWeeklyTask({ ...newWeeklyTask, description: e.target.value })}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="priority" className="text-right">
+                Priority
+              </Label>
+              <Select
+                value={newWeeklyTask.priority}
+                onValueChange={(value) =>
+                  setNewWeeklyTask({ ...newWeeklyTask, priority: value as "low" | "medium" | "high" })
+                }
+                id="priority"
+                className="col-span-3"
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="estimatedHours" className="text-right">
+                Estimated Hours
+              </Label>
+              <Input
+                type="number"
+                id="estimatedHours"
+                value={newWeeklyTask.estimatedHours}
+                onChange={(e) =>
+                  setNewWeeklyTask({ ...newWeeklyTask, estimatedHours: Number.parseInt(e.target.value) })
+                }
+                className="col-span-3"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="submit" onClick={editingWeeklyTask ? saveEditedWeeklyTask : addWeeklyTask}>
+              {editingWeeklyTask ? "Update Task" : "Save Task"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showAddDailyTask} onOpenChange={setShowAddDailyTask}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>{editingDailyTask ? "Edit Daily Task" : "Add New Daily Task"}</DialogTitle>
+            <DialogDescription>Make changes to your task here. Click save when you're done.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="category" className="text-right">
+                Category
+              </Label>
+              <Select
+                value={newDailyTask.category}
+                onValueChange={(value) => setNewDailyTask({ ...newDailyTask, category: value })}
+                id="category"
+                className="col-span-3"
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.keys(goalsData).map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="goalId" className="text-right">
+                Goal
+              </Label>
+              <Select
+                value={newDailyTask.goalId}
+                onValueChange={(value) => setNewDailyTask({ ...newDailyTask, goalId: value })}
+                id="goalId"
+                className="col-span-3"
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a goal" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(goalsData[selectedCategory] || []).map((goal) => (
+                    <SelectItem key={goal.id} value={goal.id}>
+                      {goal.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="title" className="text-right">
+                Title
+              </Label>
+              <Input
+                type="text"
+                id="title"
+                value={newDailyTask.title}
+                onChange={(e) => setNewDailyTask({ ...newDailyTask, title: e.target.value })}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="description" className="text-right">
+                Description
+              </Label>
+              <Textarea
+                id="description"
+                value={newDailyTask.description}
+                onChange={(e) => setNewDailyTask({ ...newDailyTask, description: e.target.value })}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="timeBlock" className="text-right">
+                Time Block
+              </Label>
+              <Input
+                type="text"
+                id="timeBlock"
+                value={newDailyTask.timeBlock}
+                onChange={(e) => setNewDailyTask({ ...newDailyTask, timeBlock: e.target.value })}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="estimatedMinutes" className="text-right">
+                Estimated Minutes
+              </Label>
+              <Input
+                type="number"
+                id="estimatedMinutes"
+                value={newDailyTask.estimatedMinutes}
+                onChange={(e) =>
+                  setNewDailyTask({ ...newDailyTask, estimatedMinutes: Number.parseInt(e.target.value) })
+                }
+                className="col-span-3"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="submit" onClick={editingDailyTask ? saveEditedDailyTask : addDailyTask}>
+              {editingDailyTask ? "Update Task" : "Save Task"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showAddCategory} onOpenChange={setShowAddCategory}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Add New Category</DialogTitle>
+            <DialogDescription>Add a new category to organize your goals.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">
+                Name
+              </Label>
+              <Input
+                type="text"
+                id="name"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="submit" onClick={addCategory}>
+              Save Category
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showEditCategory !== null} onOpenChange={() => setShowEditCategory(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Category</DialogTitle>
+            <DialogDescription>Edit the name and color of your category.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">
+                Name
+              </Label>
+              <Input
+                type="text"
+                id="name"
+                value={editCategoryName}
+                onChange={(e) => setEditCategoryName(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="color" className="text-right">
+                Color
+              </Label>
+              <Input
+                type="color"
+                id="color"
+                value={editCategoryColor}
+                onChange={(e) => setEditCategoryColor(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="submit" onClick={saveEditedCategory}>
+              Save Category
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showAddLongTermGoal} onOpenChange={setShowAddLongTermGoal}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>{editingLongTermGoal ? "Edit Long-Term Goal" : "Add New Long-Term Goal"}</DialogTitle>
+            <DialogDescription>
+              {editingLongTermGoal
+                ? "Make changes to your long-term goal here. Click save when you're done."
+                : "Define your long-term goal and set milestones to track your progress."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-3 items-center gap-4">
+              <Label htmlFor="timeframe" className="text-right">
+                Timeframe
+              </Label>
+              <Select
+                value={selectedTimeframe}
+                onValueChange={setSelectedTimeframe}
+                id="timeframe"
+                className="col-span-2"
+                disabled={editingLongTermGoal !== null}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a timeframe" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1-year">1-Year</SelectItem>
+                  <SelectItem value="5-year">5-Year</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-3 items-center gap-4">
+              <Label htmlFor="category" className="text-right">
+                Category
+              </Label>
+              <Select
+                value={newLongTermGoal.category}
+                onValueChange={(value) => setNewLongTermGoal({ ...newLongTermGoal, category: value })}
+                id="category"
+                className="col-span-2"
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {["Business", "Personal", "Financial"].map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-3 items-center gap-4">
+              <Label htmlFor="title" className="text-right">
+                Title
+              </Label>
+              <Input
+                type="text"
+                id="title"
+                value={newLongTermGoal.title}
+                onChange={(e) => setNewLongTermGoal({ ...newLongTermGoal, title: e.target.value })}
+                className="col-span-2"
+              />
+            </div>
+            <div className="grid grid-cols-3 items-center gap-4">
+              <Label htmlFor="description" className="text-right">
+                Description
+              </Label>
+              <Textarea
+                id="description"
+                value={newLongTermGoal.description}
+                onChange={(e) => setNewLongTermGoal({ ...newLongTermGoal, description: e.target.value })}
+                className="col-span-2"
+              />
+            </div>
+            <div className="grid grid-cols-3 items-center gap-4">
+              <Label htmlFor="targetDate" className="text-right">
+                Target Date
+              </Label>
+              <Input
+                type="date"
+                id="targetDate"
+                value={newLongTermGoal.targetDate}
+                onChange={(e) => setNewLongTermGoal({ ...newLongTermGoal, targetDate: e.target.value })}
+                className="col-span-2"
+              />
+            </div>
+            <div className="grid grid-cols-3 items-center gap-4">
+              <Label htmlFor="notes" className="text-right">
+                Notes
+              </Label>
+              <Textarea
+                id="notes"
+                value={newLongTermGoal.notes}
+                onChange={(e) => setNewLongTermGoal({ ...newLongTermGoal, notes: e.target.value })}
+                className="col-span-2"
+              />
+            </div>
+            <h3 className="col-span-3 font-semibold text-gray-900">Milestones</h3>
+            {newLongTermGoal.milestones.map((milestone, index) => (
+              <div key={index} className="grid grid-cols-3 items-center gap-4">
+                <Label htmlFor={`milestoneTitle${index}`} className="text-right">
+                  Milestone {index + 1}
+                </Label>
+                <Input
+                  type="text"
+                  id={`milestoneTitle${index}`}
+                  placeholder="Title"
+                  value={milestone.title}
+                  onChange={(e) => {
+                    const updatedMilestones = [...newLongTermGoal.milestones]
+                    updatedMilestones[index] = { ...milestone, title: e.target.value }
+                    setNewLongTermGoal({ ...newLongTermGoal, milestones: updatedMilestones })
+                  }}
+                  className="col-span-1"
+                />
+                <Input
+                  type="date"
+                  id={`milestoneDate${index}`}
+                  placeholder="Target Date"
+                  value={milestone.targetDate}
+                  onChange={(e) => {
+                    const updatedMilestones = [...newLongTermGoal.milestones]
+                    updatedMilestones[index] = { ...milestone, targetDate: e.target.value }
+                    setNewLongTermGoal({ ...newLongTermGoal, milestones: updatedMilestones })
+                  }}
+                  className="col-span-1"
+                />
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button type="submit" onClick={editingLongTermGoal ? saveEditedLongTermGoal : addLongTermGoal}>
+              {editingLongTermGoal ? "Update Goal" : "Save Goal"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showDeleteGoal !== null} onOpenChange={() => setShowDeleteGoal(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Delete Goal</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete goal "{showDeleteGoal?.title}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setShowDeleteGoal(null)}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              className="text-red-600"
+              onClick={() => deleteGoal(showDeleteGoal!.category, showDeleteGoal!.goalId)}
+            >
+              Delete Goal
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showDeleteCategory !== null} onOpenChange={() => setShowDeleteCategory(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Delete Category</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete category "{showDeleteCategory}"? All goals in this category will be
+              deleted. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setShowDeleteCategory(null)}>
+              Cancel
+            </Button>
+            <Button type="submit" className="text-red-600" onClick={() => deleteCategory(showDeleteCategory!)}>
+              Delete Category
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showDeleteDailyTask !== null} onOpenChange={() => setShowDeleteDailyTask(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Delete Daily Task</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete task "{showDeleteDailyTask?.title}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setShowDeleteDailyTask(null)}>
+              Cancel
+            </Button>
+            <Button type="submit" className="text-red-600" onClick={() => deleteDailyTask(showDeleteDailyTask!.taskId)}>
+              Delete Task
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showDeleteLongTermGoal !== null} onOpenChange={() => setShowDeleteLongTermGoal(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Delete Long-Term Goal</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete long-term goal "{showDeleteLongTermGoal?.title}"? This action cannot be
+              undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setShowDeleteLongTermGoal(null)}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              className="text-red-600"
+              onClick={() =>
+                deleteLongTermGoal(
+                  showDeleteLongTermGoal!.timeframe,
+                  showDeleteLongTermGoal!.category,
+                  showDeleteLongTermGoal!.goalId,
+                )
+              }
+            >
+              Delete Goal
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showProfile} onOpenChange={setShowProfile}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>User Profile</DialogTitle>
+            <DialogDescription>View your profile information.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">
+                Name
+              </Label>
+              <Input type="text" id="name" value={user?.name || "N/A"} disabled className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="email" className="text-right">
+                Email
+              </Label>
+              <Input type="email" id="email" value={user?.email || "N/A"} disabled className="col-span-3" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setShowProfile(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
+
+export default GoalTrackerApp
