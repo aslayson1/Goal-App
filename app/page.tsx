@@ -4316,5 +4316,6 @@ export default function Page() {
   if (!user) {
     return <AuthScreen />
   }
-\
-  return <
+
+  return <GoalTrackerApp />
+}
