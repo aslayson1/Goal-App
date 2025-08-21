@@ -4314,4 +4314,10 @@ export default function Page() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32\
+        <div className="animate-spin rounded-full h-32 w-32 border-4 border-gray-300 border-t-blue-500"></div>
+      </div>
+    )
+  }
+
+  return <GoalTrackerApp />
+}
