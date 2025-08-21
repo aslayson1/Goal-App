@@ -2487,12 +2487,13 @@ function GoalTrackerApp() {
     }))
     console.log("8. Local state updated")
 
-    // Reset form
     setNewDailyTask({
       title: "",
       description: "",
       category: "",
       goalId: "",
+      timeBlock: "",
+      estimatedMinutes: 30,
     })
     setShowAddDailyTask(false)
     console.log("9. Form reset and dialog closed")
