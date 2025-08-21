@@ -147,5 +147,3 @@ export function UserProfile({ onClose }: UserProfileProps) {
     </Dialog>
   )
 }
-
-export default UserProfile
