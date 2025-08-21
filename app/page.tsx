@@ -3463,7 +3463,7 @@ function GoalTrackerApp() {
               {Object.keys(goalsData).map((category) => {
                 const categoryTasks = (dailyTasks[selectedDay] || []).filter((task) => task.category === category)
 
-                if (categoryTasks.length > 0) return null // Already rendered above
+                if (categoryTasks.length > 0) return null
 
                 return (
                   <Card key={`empty-${category}`} className="border-0 shadow-sm">
@@ -4199,7 +4199,7 @@ function GoalTrackerApp() {
               <Button onClick={editingWeeklyTask ? saveEditedWeeklyTask : addWeeklyTask}>
                 {editingWeeklyTask ? "Save Changes" : "Add Task"}
               </Button>
-            DialogFooter>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 
@@ -4289,14 +4289,16 @@ function GoalTrackerApp() {
   )
 }
 
-export default function Page() {\
+import { createClient } from "@supabase/supabase-js"
+
+export default function Page() {
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {\
-    const getUser = async () => {\
+  useEffect(() => {
+    const getUser = async () => {
       const supabase = createClient()
-      const {\
+      const {
         data: { user },
       } = await supabase.auth.getUser()
       setUser(user)
@@ -4305,7 +4307,7 @@ export default function Page() {\
     getUser()
   }, [])
 
-  if (loading) {\
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
@@ -4313,8 +4315,9 @@ export default function Page() {\
     )
   }
 
-  if (!user) {\
+  if (!user) {
     return <AuthScreen />
   }
 
-  return <Goal\
+  return <GoalTrackerApp />
+}
