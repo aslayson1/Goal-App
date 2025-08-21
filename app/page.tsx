@@ -41,7 +41,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 // Auth components
 import { useAuth } from "@/components/auth/auth-provider"
 import { SignOutButton } from "@/components/auth/sign-out-button"
-import { AuthScreen } from "@/components/auth/auth-screen"
 
 // Drag and Drop imports
 import {
@@ -3083,6 +3082,14 @@ function GoalTrackerApp() {
                                         On Track
                                       </Badge>
                                     )}
+                                    {!isCompleted && weeklyProgress.onTrack && (
+                                      <Badge
+                                        variant="secondary"
+                                        className="bg-blue-100 text-blue-800 whitespace-nowrap"
+                                      >
+                                        On Track
+                                      </Badge>
+                                    )}
                                     {!isCompleted && !weeklyProgress.onTrack && (
                                       <Badge
                                         variant="secondary"
@@ -4289,15 +4296,12 @@ function GoalTrackerApp() {
   )
 }
 
-import { createClient } from "@supabase/supabase-js"
-
 export default function Page() {
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const getUser = async () => {
-      const supabase = createClient()
       const {
         data: { user },
       } = await supabase.auth.getUser()
@@ -4310,14 +4314,4 @@ export default function Page() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
-      </div>
-    )
-  }
-
-  if (!user) {
-    return <AuthScreen />
-  }
-
-  return <GoalTrackerApp />
-}
+        <div className="animate-spin rounded-full h-32\
