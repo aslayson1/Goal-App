@@ -41,6 +41,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 // Auth components
 import { useAuth } from "@/components/auth/auth-provider"
 import { SignOutButton } from "@/components/auth/sign-out-button"
+import { AuthScreen } from "@/components/auth/auth-screen"
+import { createClient } from "@/lib/supabase/client"
 
 // Drag and Drop imports
 import {
@@ -945,6 +947,7 @@ function SortableDailyTaskItem({
                     <Edit className="h-4 w-4 mr-2" />
                     Edit Task
                   </DropdownMenuItem>
+                  {/* Call deleteDailyTask directly instead of setting confirmation state */}
                   <DropdownMenuItem onClick={onDelete} className="text-red-600">
                     <Trash2 className="h-4 w-4 mr-2" />
                     Delete Task
@@ -1774,9 +1777,23 @@ function GoalTrackerApp() {
     }
   }
 
-  const deleteDailyTask = async (day: string, taskId: string) => {
+  const deleteWeeklyTask = async (taskId: string) => {
     try {
       await supabase.from("tasks").delete().eq("id", taskId)
+
+      setWeeklyTasks((prev) => ({
+        ...prev,
+        [`Week ${currentWeek}`]: prev[`Week ${currentWeek}`]?.filter((task) => task.id !== taskId) || [],
+      }))
+    } catch (error) {
+      console.error("Error deleting weekly task:", error)
+      // Keep the task in UI if database deletion fails
+    }
+  }
+
+  const deleteDailyTask = async (day: string, taskId: string) => {
+    try {
+      await supabase.from("daily_tasks").delete().eq("id", taskId)
 
       setDailyTasks((prev) => ({
         ...prev,
@@ -2094,7 +2111,6 @@ function GoalTrackerApp() {
         targetDate: m.targetDate,
       })),
     })
-    setShowAddLongTermGoal(true)
   }
 
   const saveEditedLongTermGoal = () => {
@@ -2217,21 +2233,15 @@ function GoalTrackerApp() {
     }
   }
 
-  const deleteLongTermGoal = async (timeframe: "1-year" | "5-year", category: string, goalId: string) => {
-    try {
-      await supabase.from("long_term_goals").delete().eq("id", goalId)
-      setLongTermGoals((prev) => ({
-        ...prev,
-        [timeframe]: {
-          ...prev[timeframe],
-          [category]: prev[timeframe][category].filter((g) => g.id !== goalId),
-        },
-      }))
-      setShowDeleteLongTermGoal(null)
-    } catch (error) {
-      console.error("Error deleting long-term goal:", error)
-      // Keep the goal in UI if database deletion fails
-    }
+  const deleteLongTermGoal = (timeframe: "1-year" | "5-year", category: string, goalId: string) => {
+    setLongTermGoals((prev) => ({
+      ...prev,
+      [timeframe]: {
+        ...prev[timeframe],
+        [category]: prev[timeframe][category].filter((g) => g.id !== goalId),
+      },
+    }))
+    setShowDeleteLongTermGoal(null)
   }
 
   const getTotalProgress = () => {
@@ -3088,14 +3098,6 @@ function GoalTrackerApp() {
                                         On Track
                                       </Badge>
                                     )}
-                                    {!isCompleted && weeklyProgress.onTrack && (
-                                      <Badge
-                                        variant="secondary"
-                                        className="bg-blue-100 text-blue-800 whitespace-nowrap"
-                                      >
-                                        On Track
-                                      </Badge>
-                                    )}
                                     {!isCompleted && !weeklyProgress.onTrack && (
                                       <Badge
                                         variant="secondary"
@@ -3308,22 +3310,7 @@ function GoalTrackerApp() {
                               task={task}
                               onToggle={() => toggleWeeklyTask(task.id)}
                               onEdit={() => startEditingWeeklyTask(task)}
-                              onDelete={() => {
-                                const deleteWeeklyTask = async (taskId: string) => {
-                                  try {
-                                    await supabase.from("tasks").delete().eq("id", taskId)
-                                    setWeeklyTasks((prev) => ({
-                                      ...prev,
-                                      [`Week ${currentWeek}`]:
-                                        prev[`Week ${currentWeek}`]?.filter((task) => task.id !== taskId) || [],
-                                    }))
-                                  } catch (error) {
-                                    console.error("Error deleting weekly task:", error)
-                                    // Keep the task in UI if database deletion fails
-                                  }
-                                }
-                                deleteWeeklyTask(task.id)
-                              }}
+                              onDelete={() => deleteWeeklyTask(task.id)}
                               getPriorityColor={getPriorityColor}
                             />
                           ))}
@@ -3476,7 +3463,7 @@ function GoalTrackerApp() {
               {Object.keys(goalsData).map((category) => {
                 const categoryTasks = (dailyTasks[selectedDay] || []).filter((task) => task.category === category)
 
-                if (categoryTasks.length > 0) return null
+                if (categoryTasks.length > 0) return null // Already rendered above
 
                 return (
                   <Card key={`empty-${category}`} className="border-0 shadow-sm">
@@ -4308,6 +4295,7 @@ export default function Page() {
 
   useEffect(() => {
     const getUser = async () => {
+      const supabase = createClient()
       const {
         data: { user },
       } = await supabase.auth.getUser()
@@ -4319,4 +4307,15 @@ export default function Page() {
 
   if (loading) {
     return (
-      <div className=\"min-h-screen flex items-
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return <AuthScreen />
+  }
+
+  return <GoalTrackerApp />
+}
