@@ -2111,6 +2111,9 @@ function GoalTrackerApp() {
         targetDate: m.targetDate,
       })),
     })
+    requestAnimationFrame(() => {
+      setShowAddLongTermGoal(true)
+    })
   }
 
   const saveEditedLongTermGoal = () => {
@@ -3631,18 +3634,17 @@ function GoalTrackerApp() {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => startEditingLongTermGoal("1-year", category, goal)}>
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      requestAnimationFrame(() => startEditingLongTermGoal("1-year", category, goal))
+                                    }
+                                  >
                                     <Edit className="h-4 w-4 mr-2" />
                                     Edit Goal
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
                                     onClick={() =>
-                                      setShowDeleteLongTermGoal({
-                                        timeframe: "1-year",
-                                        category,
-                                        goalId: goal.id,
-                                        title: goal.title,
-                                      })
+                                      requestAnimationFrame(() => deleteLongTermGoal("1-year", category, goal.id))
                                     }
                                     className="text-red-600"
                                   >
@@ -3833,18 +3835,17 @@ function GoalTrackerApp() {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => startEditingLongTermGoal("5-year", category, goal)}>
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      requestAnimationFrame(() => startEditingLongTermGoal("5-year", category, goal))
+                                    }
+                                  >
                                     <Edit className="h-4 w-4 mr-2" />
                                     Edit Goal
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
                                     onClick={() =>
-                                      setShowDeleteLongTermGoal({
-                                        timeframe: "5-year",
-                                        category,
-                                        goalId: goal.id,
-                                        title: goal.title,
-                                      })
+                                      requestAnimationFrame(() => deleteLongTermGoal("5-year", category, goal.id))
                                     }
                                     className="text-red-600"
                                   >
