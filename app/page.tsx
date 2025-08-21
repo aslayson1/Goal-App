@@ -1776,16 +1776,16 @@ function GoalTrackerApp() {
     }
   }
 
-  const deleteWeeklyTask = async (taskId: string) => {
+  const deleteDailyTask = async (day: string, taskId: string) => {
     try {
       await supabase.from("tasks").delete().eq("id", taskId)
 
-      setWeeklyTasks((prev) => ({
+      setDailyTasks((prev) => ({
         ...prev,
-        [`Week ${currentWeek}`]: prev[`Week ${currentWeek}`]?.filter((task) => task.id !== taskId) || [],
+        [day]: prev[day]?.filter((task) => task.id !== taskId) || [],
       }))
     } catch (error) {
-      console.error("Error deleting weekly task:", error)
+      console.error("Error deleting daily task:", error)
       // Keep the task in UI if database deletion fails
     }
   }
@@ -1795,14 +1795,6 @@ function GoalTrackerApp() {
       ...prev,
       [day]: prev[day]?.map((task) => (task.id === taskId ? { ...task, ...updatedTask } : task)) || [],
     }))
-  }
-
-  const deleteDailyTask = (day: string, taskId: string) => {
-    setDailyTasks((prev) => ({
-      ...prev,
-      [day]: prev[day]?.filter((task) => task.id !== taskId) || [],
-    }))
-    setShowDeleteDailyTask(null)
   }
 
   const startEditingWeeklyTask = (task: WeeklyTask) => {
@@ -3303,7 +3295,22 @@ function GoalTrackerApp() {
                               task={task}
                               onToggle={() => toggleWeeklyTask(task.id)}
                               onEdit={() => startEditingWeeklyTask(task)}
-                              onDelete={() => deleteWeeklyTask(task.id)}
+                              onDelete={() => {
+                                const deleteWeeklyTask = async (taskId: string) => {
+                                  try {
+                                    await supabase.from("tasks").delete().eq("id", taskId)
+                                    setWeeklyTasks((prev) => ({
+                                      ...prev,
+                                      [`Week ${currentWeek}`]:
+                                        prev[`Week ${currentWeek}`]?.filter((task) => task.id !== taskId) || [],
+                                    }))
+                                  } catch (error) {
+                                    console.error("Error deleting weekly task:", error)
+                                    // Keep the task in UI if database deletion fails
+                                  }
+                                }
+                                deleteWeeklyTask(task.id)
+                              }}
                               getPriorityColor={getPriorityColor}
                             />
                           ))}
@@ -3442,9 +3449,7 @@ function GoalTrackerApp() {
                               task={task}
                               onToggle={() => toggleDailyTask(selectedDay, task.id)}
                               onEdit={() => startEditingDailyTask(task)}
-                              onDelete={() =>
-                                setShowDeleteDailyTask({ day: selectedDay, taskId: task.id, title: task.title })
-                              }
+                              onDelete={() => deleteDailyTask(selectedDay, task.id)}
                             />
                           ))}
                         </SortableContext>
@@ -4311,6 +4316,5 @@ export default function Page() {
   if (!user) {
     return <AuthScreen />
   }
-
-  return <GoalTrackerApp />
-}
+\
+  return <
