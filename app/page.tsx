@@ -1,92 +1,101 @@
 import type React from "react"
 \
-You are editing a Next.js (App Router) project. Make minimal repair-only edits.\
-Do not change any UI/JSX, styling, component structure, imports, logic, routes, server code, database code/schemas, or environment variables.
+You are editing a Next.js (App Router) project. Make minimal, repair-only edits.\
+Do not change any UI/JSX, styling, component structure, logic, routes, server code, Supabase code/schemas, or env vars.
 Do not add new components/files. Do not rename anything.
+Your task is to undo accidental text overwrites and fix a broken layout header.
 
 1) Repair app/page.tsx
 \
-The current file was accidentally replaced
-with placeholders (e.g., // Existing code here, // JSX structure here).
-\
-Action: Restore app/page.tsx to the last working version from the repository history before those placeholders were introduced (the version that contained the complete Goal Tracker app and exported the page).
-\
-If repository history is available: restore app/page.tsx to the last good revision (e.g., checkout or revert that single file).
+The current file contains non-TypeScript/plain-English text (e.g., lines starting
+with “You
+are
+editing
+a
+Next.js (App Router)
+project
+…” and backslashes \). This indicates it was overwritten by instructions text.
 
-If repository history is not available, STOP and make no changes to app/page.tsx (to avoid losing the original content). Do not leave placeholders.
-\
-Acceptance
-for page.tsx
-:
-
-The file contains the original, full app code again (no placeholder comments).
-\
-The page has a valid default
+Action: Restore app/page.tsx to the last working version from repo history (the revision that contained the full Goal Tracker app and a valid default
 export
-(either
+).
+\
+Use the most recent commit before the accidental overwrite (the version that includes the full GoalTrackerApp code and a default
+export
+like
 export default function Page() {
   return <GoalTrackerApp />
 }
-or
+).
+\
+If a default
+export
+was
+previously
 export default GoalTrackerApp
-), exactly as it was in the last working version.
+, keep it exactly as it was in that working revision.
 
-No other diffs in UI/logic/DB.
+Do not reformat or change any logic. Strict restore only.
+\
+Acceptance
+for app/page.tsx
+:
+\
+No plain-English instruction text remains in the file.
+
+The original app code is fully present again.
+\
+The file has exactly one default
+export
+(same as the
+last
+working
+revision
+).
+\
+No other diffs.
 
 2) Repair app/layout.tsx
+
+The file currently contains a stray ... token and a broken component header.
 \
-The file contains a literal ... where the RootLayout
-function header
-should
-be, breaking
-the
-module.
-\
-Action: Replace the broken header line
+Action: Replace the broken header
 with a valid
 RootLayout
-signature, without
-changing
+signature
+without
+altering
 any
 of
 the
 existing
 JSX
-under
-it.The
-body
-and
-providers
-must
-remain
-exactly as-is.
+inside
+the
+return
+.
 \
-Exact replacement
-for the broken line (insert this line right before the existing return (...) block and remove the stray .../broken tokens):
-\
+Exact header to insert (replace the broken/... area):
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
 
 \
-Keep the rest of the file intact, including:
+Keep all existing imports as-is (including import type React from "react\" and import type { Metadata } from "next\"), keep metadata as-is, and keep all JSX inside return (...) exactly the same (including <html>, <body>, ThemeProvider, AuthProvider, and <Toaster />).
 \
-export const metadata: Metadata = { ... } (leave the object as-is)
-
-The <html>...</html> markup, ThemeProvider, AuthProvider, and Toaster.
-\
-Acceptance for layout.tsx:
+Acceptance for app/layout.tsx:
 \
 Compiles with a valid export default function RootLayout(...).
 \
-No JSX inside the return is changed.
+No changes to the JSX inside the return.
 \
-No additional changes anywhere else.
+No other diffs.
 
 3) Do-not-change checklist
 
 Do not modify any other files.
 
-Do not introduce new dialogs/components.
+Do not add wrappers or new dialogs/components.
 
-Do not touch Supabase code or schemas.
-\
-Do not auto-“format” large diffs; only the surgical fixes above.\
+Do not touch Supabase queries, schemas, or RLS.
+
+Do not “optimize” or refactor anything.
