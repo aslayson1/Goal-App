@@ -1,27 +1,45 @@
 "use client"
-
-import React from "react"
-
-import { useState } from "react"
-import { MoreHorizontal, Edit, Trash2, CheckCircle, Clock, GripVertical } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Checkbox } from "@/components/ui/checkbox"
+import { supabase } from "@/lib/supabase/client"
 import {
   Dialog,
   DialogContent,
   DialogHeader,
+  DialogFooter,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
 } from "@/components/ui/dialog"
+
 import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
+
+import { useState, useEffect } from "react"
+import { Plus, ChevronDown, ChevronUp, Calendar, Target, MoreHorizontal, Edit, Trash2, CheckCircle, Clock, GripVertical, ClipboardCheck } from 'lucide-react'
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
 import { Textarea } from "@/components/ui/textarea"
+import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Input } from "@/components/ui/input"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 // Auth components
 import { useAuth } from "@/components/auth/auth-provider"
+import { SignOutButton } from "@/components/auth/sign-out-button"
+
+// Drag and Drop imports
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core"
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 
@@ -968,14 +986,14 @@ function GoalTrackerApp() {
     return days[today]
   })
 
-  const [weeklyTasks, setWeeklyTasks] = useState<Record<string, WeeklyTask[]>>({})
-  const [dailyTasks, setDailyTasks] = useState<Record<string, DailyTask[]>>({})
+  const [weeklyTasks, setWeeklyTasks = useState<Record<string, WeeklyTask[]>>({})
+  const [dailyTasks, setDailyTasks = useState<Record<string, DailyTask[]>>({})
 
   // Add state for long-term goals:
-  const [longTermGoals, setLongTermGoals] = useState<LongTermGoalsData>(initialLongTermGoals)
-  const [showAddLongTermGoal, setShowAddLongTermGoal] = useState(false)
-  const [selectedTimeframe, setSelectedTimeframe] = useState<"1-year" | "5-year">("1-year")
-  const [newLongTermGoal, setNewLongTermGoal] = useState({
+  const [longTermGoals, setLongTermGoals = useState<LongTermGoalsData>(initialLongTermGoals)
+  const [showAddLongTermGoal, setShowAddLongTermGoal = useState(false)
+  const [selectedTimeframe, setSelectedTimeframe = useState<"1-year" | "5-year">("1-year")
+  const [newLongTermGoal, setNewLongTermGoal = useState({
     title: "",
     description: "",
     targetDate: "",
@@ -989,19 +1007,19 @@ function GoalTrackerApp() {
     ],
   })
 
-  const [showAddGoal, setShowAddGoal] = useState(false)
-  const [showAddWeeklyTask, setShowAddWeeklyTask] = useState(false)
-  const [showAddDailyTask, setShowAddDailyTask] = useState(false)
-  const [selectedCategory, setSelectedCategory] = useState("")
-  const [showProfile, setShowProfile] = useState(false)
-  const [newGoal, setNewGoal] = useState({
+  const [showAddGoal, setShowAddGoal = useState(false)
+  const [showAddWeeklyTask, setShowAddWeeklyTask = useState(false)
+  const [showAddDailyTask, setShowAddDailyTask = useState(false)
+  const [selectedCategory, setSelectedCategory = useState("")
+  const [showProfile, setShowProfile = useState(false)
+  const [newGoal, setNewGoal = useState({
     title: "",
     description: "",
     targetCount: 0,
     weeklyTarget: 0,
   })
 
-  const [newWeeklyTask, setNewWeeklyTask] = useState({
+  const [newWeeklyTask, setNewWeeklyTask = useState({
     title: "",
     description: "",
     category: "",
@@ -1010,7 +1028,7 @@ function GoalTrackerApp() {
     estimatedHours: 1,
   })
 
-  const [newDailyTask, setNewDailyTask] = useState({
+  const [newDailyTask, setNewDailyTask = useState({
     title: "",
     description: "",
     category: "",
@@ -1019,31 +1037,31 @@ function GoalTrackerApp() {
     estimatedMinutes: 30,
   })
 
-  const [showAddCategory, setShowAddCategory] = useState(false)
-  const [newCategoryName, setNewCategoryName] = useState("")
+  const [showAddCategory, setShowAddCategory = useState(false)
+  const [newCategoryName, setNewCategoryName = useState("")
 
-  const [editingGoal, setEditingGoal] = useState<{ category: string; goal: Goal } | null>(null)
-  const [showDeleteGoal, setShowDeleteGoal] = useState<{ category: string; goalId: string; title: string } | null>(null)
-  const [showDeleteCategory, setShowDeleteCategory] = useState<string | null>(null)
+  const [editingGoal, setEditingGoal = useState<{ category: string; goal: Goal } | null>(null)
+  const [showDeleteGoal, setShowDeleteGoal = useState<{ category: string; goalId: string; title: string } | null>(null)
+  const [showDeleteCategory, setShowDeleteCategory = useState<string | null>(null)
 
-  const [editingWeeklyTask, setEditingWeeklyTask] = useState<WeeklyTask | null>(null)
-  const [editingDailyTask, setEditingDailyTask] = useState<DailyTask | null>(null)
-  const [showDeleteDailyTask, setShowDeleteDailyTask] = useState<{ day: string; taskId: string; title: string } | null>(
+  const [editingWeeklyTask, setEditingWeeklyTask = useState<WeeklyTask | null>(null)
+  const [editingDailyTask, setEditingDailyTask = useState<DailyTask | null>(null)
+  const [showDeleteDailyTask, setShowDeleteDailyTask = useState<{ day: string; taskId: string; title: string } | null>(
     null,
   )
 
-  const [customCategoryColors, setCustomCategoryColors] = useState<{ [key: string]: string }>({})
-  const [showEditCategory, setShowEditCategory] = useState<string | null>(null)
-  const [editCategoryName, setEditCategoryName] = useState("")
-  const [editCategoryColor, setEditCategoryColor] = useState("")
+  const [customCategoryColors, setCustomCategoryColors = useState<{ [key: string]: string }>({})
+  const [showEditCategory, setShowEditCategory = useState<string | null>(null)
+  const [editCategoryName, setEditCategoryName = useState("")
+  const [editCategoryColor, setEditCategoryColor = useState("")
 
   // Add these state variables after the existing state declarations (around line 680):
-  const [editingLongTermGoal, setEditingLongTermGoal] = useState<{
+  const [editingLongTermGoal, setEditingLongTermGoal = useState<{
     timeframe: "1-year" | "5-year"
     category: string
     goal: LongTermGoal
   } | null>(null)
-  const [showDeleteLongTermGoal, setShowDeleteLongTermGoal] = useState<{
+  const [showDeleteLongTermGoal, setShowDeleteLongTermGoal = useState<{
     timeframe: "1-year" | "5-year"
     category: string
     goalId: string
@@ -1164,35 +1182,23 @@ function GoalTrackerApp() {
       }
     }
 
-    const tasksToMove = []
+    let tasksToMove = []
 
     // Collect incomplete tasks from all days
     previousDays.forEach((day) => {
       const dayTasks = dailyTasks[day] || []
       const incompleteTasks = dayTasks.filter((task) => !task.completed)
-
-      if (incompleteTasks.length > 0) {
-        tasksToMove.push(...incompleteTasks.map((task) => ({ ...task, originalDay: day })))
-      }
+      tasksToMove = [...tasksToMove, ...incompleteTasks]
     })
 
-    // Move tasks to today if any exist
     if (tasksToMove.length > 0) {
       setDailyTasks((prev) => {
         const updated = { ...prev }
 
-        // Remove tasks from their original days
-        tasksToMove.forEach((task) => {
-          if (updated[task.originalDay]) {
-            updated[task.originalDay] = updated[task.originalDay].filter((t) => t.id !== task.id)
-          }
-        })
-
-        // Add tasks to today with updated IDs and reset time blocks
+        // Add incomplete tasks to today with updated IDs
         const updatedTasksForToday = tasksToMove.map((task) => ({
           ...task,
           id: `${currentDayName.toLowerCase()}_moved_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          timeBlock: "", // Reset time block for moved tasks
         }))
 
         updated[currentDayName] = [...(prev[currentDayName] || []), ...updatedTasksForToday]
@@ -1202,1895 +1208,464 @@ function GoalTrackerApp() {
     }
   }
 
-  // Call moveIncompleteTasks on component mount and when the day changes
-  React.useEffect(() => {
+  // Replace the existing useEffect for moveIncompleteTasks with this enhanced version
+  useEffect(() => {
+    // Move incomplete tasks on component mount
     moveIncompleteTasks()
-  }, [selectedDay])
 
-  const addGoal = () => {
-    if (!newGoal.title.trim() || !selectedCategory) return
+    // Set up a check for day change to move tasks automatically
+    const checkForDayChange = () => {
+      const now = new Date()
+      const currentDay = now.getDay()
+      const currentDate = now.getDate()
 
-    const goal: Goal = {
-      id: `goal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      title: newGoal.title,
-      description: newGoal.description,
-      targetCount: newGoal.targetCount || extractNumberFromTitle(newGoal.title),
-      currentCount: 0,
-      notes: "",
-      weeklyTarget: newGoal.weeklyTarget || (newGoal.targetCount || extractNumberFromTitle(newGoal.title)) / 12,
-      category: selectedCategory,
+      // Store the current day and date in localStorage
+      const storedDay = localStorage.getItem("lastCheckDay")
+      const storedDate = localStorage.getItem("lastCheckDate")
+
+      // If the day has changed since last check, move incomplete tasks
+      if (storedDay !== null && storedDate !== null) {
+        const lastDay = Number.parseInt(storedDay)
+        const lastDate = Number.parseInt(storedDate)
+
+        if (lastDay !== currentDay || lastDate !== currentDate) {
+          moveIncompleteTasks()
+        }
+      }
+
+      // Update the stored day and date
+      localStorage.setItem("lastCheckDay", currentDay.toString())
+      localStorage.setItem("lastCheckDate", currentDate.toString())
     }
 
+    // Check for day change on mount and set interval to check periodically
+    checkForDayChange()
+
+    // Check every hour for day changes (in case the app stays open overnight)
+    const intervalId = setInterval(checkForDayChange, 60 * 60 * 1000)
+
+    return () => clearInterval(intervalId)
+  }, [])
+
+  useEffect(() => {
+    const checkDatabaseAndLoadData = async () => {
+      if (user?.id) {
+        console.log("User authenticated, checking database connection...")
+
+        try {
+          // Test database connection
+          const { data, error } = await supabase.from("categories").select("count").limit(1)
+
+          if (error) {
+            console.error("Database connection failed:", error)
+          } else {
+            console.log("Database connection successful!")
+
+            const startDateKey = `goalTracker_startDate_${user.id}`
+            let startDate = localStorage.getItem(startDateKey)
+
+            if (!startDate) {
+              startDate = new Date().toISOString()
+              localStorage.setItem(startDateKey, startDate)
+            }
+
+            const start = new Date(startDate)
+            const today = new Date()
+            const daysDiff = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+            const weekNumber = Math.floor(daysDiff / 7) + 1
+            const calculatedWeek = Math.min(Math.max(weekNumber, 1), 12)
+
+            setCurrentWeek(calculatedWeek)
+
+            const dbData = await loadCategoriesAndGoalsFromDB(user.id)
+            const taskData = await loadTasksFromDB(user.id)
+
+            console.log("=== COMPREHENSIVE TASK LOADING DEBUG ===")
+            console.log("Raw task data from database:", JSON.stringify(taskData, null, 2))
+            console.log("Daily tasks structure:", JSON.stringify(taskData.dailyTasks, null, 2))
+            console.log("Weekly tasks structure:", JSON.stringify(taskData.weeklyTasks, null, 2))
+
+            setGoalsData(dbData)
+
+            console.log("=== FORCING STATE UPDATES ===")
+
+            // Update daily tasks with force re-render
+            setDailyTasks(() => {
+              console.log("Setting daily tasks to:", JSON.stringify(taskData.dailyTasks, null, 2))
+              return { ...taskData.dailyTasks }
+            })
+
+            // Update weekly tasks with force re-render
+            setWeeklyTasks(() => {
+              console.log("Setting weekly tasks to:", JSON.stringify(taskData.weeklyTasks, null, 2))
+              return { ...taskData.weeklyTasks }
+            })
+
+            setTimeout(() => {
+              console.log("=== POST-UPDATE VERIFICATION ===")
+              console.log("Daily tasks count:", Object.keys(taskData.dailyTasks).length)
+              console.log("Weekly tasks count:", Object.keys(taskData.weeklyTasks).length)
+              console.log("State update completed successfully")
+            }, 100)
+          }
+        } catch (error) {
+          console.error("Error loading data:", error)
+        }
+      }
+    }
+
+    checkDatabaseAndLoadData()
+  }, [user?.id])
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  )
+
+  const incrementGoal = async (category: string, goalId: string, amount = 1) => {
+    const goal = goalsData[category]?.find((g) => g.id === goalId)
+    if (!goal) return
+
+    const newCount = Math.min(goal.currentCount + amount, goal.targetCount)
+
+    // Update local state immediately for UI feedback
     setGoalsData((prev) => ({
       ...prev,
-      [selectedCategory]: [...(prev[selectedCategory] || []), goal],
+      [category]: prev[category].map((goal) => (goal.id === goalId ? { ...goal, currentCount: newCount } : goal)),
     }))
 
-    // Reset form
-    setNewGoal({
-      title: "",
-      description: "",
-      targetCount: 0,
-      weeklyTarget: 0,
-    })
-    setShowAddGoal(false)
+    // Check if this is a database goal (has UUID format) vs local goal
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(goalId)
+
+    if (isUUID) {
+      try {
+        const { error } = await supabase.from("goals").update({ current_progress: newCount }).eq("id", goalId)
+
+        if (error) {
+          console.error("Error updating goal progress:", error)
+          // Revert local state on error
+          setGoalsData((prev) => ({
+            ...prev,
+            [category]: prev[category].map((goal) =>
+              goal.id === goalId ? { ...goal, currentCount: goal.currentCount } : goal,
+            ),
+          }))
+        }
+      } catch (error) {
+        console.error("Error updating goal progress:", error)
+      }
+    }
   }
 
-  const addWeeklyTask = () => {
-    console.log("[v0] addWeeklyTask called")
-    console.log("[v0] newWeeklyTask:", newWeeklyTask)
+  const updateGoalProgress = async (category: string, goalId: string, newValue: number) => {
+    const goal = goalsData[category]?.find((g) => g.id === goalId)
+    if (!goal) return
 
-    if (!newWeeklyTask.title.trim()) {
-      console.log("[v0] No title provided, returning early")
-      return
+    const clampedValue = Math.min(Math.max(newValue, 0), goal.targetCount)
+
+    // Update local state immediately for UI feedback
+    setGoalsData((prev) => ({
+      ...prev,
+      [category]: prev[category].map((goal) => (goal.id === goalId ? { ...goal, currentCount: clampedValue } : goal)),
+    }))
+
+    // Check if this is a database goal (has UUID format) vs local goal
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(goalId)
+
+    if (isUUID) {
+      try {
+        const { error } = await supabase.from("goals").update({ current_progress: clampedValue }).eq("id", goalId)
+
+        if (error) {
+          console.error("Error updating goal progress:", error)
+          // Revert local state on error
+          setGoalsData((prev) => ({
+            ...prev,
+            [category]: prev[category].map((goal) =>
+              goal.id === goalId ? { ...goal, currentCount: goal.currentCount } : goal,
+            ),
+          }))
+        }
+      } catch (error) {
+        console.error("Error updating goal progress:", error)
+      }
     }
+  }
 
-    const task: WeeklyTask = {
-      id: `w${currentWeek}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      title: newWeeklyTask.title,
-      description: newWeeklyTask.description,
-      category: newWeeklyTask.category,
-      goalId: newWeeklyTask.goalId,
-      completed: false,
-      priority: newWeeklyTask.priority,
-      estimatedHours: newWeeklyTask.estimatedHours,
-    }
+  const toggleBinaryGoal = async (category: string, goalId: string) => {
+    const goal = goalsData[category]?.find((g) => g.id === goalId)
+    if (!goal) return
 
-    console.log("[v0] Created task:", task)
+    const newCurrentCount = goal.currentCount === 0 ? goal.targetCount : 0
 
-    const weekKey = `Week ${currentWeek}`
-    console.log("[v0] Adding to week:", weekKey)
+    try {
+      const { error } = await supabase
+        .from("goals")
+        .update({
+          current_progress: newCurrentCount,
+          completed: newCurrentCount >= goal.targetCount,
+        })
+        .eq("id", goalId)
 
-    setWeeklyTasks((prev) => {
-      const updated = {
+      if (error) throw error
+
+      setGoalsData((prev) => ({
         ...prev,
-        [weekKey]: [...(prev[weekKey] || []), task],
-      }
-      console.log("[v0] Updated weekly tasks:", updated)
-      return updated
-    })
-
-    // Reset form
-    setNewWeeklyTask({
-      title: "",
-      description: "",
-      category: "",
-      goalId: "",
-      priority: "medium",
-      estimatedHours: 1,
-    })
-    setShowAddWeeklyTask(false)
-    console.log("[v0] Form reset and dialog closed")
-  }
-
-  const addDailyTask = () => {
-    console.log("[v0] addDailyTask called")
-    console.log("[v0] newDailyTask:", newDailyTask)
-
-    if (!newDailyTask.title.trim()) {
-      console.log("[v0] No title provided, returning early")
-      return
-    }
-
-    const task: DailyTask = {
-      id: `${selectedDay.toLowerCase()}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      title: newDailyTask.title,
-      description: newDailyTask.description,
-      category: newDailyTask.category,
-      goalId: newDailyTask.goalId,
-      completed: false,
-      timeBlock: newDailyTask.timeBlock,
-      estimatedMinutes: newDailyTask.estimatedMinutes,
-    }
-
-    console.log("[v0] Created daily task:", task)
-    console.log("[v0] Adding to day:", selectedDay)
-
-    setDailyTasks((prev) => {
-      const updated = {
-        ...prev,
-        [selectedDay]: [...(prev[selectedDay] || []), task],
-      }
-      console.log("[v0] Updated daily tasks:", updated)
-      return updated
-    })
-
-    // Reset form
-    setNewDailyTask({
-      title: "",
-      description: "",
-      category: "",
-      goalId: "",
-      timeBlock: "",
-      estimatedMinutes: 30,
-    })
-    setShowAddDailyTask(false)
-    console.log("[v0] Daily task form reset and dialog closed")
-  }
-
-  const addCategory = () => {
-    if (!newCategoryName.trim()) return
-
-    setGoalsData((prev) => ({
-      ...prev,
-      [newCategoryName]: [],
-    }))
-
-    setNewCategoryName("")
-    setShowAddCategory(false)
-  }
-
-  const editGoal = (category: string, goalId: string, updates: Partial<Goal>) => {
-    setGoalsData((prev) => ({
-      ...prev,
-      [category]: prev[category].map((goal) => (goal.id === goalId ? { ...goal, ...updates } : goal)),
-    }))
-  }
-
-  const deleteGoal = (category: string, goalId: string) => {
-    setGoalsData((prev) => ({
-      ...prev,
-      [category]: prev[category].filter((goal) => goal.id !== goalId),
-    }))
-    setShowDeleteGoal(null)
-  }
-
-  const deleteCategory = (categoryName: string) => {
-    setGoalsData((prev) => {
-      const updated = { ...prev }
-      delete updated[categoryName]
-      return updated
-    })
-    setShowDeleteCategory(null)
-  }
-
-  const toggleGoalExpansion = (goalId: string) => {
-    setExpandedNotes((prev) => {
-      const newSet = new Set(prev)
-      if (newSet.has(goalId)) {
-        newSet.delete(goalId)
-      } else {
-        newSet.add(goalId)
-      }
-      return newSet
-    })
-  }
-
-  const updateGoalProgress = (category: string, goalId: string, increment: number) => {
-    setGoalsData((prev) => ({
-      ...prev,
-      [category]: prev[category].map((goal) =>
-        goal.id === goalId
-          ? {
-              ...goal,
-              currentCount: Math.max(0, Math.min(goal.targetCount, goal.currentCount + increment)),
-            }
-          : goal,
-      ),
-    }))
-  }
-
-  const toggleWeeklyTask = (taskId: string) => {
-    const weekKey = `Week ${currentWeek}`
-    setWeeklyTasks((prev) => ({
-      ...prev,
-      [weekKey]: (prev[weekKey] || []).map((task) =>
-        task.id === taskId ? { ...task, completed: !task.completed } : task,
-      ),
-    }))
-  }
-
-  const toggleDailyTask = (taskId: string) => {
-    setDailyTasks((prev) => ({
-      ...prev,
-      [selectedDay]: (prev[selectedDay] || []).map((task) =>
-        task.id === taskId ? { ...task, completed: !task.completed } : task,
-      ),
-    }))
-  }
-
-  const deleteWeeklyTask = (taskId: string) => {
-    const weekKey = `Week ${currentWeek}`
-    setWeeklyTasks((prev) => ({
-      ...prev,
-      [weekKey]: (prev[weekKey] || []).filter((task) => task.id !== taskId),
-    }))
-  }
-
-  const deleteDailyTask = (taskId: string) => {
-    setDailyTasks((prev) => ({
-      ...prev,
-      [selectedDay]: (prev[selectedDay] || []).filter((task) => task.id !== taskId),
-    }))
-    setShowDeleteDailyTask(null)
-  }
-
-  const startEditingWeeklyTask = (task: WeeklyTask) => {
-    setEditingWeeklyTask(task)
-    setNewWeeklyTask({
-      title: task.title,
-      description: task.description,
-      category: task.category,
-      goalId: task.goalId,
-      priority: task.priority,
-      estimatedHours: task.estimatedHours,
-    })
-    setShowAddWeeklyTask(true)
-  }
-
-  const startEditingDailyTask = (task: DailyTask) => {
-    setEditingDailyTask(task)
-    setNewDailyTask({
-      title: task.title,
-      description: task.description,
-      category: task.category,
-      goalId: task.goalId,
-      timeBlock: task.timeBlock,
-      estimatedMinutes: task.estimatedMinutes,
-    })
-    setShowAddDailyTask(true)
-  }
-
-  const saveEditedWeeklyTask = () => {
-    if (!editingWeeklyTask) return
-
-    const weekKey = `Week ${currentWeek}`
-    setWeeklyTasks((prev) => ({
-      ...prev,
-      [weekKey]: (prev[weekKey] || []).map((task) =>
-        task.id === editingWeeklyTask.id
-          ? {
-              ...task,
-              title: newWeeklyTask.title,
-              description: newWeeklyTask.description,
-              category: newWeeklyTask.category,
-              goalId: newWeeklyTask.goalId,
-              priority: newWeeklyTask.priority,
-              estimatedHours: newWeeklyTask.estimatedHours,
-            }
-          : task,
-      ),
-    }))
-
-    // Reset form
-    setNewWeeklyTask({
-      title: "",
-      description: "",
-      category: "",
-      goalId: "",
-      priority: "medium",
-      estimatedHours: 1,
-    })
-    setEditingWeeklyTask(null)
-    setShowAddWeeklyTask(false)
-  }
-
-  const saveEditedDailyTask = () => {
-    if (!editingDailyTask) return
-
-    setDailyTasks((prev) => ({
-      ...prev,
-      [selectedDay]: (prev[selectedDay] || []).map((task) =>
-        task.id === editingDailyTask.id
-          ? {
-              ...task,
-              title: newDailyTask.title,
-              description: newDailyTask.description,
-              category: newDailyTask.category,
-              goalId: newDailyTask.goalId,
-              timeBlock: newDailyTask.timeBlock,
-              estimatedMinutes: newDailyTask.estimatedMinutes,
-            }
-          : task,
-      ),
-    }))
-
-    // Reset form
-    setNewDailyTask({
-      title: "",
-      description: "",
-      category: "",
-      goalId: "",
-      timeBlock: "",
-      estimatedMinutes: 30,
-    })
-    setEditingDailyTask(null)
-    setShowAddDailyTask(false)
-  }
-
-  const startEditingGoal = (category: string, goal: Goal) => {
-    setEditingGoal({ category, goal })
-    setNewGoal({
-      title: goal.title,
-      description: goal.description,
-      targetCount: goal.targetCount,
-      weeklyTarget: goal.weeklyTarget,
-    })
-    setSelectedCategory(category)
-    setShowAddGoal(true)
-  }
-
-  const saveEditedGoal = () => {
-    if (!editingGoal) return
-
-    editGoal(editingGoal.category, editingGoal.goal.id, {
-      title: newGoal.title,
-      description: newGoal.description,
-      targetCount: newGoal.targetCount,
-      weeklyTarget: newGoal.weeklyTarget,
-    })
-
-    // Reset form
-    setNewGoal({
-      title: "",
-      description: "",
-      targetCount: 0,
-      weeklyTarget: 0,
-    })
-    setEditingGoal(null)
-    setShowAddGoal(false)
-  }
-
-  // Add Long Term Goal Functions
-  const addLongTermGoal = () => {
-    if (!newLongTermGoal.title.trim() || !newLongTermGoal.category) return
-
-    const goal: LongTermGoal = {
-      id: `${selectedTimeframe}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      title: newLongTermGoal.title,
-      description: newLongTermGoal.description,
-      targetDate: newLongTermGoal.targetDate,
-      category: newLongTermGoal.category,
-      status: "in-progress",
-      notes: newLongTermGoal.notes,
-      milestones: newLongTermGoal.milestones
-        .filter((m) => m.title.trim())
-        .map((m, index) => ({
-          id: `m${index + 1}`,
-          title: m.title,
-          completed: false,
-          targetDate: m.targetDate,
-        })),
-    }
-
-    setLongTermGoals((prev) => ({
-      ...prev,
-      [selectedTimeframe]: {
-        ...prev[selectedTimeframe],
-        [newLongTermGoal.category]: [...(prev[selectedTimeframe][newLongTermGoal.category] || []), goal],
-      },
-    }))
-
-    // Reset form
-    setNewLongTermGoal({
-      title: "",
-      description: "",
-      targetDate: "",
-      category: "",
-      notes: "",
-      milestones: [
-        { title: "", targetDate: "" },
-        { title: "", targetDate: "" },
-        { title: "", targetDate: "" },
-        { title: "", targetDate: "" },
-      ],
-    })
-    setShowAddLongTermGoal(false)
-  }
-
-  const startEditingLongTermGoal = (timeframe: "1-year" | "5-year", category: string, goal: LongTermGoal) => {
-    setEditingLongTermGoal({ timeframe, category, goal })
-    setSelectedTimeframe(timeframe)
-    setNewLongTermGoal({
-      title: goal.title,
-      description: goal.description,
-      targetDate: goal.targetDate,
-      category: goal.category,
-      notes: goal.notes,
-      milestones: [
-        ...goal.milestones.map((m) => ({ title: m.title, targetDate: m.targetDate })),
-        // Fill remaining slots with empty milestones
-        ...Array(Math.max(0, 4 - goal.milestones.length)).fill({ title: "", targetDate: "" }),
-      ].slice(0, 4),
-    })
-    setShowAddLongTermGoal(true)
-  }
-
-  const saveEditedLongTermGoal = () => {
-    if (!editingLongTermGoal) return
-
-    const { timeframe, category, goal } = editingLongTermGoal
-
-    setLongTermGoals((prev) => ({
-      ...prev,
-      [timeframe]: {
-        ...prev[timeframe],
-        [category]: prev[timeframe][category].map((g) =>
-          g.id === goal.id
-            ? {
-                ...g,
-                title: newLongTermGoal.title,
-                description: newLongTermGoal.description,
-                targetDate: newLongTermGoal.targetDate,
-                category: newLongTermGoal.category,
-                notes: newLongTermGoal.notes,
-                milestones: newLongTermGoal.milestones
-                  .filter((m) => m.title.trim())
-                  .map((m, index) => ({
-                    id: `m${index + 1}`,
-                    title: m.title,
-                    completed: goal.milestones[index]?.completed || false,
-                    targetDate: m.targetDate,
-                  })),
-              }
-            : g,
+        [category]: prev[category].map((goal) =>
+          goal.id === goalId ? { ...goal, currentCount: newCurrentCount } : goal,
         ),
-      },
-    }))
-
-    // Reset form
-    setNewLongTermGoal({
-      title: "",
-      description: "",
-      targetDate: "",
-      category: "",
-      notes: "",
-      milestones: [
-        { title: "", targetDate: "" },
-        { title: "", targetDate: "" },
-        { title: "", targetDate: "" },
-        { title: "", targetDate: "" },
-      ],
-    })
-    setEditingLongTermGoal(null)
-    setShowAddLongTermGoal(false)
+      }))
+    } catch (error) {
+      console.error("Error updating binary goal:", error)
+    }
   }
 
-  const deleteLongTermGoal = (timeframe: "1-year" | "5-year", category: string, goalId: string) => {
-    setLongTermGoals((prev) => ({
-      ...prev,
-      [timeframe]: {
-        ...prev[timeframe],
-        [category]: prev[timeframe][category].filter((goal) => goal.id !== goalId),
-      },
-    }))
-    setShowDeleteLongTermGoal(null)
-  }
+  const toggleGoalCompletion = async (goalId: string, category: string) => {
+    console.log("[v0] toggleGoalCompletion called", { goalId, category })
 
-  const toggleMilestone = (timeframe: "1-year" | "5-year", category: string, goalId: string, milestoneId: string) => {
-    setLongTermGoals((prev) => ({
-      ...prev,
-      [timeframe]: {
-        ...prev[timeframe],
-        [category]: prev[timeframe][category].map((goal) =>
+    // Check if this is a local goal (non-UUID) or database goal (UUID format)
+    const isLocalGoal = !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(goalId)
+    console.log("[v0] isLocalGoal:", isLocalGoal)
+
+    if (isLocalGoal) {
+      // Handle local goals - just update local state
+      setGoalsData((prev) => ({
+        ...prev,
+        [category]: prev[category].map((goal) =>
           goal.id === goalId
-            ? {
-                ...goal,
-                milestones: goal.milestones.map((milestone) =>
-                  milestone.id === milestoneId ? { ...milestone, completed: !milestone.completed } : milestone,
-                ),
-              }
+            ? { ...goal, currentCount: goal.currentCount >= goal.targetCount ? 0 : goal.targetCount }
             : goal,
         ),
-      },
+      }))
+      return
+    }
+
+    // Handle database goals - update both local state and database
+    try {
+      const goal = goalsData[category]?.find((g) => g.id === goalId)
+      console.log("[v0] Found goal:", goal)
+      if (!goal) return
+
+      const newProgress = goal.currentCount >= goal.targetCount ? 0 : goal.targetCount
+      const isCompleted = newProgress >= goal.targetCount
+      console.log("[v0] Goal completion logic:", {
+        currentCount: goal.currentCount,
+        targetCount: goal.targetCount,
+        newProgress,
+        isCompleted,
+      })
+
+      setGoalsData((prev) => ({
+        ...prev,
+        [category]: prev[category].map((goal) => (goal.id === goalId ? { ...goal, currentCount: newProgress } : goal)),
+      }))
+
+      console.log("[v0] Updating database with:", {
+        current_progress: newProgress,
+        completed: isCompleted,
+        completed_at: isCompleted ? new Date().toISOString() : null,
+      })
+
+      const { error } = await supabase
+        .from("goals")
+        .update({
+          current_progress: newProgress,
+          completed: isCompleted,
+          completed_at: isCompleted ? new Date().toISOString() : null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", goalId)
+
+      if (error) {
+        console.error("[v0] Error updating goal completion:", error.message)
+        setGoalsData((prev) => ({
+          ...prev,
+          [category]: prev[category].map((goal) =>
+            goal.id === goalId
+              ? { ...goal, currentCount: goal.currentCount >= goal.targetCount ? goal.targetCount : 0 }
+              : goal,
+          ),
+        }))
+        return
+      }
+
+      console.log("[v0] Database update successful")
+    } catch (error) {
+      console.error("[v0] Error updating goal completion:", error)
+    }
+  }
+
+  const getGoalType = (targetCount: number) => {
+    if (targetCount === 1) return "binary"
+    if (targetCount <= 20) return "small"
+    if (targetCount <= 100) return "medium"
+    return "large"
+  }
+
+  const getQuickIncrements = (targetCount: number) => {
+    if (targetCount <= 100) return [1, 5, 10]
+    if (targetCount <= 1000) return [1, 10, 50, 100]
+    return [1, 100, 1000, 5000]
+  }
+
+  const addNewGoal = async () => {
+    const detectedNumber = extractNumberFromTitle(newGoal.title)
+    const targetCount = detectedNumber > 0 ? newGoal.targetCount || detectedNumber : 1
+
+    if (!selectedCategory || !newGoal.title) return
+
+    const goalId = crypto.randomUUID()
+
+    const weeklyTargetValue = newGoal.weeklyTarget || Math.ceil(targetCount / 12)
+
+    // Update local state first (preserve existing UI behavior)
+    setGoalsData((prev) => ({
+      ...prev,
+      [selectedCategory]: [
+        ...prev[selectedCategory],
+        {
+          id: goalId,
+          title: newGoal.title,
+          description: newGoal.description,
+          targetCount: targetCount,
+          currentCount: 0,
+          notes: "",
+          weeklyTarget: weeklyTargetValue,
+          category: selectedCategory,
+        },
+      ],
+    }))
+
+    try {
+      if (!user?.id) {
+        console.error("User not authenticated")
+        return
+      }
+
+      // Find the category ID from the database
+      const { data: categories } = await supabase
+        .from("categories")
+        .select("id")
+        .eq("name", selectedCategory)
+        .eq("user_id", user.id)
+        .single()
+
+      if (!categories) {
+        console.error("Category not found in database")
+        return
+      }
+
+      const { error } = await supabase.from("goals").insert({
+        id: goalId,
+        user_id: user.id,
+        category_id: categories.id,
+        title: newGoal.title,
+        description: newGoal.description,
+        target_count: targetCount,
+        current_progress: 0,
+        weekly_target: weeklyTargetValue,
+      })
+
+      if (error) {
+        console.error("Error saving goal to database:", error)
+      } else {
+        console.log("Goal saved to database successfully")
+      }
+    } catch (error) {
+      console.error("Error saving goal:", error)
+    }
+
+    setNewGoal({ title: "", description: "", targetCount: 0, weeklyTarget: 0 })
+    setSelectedCategory("")
+    setShowAddGoal(false)
+  }
+
+  const addNewCategory = async () => {
+    if (!newCategoryName.trim()) return
+
+    // Convert to title case instead of uppercase
+    const categoryName = newCategoryName
+      .trim()
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" ")
+
+    if (goalsData[categoryName]) {
+      alert("Category already exists!")
+      return
+    }
+
+    try {
+      if (!user?.id) {
+        alert("User not authenticated. Please log in again.")
+        return
+      }
+
+      // Validate UUID format
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+      if (!uuidRegex.test(user.id)) {
+        console.error("Invalid user ID format:", user.id)
+        alert("Authentication error. Please log out and log in again.")
+        return
+      }
+
+      const { error } = await supabase.from("categories").insert([
+        {
+          user_id: user.id,
+          name: categoryName,
+          color: "#05a7b0", // Default teal color
+        },
+      ])
+
+      if (error) {
+        console.error("Error saving category:", error)
+        console.error("User ID being used:", user.id)
+        alert(`Failed to save category: ${error.message}`)
+        return
+      }
+
+      // Update local state
+      setGoalsData((prev) => ({
+        ...prev,
+        [categoryName]: [],
+      }))
+
+      setNewCategoryName("")
+      setShowAddCategory(false)
+      console.log("Category saved successfully:", categoryName)
+    } catch (error) {
+      console.error("Error adding category:", error)
+      alert("Failed to add category. Please try again.")
+    }
+  }
+
+  const editGoal = (category: string, goalId: string, updatedGoal: Partial<Goal>) => {
+    setGoalsData((prev) => ({
+      ...prev,
+      [category]: prev[category].map((goal) => (goal.id === goalId ? { ...goal, ...updatedGoal } : goal)),
     }))
   }
 
-  const startEditingCategory = (categoryName: string) => {
-    setShowEditCategory(categoryName)
-    setEditCategoryName(categoryName)
-    setEditCategoryColor(customCategoryColors[categoryName] || "")
-  }
-
-  const saveEditedCategory = () => {
-    if (!showEditCategory || !editCategoryName.trim()) return
-
-    const oldName = showEditCategory
-    const newName = editCategoryName.trim()
-
-    // If name changed, update the goals data structure
-    if (oldName !== newName) {
-      setGoalsData((prev) => {
-        const updated = { ...prev }
-        if (updated[oldName]) {
-          updated[newName] = updated[oldName]
-          delete updated[oldName]
-        }
-        return updated
-      })
-
-      // Update weekly tasks
-      setWeeklyTasks((prev) => {
-        const updated = { ...prev }
-        Object.keys(updated).forEach((week) => {
-          updated[week] = updated[week].map((task) => ({
-            ...task,
-            category: task.category === oldName ? newName : task.category,
-          }))
-        })
-        return updated
-      })
-
-      // Update daily tasks
-      setDailyTasks((prev) => {
-        const updated = { ...prev }
-        Object.keys(updated).forEach((day) => {
-          updated[day] = updated[day].map((task) => ({
-            ...task,
-            category: task.category === oldName ? newName : task.category,
-          }))
-        })
-        return updated
-      })
-    }
-
-    // Update custom color if provided
-    if (editCategoryColor) {
-      setCustomCategoryColors((prev) => ({
+  const deleteGoal = async (category: string, goalId: string) => {
+    try {
+      await supabase.from("goals").delete().eq("id", goalId)
+      setGoalsData((prev) => ({
         ...prev,
-        [newName]: editCategoryColor,
+        [category]: prev[category].filter((goal) => goal.id !== goalId),
       }))
-    } else {
-      // Remove custom color if cleared
-      setCustomCategoryColors((prev) => {
-        const updated = { ...prev }
-        delete updated[newName]
-        return updated
-      })
-    }
-
-    // Reset form
-    setShowEditCategory(null)
-    setEditCategoryName("")
-    setEditCategoryColor("")
-  }
-
-  // Calculate overall progress
-  const calculateOverallProgress = () => {
-    const allGoals = Object.values(goalsData).flat()
-    if (allGoals.length === 0) return 0
-
-    const totalProgress = allGoals.reduce((sum, goal) => {
-      return sum + (goal.currentCount / goal.targetCount) * 100
-    }, 0)
-
-    return Math.round(totalProgress / allGoals.length)
-  }
-
-  // Calculate tasks completed
-  const calculateTasksCompleted = () => {
-    const weekKey = `Week ${currentWeek}`
-    const weekTasks = weeklyTasks[weekKey] || []
-    const dayTasks = dailyTasks[selectedDay] || []
-    const allTasks = [...weekTasks, ...dayTasks]
-
-    const completed = allTasks.filter((task) => task.completed).length
-    return { completed, total: allTasks.length }
-  }
-
-  // Calculate goals completed
-  const calculateGoalsCompleted = () => {
-    const allGoals = Object.values(goalsData).flat()
-    const completed = allGoals.filter((goal) => goal.currentCount >= goal.targetCount).length
-    return { completed, total: allGoals.length }
-  }
-
-  // Get priority color for tasks
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "high":
-        return "border-l-red-500"
-      case "medium":
-        return "border-l-yellow-500"
-      case "low":
-        return "border-l-green-500"
-      default:
-        return "border-l-gray-300"
+      setShowDeleteGoal(null)
+    } catch (error) {
+      console.error("Error deleting goal:", error)
+      // Keep the goal in UI if database deletion fails
     }
   }
 
-  const overallProgress = calculateOverallProgress()
-  const tasksStats = calculateTasksCompleted()
-  const goalsStats = calculateGoalsCompleted()
+  const updateGoal = async () => {
+    if (!editingGoal) return
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Goal Tracker</h1>
-            <p className="text-sm text-gray-600">Here are your tasks for week {currentWeek} of 12.</p>
-          </div>
-          <div className="flex items-center space-x-4">
-            <Button onClick={() => setShowAddGoal(true)} className="bg-black text-white hover:bg-gray-800">
-              Add Goal
-            </Button>
-            <Button
-              onClick={() => setShowAddCategory(true)}
-              variant="outline"
-              className="border-gray-300 text-gray-700 hover:bg-gray-50"
-            >
-              Add Category
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-10 w-10 rounded-full p-0"
-              onClick={() => setShowProfile(true)}
-            >
-              <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-medium text-gray-600">
-                {getInitials(user?.name)}
-              </div>
-            </Button>
-          </div>
-        </div>
-      </header>
+    const weeklyTargetValue = newGoal.weeklyTarget || Math.ceil(newGoal.targetCount / 12)
 
-      {/* Stats Overview */}
-      <div className="px-6 py-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-white rounded-lg p-6 border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Overall Progress</p>
-                <p className="text-3xl font-bold text-gray-900">{overallProgress}%</p>
-              </div>
-              <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <div className="h-6 w-6 bg-blue-500 rounded-full"></div>
-              </div>
-            </div>
-            <div className="mt-4 bg-gray-200 rounded-full h-2">
-              <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${overallProgress}%` }}></div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg p-6 border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Tasks Completed</p>
-                <p className="text-3xl font-bold text-gray-900">
-                  {tasksStats.completed}/{tasksStats.total}
-                </p>
-              </div>
-              <div className="h-12 w-12 bg-cyan-100 rounded-lg flex items-center justify-center">
-                <div className="h-6 w-6 bg-cyan-500 rounded-full"></div>
-              </div>
-            </div>
-            <div className="mt-4 bg-gray-200 rounded-full h-2">
-              <div
-                className="bg-cyan-500 h-2 rounded-full"
-                style={{ width: `${tasksStats.total > 0 ? (tasksStats.completed / tasksStats.total) * 100 : 0}%` }}
-              ></div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg p-6 border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Goals Completed</p>
-                <p className="text-3xl font-bold text-gray-900">
-                  {goalsStats.completed}/{goalsStats.total}
-                </p>
-              </div>
-              <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <div className="h-6 w-6 bg-green-500 rounded-full"></div>
-              </div>
-            </div>
-            <div className="mt-4 bg-gray-200 rounded-full h-2">
-              <div
-                className="bg-green-500 h-2 rounded-full"
-                style={{ width: `${goalsStats.total > 0 ? (goalsStats.completed / goalsStats.total) * 100 : 0}%` }}
-              ></div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg p-6 border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Weeks Left</p>
-                <p className="text-3xl font-bold text-gray-900">{13 - currentWeek}</p>
-              </div>
-              <div className="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                <div className="h-6 w-6 bg-purple-500 rounded-full"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Tab Navigation */}
-      <div className="px-6">
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8">
-            {["daily", "weekly", "12-week", "1-year", "5-year"].map((view) => (
-              <button
-                key={view}
-                onClick={() => setActiveView(view)}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeView === view
-                    ? "border-black text-black"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
-              >
-                {view === "12-week" ? "12-Week" : view.charAt(0).toUpperCase() + view.slice(1)}
-              </button>
-            ))}
-          </nav>
-        </div>
-      </div>
-
-      {/* Content Area */}
-      <div className="px-6 py-6">
-        {activeView === "daily" && (
-          <div>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">Daily Tasks</h2>
-              <select
-                value={selectedDay}
-                onChange={(e) => setSelectedDay(e.target.value)}
-                className="border border-gray-300 rounded-md px-3 py-2 bg-white text-sm"
-              >
-                {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((day) => (
-                  <option key={day} value={day}>
-                    {day}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {Object.keys(goalsData).map((category) => (
-                <div key={category} className="bg-white rounded-lg border border-gray-200 p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-medium text-gray-900">{category}</h3>
-                    <Button
-                      onClick={() => {
-                        setSelectedCategory(category)
-                        setShowAddDailyTask(true)
-                      }}
-                      size="sm"
-                      variant="ghost"
-                      className="h-8 w-8 p-0 hover:bg-gray-100"
-                    >
-                      +
-                    </Button>
-                  </div>
-
-                  <div className="space-y-3">
-                    {(dailyTasks[selectedDay] || [])
-                      .filter((task) => task.category === category)
-                      .map((task) => (
-                        <SortableDailyTaskItem
-                          key={task.id}
-                          task={task}
-                          onToggle={() => toggleDailyTask(task.id)}
-                          onEdit={() => startEditingDailyTask(task)}
-                          onDelete={() => deleteDailyTask(task.id)}
-                        />
-                      ))}
-
-                    {(dailyTasks[selectedDay] || []).filter((task) => task.category === category).length === 0 && (
-                      <p className="text-sm text-gray-500 text-center py-8">Click + to add your first task</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {activeView === "weekly" && (
-          <div>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">Weekly Tasks</h2>
-              <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-600">Week {currentWeek} of 12</span>
-                <div className="flex space-x-2">
-                  <Button
-                    onClick={() => setCurrentWeek(Math.max(1, currentWeek - 1))}
-                    variant="outline"
-                    size="sm"
-                    disabled={currentWeek === 1}
-                  >
-                    ←
-                  </Button>
-                  <Button
-                    onClick={() => setCurrentWeek(Math.min(12, currentWeek + 1))}
-                    variant="outline"
-                    size="sm"
-                    disabled={currentWeek === 12}
-                  >
-                    →
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {Object.keys(goalsData).map((category) => (
-                <div key={category} className="bg-white rounded-lg border border-gray-200 p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-medium text-gray-900">{category}</h3>
-                    <Button
-                      onClick={() => {
-                        setSelectedCategory(category)
-                        setShowAddWeeklyTask(true)
-                      }}
-                      size="sm"
-                      variant="ghost"
-                      className="h-8 w-8 p-0 hover:bg-gray-100"
-                    >
-                      +
-                    </Button>
-                  </div>
-
-                  <div className="space-y-3">
-                    {(weeklyTasks[`Week ${currentWeek}`] || [])
-                      .filter((task) => task.category === category)
-                      .map((task) => (
-                        <SortableWeeklyTaskItem
-                          key={task.id}
-                          task={task}
-                          onToggle={() => toggleWeeklyTask(task.id)}
-                          onEdit={() => startEditingWeeklyTask(task)}
-                          onDelete={() => deleteWeeklyTask(task.id)}
-                          getPriorityColor={getPriorityColor}
-                        />
-                      ))}
-
-                    {(weeklyTasks[`Week ${currentWeek}`] || []).filter((task) => task.category === category).length ===
-                      0 && <p className="text-sm text-gray-500 text-center py-8">Click + to add your first task</p>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {activeView === "12-week" && (
-          <div>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">12-Week Goals</h2>
-              <Button onClick={() => setShowAddGoal(true)} className="bg-black text-white hover:bg-gray-800">
-                Add Goal
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {Object.entries(goalsData).map(([category, goals]) => (
-                <div key={category} className="bg-white rounded-lg border border-gray-200 p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center space-x-2">
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium border ${getCategoryColor(category)}`}
-                      >
-                        {category}
-                      </span>
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => {
-                            setSelectedCategory(category)
-                            setShowAddGoal(true)
-                          }}
-                        >
-                          Add Goal
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => startEditingCategory(category)}>
-                          Edit Category
-                        </DropdownMenuItem>
-                        {goals.length === 0 ? (
-                          <DropdownMenuItem onClick={() => deleteCategory(category)} className="text-red-600">
-                            Delete Category
-                          </DropdownMenuItem>
-                        ) : (
-                          <DropdownMenuItem disabled className="text-gray-400">
-                            Delete Category (remove goals first)
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-
-                  <div className="space-y-4">
-                    {goals.map((goal) => (
-                      <div key={goal.id} className="border border-gray-200 rounded-lg p-4">
-                        <div className="flex items-start justify-between mb-2">
-                          <h4 className="font-medium text-gray-900 flex-1">{goal.title}</h4>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 ml-2">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => startEditingGoal(category, goal)}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit Goal
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => setShowDeleteGoal({ category, goalId: goal.id, title: goal.title })}
-                                className="text-red-600"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete Goal
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-
-                        <p className="text-sm text-gray-600 mb-3">{goal.description}</p>
-
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center space-x-2">
-                            <Button
-                              onClick={() => updateGoalProgress(category, goal.id, -1)}
-                              variant="outline"
-                              size="sm"
-                              className="h-8 w-8 p-0"
-                              disabled={goal.currentCount === 0}
-                            >
-                              -
-                            </Button>
-                            <span className="text-sm font-medium">
-                              {goal.currentCount} / {goal.targetCount}
-                            </span>
-                            <Button
-                              onClick={() => updateGoalProgress(category, goal.id, 1)}
-                              variant="outline"
-                              size="sm"
-                              className="h-8 w-8 p-0"
-                              disabled={goal.currentCount >= goal.targetCount}
-                            >
-                              +
-                            </Button>
-                          </div>
-                          <span className="text-xs text-gray-500">
-                            {Math.round((goal.currentCount / goal.targetCount) * 100)}% complete
-                          </span>
-                        </div>
-
-                        <div className="bg-gray-200 rounded-full h-2 mb-3">
-                          <div
-                            className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${Math.min(100, (goal.currentCount / goal.targetCount) * 100)}%` }}
-                          ></div>
-                        </div>
-
-                        {goal.notes && (
-                          <div>
-                            <Button
-                              onClick={() => toggleGoalExpansion(goal.id)}
-                              variant="ghost"
-                              size="sm"
-                              className="text-xs text-gray-500 p-0 h-auto"
-                            >
-                              {expandedNotes.has(goal.id) ? "Hide notes" : "Show notes"}
-                            </Button>
-                            {expandedNotes.has(goal.id) && (
-                              <p className="text-xs text-gray-600 mt-2 p-2 bg-gray-50 rounded">{goal.notes}</p>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-
-                    {goals.length === 0 && (
-                      <p className="text-sm text-gray-500 text-center py-8">No goals yet. Add your first goal!</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {activeView === "1-year" && (
-          <div>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">1-Year Goals</h2>
-              <Button
-                onClick={() => {
-                  setSelectedTimeframe("1-year")
-                  setShowAddLongTermGoal(true)
-                }}
-                className="bg-black text-white hover:bg-gray-800"
-              >
-                Add Goal
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {Object.entries(longTermGoals["1-year"]).map(([category, goals]) => (
-                <div key={category} className="bg-white rounded-lg border border-gray-200 p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-medium text-gray-900">{category}</h3>
-                    <Button
-                      onClick={() => {
-                        setSelectedTimeframe("1-year")
-                        setNewLongTermGoal((prev) => ({ ...prev, category }))
-                        setShowAddLongTermGoal(true)
-                      }}
-                      size="sm"
-                      variant="ghost"
-                      className="h-8 w-8 p-0 hover:bg-gray-100"
-                    >
-                      +
-                    </Button>
-                  </div>
-
-                  <div className="space-y-4">
-                    {goals.map((goal) => (
-                      <div key={goal.id} className="border border-gray-200 rounded-lg p-4">
-                        <div className="flex items-start justify-between mb-2">
-                          <h4 className="font-medium text-gray-900 flex-1">{goal.title}</h4>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 ml-2">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => startEditingLongTermGoal("1-year", category, goal)}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit Goal
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  setShowDeleteLongTermGoal({
-                                    timeframe: "1-year",
-                                    category,
-                                    goalId: goal.id,
-                                    title: goal.title,
-                                  })
-                                }
-                                className="text-red-600"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete Goal
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-
-                        <p className="text-sm text-gray-600 mb-3">{goal.description}</p>
-                        <p className="text-sm text-gray-500 mb-3">Target Date: {goal.targetDate}</p>
-
-                        {goal.milestones.map((milestone) => (
-                          <div
-                            key={milestone.id}
-                            className="flex items-center justify-between py-2 border-b border-gray-200"
-                          >
-                            <div className="flex items-center space-x-2">
-                              <Checkbox
-                                checked={milestone.completed}
-                                onCheckedChange={() => toggleMilestone("1-year", category, goal.id, milestone.id)}
-                                className={checkboxStyles}
-                              />
-                              <span
-                                className={`text-sm ${milestone.completed ? "line-through text-gray-500" : "text-gray-700"}`}
-                              >
-                                {milestone.title}
-                              </span>
-                            </div>
-                            <span className="text-xs text-gray-500">Target: {milestone.targetDate}</span>
-                          </div>
-                        ))}
-
-                        {goal.notes && (
-                          <div>
-                            <Button
-                              onClick={() => toggleGoalExpansion(goal.id)}
-                              variant="ghost"
-                              size="sm"
-                              className="text-xs text-gray-500 p-0 h-auto"
-                            >
-                              {expandedNotes.has(goal.id) ? "Hide notes" : "Show notes"}
-                            </Button>
-                            {expandedNotes.has(goal.id) && (
-                              <p className="text-xs text-gray-600 mt-2 p-2 bg-gray-50 rounded">{goal.notes}</p>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-
-                    {goals.length === 0 && (
-                      <p className="text-sm text-gray-500 text-center py-8">No goals yet. Add your first goal!</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {activeView === "5-year" && (
-          <div>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">5-Year Goals</h2>
-              <Button
-                onClick={() => {
-                  setSelectedTimeframe("5-year")
-                  setShowAddLongTermGoal(true)
-                }}
-                className="bg-black text-white hover:bg-gray-800"
-              >
-                Add Goal
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {Object.entries(longTermGoals["5-year"]).map(([category, goals]) => (
-                <div key={category} className="bg-white rounded-lg border border-gray-200 p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-medium text-gray-900">{category}</h3>
-                    <Button
-                      onClick={() => {
-                        setSelectedTimeframe("5-year")
-                        setNewLongTermGoal((prev) => ({ ...prev, category }))
-                        setShowAddLongTermGoal(true)
-                      }}
-                      size="sm"
-                      variant="ghost"
-                      className="h-8 w-8 p-0 hover:bg-gray-100"
-                    >
-                      +
-                    </Button>
-                  </div>
-
-                  <div className="space-y-4">
-                    {goals.map((goal) => (
-                      <div key={goal.id} className="border border-gray-200 rounded-lg p-4">
-                        <div className="flex items-start justify-between mb-2">
-                          <h4 className="font-medium text-gray-900 flex-1">{goal.title}</h4>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 ml-2">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => startEditingLongTermGoal("5-year", category, goal)}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit Goal
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  setShowDeleteLongTermGoal({
-                                    timeframe: "5-year",
-                                    category,
-                                    goalId: goal.id,
-                                    title: goal.title,
-                                  })
-                                }
-                                className="text-red-600"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete Goal
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-
-                        <p className="text-sm text-gray-600 mb-3">{goal.description}</p>
-                        <p className="text-sm text-gray-500 mb-3">Target Date: {goal.targetDate}</p>
-
-                        {goal.milestones.map((milestone) => (
-                          <div
-                            key={milestone.id}
-                            className="flex items-center justify-between py-2 border-b border-gray-200"
-                          >
-                            <div className="flex items-center space-x-2">
-                              <Checkbox
-                                checked={milestone.completed}
-                                onCheckedChange={() => toggleMilestone("5-year", category, goal.id, milestone.id)}
-                                className={checkboxStyles}
-                              />
-                              <span
-                                className={`text-sm ${milestone.completed ? "line-through text-gray-500" : "text-gray-700"}`}
-                              >
-                                {milestone.title}
-                              </span>
-                            </div>
-                            <span className="text-xs text-gray-500">Target: {milestone.targetDate}</span>
-                          </div>
-                        ))}
-
-                        {goal.notes && (
-                          <div>
-                            <Button
-                              onClick={() => toggleGoalExpansion(goal.id)}
-                              variant="ghost"
-                              size="sm"
-                              className="text-xs text-gray-500 p-0 h-auto"
-                            >
-                              {expandedNotes.has(goal.id) ? "Hide notes" : "Show notes"}
-                            </Button>
-                            {expandedNotes.has(goal.id) && (
-                              <p className="text-xs text-gray-600 mt-2 p-2 bg-gray-50 rounded">{goal.notes}</p>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-
-                    {goals.length === 0 && (
-                      <p className="text-sm text-gray-500 text-center py-8">No goals yet. Add your first goal!</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Modals */}
-      <Dialog open={showAddGoal} onOpenChange={setShowAddGoal}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>{editingGoal ? "Edit Goal" : "Add New Goal"}</DialogTitle>
-            <DialogDescription>Make changes to your goal here. Click save when you're done.</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="category" className="text-right">
-                Category
-              </Label>
-              <Select value={selectedCategory} onValueChange={setSelectedCategory} id="category" className="col-span-3">
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.keys(goalsData).map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="title" className="text-right">
-                Title
-              </Label>
-              <Input
-                type="text"
-                id="title"
-                value={newGoal.title}
-                onChange={(e) => setNewGoal({ ...newGoal, title: e.target.value })}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="description" className="text-right">
-                Description
-              </Label>
-              <Textarea
-                id="description"
-                value={newGoal.description}
-                onChange={(e) => setNewGoal({ ...newGoal, description: e.target.value })}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="targetCount" className="text-right">
-                Target Count
-              </Label>
-              <Input
-                type="number"
-                id="targetCount"
-                value={newGoal.targetCount}
-                onChange={(e) => setNewGoal({ ...newGoal, targetCount: Number.parseInt(e.target.value) })}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="weeklyTarget" className="text-right">
-                Weekly Target
-              </Label>
-              <Input
-                type="number"
-                id="weeklyTarget"
-                value={newGoal.weeklyTarget}
-                onChange={(e) => setNewGoal({ ...newGoal, weeklyTarget: Number.parseFloat(e.target.value) })}
-                className="col-span-3"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="submit" onClick={editingGoal ? saveEditedGoal : addGoal}>
-              {editingGoal ? "Update Goal" : "Save Goal"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showAddWeeklyTask} onOpenChange={setShowAddWeeklyTask}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>{editingWeeklyTask ? "Edit Weekly Task" : "Add New Weekly Task"}</DialogTitle>
-            <DialogDescription>Make changes to your task here. Click save when you're done.</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="category" className="text-right">
-                Category
-              </Label>
-              <Select
-                value={newWeeklyTask.category}
-                onValueChange={(value) => setNewWeeklyTask({ ...newWeeklyTask, category: value })}
-                id="category"
-                className="col-span-3"
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.keys(goalsData).map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="goalId" className="text-right">
-                Goal
-              </Label>
-              <Select
-                value={newWeeklyTask.goalId}
-                onValueChange={(value) => setNewWeeklyTask({ ...newWeeklyTask, goalId: value })}
-                id="goalId"
-                className="col-span-3"
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a goal" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(goalsData[selectedCategory] || []).map((goal) => (
-                    <SelectItem key={goal.id} value={goal.id}>
-                      {goal.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="title" className="text-right">
-                Title
-              </Label>
-              <Input
-                type="text"
-                id="title"
-                value={newWeeklyTask.title}
-                onChange={(e) => setNewWeeklyTask({ ...newWeeklyTask, title: e.target.value })}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="description" className="text-right">
-                Description
-              </Label>
-              <Textarea
-                id="description"
-                value={newWeeklyTask.description}
-                onChange={(e) => setNewWeeklyTask({ ...newWeeklyTask, description: e.target.value })}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="priority" className="text-right">
-                Priority
-              </Label>
-              <Select
-                value={newWeeklyTask.priority}
-                onValueChange={(value) =>
-                  setNewWeeklyTask({ ...newWeeklyTask, priority: value as "low" | "medium" | "high" })
-                }
-                id="priority"
-                className="col-span-3"
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select priority" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="estimatedHours" className="text-right">
-                Estimated Hours
-              </Label>
-              <Input
-                type="number"
-                id="estimatedHours"
-                value={newWeeklyTask.estimatedHours}
-                onChange={(e) =>
-                  setNewWeeklyTask({ ...newWeeklyTask, estimatedHours: Number.parseInt(e.target.value) })
-                }
-                className="col-span-3"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="submit" onClick={editingWeeklyTask ? saveEditedWeeklyTask : addWeeklyTask}>
-              {editingWeeklyTask ? "Update Task" : "Save Task"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showAddDailyTask} onOpenChange={setShowAddDailyTask}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>{editingDailyTask ? "Edit Daily Task" : "Add New Daily Task"}</DialogTitle>
-            <DialogDescription>Make changes to your task here. Click save when you're done.</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="category" className="text-right">
-                Category
-              </Label>
-              <Select
-                value={newDailyTask.category}
-                onValueChange={(value) => setNewDailyTask({ ...newDailyTask, category: value })}
-                id="category"
-                className="col-span-3"
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.keys(goalsData).map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="goalId" className="text-right">
-                Goal
-              </Label>
-              <Select
-                value={newDailyTask.goalId}
-                onValueChange={(value) => setNewDailyTask({ ...newDailyTask, goalId: value })}
-                id="goalId"
-                className="col-span-3"
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a goal" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(goalsData[selectedCategory] || []).map((goal) => (
-                    <SelectItem key={goal.id} value={goal.id}>
-                      {goal.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="title" className="text-right">
-                Title
-              </Label>
-              <Input
-                type="text"
-                id="title"
-                value={newDailyTask.title}
-                onChange={(e) => setNewDailyTask({ ...newDailyTask, title: e.target.value })}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="description" className="text-right">
-                Description
-              </Label>
-              <Textarea
-                id="description"
-                value={newDailyTask.description}
-                onChange={(e) => setNewDailyTask({ ...newDailyTask, description: e.target.value })}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="timeBlock" className="text-right">
-                Time Block
-              </Label>
-              <Input
-                type="text"
-                id="timeBlock"
-                value={newDailyTask.timeBlock}
-                onChange={(e) => setNewDailyTask({ ...newDailyTask, timeBlock: e.target.value })}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="estimatedMinutes" className="text-right">
-                Estimated Minutes
-              </Label>
-              <Input
-                type="number"
-                id="estimatedMinutes"
-                value={newDailyTask.estimatedMinutes}
-                onChange={(e) =>
-                  setNewDailyTask({ ...newDailyTask, estimatedMinutes: Number.parseInt(e.target.value) })
-                }
-                className="col-span-3"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="submit" onClick={editingDailyTask ? saveEditedDailyTask : addDailyTask}>
-              {editingDailyTask ? "Update Task" : "Save Task"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showAddCategory} onOpenChange={setShowAddCategory}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Add New Category</DialogTitle>
-            <DialogDescription>Add a new category to organize your goals.</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
-                Name
-              </Label>
-              <Input
-                type="text"
-                id="name"
-                value={newCategoryName}
-                onChange={(e) => setNewCategoryName(e.target.value)}
-                className="col-span-3"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="submit" onClick={addCategory}>
-              Save Category
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showEditCategory !== null} onOpenChange={() => setShowEditCategory(null)}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Edit Category</DialogTitle>
-            <DialogDescription>Edit the name and color of your category.</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
-                Name
-              </Label>
-              <Input
-                type="text"
-                id="name"
-                value={editCategoryName}
-                onChange={(e) => setEditCategoryName(e.target.value)}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="color" className="text-right">
-                Color
-              </Label>
-              <Input
-                type="color"
-                id="color"
-                value={editCategoryColor}
-                onChange={(e) => setEditCategoryColor(e.target.value)}
-                className="col-span-3"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="submit" onClick={saveEditedCategory}>
-              Save Category
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showAddLongTermGoal} onOpenChange={setShowAddLongTermGoal}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>{editingLongTermGoal ? "Edit Long-Term Goal" : "Add New Long-Term Goal"}</DialogTitle>
-            <DialogDescription>
-              {editingLongTermGoal
-                ? "Make changes to your long-term goal here. Click save when you're done."
-                : "Define your long-term goal and set milestones to track your progress."}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-3 items-center gap-4">
-              <Label htmlFor="timeframe" className="text-right">
-                Timeframe
-              </Label>
-              <Select
-                value={selectedTimeframe}
-                onValueChange={setSelectedTimeframe}
-                id="timeframe"
-                className="col-span-2"
-                disabled={editingLongTermGoal !== null}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a timeframe" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1-year">1-Year</SelectItem>
-                  <SelectItem value="5-year">5-Year</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-3 items-center gap-4">
-              <Label htmlFor="category" className="text-right">
-                Category
-              </Label>
-              <Select
-                value={newLongTermGoal.category}
-                onValueChange={(value) => setNewLongTermGoal({ ...newLongTermGoal, category: value })}
-                id="category"
-                className="col-span-2"
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {["Business", "Personal", "Financial"].map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-3 items-center gap-4">
-              <Label htmlFor="title" className="text-right">
-                Title
-              </Label>
-              <Input
-                type="text"
-                id="title"
-                value={newLongTermGoal.title}
-                onChange={(e) => setNewLongTermGoal({ ...newLongTermGoal, title: e.target.value })}
-                className="col-span-2"
-              />
-            </div>
-            <div className="grid grid-cols-3 items-center gap-4">
-              <Label htmlFor="description" className="text-right">
-                Description
-              </Label>
-              <Textarea
-                id="description"
-                value={newLongTermGoal.description}
-                onChange={(e) => setNewLongTermGoal({ ...newLongTermGoal, description: e.target.value })}
-                className="col-span-2"
-              />
-            </div>
-            <div className="grid grid-cols-3 items-center gap-4">
-              <Label htmlFor="targetDate" className="text-right">
-                Target Date
-              </Label>
-              <Input
-                type="date"
-                id="targetDate"
-                value={newLongTermGoal.targetDate}
-                onChange={(e) => setNewLongTermGoal({ ...newLongTermGoal, targetDate: e.target.value })}
-                className="col-span-2"
-              />
-            </div>
-            <div className="grid grid-cols-3 items-center gap-4">
-              <Label htmlFor="notes" className="text-right">
-                Notes
-              </Label>
-              <Textarea
-                id="notes"
-                value={newLongTermGoal.notes}
-                onChange={(e) => setNewLongTermGoal({ ...newLongTermGoal, notes: e.target.value })}
-                className="col-span-2"
-              />
-            </div>
-            <h3 className="col-span-3 font-semibold text-gray-900">Milestones</h3>
-            {newLongTermGoal.milestones.map((milestone, index) => (
-              <div key={index} className="grid grid-cols-3 items-center gap-4">
-                <Label htmlFor={`milestoneTitle${index}`} className="text-right">
-                  Milestone {index + 1}
-                </Label>
-                <Input
-                  type="text"
-                  id={`milestoneTitle${index}`}
-                  placeholder="Title"
-                  value={milestone.title}
-                  onChange={(e) => {
-                    const updatedMilestones = [...newLongTermGoal.milestones]
-                    updatedMilestones[index] = { ...milestone, title: e.target.value }
-                    setNewLongTermGoal({ ...newLongTermGoal, milestones: updatedMilestones })
-                  }}
-                  className="col-span-1"
-                />
-                <Input
-                  type="date"
-                  id={`milestoneDate${index}`}
-                  placeholder="Target Date"
-                  value={milestone.targetDate}
-                  onChange={(e) => {
-                    const updatedMilestones = [...newLongTermGoal.milestones]
-                    updatedMilestones[index] = { ...milestone, targetDate: e.target.value }
-                    setNewLongTermGoal({ ...newLongTermGoal, milestones: updatedMilestones })
-                  }}
-                  className="col-span-1"
-                />
-              </div>
-            ))}
-          </div>
-          <DialogFooter>
-            <Button type="submit" onClick={editingLongTermGoal ? saveEditedLongTermGoal : addLongTermGoal}>
-              {editingLongTermGoal ? "Update Goal" : "Save Goal"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showDeleteGoal !== null} onOpenChange={() => setShowDeleteGoal(null)}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Delete Goal</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete goal "{showDeleteGoal?.title}"? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="secondary" onClick={() => setShowDeleteGoal(null)}>
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              className="text-red-600"
-              onClick={() => deleteGoal(showDeleteGoal!.category, showDeleteGoal!.goalId)}
-            >
-              Delete Goal
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showDeleteCategory !== null} onOpenChange={() => setShowDeleteCategory(null)}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Delete Category</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete category "{showDeleteCategory}"? All goals in this category will be
-              deleted. This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="secondary" onClick={() => setShowDeleteCategory(null)}>
-              Cancel
-            </Button>
-            <Button type="submit" className="text-red-600" onClick={() => deleteCategory(showDeleteCategory!)}>
-              Delete Category
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showDeleteDailyTask !== null} onOpenChange={() => setShowDeleteDailyTask(null)}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Delete Daily Task</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete task "{showDeleteDailyTask?.title}"? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="secondary" onClick={() => setShowDeleteDailyTask(null)}>
-              Cancel
-            </Button>
-            <Button type="submit" className="text-red-600" onClick={() => deleteDailyTask(showDeleteDailyTask!.taskId)}>
-              Delete Task
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showDeleteLongTermGoal !== null} onOpenChange={() => setShowDeleteLongTermGoal(null)}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Delete Long-Term Goal</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete long-term goal "{showDeleteLongTermGoal?.title}"? This action cannot be
-              undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="secondary" onClick={() => setShowDeleteLongTermGoal(null)}>
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              className="text-red-600"
-              onClick={() =>
-                deleteLongTermGoal(
-                  showDeleteLongTermGoal!.timeframe,
-                  showDeleteLongTermGoal!.category,
-                  showDeleteLongTermGoal!.goalId,
-                )
-              }
-            >
-              Delete Goal
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showProfile} onOpenChange={setShowProfile}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>User Profile</DialogTitle>
-            <DialogDescription>View your profile information.</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
-                Name
-              </Label>
-              <Input type="text" id="name" value={user?.name || "N/A"} disabled className="col-span-3" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="email" className="text-right">
-                Email
-              </Label>
-              <Input type="email" id="email" value={user?.email || "N/A"} disabled className="col-span-3" />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="secondary" onClick={() => setShowProfile(false)}>
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  )
-}
-
-export default GoalTrackerApp
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a
