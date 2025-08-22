@@ -1,6 +1,7 @@
 "use client"
 import { supabase } from "@/lib/supabase/client"
 import { updateLongTermGoal } from "@/lib/data/long-term-goals"
+import { deleteLongTermGoal as deleteLongTermGoalFromDB } from "@/lib/data/long-term-goals"
 import {
   Dialog,
   DialogContent,
@@ -13,20 +14,7 @@ import {
 import { Label } from "@/components/ui/label"
 
 import { useState, useEffect } from "react"
-import {
-  Plus,
-  ChevronDown,
-  ChevronUp,
-  Calendar,
-  Target,
-  MoreHorizontal,
-  Edit,
-  Trash2,
-  CheckCircle,
-  Clock,
-  GripVertical,
-  ClipboardCheck,
-} from "lucide-react"
+import { Plus, ChevronDown, ChevronUp, Calendar, Target, MoreHorizontal, Edit, Trash2, CheckCircle, Clock, GripVertical, ClipboardCheck } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -1014,8 +1002,8 @@ function GoalTrackerApp() {
     return days[today]
   })
 
-  const [weeklyTasks, setWeeklyTasks] = useState<Record<string, WeeklyTask[]>>({})
-  const [dailyTasks, setDailyTasks] = useState<Record<string, DailyTask[]>>({})
+  const [weeklyTasks, setWeeklyTasks = useState<Record<string, WeeklyTask[]>>({})
+  const [dailyTasks, setDailyTasks = useState<Record<string, DailyTask[]>>({})
 
   // Add state for long-term goals:
   const [longTermGoals, setLongTermGoals] = useState<LongTermGoalsData>(initialLongTermGoals)
@@ -2131,64 +2119,36 @@ function GoalTrackerApp() {
   const saveEditedLongTermGoal = async () => {
     if (!editingLongTermGoal) return
 
-    const { timeframe, category, goal } = editingLongTermGoal
-
     try {
-      // Update in database first
-      await updateLongTermGoal(goal.id, {
-        title: newLongTermGoal.title,
-        description: newLongTermGoal.description,
+      // Update in database
+      await updateLongTermGoal(editingLongTermGoal.id, {
+        title: editingLongTermGoal.title,
+        description: editingLongTermGoal.description,
       })
 
-      // Then update local state
-      setLongTermGoals((prev) => ({
-        ...prev,
-        [timeframe]: {
-          ...prev[timeframe],
-          [category]: prev[timeframe][category].map((g) =>
-            g.id === goal.id
-              ? {
-                  ...g,
-                  title: newLongTermGoal.title,
-                  description: newLongTermGoal.description,
-                  targetDate: newLongTermGoal.targetDate,
-                  category: newLongTermGoal.category,
-                  notes: newLongTermGoal.notes,
-                  milestones: newLongTermGoal.milestones
-                    .filter((m) => m.title && m.targetDate)
-                    .map((m, index) => ({
-                      id: `${g.id}_m${index + 1}`,
-                      title: m.title,
-                      completed: g.milestones[index]?.completed || false,
-                      targetDate: m.targetDate,
-                    })),
-                }
-              : g,
-          ),
-        },
-      }))
+      // Update local state
+      setLongTermGoals(prev => {
+        const updated = { ...prev }
+        const timeframe = editingLongTermGoal.timeframe as keyof LongTermGoalsData
+        const category = editingLongTermGoal.category
+        
+        if (updated[timeframe] && updated[timeframe][category]) {
+          const goalIndex = updated[timeframe][category].findIndex(g => g.id === editingLongTermGoal.id)
+          if (goalIndex !== -1) {
+            updated[timeframe][category][goalIndex] = { ...editingLongTermGoal }
+          }
+        }
+        
+        return updated
+      })
 
       setRefreshKey(prev => prev + 1)
+      
+      setEditingLongTermGoal(null)
+      setShowAddLongTermGoal(false)
     } catch (error) {
       console.error("Error updating long-term goal:", error)
-      return
     }
-
-    setNewLongTermGoal({
-      title: "",
-      description: "",
-      targetDate: "",
-      category: "",
-      notes: "",
-      milestones: [
-        { title: "", targetDate: "" },
-        { title: "", targetDate: "" },
-        { title: "", targetDate: "" },
-        { title: "", targetDate: "" },
-      ],
-    })
-    setEditingLongTermGoal(null)
-    setShowAddLongTermGoal(false)
   }
 
   const addLongTermGoal = async () => {
@@ -2262,15 +2222,29 @@ function GoalTrackerApp() {
     }
   }
 
-  const deleteLongTermGoal = (timeframe: "1-year" | "5-year", category: string, goalId: string) => {
-    setLongTermGoals((prev) => ({
-      ...prev,
-      [timeframe]: {
-        ...prev[timeframe],
-        [category]: prev[timeframe][category].filter((g) => g.id !== goalId),
-      },
-    }))
-    setShowDeleteLongTermGoal(null)
+  const deleteLongTermGoal = async (goalId: string) => {
+    try {
+      // Delete from database
+      await deleteLongTermGoalFromDB(goalId)
+
+      // Update local state
+      setLongTermGoals(prev => {
+        const updated = { ...prev }
+        Object.keys(updated).forEach(timeframe => {
+          Object.keys(updated[timeframe as keyof LongTermGoalsData]).forEach(category => {
+            updated[timeframe as keyof LongTermGoalsData][category] = 
+              updated[timeframe as keyof LongTermGoalsData][category].filter(goal => goal.id !== goalId)
+          })
+        })
+        return updated
+      })
+
+      setRefreshKey(prev => prev + 1)
+      
+      setShowDeleteLongTermGoal(null)
+    } catch (error) {
+      console.error("Error deleting long-term goal:", error)
+    }
   }
 
   const getTotalProgress = () => {
@@ -4304,3 +4278,13 @@ function GoalTrackerApp() {
                   value={newDailyTask.estimatedMinutes}
                   onChange={(e) =>
                     setNewDailyTask((prev) => ({ ...prev, estimatedMinutes: Number.parseInt(e.target.value) || 30 }))
+                  }
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowAddDailyTask(false)}>
+                Cancel
+              </Button>
+              <Button onClick={editingDailyTask ? saveEditedDailyTask : addDailyTask}>
+                {editingDailyTask ? "Save Changes" : "Add Task
