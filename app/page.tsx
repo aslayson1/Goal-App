@@ -808,7 +808,7 @@ function SortableWeeklyTaskItem({
   onDelete: () => void
   getPriorityColor: (priority: string) => string
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id })
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id }) || {}
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -890,7 +890,7 @@ function SortableDailyTaskItem({
   onEdit: () => void
   onDelete: () => void
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id })
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id }) || {}
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -972,7 +972,7 @@ interface User {
 function GoalTrackerApp() {
   const [refreshKey, setRefreshKey] = useState(0)
   const [user, setUser] = useState<User | null>(null)
-  const { user: authUser } = useAuth()
+  const { user: authUser } = useAuth() || {}
   const [goalsData, setGoalsData] = useState<GoalsData>(initialGoalsData)
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set())
   const [activeView, setActiveView] = useState("daily")
@@ -1269,8 +1269,7 @@ function GoalTrackerApp() {
         console.log("User authenticated, checking database connection...")
 
         try {
-          // Test database connection
-          const { data, error } = await supabase.from("categories").select("count").limit(1)
+          const { data, error } = await supabase.from("categories").select("count").limit(1) || {}
 
           if (error) {
             console.error("Database connection failed:", error)
@@ -1353,26 +1352,21 @@ function GoalTrackerApp() {
       [category]: prev[category].map((goal) => (goal.id === goalId ? { ...goal, currentCount: newCount } : goal)),
     }))
 
-    // Check if this is a database goal (has UUID format) vs local goal
-    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(goalId)
+    try {
+      const { error } = await supabase.from("goals").update({ current_progress: newCount }).eq("id", goalId) || {}
 
-    if (isUUID) {
-      try {
-        const { error } = await supabase.from("goals").update({ current_progress: newCount }).eq("id", goalId)
-
-        if (error) {
-          console.error("Error updating goal progress:", error)
-          // Revert local state on error
-          setGoalsData((prev) => ({
-            ...prev,
-            [category]: prev[category].map((goal) =>
-              goal.id === goalId ? { ...goal, currentCount: goal.currentCount } : goal,
-            ),
-          }))
-        }
-      } catch (error) {
+      if (error) {
         console.error("Error updating goal progress:", error)
+        // Revert local state on error
+        setGoalsData((prev) => ({
+          ...prev,
+          [category]: prev[category].map((goal) =>
+            goal.id === goalId ? { ...goal, currentCount: goal.currentCount } : goal,
+          ),
+        }))
       }
+    } catch (error) {
+      console.error("Error updating goal progress:", error)
     }
   }
 
@@ -3101,7 +3095,7 @@ function GoalTrackerApp() {
                                         On Track
                                       </Badge>
                                     )}
-                                    {!isCompleted && !weeklyProgress.onTrack && (
+                                    {!isCompleted && weeklyProgress.onTrack && (
                                       <Badge
                                         variant="secondary"
                                         className="bg-yellow-100 text-yellow-800 whitespace-nowrap"
@@ -4287,4 +4281,5 @@ function GoalTrackerApp() {
                 Cancel
               </Button>
               <Button onClick={editingDailyTask ? saveEditedDailyTask : addDailyTask}>
-                {editingDailyTask ? "Save Changes" : "Add Task
+                {editingDailyTask ? "Save Changes" : "Add Task"}
+              </Button>
