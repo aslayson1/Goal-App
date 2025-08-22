@@ -42,8 +42,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 // Auth components
 import { useAuth } from "@/components/auth/auth-provider"
 import { SignOutButton } from "@/components/auth/sign-out-button"
-import { createClient } from "@/lib/supabase/client"
-import { AuthScreen } from "@/components/auth/auth-screen"
 
 // Drag and Drop imports
 import {
@@ -847,7 +845,9 @@ function SortableWeeklyTaskItem({
         <Checkbox checked={task.completed} onCheckedChange={onToggle} className={`${checkboxStyles}`} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
-            <h3 className={`font-medium ${task.completed ? "line-through text-gray-500" : "text-gray-900"}`}>
+            <h3
+              className={`font-medium ${task.completed ? "line-through text-gray-500" : "text-gray-900"} break-words`}
+            >
               {task.title}
             </h3>
             <div className="flex items-center space-x-2">
@@ -927,7 +927,9 @@ function SortableDailyTaskItem({
         <Checkbox checked={task.completed} onCheckedChange={onToggle} className={`${checkboxStyles}`} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
-            <h3 className={`font-medium ${task.completed ? "line-through text-gray-500" : "text-gray-900"}`}>
+            <h3
+              className={`font-medium ${task.completed ? "line-through text-gray-500" : "text-gray-900"} break-words`}
+            >
               {task.title}
             </h3>
             <div className="flex items-center space-x-2">
@@ -2252,14 +2254,24 @@ function GoalTrackerApp() {
     }
   }
 
-  const deleteLongTermGoal = (timeframe: "1-year" | "5-year", category: string, goalId: string) => {
-    setLongTermGoals((prev) => ({
-      ...prev,
-      [timeframe]: {
-        ...prev[timeframe],
-        [category]: prev[timeframe][category].filter((g) => g.id !== goalId),
-      },
-    }))
+  const deleteLongTermGoal = async (timeframe: "1-year" | "5-year", category: string, goalId: string) => {
+    try {
+      // Delete from database first
+      await deleteLongTermGoal(goalId)
+
+      // Then update local state
+      setLongTermGoals((prev) => ({
+        ...prev,
+        [timeframe]: {
+          ...prev[timeframe],
+          [category]: prev[timeframe][category].filter((g) => g.id !== goalId),
+        },
+      }))
+    } catch (error) {
+      console.error("Error deleting long-term goal:", error)
+      return
+    }
+
     setShowDeleteLongTermGoal(null)
   }
 
@@ -4307,36 +4319,5 @@ function GoalTrackerApp() {
 }
 
 export default function Page() {
-  const [user, setUser] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    const getUser = async () => {
-      const supabase = createClient()
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      setUser(user)
-      setLoading(false)
-    }
-
-    getUser()
-  }, [])
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (!user) {
-    return <AuthScreen />
-  }
-
-  return <GoalTrackerApp />
-}
+  const [user, setUser] = useState<any>(null)\
+  const [loading, setLoading] = useState(true
