@@ -34,3 +34,5 @@ export function AuthScreen() {
     </div>
   )
 }
+
+export default AuthScreen
