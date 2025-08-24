@@ -1,7 +1,5 @@
 "use client"
 import { supabase } from "@/lib/supabase/client"
-import { updateLongTermGoal } from "@/lib/data/long-term-goals"
-import { deleteLongTermGoal as deleteLongTermGoalFromDB } from "@/lib/data/long-term-goals"
 import {
   Dialog,
   DialogContent,
@@ -14,7 +12,20 @@ import {
 import { Label } from "@/components/ui/label"
 
 import { useState, useEffect } from "react"
-import { Plus, ChevronDown, ChevronUp, Calendar, Target, MoreHorizontal, Edit, Trash2, CheckCircle, Clock, GripVertical, ClipboardCheck } from 'lucide-react'
+import {
+  Plus,
+  ChevronDown,
+  ChevronUp,
+  Calendar,
+  Target,
+  MoreHorizontal,
+  Edit,
+  Trash2,
+  CheckCircle,
+  Clock,
+  GripVertical,
+  ClipboardCheck,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -30,6 +41,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 // Auth components
 import { useAuth } from "@/components/auth/auth-provider"
 import { SignOutButton } from "@/components/auth/sign-out-button"
+import { AuthScreen } from "@/components/auth/auth-screen"
+import { createClient } from "@/lib/supabase/client"
 
 // Drag and Drop imports
 import {
@@ -808,7 +821,7 @@ function SortableWeeklyTaskItem({
   onDelete: () => void
   getPriorityColor: (priority: string) => string
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id }) || {}
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id })
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -833,9 +846,7 @@ function SortableWeeklyTaskItem({
         <Checkbox checked={task.completed} onCheckedChange={onToggle} className={`${checkboxStyles}`} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
-            <h3
-              className={`font-medium ${task.completed ? "line-through text-gray-500" : "text-gray-900"} break-words`}
-            >
+            <h3 className={`font-medium ${task.completed ? "line-through text-gray-500" : "text-gray-900"}`}>
               {task.title}
             </h3>
             <div className="flex items-center space-x-2">
@@ -890,7 +901,7 @@ function SortableDailyTaskItem({
   onEdit: () => void
   onDelete: () => void
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id }) || {}
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id })
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -915,9 +926,7 @@ function SortableDailyTaskItem({
         <Checkbox checked={task.completed} onCheckedChange={onToggle} className={`${checkboxStyles}`} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
-            <h3
-              className={`font-medium ${task.completed ? "line-through text-gray-500" : "text-gray-900"} break-words`}
-            >
+            <h3 className={`font-medium ${task.completed ? "line-through text-gray-500" : "text-gray-900"}`}>
               {task.title}
             </h3>
             <div className="flex items-center space-x-2">
@@ -938,7 +947,6 @@ function SortableDailyTaskItem({
                     <Edit className="h-4 w-4 mr-2" />
                     Edit Task
                   </DropdownMenuItem>
-                  {/* Call deleteDailyTask directly instead of setting confirmation state */}
                   <DropdownMenuItem onClick={onDelete} className="text-red-600">
                     <Trash2 className="h-4 w-4 mr-2" />
                     Delete Task
@@ -962,23 +970,14 @@ function SortableDailyTaskItem({
   )
 }
 
-interface User {
-  id: string
-  name: string
-  email: string
-  avatar?: string
-}
-
 function GoalTrackerApp() {
-  const [refreshKey, setRefreshKey] = useState(0)
-  const [user, setUser] = useState<User | null>(null)
-  const { user: authUser } = useAuth() || {}
+  const { user } = useAuth()
   const [goalsData, setGoalsData] = useState<GoalsData>(initialGoalsData)
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set())
   const [activeView, setActiveView] = useState("daily")
   const [currentWeek, setCurrentWeek] = useState(() => {
     // Get or set the 12-week start date
-    const startDateKey = `goalTracker_startDate_${authUser?.id || "default"}`
+    const startDateKey = `goalTracker_startDate_${user?.id || "default"}`
     let startDate = localStorage.getItem(startDateKey)
 
     if (!startDate) {
@@ -1002,8 +1001,8 @@ function GoalTrackerApp() {
     return days[today]
   })
 
-  const [weeklyTasks, setWeeklyTasks = useState<Record<string, WeeklyTask[]>>({})
-  const [dailyTasks, setDailyTasks = useState<Record<string, DailyTask[]>>({})
+  const [weeklyTasks, setWeeklyTasks] = useState<Record<string, WeeklyTask[]>>({})
+  const [dailyTasks, setDailyTasks] = useState<Record<string, DailyTask[]>>({})
 
   // Add state for long-term goals:
   const [longTermGoals, setLongTermGoals] = useState<LongTermGoalsData>(initialLongTermGoals)
@@ -1265,18 +1264,19 @@ function GoalTrackerApp() {
 
   useEffect(() => {
     const checkDatabaseAndLoadData = async () => {
-      if (authUser?.id) {
+      if (user?.id) {
         console.log("User authenticated, checking database connection...")
 
         try {
-          const { data, error } = await supabase.from("categories").select("count").limit(1) || {}
+          // Test database connection
+          const { data, error } = await supabase.from("categories").select("count").limit(1)
 
           if (error) {
             console.error("Database connection failed:", error)
           } else {
             console.log("Database connection successful!")
 
-            const startDateKey = `goalTracker_startDate_${authUser.id}`
+            const startDateKey = `goalTracker_startDate_${user.id}`
             let startDate = localStorage.getItem(startDateKey)
 
             if (!startDate) {
@@ -1292,8 +1292,8 @@ function GoalTrackerApp() {
 
             setCurrentWeek(calculatedWeek)
 
-            const dbData = await loadCategoriesAndGoalsFromDB(authUser.id)
-            const taskData = await loadTasksFromDB(authUser.id)
+            const dbData = await loadCategoriesAndGoalsFromDB(user.id)
+            const taskData = await loadTasksFromDB(user.id)
 
             console.log("=== COMPREHENSIVE TASK LOADING DEBUG ===")
             console.log("Raw task data from database:", JSON.stringify(taskData, null, 2))
@@ -1330,7 +1330,7 @@ function GoalTrackerApp() {
     }
 
     checkDatabaseAndLoadData()
-  }, [authUser?.id])
+  }, [user?.id])
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -1352,21 +1352,26 @@ function GoalTrackerApp() {
       [category]: prev[category].map((goal) => (goal.id === goalId ? { ...goal, currentCount: newCount } : goal)),
     }))
 
-    try {
-      const { error } = await supabase.from("goals").update({ current_progress: newCount }).eq("id", goalId) || {}
+    // Check if this is a database goal (has UUID format) vs local goal
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(goalId)
 
-      if (error) {
+    if (isUUID) {
+      try {
+        const { error } = await supabase.from("goals").update({ current_progress: newCount }).eq("id", goalId)
+
+        if (error) {
+          console.error("Error updating goal progress:", error)
+          // Revert local state on error
+          setGoalsData((prev) => ({
+            ...prev,
+            [category]: prev[category].map((goal) =>
+              goal.id === goalId ? { ...goal, currentCount: goal.currentCount } : goal,
+            ),
+          }))
+        }
+      } catch (error) {
         console.error("Error updating goal progress:", error)
-        // Revert local state on error
-        setGoalsData((prev) => ({
-          ...prev,
-          [category]: prev[category].map((goal) =>
-            goal.id === goalId ? { ...goal, currentCount: goal.currentCount } : goal,
-          ),
-        }))
       }
-    } catch (error) {
-      console.error("Error updating goal progress:", error)
     }
   }
 
@@ -1550,7 +1555,7 @@ function GoalTrackerApp() {
     }))
 
     try {
-      if (!authUser?.id) {
+      if (!user?.id) {
         console.error("User not authenticated")
         return
       }
@@ -1560,7 +1565,7 @@ function GoalTrackerApp() {
         .from("categories")
         .select("id")
         .eq("name", selectedCategory)
-        .eq("user_id", authUser.id)
+        .eq("user_id", user.id)
         .single()
 
       if (!categories) {
@@ -1570,7 +1575,7 @@ function GoalTrackerApp() {
 
       const { error } = await supabase.from("goals").insert({
         id: goalId,
-        user_id: authUser.id,
+        user_id: user.id,
         category_id: categories.id,
         title: newGoal.title,
         description: newGoal.description,
@@ -1609,22 +1614,22 @@ function GoalTrackerApp() {
     }
 
     try {
-      if (!authUser?.id) {
+      if (!user?.id) {
         alert("User not authenticated. Please log in again.")
         return
       }
 
       // Validate UUID format
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-      if (!uuidRegex.test(authUser.id)) {
-        console.error("Invalid user ID format:", authUser.id)
+      if (!uuidRegex.test(user.id)) {
+        console.error("Invalid user ID format:", user.id)
         alert("Authentication error. Please log out and log in again.")
         return
       }
 
       const { error } = await supabase.from("categories").insert([
         {
-          user_id: authUser.id,
+          user_id: user.id,
           name: categoryName,
           color: "#05a7b0", // Default teal color
         },
@@ -1632,7 +1637,7 @@ function GoalTrackerApp() {
 
       if (error) {
         console.error("Error saving category:", error)
-        console.error("User ID being used:", authUser.id)
+        console.error("User ID being used:", user.id)
         alert(`Failed to save category: ${error.message}`)
         return
       }
@@ -1771,23 +1776,9 @@ function GoalTrackerApp() {
     }
   }
 
-  const deleteWeeklyTask = async (taskId: string) => {
-    try {
-      await supabase.from("tasks").delete().eq("id", taskId)
-
-      setWeeklyTasks((prev) => ({
-        ...prev,
-        [`Week ${currentWeek}`]: prev[`Week ${currentWeek}`]?.filter((task) => task.id !== taskId) || [],
-      }))
-    } catch (error) {
-      console.error("Error deleting weekly task:", error)
-      // Keep the task in UI if database deletion fails
-    }
-  }
-
   const deleteDailyTask = async (day: string, taskId: string) => {
     try {
-      await supabase.from("daily_tasks").delete().eq("id", taskId)
+      await supabase.from("tasks").delete().eq("id", taskId)
 
       setDailyTasks((prev) => ({
         ...prev,
@@ -2105,48 +2096,59 @@ function GoalTrackerApp() {
         targetDate: m.targetDate,
       })),
     })
-    requestAnimationFrame(() => {
-      setShowAddLongTermGoal(true)
-    })
   }
 
-  const saveEditedLongTermGoal = async () => {
+  const saveEditedLongTermGoal = () => {
     if (!editingLongTermGoal) return
 
-    try {
-      // Update in database
-      await updateLongTermGoal(editingLongTermGoal.id, {
-        title: editingLongTermGoal.title,
-        description: editingLongTermGoal.description,
-      })
+    const { timeframe, category, goal } = editingLongTermGoal
 
-      // Update local state
-      setLongTermGoals(prev => {
-        const updated = { ...prev }
-        const timeframe = editingLongTermGoal.timeframe as keyof LongTermGoalsData
-        const category = editingLongTermGoal.category
-        
-        if (updated[timeframe] && updated[timeframe][category]) {
-          const goalIndex = updated[timeframe][category].findIndex(g => g.id === editingLongTermGoal.id)
-          if (goalIndex !== -1) {
-            updated[timeframe][category][goalIndex] = { ...editingLongTermGoal }
-          }
-        }
-        
-        return updated
-      })
+    setLongTermGoals((prev) => ({
+      ...prev,
+      [timeframe]: {
+        ...prev[timeframe],
+        [category]: prev[timeframe][category].map((g) =>
+          g.id === goal.id
+            ? {
+                ...g,
+                title: newLongTermGoal.title,
+                description: newLongTermGoal.description,
+                targetDate: newLongTermGoal.targetDate,
+                category: newLongTermGoal.category,
+                notes: newLongTermGoal.notes,
+                milestones: newLongTermGoal.milestones
+                  .filter((m) => m.title && m.targetDate)
+                  .map((m, index) => ({
+                    id: `${g.id}_m${index + 1}`,
+                    title: m.title,
+                    completed: g.milestones[index]?.completed || false,
+                    targetDate: m.targetDate,
+                  })),
+              }
+            : g,
+        ),
+      },
+    }))
 
-      setRefreshKey(prev => prev + 1)
-      
-      setEditingLongTermGoal(null)
-      setShowAddLongTermGoal(false)
-    } catch (error) {
-      console.error("Error updating long-term goal:", error)
-    }
+    setNewLongTermGoal({
+      title: "",
+      description: "",
+      targetDate: "",
+      category: "",
+      notes: "",
+      milestones: [
+        { title: "", targetDate: "" },
+        { title: "", targetDate: "" },
+        { title: "", targetDate: "" },
+        { title: "", targetDate: "" },
+      ],
+    })
+    setEditingLongTermGoal(null)
+    setShowAddLongTermGoal(false)
   }
 
   const addLongTermGoal = async () => {
-    if (!newLongTermGoal.title || !authUser?.id) return
+    if (!newLongTermGoal.title || !user?.id) return
 
     try {
       const goalType = selectedTimeframe === "1-year" ? "1_year" : "5_year"
@@ -2156,7 +2158,7 @@ function GoalTrackerApp() {
         .from("long_term_goals")
         .insert([
           {
-            user_id: authUser.id,
+            user_id: user.id,
             title: newLongTermGoal.title,
             description: newLongTermGoal.description,
             goal_type: goalType, // Use converted goal_type value
@@ -2216,29 +2218,15 @@ function GoalTrackerApp() {
     }
   }
 
-  const deleteLongTermGoal = async (goalId: string) => {
-    try {
-      // Delete from database
-      await deleteLongTermGoalFromDB(goalId)
-
-      // Update local state
-      setLongTermGoals(prev => {
-        const updated = { ...prev }
-        Object.keys(updated).forEach(timeframe => {
-          Object.keys(updated[timeframe as keyof LongTermGoalsData]).forEach(category => {
-            updated[timeframe as keyof LongTermGoalsData][category] = 
-              updated[timeframe as keyof LongTermGoalsData][category].filter(goal => goal.id !== goalId)
-          })
-        })
-        return updated
-      })
-
-      setRefreshKey(prev => prev + 1)
-      
-      setShowDeleteLongTermGoal(null)
-    } catch (error) {
-      console.error("Error deleting long-term goal:", error)
-    }
+  const deleteLongTermGoal = (timeframe: "1-year" | "5-year", category: string, goalId: string) => {
+    setLongTermGoals((prev) => ({
+      ...prev,
+      [timeframe]: {
+        ...prev[timeframe],
+        [category]: prev[timeframe][category].filter((g) => g.id !== goalId),
+      },
+    }))
+    setShowDeleteLongTermGoal(null)
   }
 
   const getTotalProgress = () => {
@@ -2470,9 +2458,9 @@ function GoalTrackerApp() {
     }
     console.log("4. Task data prepared:", taskData)
 
-    console.log("5. User object:", authUser)
-    console.log("6. User ID:", authUser?.id)
-    console.log("7. User authenticated:", !!authUser)
+    console.log("5. User object:", user)
+    console.log("6. User ID:", user?.id)
+    console.log("7. User authenticated:", !!user)
 
     // Update local state immediately
     setDailyTasks((prev) => ({
@@ -2505,9 +2493,9 @@ function GoalTrackerApp() {
     try {
       console.log("10. Starting database operation...")
 
-      if (!authUser?.id) {
+      if (!user?.id) {
         console.error("11. ERROR: No user ID available")
-        console.log("User object:", authUser)
+        console.log("User object:", user)
         return
       }
 
@@ -2519,7 +2507,7 @@ function GoalTrackerApp() {
           .from("categories")
           .select("id")
           .eq("name", taskData.category)
-          .eq("user_id", authUser.id)
+          .eq("user_id", user.id)
           .single()
 
         categoryId = categories?.id || null
@@ -2528,7 +2516,7 @@ function GoalTrackerApp() {
 
       const insertData = {
         id: taskId,
-        user_id: authUser.id,
+        user_id: user.id,
         category_id: categoryId,
         goal_id: taskData.goalId || null,
         title: taskData.title,
@@ -2558,7 +2546,7 @@ function GoalTrackerApp() {
         const { data: verification, error: verifyError } = await supabase
           .from("tasks")
           .select("*")
-          .eq("user_id", authUser.id)
+          .eq("user_id", user.id)
           .order("created_at", { ascending: false })
           .limit(1)
 
@@ -2599,7 +2587,7 @@ function GoalTrackerApp() {
     }))
 
     try {
-      if (!authUser?.id) {
+      if (!user?.id) {
         console.error("User not authenticated")
         return
       }
@@ -2609,12 +2597,12 @@ function GoalTrackerApp() {
         .from("categories")
         .select("id")
         .eq("name", newWeeklyTask.category)
-        .eq("user_id", authUser.id)
+        .eq("user_id", user.id)
         .single()
 
       const { error } = await supabase.from("tasks").insert({
         id: taskId,
-        user_id: authUser.id,
+        user_id: user.id,
         category_id: categories?.id || null,
         goal_id: newWeeklyTask.goalId || null,
         title: newWeeklyTask.title,
@@ -2729,13 +2717,13 @@ function GoalTrackerApp() {
   }
 
   const loadLongTermGoalsFromDB = async () => {
-    if (!authUser?.id) return
+    if (!user?.id) return
 
     try {
       const { data: longTermGoalsData, error } = await supabase
         .from("long_term_goals")
         .select("*")
-        .eq("user_id", authUser.id)
+        .eq("user_id", user.id)
 
       if (error) throw error
 
@@ -2781,10 +2769,10 @@ function GoalTrackerApp() {
   }
 
   useEffect(() => {
-    if (authUser?.id) {
+    if (user?.id) {
       loadLongTermGoalsFromDB()
     }
-  }, [authUser?.id, refreshKey]) // Added refreshKey dependency to trigger re-fetch
+  }, [user?.id])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -2792,7 +2780,7 @@ function GoalTrackerApp() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">Hi {authUser?.name?.split(" ")[0] || "there"},</h1>
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">Hi {user?.name?.split(" ")[0] || "there"},</h1>
             <p className="text-gray-600">Here are your tasks for week {currentWeek} of 12.</p>
           </div>
           <div className="flex items-center space-x-2">
@@ -2814,11 +2802,11 @@ function GoalTrackerApp() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="flex items-center space-x-2">
                   <Avatar className="h-8 w-8 border-2 border-black">
-                    {authUser?.avatar && (
-                      <AvatarImage src={authUser.avatar || "/placeholder.svg?height=40&width=40&text=U"} alt={authUser?.name} />
+                    {user?.avatar && (
+                      <AvatarImage src={user.avatar || "/placeholder.svg?height=40&width=40&text=U"} alt={user?.name} />
                     )}
                     <AvatarFallback className="bg-white text-black text-xs font-semibold">
-                      {getInitials(authUser?.name)}
+                      {getInitials(user?.name)}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
@@ -3095,7 +3083,7 @@ function GoalTrackerApp() {
                                         On Track
                                       </Badge>
                                     )}
-                                    {!isCompleted && weeklyProgress.onTrack && (
+                                    {!isCompleted && !weeklyProgress.onTrack && (
                                       <Badge
                                         variant="secondary"
                                         className="bg-yellow-100 text-yellow-800 whitespace-nowrap"
@@ -3307,7 +3295,22 @@ function GoalTrackerApp() {
                               task={task}
                               onToggle={() => toggleWeeklyTask(task.id)}
                               onEdit={() => startEditingWeeklyTask(task)}
-                              onDelete={() => deleteWeeklyTask(task.id)}
+                              onDelete={() => {
+                                const deleteWeeklyTask = async (taskId: string) => {
+                                  try {
+                                    await supabase.from("tasks").delete().eq("id", taskId)
+                                    setWeeklyTasks((prev) => ({
+                                      ...prev,
+                                      [`Week ${currentWeek}`]:
+                                        prev[`Week ${currentWeek}`]?.filter((task) => task.id !== taskId) || [],
+                                    }))
+                                  } catch (error) {
+                                    console.error("Error deleting weekly task:", error)
+                                    // Keep the task in UI if database deletion fails
+                                  }
+                                }
+                                deleteWeeklyTask(task.id)
+                              }}
                               getPriorityColor={getPriorityColor}
                             />
                           ))}
@@ -3330,7 +3333,7 @@ function GoalTrackerApp() {
                   <Card key={`empty-${category}`} className="border-0 shadow-sm">
                     <CardHeader className="pb-4">
                       <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-2">
+                        <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                           <Badge
                             className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}
                           >
@@ -3628,17 +3631,18 @@ function GoalTrackerApp() {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuItem
-                                    onClick={() =>
-                                      requestAnimationFrame(() => startEditingLongTermGoal("1-year", category, goal))
-                                    }
-                                  >
+                                  <DropdownMenuItem onClick={() => startEditingLongTermGoal("1-year", category, goal)}>
                                     <Edit className="h-4 w-4 mr-2" />
                                     Edit Goal
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
                                     onClick={() =>
-                                      requestAnimationFrame(() => deleteLongTermGoal("1-year", category, goal.id))
+                                      setShowDeleteLongTermGoal({
+                                        timeframe: "1-year",
+                                        category,
+                                        goalId: goal.id,
+                                        title: goal.title,
+                                      })
                                     }
                                     className="text-red-600"
                                   >
@@ -3829,23 +3833,19 @@ function GoalTrackerApp() {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuItem
-                                    onClick={() =>
-                                      requestAnimationFrame(() => startEditingLongTermGoal("5-year", category, goal))
-                                    }
-                                  >
+                                  <DropdownMenuItem onClick={() => startEditingLongTermGoal("5-year", category, goal)}>
                                     <Edit className="h-4 w-4 mr-2" />
                                     Edit Goal
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
-                                    onClick={() => {
-                                      const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(goal.id)
-                                      if (isValidUUID) {
-                                        setShowDeleteLongTermGoal({ timeframe: "5-year", category, goalId: goal.id, title: goal.title })
-                                      } else {
-                                        deleteLongTermGoal("5-year", category, goal.id)
-                                      }
-                                    }}
+                                    onClick={() =>
+                                      setShowDeleteLongTermGoal({
+                                        timeframe: "5-year",
+                                        category,
+                                        goalId: goal.id,
+                                        title: goal.title,
+                                      })
+                                    }
                                     className="text-red-600"
                                   >
                                     <Trash2 className="h-4 w-4 mr-2" />
@@ -4280,6 +4280,42 @@ function GoalTrackerApp() {
               <Button variant="outline" onClick={() => setShowAddDailyTask(false)}>
                 Cancel
               </Button>
-              <Button onClick={editingDailyTask ? saveEditedDailyTask : addDailyTask}>
-                {editingDailyTask ? "Save Changes" : "Add Task"}
-              </Button>
+              <Button onClick={addDailyTask}>Add Task</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </div>
+  )
+}
+
+export default function Page() {
+  const [user, setUser] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const getUser = async () => {
+      const supabase = createClient()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      setUser(user)
+      setLoading(false)
+    }
+    getUser()
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return <AuthScreen />
+  }
+
+  return <GoalTrackerApp />
+}

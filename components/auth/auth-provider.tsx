@@ -46,8 +46,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      const { data } = (await supabase.auth.getUser()) || {}
-      const u = data?.user
+      const { data } = await supabase.auth.getUser()
+      const u = data.user
 
       // Debug logging to see what we're getting from Supabase
       console.log("Supabase user data:", u)
@@ -144,7 +144,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, 500)
 
     return () => {
-      sub?.subscription?.unsubscribe()
+      sub.subscription.unsubscribe()
       window.removeEventListener("focus", handleFocus)
       document.removeEventListener("visibilitychange", handleVisibilityChange)
       window.removeEventListener("storage", handleStorageChange)
