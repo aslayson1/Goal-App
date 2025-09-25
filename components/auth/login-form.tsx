@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useRouter } from "next/navigation"
 import { signIn } from "@/lib/actions/auth"
+import { useAuth } from "@/components/auth/auth-provider" // Import useAuth
 
 function SubmitButton({ isLoading }: { isLoading: boolean }) {
   return (
@@ -20,14 +21,17 @@ function SubmitButton({ isLoading }: { isLoading: boolean }) {
 
 export function LoginForm() {
   const router = useRouter()
+  const { refreshAuth } = useAuth() // Get refreshAuth from context
   const [state, setState] = useState<{ success?: boolean; error?: string } | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     if (state?.success) {
-      router.push("/")
+      refreshAuth().then(() => {
+        router.push("/")
+      })
     }
-  }, [state, router])
+  }, [state, router, refreshAuth])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()

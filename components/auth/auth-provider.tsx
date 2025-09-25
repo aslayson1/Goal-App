@@ -11,6 +11,7 @@ type AuthContextType = {
   login: () => Promise<void>
   register: () => Promise<void>
   logout: () => Promise<void>
+  refreshAuth: () => Promise<void> // Added refreshAuth function
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -76,6 +77,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const refreshAuth = async () => {
+    setLoading(true)
+    await checkAuthState()
+  }
+
   useEffect(() => {
     checkAuthState()
 
@@ -100,10 +106,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false)
     })
 
+    const handleFocus = () => {
+      console.log("[v0] Window focused, refreshing auth state")
+      checkAuthState()
+    }
+
+    window.addEventListener("focus", handleFocus)
+
     return () => {
       sub.subscription.unsubscribe()
+      window.removeEventListener("focus", handleFocus)
     }
-  }, [isDemoUser]) // Added isDemoUser as dependency
+  }, [isDemoUser])
 
   const logout = async () => {
     setLoading(true)
@@ -132,6 +146,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error("Use server actions for register")
     },
     logout,
+    refreshAuth, // Expose refreshAuth function
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
