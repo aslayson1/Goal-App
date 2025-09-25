@@ -54,12 +54,12 @@ export function LoginForm({ onForgotPassword }: { onForgotPassword?: () => void 
 
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
-        <Input id="email" name="email" type="email" defaultValue="demo@example.com" required />
+        <Input id="email" name="email" type="email" required />
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="password">Password</Label>
-        <Input id="password" name="password" type="password" defaultValue="password" required />
+        <Input id="password" name="password" type="password" required />
       </div>
 
       <SubmitButton isLoading={isLoading} />
@@ -76,7 +76,7 @@ export function LoginForm({ onForgotPassword }: { onForgotPassword?: () => void 
         </div>
       )}
 
-      <div className="text-sm text-gray-600 text-center">Demo credentials: demo@example.com / password</div>
+      {/* Removed demo credentials message */}
     </form>
   )
 }

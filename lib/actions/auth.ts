@@ -13,6 +13,8 @@ export async function signIn(prevState: any, formData: FormData) {
   const email = formData.get("email")
   const password = formData.get("password")
 
+  console.log("[v0] Login attempt with email:", email)
+
   if (!email || !password) {
     return { error: "Email and password are required" }
   }
@@ -37,15 +39,19 @@ export async function signIn(prevState: any, formData: FormData) {
   const supabase = createServerActionClient({ cookies: () => cookieStore })
 
   try {
+    console.log("[v0] Attempting Supabase auth for:", email.toString())
+
     const { error } = await supabase.auth.signInWithPassword({
       email: email.toString(),
       password: password.toString(),
     })
 
     if (error) {
+      console.log("[v0] Supabase auth error:", error.message)
       return { error: error.message }
     }
 
+    console.log("[v0] Supabase auth successful for:", email.toString())
     return { success: true }
   } catch (error) {
     console.error("Login error:", error)
