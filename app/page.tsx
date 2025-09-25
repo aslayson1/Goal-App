@@ -1,14 +1,7 @@
 "use client"
 import { supabase } from "@/lib/supabase/client"
-import { SelectItem } from "@/components/ui/select"
 
-import { SelectContent } from "@/components/ui/select"
-
-import { SelectValue } from "@/components/ui/select"
-
-import { SelectTrigger } from "@/components/ui/select"
-
-import { Select } from "@/components/ui/select"
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 
 import { CardTitle } from "@/components/ui/card"
 
@@ -22,13 +15,7 @@ import { Badge } from "@/components/ui/badge"
 
 import { CardHeader } from "@/components/ui/card"
 
-import { TabsContent } from "@/components/ui/tabs"
-
-import { TabsTrigger } from "@/components/ui/tabs"
-
-import { TabsList } from "@/components/ui/tabs"
-
-import { Tabs } from "@/components/ui/tabs"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 
 import { Progress } from "@/components/ui/progress"
 
@@ -97,7 +84,7 @@ const MoreHorizontal = () => (
 const Edit = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-    <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+    <path d="m18.5 2.5 3 3 12 15-4 1 1-4 9.5-9.5z" />
   </svg>
 )
 
@@ -114,7 +101,7 @@ const Trash2 = () => (
 const CheckCircle = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-    <path d="m9 11 3 3L22 4" />
+    <path d="m9 11 3 3 22 4" />
   </svg>
 )
 
@@ -4016,6 +4003,46 @@ function GoalTrackerApp() {
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* Add Category Dialog */}
+        <Dialog open={showAddCategory} onOpenChange={setShowAddCategory}>
+          <DialogContent className="sm:max-w-[400px]">
+            <DialogHeader>
+              <DialogTitle>Add New Category</DialogTitle>
+              <DialogDescription>Create a new category to organize your goals</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="category-name">Category Name</Label>
+                <Input
+                  id="category-name"
+                  placeholder="e.g., Health, Business, Personal"
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && newCategoryName.trim()) {
+                      addNewCategory()
+                    }
+                  }}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowAddCategory(false)
+                  setNewCategoryName("")
+                }}
+              >
+                Cancel
+              </Button>
+              <Button onClick={addNewCategory} disabled={!newCategoryName.trim()}>
+                Add Category
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Add Goal Dialog */}
         <Dialog open={showAddGoal} onOpenChange={setShowAddGoal}>
