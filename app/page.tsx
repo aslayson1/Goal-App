@@ -1,5 +1,6 @@
 "use client"
 import { supabase } from "@/lib/supabase/client"
+import { updateLongTermGoal } from "@/lib/data/long-term-goals"
 import {
   Dialog,
   DialogContent,
@@ -41,8 +42,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 // Auth components
 import { useAuth } from "@/components/auth/auth-provider"
 import { SignOutButton } from "@/components/auth/sign-out-button"
-import { AuthScreen } from "@/components/auth/auth-screen"
 import { createClient } from "@/lib/supabase/client"
+import { AuthScreen } from "@/components/auth/auth-screen"
 
 // Drag and Drop imports
 import {
@@ -947,6 +948,7 @@ function SortableDailyTaskItem({
                     <Edit className="h-4 w-4 mr-2" />
                     Edit Task
                   </DropdownMenuItem>
+                  {/* Call deleteDailyTask directly instead of setting confirmation state */}
                   <DropdownMenuItem onClick={onDelete} className="text-red-600">
                     <Trash2 className="h-4 w-4 mr-2" />
                     Delete Task
@@ -1776,9 +1778,23 @@ function GoalTrackerApp() {
     }
   }
 
-  const deleteDailyTask = async (day: string, taskId: string) => {
+  const deleteWeeklyTask = async (taskId: string) => {
     try {
       await supabase.from("tasks").delete().eq("id", taskId)
+
+      setWeeklyTasks((prev) => ({
+        ...prev,
+        [`Week ${currentWeek}`]: prev[`Week ${currentWeek}`]?.filter((task) => task.id !== taskId) || [],
+      }))
+    } catch (error) {
+      console.error("Error deleting weekly task:", error)
+      // Keep the task in UI if database deletion fails
+    }
+  }
+
+  const deleteDailyTask = async (day: string, taskId: string) => {
+    try {
+      await supabase.from("daily_tasks").delete().eq("id", taskId)
 
       setDailyTasks((prev) => ({
         ...prev,
@@ -2096,39 +2112,57 @@ function GoalTrackerApp() {
         targetDate: m.targetDate,
       })),
     })
+    requestAnimationFrame(() => {
+      setShowAddLongTermGoal(true)
+    })
   }
 
-  const saveEditedLongTermGoal = () => {
+  const saveEditedLongTermGoal = async () => {
     if (!editingLongTermGoal) return
 
     const { timeframe, category, goal } = editingLongTermGoal
 
-    setLongTermGoals((prev) => ({
-      ...prev,
-      [timeframe]: {
-        ...prev[timeframe],
-        [category]: prev[timeframe][category].map((g) =>
-          g.id === goal.id
-            ? {
-                ...g,
-                title: newLongTermGoal.title,
-                description: newLongTermGoal.description,
-                targetDate: newLongTermGoal.targetDate,
-                category: newLongTermGoal.category,
-                notes: newLongTermGoal.notes,
-                milestones: newLongTermGoal.milestones
-                  .filter((m) => m.title && m.targetDate)
-                  .map((m, index) => ({
-                    id: `${g.id}_m${index + 1}`,
-                    title: m.title,
-                    completed: g.milestones[index]?.completed || false,
-                    targetDate: m.targetDate,
-                  })),
-              }
-            : g,
-        ),
-      },
-    }))
+    try {
+      // Update in database first
+      await updateLongTermGoal(goal.id, {
+        title: newLongTermGoal.title,
+        description: newLongTermGoal.description,
+        targetDate: newLongTermGoal.targetDate,
+        category: newLongTermGoal.category,
+        notes: newLongTermGoal.notes,
+      })
+
+      // Then update local state
+      setLongTermGoals((prev) => ({
+        ...prev,
+        [timeframe]: {
+          ...prev[timeframe],
+          [category]: prev[timeframe][category].map((g) =>
+            g.id === goal.id
+              ? {
+                  ...g,
+                  title: newLongTermGoal.title,
+                  description: newLongTermGoal.description,
+                  targetDate: newLongTermGoal.targetDate,
+                  category: newLongTermGoal.category,
+                  notes: newLongTermGoal.notes,
+                  milestones: newLongTermGoal.milestones
+                    .filter((m) => m.title && m.targetDate)
+                    .map((m, index) => ({
+                      id: `${g.id}_m${index + 1}`,
+                      title: m.title,
+                      completed: g.milestones[index]?.completed || false,
+                      targetDate: m.targetDate,
+                    })),
+                }
+              : g,
+          ),
+        },
+      }))
+    } catch (error) {
+      console.error("Error updating long-term goal:", error)
+      return
+    }
 
     setNewLongTermGoal({
       title: "",
@@ -3295,22 +3329,7 @@ function GoalTrackerApp() {
                               task={task}
                               onToggle={() => toggleWeeklyTask(task.id)}
                               onEdit={() => startEditingWeeklyTask(task)}
-                              onDelete={() => {
-                                const deleteWeeklyTask = async (taskId: string) => {
-                                  try {
-                                    await supabase.from("tasks").delete().eq("id", taskId)
-                                    setWeeklyTasks((prev) => ({
-                                      ...prev,
-                                      [`Week ${currentWeek}`]:
-                                        prev[`Week ${currentWeek}`]?.filter((task) => task.id !== taskId) || [],
-                                    }))
-                                  } catch (error) {
-                                    console.error("Error deleting weekly task:", error)
-                                    // Keep the task in UI if database deletion fails
-                                  }
-                                }
-                                deleteWeeklyTask(task.id)
-                              }}
+                              onDelete={() => deleteWeeklyTask(task.id)}
                               getPriorityColor={getPriorityColor}
                             />
                           ))}
@@ -3333,7 +3352,7 @@ function GoalTrackerApp() {
                   <Card key={`empty-${category}`} className="border-0 shadow-sm">
                     <CardHeader className="pb-4">
                       <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                        <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-2">
                           <Badge
                             className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}
                           >
@@ -3631,18 +3650,17 @@ function GoalTrackerApp() {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => startEditingLongTermGoal("1-year", category, goal)}>
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      requestAnimationFrame(() => startEditingLongTermGoal("1-year", category, goal))
+                                    }
+                                  >
                                     <Edit className="h-4 w-4 mr-2" />
                                     Edit Goal
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
                                     onClick={() =>
-                                      setShowDeleteLongTermGoal({
-                                        timeframe: "1-year",
-                                        category,
-                                        goalId: goal.id,
-                                        title: goal.title,
-                                      })
+                                      requestAnimationFrame(() => deleteLongTermGoal("1-year", category, goal.id))
                                     }
                                     className="text-red-600"
                                   >
@@ -3833,18 +3851,17 @@ function GoalTrackerApp() {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => startEditingLongTermGoal("5-year", category, goal)}>
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      requestAnimationFrame(() => startEditingLongTermGoal("5-year", category, goal))
+                                    }
+                                  >
                                     <Edit className="h-4 w-4 mr-2" />
                                     Edit Goal
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
                                     onClick={() =>
-                                      setShowDeleteLongTermGoal({
-                                        timeframe: "5-year",
-                                        category,
-                                        goalId: goal.id,
-                                        title: goal.title,
-                                      })
+                                      requestAnimationFrame(() => deleteLongTermGoal("5-year", category, goal.id))
                                     }
                                     className="text-red-600"
                                   >
@@ -4302,13 +4319,17 @@ export default function Page() {
       setUser(user)
       setLoading(false)
     }
+
     getUser()
   }, [])
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
       </div>
     )
   }

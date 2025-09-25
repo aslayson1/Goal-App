@@ -18,7 +18,7 @@ function SubmitButton({ isLoading }: { isLoading: boolean }) {
   )
 }
 
-export function LoginForm() {
+export function LoginForm({ onForgotPassword }: { onForgotPassword?: () => void }) {
   const router = useRouter()
   const [state, setState] = useState<{ success?: boolean; error?: string } | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -63,6 +63,18 @@ export function LoginForm() {
       </div>
 
       <SubmitButton isLoading={isLoading} />
+
+      {onForgotPassword && (
+        <div className="text-center">
+          <button
+            type="button"
+            onClick={onForgotPassword}
+            className="text-sm text-blue-600 hover:text-blue-800 underline"
+          >
+            Forgot your password?
+          </button>
+        </div>
+      )}
 
       <div className="text-sm text-gray-600 text-center">Demo credentials: demo@example.com / password</div>
     </form>
