@@ -24,76 +24,142 @@ export function useAuth() {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isInitialized, setIsInitialized] = useState(false)
+
+  const checkAuthState = async () => {
+    try {
+      const demoUserCookie = document.cookie.split("; ").find((row) => row.startsWith("demo-user="))
+
+      if (demoUserCookie) {
+        const cookieValue = demoUserCookie.split("=")[1]
+        if (cookieValue && cookieValue !== "") {
+          try {
+            const demoUserData = JSON.parse(decodeURIComponent(cookieValue))
+            setUser(demoUserData)
+            setIsLoading(false)
+            setIsInitialized(true)
+            return
+          } catch (parseError) {
+            console.error("Failed to parse demo user cookie:", parseError)
+            document.cookie = "demo-user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
+          }
+        }
+      }
+
+      const { data } = await supabase.auth.getUser()
+      const u = data.user
+
+      // Debug logging to see what we're getting from Supabase
+      console.log("Supabase user data:", u)
+      console.log("User metadata:", u?.user_metadata)
+
+      setUser(
+        u
+          ? {
+              id: u.id,
+              email: u.email ?? null,
+              name: u.user_metadata?.name ?? u.user_metadata?.full_name ?? null,
+            }
+          : null,
+      )
+      setIsLoading(false)
+      setIsInitialized(true)
+    } catch (error) {
+      console.error("Auth check error:", error)
+      setUser(null)
+      setIsLoading(false)
+      setIsInitialized(true)
+    }
+  }
 
   useEffect(() => {
-    // Get initial session
-    const getInitialSession = async () => {
-      try {
-        const {
-          data: { session },
-          error,
-        } = await supabase.auth.getSession()
-
-        if (error) {
-          console.log("[v0] Session error:", error.message)
-          setUser(null)
-        } else if (session?.user) {
-          const u = session.user
-          console.log("[v0] Initial session found for:", u.email)
-          setUser({
-            id: u.id,
-            email: u.email ?? null,
-            name: u.user_metadata?.name ?? u.user_metadata?.full_name ?? null,
-          })
-        } else {
-          console.log("[v0] No initial session found")
-          setUser(null)
-        }
-      } catch (error) {
-        console.error("[v0] Error getting initial session:", error)
-        setUser(null)
-      } finally {
-        setIsLoading(false)
-      }
+    const performInitialCheck = async () => {
+      await checkAuthState()
+      setTimeout(async () => {
+        await checkAuthState()
+      }, 100)
     }
 
-    getInitialSession()
+    performInitialCheck()
 
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("[v0] Auth state change event:", event)
-      console.log("[v0] Session:", session ? "exists" : "null")
+    const { data: sub } = supabase.auth.onAuthStateChange(async (_e, session) => {
+      const u = session?.user
 
-      if (session?.user) {
-        const u = session.user
-        setUser({
-          id: u.id,
-          email: u.email ?? null,
-          name: u.user_metadata?.name ?? u.user_metadata?.full_name ?? null,
-        })
-      } else {
-        setUser(null)
-      }
+      console.log("Auth state change - user:", u)
+      console.log("Auth state change - metadata:", u?.user_metadata)
 
+      setUser(
+        u
+          ? {
+              id: u.id,
+              email: u.email ?? null,
+              name: u.user_metadata?.name ?? u.user_metadata?.full_name ?? null,
+            }
+          : null,
+      )
       setIsLoading(false)
+      setIsInitialized(true)
+
+      if (u && !u.user_metadata?.name && !u.user_metadata?.full_name) {
+        setTimeout(async () => {
+          await checkAuthState()
+        }, 1000)
+      }
     })
 
+    const handleFocus = () => {
+      checkAuthState()
+    }
+    window.addEventListener("focus", handleFocus)
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        checkAuthState()
+      }
+    }
+    document.addEventListener("visibilitychange", handleVisibilityChange)
+
+    const handleStorageChange = () => {
+      if (isInitialized) {
+        checkAuthState()
+      }
+    }
+    window.addEventListener("storage", handleStorageChange)
+
+    let checkCount = 0
+    const cookieCheckInterval = setInterval(() => {
+      if (isInitialized) {
+        checkAuthState()
+        checkCount++
+        if (checkCount > 10) {
+          clearInterval(cookieCheckInterval)
+          const slowInterval = setInterval(() => {
+            if (isInitialized) {
+              checkAuthState()
+            }
+          }, 5000)
+          return () => clearInterval(slowInterval)
+        }
+      }
+    }, 500)
+
     return () => {
-      subscription.unsubscribe()
+      sub.subscription.unsubscribe()
+      window.removeEventListener("focus", handleFocus)
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
+      window.removeEventListener("storage", handleStorageChange)
+      clearInterval(cookieCheckInterval)
     }
   }, [])
 
   const logout = async () => {
     setIsLoading(true)
     try {
-      console.log("[v0] Logging out...")
+      document.cookie = "demo-user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
       await supabase.auth.signOut()
       setUser(null)
-      console.log("[v0] Logout successful")
     } catch (error) {
-      console.error("[v0] Logout error:", error)
+      console.error("Logout error:", error)
     } finally {
       setIsLoading(false)
     }
@@ -110,6 +176,5 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     logout,
   }
-
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

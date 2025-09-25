@@ -18,7 +18,7 @@ function SubmitButton({ isLoading }: { isLoading: boolean }) {
   )
 }
 
-export function LoginForm({ onForgotPassword }: { onForgotPassword?: () => void }) {
+export function LoginForm() {
   const router = useRouter()
   const [state, setState] = useState<{ success?: boolean; error?: string } | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -54,29 +54,17 @@ export function LoginForm({ onForgotPassword }: { onForgotPassword?: () => void 
 
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
-        <Input id="email" name="email" type="email" required />
+        <Input id="email" name="email" type="email" defaultValue="demo@example.com" required />
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="password">Password</Label>
-        <Input id="password" name="password" type="password" required />
+        <Input id="password" name="password" type="password" defaultValue="password" required />
       </div>
 
       <SubmitButton isLoading={isLoading} />
 
-      {onForgotPassword && (
-        <div className="text-center">
-          <button
-            type="button"
-            onClick={onForgotPassword}
-            className="text-sm text-blue-600 hover:text-blue-800 underline"
-          >
-            Forgot your password?
-          </button>
-        </div>
-      )}
-
-      {/* Removed demo credentials message */}
+      <div className="text-sm text-gray-600 text-center">Demo credentials: demo@example.com / password</div>
     </form>
   )
 }

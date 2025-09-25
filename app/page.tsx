@@ -1,6 +1,43 @@
 "use client"
 import { supabase } from "@/lib/supabase/client"
-import { updateLongTermGoal } from "@/lib/data/long-term-goals"
+import { SelectItem } from "@/components/ui/select"
+
+import { SelectContent } from "@/components/ui/select"
+
+import { SelectValue } from "@/components/ui/select"
+
+import { SelectTrigger } from "@/components/ui/select"
+
+import { Select } from "@/components/ui/select"
+
+import { CardTitle } from "@/components/ui/card"
+
+import { Textarea } from "@/components/ui/textarea"
+
+import { Input } from "@/components/ui/input"
+
+import { CardDescription } from "@/components/ui/card"
+
+import { Badge } from "@/components/ui/badge"
+
+import { CardHeader } from "@/components/ui/card"
+
+import { TabsContent } from "@/components/ui/tabs"
+
+import { TabsTrigger } from "@/components/ui/tabs"
+
+import { TabsList } from "@/components/ui/tabs"
+
+import { Tabs } from "@/components/ui/tabs"
+
+import { Progress } from "@/components/ui/progress"
+
+import { CardContent } from "@/components/ui/card"
+
+import { Card } from "@/components/ui/card"
+
+import { Button } from "@/components/ui/button"
+
 import {
   Dialog,
   DialogContent,
@@ -13,28 +50,100 @@ import {
 import { Label } from "@/components/ui/label"
 
 import { useState, useEffect } from "react"
-import {
-  Plus,
-  ChevronDown,
-  ChevronUp,
-  Calendar,
-  Target,
-  MoreHorizontal,
-  Edit,
-  Trash2,
-  CheckCircle,
-  Clock,
-  GripVertical,
-  ClipboardCheck,
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Input } from "@/components/ui/input"
+// Simple SVG icon components to replace lucide-react
+const Plus = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M12 5v14M5 12h14" />
+  </svg>
+)
+
+const ChevronDown = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="m6 9 6 6 6-6" />
+  </svg>
+)
+
+const ChevronUp = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="m18 15-6-6-6 6" />
+  </svg>
+)
+
+const Calendar = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+    <line x1="16" y1="2" x2="16" y2="6" />
+    <line x1="8" y1="2" x2="8" y2="6" />
+    <line x1="3" y1="10" x2="21" y2="10" />
+  </svg>
+)
+
+const Target = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <circle cx="12" cy="12" r="10" />
+    <circle cx="12" cy="12" r="6" />
+    <circle cx="12" cy="12" r="2" />
+  </svg>
+)
+
+const MoreHorizontal = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <circle cx="12" cy="12" r="1" />
+    <circle cx="19" cy="12" r="1" />
+    <circle cx="5" cy="12" r="1" />
+  </svg>
+)
+
+const Edit = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+    <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+  </svg>
+)
+
+const Trash2 = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="m3 6 3 0" />
+    <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+    <line x1="10" y1="11" x2="10" y2="17" />
+    <line x1="14" y1="11" x2="14" y2="17" />
+  </svg>
+)
+
+const CheckCircle = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+    <path d="m9 11 3 3L22 4" />
+  </svg>
+)
+
+const Clock = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <circle cx="12" cy="12" r="10" />
+    <polyline points="12,6 12,12 16,14" />
+  </svg>
+)
+
+const GripVertical = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <circle cx="9" cy="12" r="1" />
+    <circle cx="9" cy="5" r="1" />
+    <circle cx="9" cy="19" r="1" />
+    <circle cx="15" cy="12" r="1" />
+    <circle cx="15" cy="5" r="1" />
+    <circle cx="15" cy="19" r="1" />
+  </svg>
+)
+
+const ClipboardCheck = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+    <path d="m16 4 2 0a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+    <path d="m9 14 2 2 4-4" />
+  </svg>
+)
+
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -43,6 +152,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAuth } from "@/components/auth/auth-provider"
 import { SignOutButton } from "@/components/auth/sign-out-button"
 import { AuthScreen } from "@/components/auth/auth-screen"
+import { UserProfile } from "@/components/auth/user-profile"
 
 // Drag and Drop imports
 import {
@@ -841,7 +951,7 @@ function SortableWeeklyTaskItem({
           {...listeners}
           className="cursor-grab active:cursor-grabbing p-1 hover:bg-gray-200 rounded"
         >
-          <GripVertical className="h-4 w-4 text-gray-400" />
+          <GripVertical />
         </div>
         <Checkbox checked={task.completed} onCheckedChange={onToggle} className={`${checkboxStyles}`} />
         <div className="flex-1 min-w-0">
@@ -852,14 +962,14 @@ function SortableWeeklyTaskItem({
             <div className="flex items-center space-x-2">
               {task.timeBlock && (
                 <div className="flex items-center space-x-2">
-                  <Clock className="h-4 w-4 text-gray-400" />
+                  <Clock />
                   <span className="text-sm text-gray-500 font-mono">{task.timeBlock}</span>
                 </div>
               )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                    <MoreHorizontal className="h-4 w-4" />
+                    <MoreHorizontal />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -921,7 +1031,7 @@ function SortableDailyTaskItem({
           {...listeners}
           className="cursor-grab active:cursor-grabbing p-1 hover:bg-gray-200 rounded"
         >
-          <GripVertical className="h-4 w-4 text-gray-400" />
+          <GripVertical />
         </div>
         <Checkbox checked={task.completed} onCheckedChange={onToggle} className={`${checkboxStyles}`} />
         <div className="flex-1 min-w-0">
@@ -932,14 +1042,14 @@ function SortableDailyTaskItem({
             <div className="flex items-center space-x-2">
               {task.timeBlock && (
                 <div className="flex items-center space-x-2">
-                  <Clock className="h-4 w-4 text-gray-400" />
+                  <Clock />
                   <span className="text-sm text-gray-500 font-mono">{task.timeBlock}</span>
                 </div>
               )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                    <MoreHorizontal className="h-4 w-4" />
+                    <MoreHorizontal />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -947,7 +1057,6 @@ function SortableDailyTaskItem({
                     <Edit className="h-4 w-4 mr-2" />
                     Edit Task
                   </DropdownMenuItem>
-                  {/* Call deleteDailyTask directly instead of setting confirmation state */}
                   <DropdownMenuItem onClick={onDelete} className="text-red-600">
                     <Trash2 className="h-4 w-4 mr-2" />
                     Delete Task
@@ -1096,8 +1205,6 @@ function GoalTrackerApp() {
 
   // Cal.com inspired color palette for category badges - each category gets a unique, distinct color
   const getCategoryColor = (category: string) => {
-    return "bg-black text-white border-black"
-
     // Check for custom colors first
     if (customCategoryColors[category]) {
       return customCategoryColors[category]
@@ -1791,25 +1898,19 @@ function GoalTrackerApp() {
     }
   }
 
-  const deleteDailyTask = async (day: string, taskId: string) => {
-    try {
-      await supabase.from("daily_tasks").delete().eq("id", taskId)
-
-      setDailyTasks((prev) => ({
-        ...prev,
-        [day]: prev[day]?.filter((task) => task.id !== taskId) || [],
-      }))
-    } catch (error) {
-      console.error("Error deleting daily task:", error)
-      // Keep the task in UI if database deletion fails
-    }
-  }
-
   const editDailyTask = (day: string, taskId: string, updatedTask: Partial<DailyTask>) => {
     setDailyTasks((prev) => ({
       ...prev,
       [day]: prev[day]?.map((task) => (task.id === taskId ? { ...task, ...updatedTask } : task)) || [],
     }))
+  }
+
+  const deleteDailyTask = (day: string, taskId: string) => {
+    setDailyTasks((prev) => ({
+      ...prev,
+      [day]: prev[day]?.filter((task) => task.id !== taskId) || [],
+    }))
+    setShowDeleteDailyTask(null)
   }
 
   const startEditingWeeklyTask = (task: WeeklyTask) => {
@@ -2111,57 +2212,39 @@ function GoalTrackerApp() {
         targetDate: m.targetDate,
       })),
     })
-    requestAnimationFrame(() => {
-      setShowAddLongTermGoal(true)
-    })
   }
 
-  const saveEditedLongTermGoal = async () => {
+  const saveEditedLongTermGoal = () => {
     if (!editingLongTermGoal) return
 
     const { timeframe, category, goal } = editingLongTermGoal
 
-    try {
-      // Update in database first
-      await updateLongTermGoal(goal.id, {
-        title: newLongTermGoal.title,
-        description: newLongTermGoal.description,
-        targetDate: newLongTermGoal.targetDate,
-        category: newLongTermGoal.category,
-        notes: newLongTermGoal.notes,
-      })
-
-      // Then update local state
-      setLongTermGoals((prev) => ({
-        ...prev,
-        [timeframe]: {
-          ...prev[timeframe],
-          [category]: prev[timeframe][category].map((g) =>
-            g.id === goal.id
-              ? {
-                  ...g,
-                  title: newLongTermGoal.title,
-                  description: newLongTermGoal.description,
-                  targetDate: newLongTermGoal.targetDate,
-                  category: newLongTermGoal.category,
-                  notes: newLongTermGoal.notes,
-                  milestones: newLongTermGoal.milestones
-                    .filter((m) => m.title && m.targetDate)
-                    .map((m, index) => ({
-                      id: `${g.id}_m${index + 1}`,
-                      title: m.title,
-                      completed: g.milestones[index]?.completed || false,
-                      targetDate: m.targetDate,
-                    })),
-                }
-              : g,
-          ),
-        },
-      }))
-    } catch (error) {
-      console.error("Error updating long-term goal:", error)
-      return
-    }
+    setLongTermGoals((prev) => ({
+      ...prev,
+      [timeframe]: {
+        ...prev[timeframe],
+        [category]: prev[timeframe][category].map((g) =>
+          g.id === goal.id
+            ? {
+                ...g,
+                title: newLongTermGoal.title,
+                description: newLongTermGoal.description,
+                targetDate: newLongTermGoal.targetDate,
+                category: newLongTermGoal.category,
+                notes: newLongTermGoal.notes,
+                milestones: newLongTermGoal.milestones
+                  .filter((m) => m.title && m.targetDate)
+                  .map((m, index) => ({
+                    id: `${g.id}_m${index + 1}`,
+                    title: m.title,
+                    completed: g.milestones[index]?.completed || false,
+                    targetDate: m.targetDate,
+                  })),
+              }
+            : g,
+        ),
+      },
+    }))
 
     setNewLongTermGoal({
       title: "",
@@ -2512,13 +2595,12 @@ function GoalTrackerApp() {
     }))
     console.log("8. Local state updated")
 
+    // Reset form
     setNewDailyTask({
       title: "",
       description: "",
       category: "",
       goalId: "",
-      timeBlock: "",
-      estimatedMinutes: 30,
     })
     setShowAddDailyTask(false)
     console.log("9. Form reset and dialog closed")
@@ -2823,11 +2905,11 @@ function GoalTrackerApp() {
               onClick={() => setShowAddGoal(true)}
               className="text-sm bg-black hover:bg-gray-800 text-white"
             >
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus />
               Add Goal
             </Button>
             <Button variant="outline" size="sm" onClick={() => setShowAddCategory(true)} className="text-sm">
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus />
               Add Category
             </Button>
             {/* User Profile Button */}
@@ -2861,8 +2943,8 @@ function GoalTrackerApp() {
               <div className="flex flex-col items-center justify-center text-center h-full space-y-3">
                 <p className="text-4xl font-bold text-gray-900">{getTotalProgress()}%</p>
                 <div className="flex items-center">
-                  <Target className="h-4 w-4 mr-2 text-[#05a7b0]" />
-                  <p className="text-sm font-medium text-gray-600">Overall Progress</p>
+                  <Target />
+                  <p className="text-sm font-medium text-gray-600 ml-2">Overall Progress</p>
                 </div>
                 <div className="w-full">
                   <Progress value={getTotalProgress()} className="h-2 [&>div]:bg-[#05a7b0]" />
@@ -2878,8 +2960,8 @@ function GoalTrackerApp() {
                   {getCompletedTasks()}/{getTotalTasks()}
                 </p>
                 <div className="flex items-center">
-                  <ClipboardCheck className="h-4 w-4 mr-2 text-[#05a7b0]" />
-                  <p className="text-sm font-medium text-gray-600">Tasks Completed</p>
+                  <ClipboardCheck />
+                  <p className="text-sm font-medium text-gray-600 ml-2">Tasks Completed</p>
                 </div>
                 <div className="w-full">
                   <Progress
@@ -2898,8 +2980,8 @@ function GoalTrackerApp() {
                   {getCompletedGoals()}/{getTotalGoals()}
                 </p>
                 <div className="flex items-center">
-                  <CheckCircle className="h-4 w-4 mr-2 text-[#05a7b0]" />
-                  <p className="text-sm font-medium text-gray-600">Goals Completed</p>
+                  <CheckCircle />
+                  <p className="text-sm font-medium text-gray-600 ml-2">Goals Completed</p>
                 </div>
                 <div className="w-full">
                   <Progress
@@ -2916,8 +2998,8 @@ function GoalTrackerApp() {
               <div className="flex flex-col items-center justify-center text-center h-full space-y-3">
                 <p className="text-4xl font-bold text-gray-900">{12 - currentWeek}</p>
                 <div className="flex items-center">
-                  <Calendar className="h-4 w-4 mr-2 text-[#05a7b0]" />
-                  <p className="text-sm font-medium text-gray-600">Weeks Left</p>
+                  <Calendar />
+                  <p className="text-sm font-medium text-gray-600 ml-2">Weeks Left</p>
                 </div>
                 <div className="w-full">
                   <Progress value={((12 - (12 - currentWeek)) / 12) * 100} className="h-2 [&>div]:bg-[#05a7b0]" />
@@ -2953,7 +3035,7 @@ function GoalTrackerApp() {
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                              <Plus className="h-4 w-4" />
+                              <Plus />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
@@ -2989,7 +3071,7 @@ function GoalTrackerApp() {
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                              <MoreHorizontal className="h-4 w-4" />
+                              <MoreHorizontal />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
@@ -3033,7 +3115,7 @@ function GoalTrackerApp() {
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="outline" size="sm" className="text-sm bg-transparent">
-                              <Plus className="h-4 w-4 mr-2" />
+                              <Plus />
                               Add First Item
                             </Button>
                           </DropdownMenuTrigger>
@@ -3127,7 +3209,7 @@ function GoalTrackerApp() {
                                     <DropdownMenu>
                                       <DropdownMenuTrigger asChild>
                                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0">
-                                          <MoreHorizontal className="h-4 w-4" />
+                                          <MoreHorizontal />
                                         </Button>
                                       </DropdownMenuTrigger>
                                       <DropdownMenuContent align="end">
@@ -3232,12 +3314,12 @@ function GoalTrackerApp() {
                               >
                                 {expandedNotes.has(goal.id) ? (
                                   <>
-                                    <ChevronUp className="h-3 w-3 mr-1" />
+                                    <ChevronUp />
                                     Hide notes
                                   </>
                                 ) : (
                                   <>
-                                    <ChevronDown className="h-3 w-3 mr-1" />
+                                    <ChevronDown />
                                     {goal.notes ? "Show notes" : "Add notes"}
                                   </>
                                 )}
@@ -3305,7 +3387,7 @@ function GoalTrackerApp() {
                           }}
                           className="h-8 w-8 p-0"
                         >
-                          <Plus className="h-4 w-4" />
+                          <Plus />
                         </Button>
                       </div>
                       <CardDescription>
@@ -3351,7 +3433,7 @@ function GoalTrackerApp() {
                   <Card key={`empty-${category}`} className="border-0 shadow-sm">
                     <CardHeader className="pb-4">
                       <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-2">
+                        <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                           <Badge
                             className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}
                           >
@@ -3367,7 +3449,7 @@ function GoalTrackerApp() {
                           }}
                           className="h-8 w-8 p-0"
                         >
-                          <Plus className="h-4 w-4" />
+                          <Plus />
                         </Button>
                       </div>
                     </CardHeader>
@@ -3447,7 +3529,7 @@ function GoalTrackerApp() {
                           }}
                           className="h-8 w-8 p-0"
                         >
-                          <Plus className="h-4 w-4" />
+                          <Plus />
                         </Button>
                       </div>
                     </CardHeader>
@@ -3467,7 +3549,9 @@ function GoalTrackerApp() {
                               task={task}
                               onToggle={() => toggleDailyTask(selectedDay, task.id)}
                               onEdit={() => startEditingDailyTask(task)}
-                              onDelete={() => deleteDailyTask(selectedDay, task.id)}
+                              onDelete={() =>
+                                setShowDeleteDailyTask({ day: selectedDay, taskId: task.id, title: task.title })
+                              }
                             />
                           ))}
                         </SortableContext>
@@ -3505,7 +3589,7 @@ function GoalTrackerApp() {
                           }}
                           className="h-8 w-8 p-0"
                         >
-                          <Plus className="h-4 w-4" />
+                          <Plus />
                         </Button>
                       </div>
                     </CardHeader>
@@ -3541,7 +3625,7 @@ function GoalTrackerApp() {
                 }}
                 className="text-sm bg-black hover:bg-gray-800 text-white"
               >
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus />
                 Add 1-Year Goal
               </Button>
             </div>
@@ -3645,21 +3729,22 @@ function GoalTrackerApp() {
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0">
-                                    <MoreHorizontal className="h-4 w-4" />
+                                    <MoreHorizontal />
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuItem
-                                    onClick={() =>
-                                      requestAnimationFrame(() => startEditingLongTermGoal("1-year", category, goal))
-                                    }
-                                  >
+                                  <DropdownMenuItem onClick={() => startEditingLongTermGoal("1-year", category, goal)}>
                                     <Edit className="h-4 w-4 mr-2" />
                                     Edit Goal
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
                                     onClick={() =>
-                                      requestAnimationFrame(() => deleteLongTermGoal("1-year", category, goal.id))
+                                      setShowDeleteLongTermGoal({
+                                        timeframe: "1-year",
+                                        category,
+                                        goalId: goal.id,
+                                        title: goal.title,
+                                      })
                                     }
                                     className="text-red-600"
                                   >
@@ -3742,7 +3827,7 @@ function GoalTrackerApp() {
                 }}
                 className="text-sm bg-black hover:bg-gray-800 text-white"
               >
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus />
                 Add 5-Year Goal
               </Button>
             </div>
@@ -3846,21 +3931,22 @@ function GoalTrackerApp() {
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0">
-                                    <MoreHorizontal className="h-4 w-4" />
+                                    <MoreHorizontal />
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuItem
-                                    onClick={() =>
-                                      requestAnimationFrame(() => startEditingLongTermGoal("5-year", category, goal))
-                                    }
-                                  >
+                                  <DropdownMenuItem onClick={() => startEditingLongTermGoal("5-year", category, goal)}>
                                     <Edit className="h-4 w-4 mr-2" />
                                     Edit Goal
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
                                     onClick={() =>
-                                      requestAnimationFrame(() => deleteLongTermGoal("5-year", category, goal.id))
+                                      setShowDeleteLongTermGoal({
+                                        timeframe: "5-year",
+                                        category,
+                                        goalId: goal.id,
+                                        title: goal.title,
+                                      })
                                     }
                                     className="text-red-600"
                                   >
@@ -4219,101 +4305,66 @@ function GoalTrackerApp() {
           </DialogContent>
         </Dialog>
 
-        <Dialog open={showAddDailyTask} onOpenChange={setShowAddDailyTask}>
-          <DialogContent className="sm:max-w-[500px]">
+        <Dialog open={showEditCategory !== null} onOpenChange={() => setShowEditCategory(null)}>
+          <DialogContent>
             <DialogHeader>
-              <DialogTitle>Add Daily Task</DialogTitle>
-              <DialogDescription>Create a new daily task</DialogDescription>
+              <DialogTitle>Edit Category</DialogTitle>
+              <DialogDescription>Update the category name and color.</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="daily-task-title">Task Title</Label>
+                <Label htmlFor="edit-category-name">Category Name</Label>
                 <Input
-                  id="daily-task-title"
-                  placeholder="e.g., Review project proposals"
-                  value={newDailyTask.title}
-                  onChange={(e) => setNewDailyTask((prev) => ({ ...prev, title: e.target.value }))}
+                  id="edit-category-name"
+                  value={editCategoryName}
+                  onChange={(e) => setEditCategoryName(e.target.value)}
+                  placeholder="Enter category name"
                 />
               </div>
               <div>
-                <Label htmlFor="daily-task-description">Description</Label>
-                <Textarea
-                  id="daily-task-description"
-                  placeholder="Describe the task..."
-                  value={newDailyTask.description}
-                  onChange={(e) => setNewDailyTask((prev) => ({ ...prev, description: e.target.value }))}
-                />
-              </div>
-              <div>
-                <Label htmlFor="daily-task-category">Category</Label>
-                <Select
-                  value={newDailyTask.category}
-                  onValueChange={(value) => setNewDailyTask((prev) => ({ ...prev, category: value }))}
-                >
+                <Label htmlFor="edit-category-color">Category Color</Label>
+                <Select value={editCategoryColor} onValueChange={setEditCategoryColor}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
+                    <SelectValue placeholder="Select a color" />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.keys(goalsData).map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category}
+                    {colorOptions.map((color) => (
+                      <SelectItem key={color.name} value={color.value}>
+                        <div className="flex items-center">
+                          <div className={`w-4 h-4 rounded mr-2 ${color.value}`} />
+                          {color.name}
+                        </div>
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label htmlFor="daily-task-timeblock">Time Block</Label>
-                <Select
-                  value={newDailyTask.timeBlock}
-                  onValueChange={(value) => setNewDailyTask((prev) => ({ ...prev, timeBlock: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select time block" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="morning">Morning</SelectItem>
-                    <SelectItem value="afternoon">Afternoon</SelectItem>
-                    <SelectItem value="evening">Evening</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="daily-task-minutes">Estimated Minutes</Label>
-                <Input
-                  id="daily-task-minutes"
-                  type="number"
-                  min="5"
-                  max="480"
-                  value={newDailyTask.estimatedMinutes}
-                  onChange={(e) =>
-                    setNewDailyTask((prev) => ({ ...prev, estimatedMinutes: Number.parseInt(e.target.value) || 30 }))
-                  }
-                />
-              </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowAddDailyTask(false)}>
+              <Button variant="outline" onClick={() => setShowEditCategory(null)}>
                 Cancel
               </Button>
-              <Button onClick={addDailyTask}>Add Task</Button>
+              <Button onClick={saveEditedCategory}>Save Changes</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Other dialogs and modals remain the same */}
+        {showProfile && <UserProfile onClose={() => setShowProfile(false)} />}
       </div>
     </div>
   )
 }
 
-export default function Page() {
-  const { user, isLoading } = useAuth()
+function Page() {
+  const { user, loading } = useAuth()
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading...</p>
         </div>
       </div>
     )
@@ -4325,3 +4376,5 @@ export default function Page() {
 
   return <GoalTrackerApp />
 }
+
+export default Page
