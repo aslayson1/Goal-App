@@ -24,6 +24,7 @@ export function useAuth() {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isDemoUser, setIsDemoUser] = useState(false)
 
   const checkAuthState = async () => {
     try {
@@ -39,6 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const demoUserData = JSON.parse(decodeURIComponent(cookieValue))
             console.log("[v0] Found demo user:", demoUserData)
             setUser(demoUserData)
+            setIsDemoUser(true)
             setLoading(false)
             return
           } catch (parseError) {
@@ -48,6 +50,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         }
       }
+
+      setIsDemoUser(false)
 
       // Check Supabase auth if no demo user
       const { data } = await supabase.auth.getUser()
@@ -78,9 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("[v0] Auth state change:", event, session?.user?.id)
 
-      // Don't override demo user session
-      const demoUserCookie = document.cookie.split("; ").find((row) => row.startsWith("demo-user="))
-      if (demoUserCookie) {
+      if (isDemoUser) {
         console.log("[v0] Demo user active, ignoring Supabase auth change")
         return
       }
@@ -101,7 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       sub.subscription.unsubscribe()
     }
-  }, [])
+  }, [isDemoUser]) // Added isDemoUser as dependency
 
   const logout = async () => {
     setLoading(true)
@@ -109,6 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log("[v0] Logging out...")
       // Clear demo user cookie
       document.cookie = "demo-user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
+      setIsDemoUser(false)
       // Sign out from Supabase
       await supabase.auth.signOut()
       setUser(null)
