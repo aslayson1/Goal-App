@@ -972,6 +972,17 @@ function SortableDailyTaskItem({
 function GoalTrackerApp() {
   const { user } = useAuth()
   const [goalsData, setGoalsData] = useState<GoalsData>(initialGoalsData)
+  console.log("[v0] GoalTrackerApp render - goalsData keys:", Object.keys(goalsData))
+  // The lint error was here: longTermGoals was used before it was declared.
+  // It has been moved down to be declared before its first use.
+  const [longTermGoals, setLongTermGoals] = useState<LongTermGoalsData>(initialLongTermGoals)
+  console.log("[v0] GoalTrackerApp render - longTermGoals 1-year keys:", Object.keys(longTermGoals["1-year"]))
+  console.log("[v0] GoalTrackerApp render - longTermGoals 5-year keys:", Object.keys(longTermGoals["5-year"]))
+  const [weeklyTasks, setWeeklyTasks] = useState<Record<string, WeeklyTask[]>>({})
+  const [dailyTasks, setDailyTasks] = useState<Record<string, DailyTask[]>>({})
+  console.log("[v0] GoalTrackerApp render - weeklyTasks keys:", Object.keys(weeklyTasks))
+  console.log("[v0] GoalTrackerApp render - dailyTasks keys:", Object.keys(dailyTasks))
+
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set())
   const [activeView, setActiveView] = useState("daily")
   const [currentWeek, setCurrentWeek] = useState(() => {
@@ -1000,11 +1011,7 @@ function GoalTrackerApp() {
     return days[today]
   })
 
-  const [weeklyTasks, setWeeklyTasks] = useState<Record<string, WeeklyTask[]>>({})
-  const [dailyTasks, setDailyTasks] = useState<Record<string, DailyTask[]>>({})
-
   // Add state for long-term goals:
-  const [longTermGoals, setLongTermGoals] = useState<LongTermGoalsData>(initialLongTermGoals)
   const [showAddLongTermGoal, setShowAddLongTermGoal] = useState(false)
   const [selectedTimeframe, setSelectedTimeframe] = useState<"1-year" | "5-year">("1-year")
   const [newLongTermGoal, setNewLongTermGoal] = useState({
