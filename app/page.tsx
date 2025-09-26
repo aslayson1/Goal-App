@@ -1739,17 +1739,6 @@ function GoalTrackerApp() {
     setShowAddGoal(false)
   }
 
-  const startEditingGoal = (category: string, goal: Goal) => {
-    setEditingGoal({ category, goal })
-    setNewGoal({
-      title: goal.title,
-      description: goal.description,
-      targetCount: goal.targetCount,
-      weeklyTarget: goal.weeklyTarget,
-    })
-    setShowAddGoal(true)
-  }
-
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "high":
@@ -2818,6 +2807,19 @@ function GoalTrackerApp() {
     }
   }, [user?.id])
 
+  // Function to start editing a goal
+  const startEditingGoal = (category: string, goal: Goal) => {
+    setEditingGoal({ category, goal })
+    setNewGoal({
+      title: goal.title,
+      description: goal.description,
+      targetCount: goal.targetCount,
+      weeklyTarget: goal.weeklyTarget,
+    })
+    setSelectedCategory(category) // Set the category for the dialog
+    setShowAddGoal(true)
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -2867,20 +2869,20 @@ function GoalTrackerApp() {
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          {/* <Card className="border-0 shadow-sm">
+          <Card className="border-0 shadow-sm">
             <CardContent className="p-6">
               <div className="flex flex-col items-center justify-center text-center h-full space-y-3">
-                <p className="text-4xl font-bold text-gray-900">{getTotalProgress()}%</p>
+                <p className="text-4xl font-bold text-gray-900">{getTotalProgress().averageProgress}%</p>
                 <div className="flex items-center">
                   <Target className="h-4 w-4 mr-2 text-[#05a7b0]" />
                   <p className="text-sm font-medium text-gray-600">Overall Progress</p>
                 </div>
                 <div className="w-full">
-                  <Progress value={getTotalProgress()} className="h-2 [&>div]:bg-[#05a7b0]" />
+                  <Progress value={getTotalProgress().averageProgress} className="h-2 [&>div]:bg-[#05a7b0]" />
                 </div>
               </div>
             </CardContent>
-          </Card> */}
+          </Card>
 
           <Card className="bg-gradient-to-br from-blue-50 to-indigo-100 border-blue-200">
             <CardHeader className="pb-2">
