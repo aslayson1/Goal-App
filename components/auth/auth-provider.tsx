@@ -31,10 +31,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const getInitialSession = async () => {
       try {
+        console.log("[v0] AuthProvider: Getting initial session...")
         const {
           data: { user: supabaseUser },
           error,
         } = await supabase.auth.getUser()
+
+        console.log("[v0] AuthProvider: Initial session result:", {
+          hasUser: !!supabaseUser,
+          userId: supabaseUser?.id,
+          error: error?.message,
+        })
 
         if (mounted) {
           const userData = supabaseUser
@@ -45,11 +52,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               }
             : null
 
+          console.log("[v0] AuthProvider: Setting user:", userData)
           setUser(userData)
           setIsLoading(false)
         }
       } catch (error) {
-        console.error("Auth check error:", error)
+        console.error("[v0] AuthProvider: Auth check error:", error)
         if (mounted) {
           setUser(null)
           setIsLoading(false)
@@ -64,6 +72,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return
 
+      console.log("[v0] AuthProvider: Auth state change:", {
+        event,
+        hasSession: !!session,
+        hasUser: !!session?.user,
+        userId: session?.user?.id,
+      })
+
       const supabaseUser = session?.user
 
       const userData = supabaseUser
@@ -74,6 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         : null
 
+      console.log("[v0] AuthProvider: Setting user from auth change:", userData)
       setUser(userData)
       setIsLoading(false)
     })
