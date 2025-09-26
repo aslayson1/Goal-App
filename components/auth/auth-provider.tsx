@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
-import { supabase } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/client"
 
 type User = { id: string; email?: string | null; name?: string | null; avatar?: string | null }
 
@@ -27,16 +27,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true
+    const supabase = createClient()
 
     const getInitialSession = async () => {
       try {
-        console.log("[v0] AuthProvider - Getting initial session...")
         const {
           data: { user: supabaseUser },
           error,
         } = await supabase.auth.getUser()
-
-        console.log("[v0] AuthProvider - getUser result:", { user: supabaseUser, error })
 
         if (mounted) {
           const userData = supabaseUser
@@ -47,12 +45,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               }
             : null
 
-          console.log("[v0] AuthProvider - Setting user to:", userData)
           setUser(userData)
           setIsLoading(false)
         }
       } catch (error) {
-        console.error("[v0] AuthProvider - Auth check error:", error)
+        console.error("Auth check error:", error)
         if (mounted) {
           setUser(null)
           setIsLoading(false)
@@ -67,8 +64,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return
 
-      console.log("[v0] AuthProvider - Auth state change:", { event, session: !!session })
-
       const supabaseUser = session?.user
 
       const userData = supabaseUser
@@ -79,7 +74,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         : null
 
-      console.log("[v0] AuthProvider - Auth state change setting user to:", userData)
       setUser(userData)
       setIsLoading(false)
     })
@@ -93,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     setIsLoading(true)
     try {
+      const supabase = createClient()
       await supabase.auth.signOut()
       setUser(null)
     } catch (error) {

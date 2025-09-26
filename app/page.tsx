@@ -1,5 +1,5 @@
 "use client"
-import { supabase } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/client"
 import {
   Dialog,
   DialogContent,
@@ -56,6 +56,9 @@ import {
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
+
+// Initialize Supabase client
+const supabase = createClient()
 
 // Custom CSS class for white checkbox background with thinner border
 const checkboxStyles =
