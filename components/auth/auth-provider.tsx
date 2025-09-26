@@ -27,21 +27,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true
-    const supabase = createClient()
+    let retryCount = 0
+    const maxRetries = 3
 
     const getInitialSession = async () => {
       try {
-        console.log("[v0] AuthProvider: Getting initial session...")
+        const supabase = createClient()
         const {
           data: { user: supabaseUser },
           error,
         } = await supabase.auth.getUser()
-
-        console.log("[v0] AuthProvider: Initial session result:", {
-          hasUser: !!supabaseUser,
-          userId: supabaseUser?.id,
-          error: error?.message,
-        })
 
         if (mounted) {
           const userData = supabaseUser
@@ -52,13 +47,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               }
             : null
 
-          console.log("[v0] AuthProvider: Setting user:", userData)
           setUser(userData)
           setIsLoading(false)
         }
       } catch (error) {
         console.error("[v0] AuthProvider: Auth check error:", error)
-        if (mounted) {
+
+        if (retryCount < maxRetries && mounted) {
+          retryCount++
+          console.log(`[v0] AuthProvider: Retrying auth check (${retryCount}/${maxRetries})`)
+          setTimeout(() => getInitialSession(), 1000 * retryCount)
+        } else if (mounted) {
           setUser(null)
           setIsLoading(false)
         }
@@ -67,36 +66,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     getInitialSession()
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!mounted) return
+    let subscription: any
+    try {
+      const supabase = createClient()
+      const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
+        if (!mounted) return
 
-      console.log("[v0] AuthProvider: Auth state change:", {
-        event,
-        hasSession: !!session,
-        hasUser: !!session?.user,
-        userId: session?.user?.id,
+        const supabaseUser = session?.user
+        const userData = supabaseUser
+          ? {
+              id: supabaseUser.id,
+              email: supabaseUser.email ?? null,
+              name: supabaseUser.user_metadata?.name ?? supabaseUser.user_metadata?.full_name ?? null,
+            }
+          : null
+
+        setUser(userData)
+        setIsLoading(false)
       })
 
-      const supabaseUser = session?.user
-
-      const userData = supabaseUser
-        ? {
-            id: supabaseUser.id,
-            email: supabaseUser.email ?? null,
-            name: supabaseUser.user_metadata?.name ?? supabaseUser.user_metadata?.full_name ?? null,
-          }
-        : null
-
-      console.log("[v0] AuthProvider: Setting user from auth change:", userData)
-      setUser(userData)
-      setIsLoading(false)
-    })
+      subscription = data.subscription
+    } catch (error) {
+      console.error("[v0] AuthProvider: Error setting up auth listener:", error)
+      if (mounted) {
+        setIsLoading(false)
+      }
+    }
 
     return () => {
       mounted = false
-      subscription.unsubscribe()
+      subscription?.unsubscribe()
     }
   }, [])
 
