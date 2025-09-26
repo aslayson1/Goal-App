@@ -2080,6 +2080,11 @@ function GoalTrackerApp() {
         })
       })
 
+      if (Object.keys(groupedGoals).length === 0) {
+        console.log("[v0] No categories found in database, using initial data")
+        return initialGoalsData
+      }
+
       return groupedGoals
     } catch (error) {
       console.error("Error loading data from database:", error)
