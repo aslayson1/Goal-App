@@ -30,24 +30,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const getInitialSession = async () => {
       try {
+        console.log("[v0] AuthProvider - Getting initial session...")
         const {
           data: { user: supabaseUser },
+          error,
         } = await supabase.auth.getUser()
 
+        console.log("[v0] AuthProvider - getUser result:", { user: supabaseUser, error })
+
         if (mounted) {
-          setUser(
-            supabaseUser
-              ? {
-                  id: supabaseUser.id,
-                  email: supabaseUser.email ?? null,
-                  name: supabaseUser.user_metadata?.name ?? supabaseUser.user_metadata?.full_name ?? null,
-                }
-              : null,
-          )
+          const userData = supabaseUser
+            ? {
+                id: supabaseUser.id,
+                email: supabaseUser.email ?? null,
+                name: supabaseUser.user_metadata?.name ?? supabaseUser.user_metadata?.full_name ?? null,
+              }
+            : null
+
+          console.log("[v0] AuthProvider - Setting user to:", userData)
+          setUser(userData)
           setIsLoading(false)
         }
       } catch (error) {
-        console.error("Auth check error:", error)
+        console.error("[v0] AuthProvider - Auth check error:", error)
         if (mounted) {
           setUser(null)
           setIsLoading(false)
@@ -62,17 +67,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return
 
+      console.log("[v0] AuthProvider - Auth state change:", { event, session: !!session })
+
       const supabaseUser = session?.user
 
-      setUser(
-        supabaseUser
-          ? {
-              id: supabaseUser.id,
-              email: supabaseUser.email ?? null,
-              name: supabaseUser.user_metadata?.name ?? supabaseUser.user_metadata?.full_name ?? null,
-            }
-          : null,
-      )
+      const userData = supabaseUser
+        ? {
+            id: supabaseUser.id,
+            email: supabaseUser.email ?? null,
+            name: supabaseUser.user_metadata?.name ?? supabaseUser.user_metadata?.full_name ?? null,
+          }
+        : null
+
+      console.log("[v0] AuthProvider - Auth state change setting user to:", userData)
+      setUser(userData)
       setIsLoading(false)
     })
 
