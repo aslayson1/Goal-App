@@ -2,6 +2,9 @@ import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
 
 export async function updateSession(request: NextRequest) {
+  console.log("[v0] Middleware - SUPABASE_URL:", process.env.NEXT_PUBLIC_SUPABASE_URL ? "present" : "missing")
+  console.log("[v0] Middleware - SUPABASE_ANON_KEY:", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? "present" : "missing")
+
   let supabaseResponse = NextResponse.next({
     request,
   })
@@ -36,6 +39,8 @@ export async function updateSession(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser()
+
+  console.log("[v0] Middleware - User:", user ? `${user.email} (${user.id})` : "null")
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is.
   // If you're creating a new response object with NextResponse.next() make sure to:
