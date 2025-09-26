@@ -25,6 +25,7 @@ import {
   Clock,
   GripVertical,
   ClipboardCheck,
+  TrendingUp,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -2249,9 +2250,24 @@ function GoalTrackerApp() {
   }
 
   const getTotalProgress = () => {
+    console.log("[v0] getTotalProgress called")
+
+    let totalGoals = 0
+    let totalProgressSum = 0
+
+    Object.values(goalsData).forEach((goals) => {
+      goals.forEach((goal) => {
+        totalGoals++
+        const goalProgress = goal.targetCount > 0 ? (goal.currentCount / goal.targetCount) * 100 : 0
+        totalProgressSum += goalProgress
+      })
+    })
+
+    const averageProgress = totalGoals > 0 ? Math.round(totalProgressSum / totalGoals) : 0
+
+    // Also calculate the old way for comparison
     let totalCurrent = 0
     let totalTarget = 0
-
     Object.values(goalsData).forEach((goals) => {
       goals.forEach((goal) => {
         totalCurrent += goal.currentCount
@@ -2259,9 +2275,16 @@ function GoalTrackerApp() {
       })
     })
 
-    const progress = totalTarget === 0 ? 0 : Math.round((totalCurrent / totalTarget) * 100)
-    console.log("[v0] getTotalProgress:", { totalCurrent, totalTarget, progress })
-    return progress
+    const result = {
+      averageProgress,
+      totalGoals,
+      totalCurrent,
+      totalTarget,
+      oldProgress: totalTarget > 0 ? Math.round((totalCurrent / totalTarget) * 100) : 0,
+    }
+
+    console.log("[v0] getTotalProgress:", result)
+    return result
   }
 
   const getTotalTasks = () => {
@@ -2844,7 +2867,7 @@ function GoalTrackerApp() {
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card className="border-0 shadow-sm">
+          {/* <Card className="border-0 shadow-sm">
             <CardContent className="p-6">
               <div className="flex flex-col items-center justify-center text-center h-full space-y-3">
                 <p className="text-4xl font-bold text-gray-900">{getTotalProgress()}%</p>
@@ -2855,6 +2878,30 @@ function GoalTrackerApp() {
                 <div className="w-full">
                   <Progress value={getTotalProgress()} className="h-2 [&>div]:bg-[#05a7b0]" />
                 </div>
+              </div>
+            </CardContent>
+          </Card> */}
+
+          <Card className="bg-gradient-to-br from-blue-50 to-indigo-100 border-blue-200">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg font-semibold text-blue-900 flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Overall Progress
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-2xl font-bold text-blue-900">{getTotalProgress().averageProgress}%</span>
+                  <span className="text-sm text-blue-700">{getTotalProgress().totalGoals} goals</span>
+                </div>
+                <div className="w-full bg-blue-200 rounded-full h-2">
+                  <div
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${getTotalProgress().averageProgress}%` }}
+                  ></div>
+                </div>
+                <p className="text-xs text-blue-700">Average completion across all 12-week goals</p>
               </div>
             </CardContent>
           </Card>
