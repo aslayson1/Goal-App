@@ -6,17 +6,10 @@ export async function updateSession(request: NextRequest) {
     request,
   })
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-  try {
-    // If environment variables are missing, just preserve cookies without creating Supabase client
-    if (!supabaseUrl || !supabaseAnonKey) {
-      console.log("[v0] Middleware: Environment variables missing, preserving cookies only")
-      return supabaseResponse
-    }
-
-    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
       cookies: {
         getAll() {
           return request.cookies.getAll()
@@ -29,13 +22,23 @@ export async function updateSession(request: NextRequest) {
           cookiesToSet.forEach(({ name, value, options }) => supabaseResponse.cookies.set(name, value, options))
         },
       },
-    })
+    },
+  )
 
-    // Refresh the session to maintain authentication
-    await supabase.auth.getUser()
-  } catch (error) {
-    console.error("[v0] Middleware: Error processing session:", error)
-    // Always return response to prevent breaking the request flow
+  // Do not run code between createServerClient and supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (
+    !user &&
+    !request.nextUrl.pathname.startsWith("/login") &&
+    !request.nextUrl.pathname.startsWith("/auth") &&
+    request.nextUrl.pathname !== "/"
+  ) {
+    const url = request.nextUrl.clone()
+    url.pathname = "/login"
+    return NextResponse.redirect(url)
   }
 
   return supabaseResponse
