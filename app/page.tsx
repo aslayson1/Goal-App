@@ -551,7 +551,7 @@ const initialLongTermGoals = {
         milestones: [
           { id: "m1", title: "Complete Olympic triathlon", completed: false, targetDate: "2026-08-15" },
           { id: "m2", title: "Complete Half Ironman", completed: false, targetDate: "2027-06-15" },
-          { id: "m3", title: "Complete second Half Ironman", completed: false, targetDate: "2028-04-15" },
+          { id: "m3", title: "Complete second Half Ironman", completed: false, targetDate: "2027-04-15" },
           { id: "m4", title: "Complete full Ironman", completed: false, targetDate: "2028-10-15" },
         ],
       },
@@ -1274,72 +1274,57 @@ function GoalTrackerApp() {
   useEffect(() => {
     const checkDatabaseAndLoadData = async () => {
       if (user?.id) {
-        console.log("User authenticated, checking database connection...")
+        console.log("[v0] User authenticated, loading data from database...")
 
         try {
           // Test database connection
           const { data, error } = await supabase.from("categories").select("count").limit(1)
 
           if (error) {
-            console.error("Database connection failed:", error)
-          } else {
-            console.log("Database connection successful!")
-
-            const startDateKey = `goalTracker_startDate_${user.id}`
-            let startDate = localStorage.getItem(startDateKey)
-
-            if (!startDate) {
-              startDate = new Date().toISOString()
-              localStorage.setItem(startDateKey, startDate)
-            }
-
-            const start = new Date(startDate)
-            const today = new Date()
-            const daysDiff = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
-            const weekNumber = Math.floor(daysDiff / 7) + 1
-            const calculatedWeek = Math.min(Math.max(weekNumber, 1), 12)
-
-            setCurrentWeek(calculatedWeek)
-
-            const dbData = await loadCategoriesAndGoalsFromDB(user.id)
-            const taskData = await loadTasksFromDB(user.id)
-
-            console.log("=== COMPREHENSIVE TASK LOADING DEBUG ===")
-            console.log("Raw task data from database:", JSON.stringify(taskData, null, 2))
-            console.log("Daily tasks structure:", JSON.stringify(taskData.dailyTasks, null, 2))
-            console.log("Weekly tasks structure:", JSON.stringify(taskData.weeklyTasks, null, 2))
-
-            setGoalsData(dbData)
-
-            console.log("=== FORCING STATE UPDATES ===")
-
-            // Update daily tasks with force re-render
-            setDailyTasks(() => {
-              console.log("Setting daily tasks to:", JSON.stringify(taskData.dailyTasks, null, 2))
-              return { ...taskData.dailyTasks }
-            })
-
-            // Update weekly tasks with force re-render
-            setWeeklyTasks(() => {
-              console.log("Setting weekly tasks to:", JSON.stringify(taskData.weeklyTasks, null, 2))
-              return { ...taskData.weeklyTasks }
-            })
-
-            setTimeout(() => {
-              console.log("=== POST-UPDATE VERIFICATION ===")
-              console.log("Daily tasks count:", Object.keys(taskData.dailyTasks).length)
-              console.log("Weekly tasks count:", Object.keys(taskData.weeklyTasks).length)
-              console.log("State update completed successfully")
-            }, 100)
+            console.error("[v0] Database connection failed:", error)
+            console.log("[v0] No categories found in database, using initial data")
+            return
           }
+
+          console.log("[v0] Database connection successful!")
+
+          const startDateKey = `goalTracker_startDate_${user.id}`
+          let startDate = localStorage.getItem(startDateKey)
+
+          if (!startDate) {
+            startDate = new Date().toISOString()
+            localStorage.setItem(startDateKey, startDate)
+          }
+
+          const start = new Date(startDate)
+          const today = new Date()
+          const daysDiff = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+          const weekNumber = Math.floor(daysDiff / 7) + 1
+          const calculatedWeek = Math.min(Math.max(weekNumber, 1), 12)
+
+          setCurrentWeek(calculatedWeek)
+
+          const dbData = await loadCategoriesAndGoalsFromDB(user.id)
+          const taskData = await loadTasksFromDB(user.id)
+
+          console.log("[v0] Loading user data from database...")
+
+          setGoalsData(dbData)
+          setDailyTasks({ ...taskData.dailyTasks })
+          setWeeklyTasks({ ...taskData.weeklyTasks })
+
+          console.log("[v0] User data loaded successfully from database")
         } catch (error) {
-          console.error("Error loading data:", error)
+          console.error("[v0] Error loading data:", error)
+          console.log("[v0] No categories found in database, using initial data")
         }
+      } else if (user === null) {
+        console.log("[v0] User not authenticated, using initial data")
       }
     }
 
     checkDatabaseAndLoadData()
-  }, [user?.id])
+  }, [user?.id, user]) // Added user to dependency array to handle null -> authenticated transitions
 
   // Drag and drop sensors
   const sensors = useSensors(

@@ -9,22 +9,13 @@ export async function updateSession(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-  console.log("[v0] Middleware - Environment check:", {
-    hasUrl: !!supabaseUrl,
-    hasKey: !!supabaseAnonKey,
-    url: supabaseUrl ? "present" : "missing",
-    key: supabaseAnonKey ? "present" : "missing",
-  })
-
-  // If environment variables are missing, return early without breaking the request
+  // If environment variables are missing, still try to preserve existing session
   if (!supabaseUrl || !supabaseAnonKey) {
-    console.log("[v0] Middleware - Missing environment variables, skipping session update")
+    // Don't break the request, just return the response with existing cookies
     return supabaseResponse
   }
 
   try {
-    // With Fluid compute, don't put this client in a global environment
-    // variable. Always create a new one on each request.
     const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
       cookies: {
         getAll() {
@@ -40,38 +31,11 @@ export async function updateSession(request: NextRequest) {
       },
     })
 
-    // Do not run code between createServerClient and
-    // supabase.auth.getUser(). A simple mistake could make it very hard to debug
-    // issues with users being randomly logged out.
-
-    // IMPORTANT: If you remove getUser() and you use server-side rendering
-    // with the Supabase client, your users may be randomly logged out.
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    console.log("[v0] Middleware - User check:", {
-      hasUser: !!user,
-      userId: user?.id || "none",
-    })
+    await supabase.auth.getUser()
   } catch (error) {
-    console.log("[v0] Middleware - Error during session update:", error)
     // Return the response even if there's an error to prevent breaking the request
     return supabaseResponse
   }
-
-  // IMPORTANT: You *must* return the supabaseResponse object as it is.
-  // If you're creating a new response object with NextResponse.next() make sure to:
-  // 1. Pass the request in it, like so:
-  //    const myNewResponse = NextResponse.next({ request })
-  // 2. Copy over the cookies, like so:
-  //    myNewResponse.cookies.setAll(supabaseResponse.cookies.getAll())
-  // 3. Change the myNewResponse object to fit your needs, but avoid changing
-  //    the cookies!
-  // 4. Finally:
-  //    return myNewResponse
-  // If this is not done, you may be causing the browser and server to go out
-  // of sync and terminate the user's session prematurely!
 
   return supabaseResponse
 }
