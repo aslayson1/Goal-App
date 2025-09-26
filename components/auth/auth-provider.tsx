@@ -7,11 +7,10 @@ type User = { id: string; email?: string | null; name?: string | null; avatar?: 
 
 type AuthContextType = {
   user: User | null
-  loading: boolean
+  isLoading: boolean
   login: () => Promise<void>
   register: () => Promise<void>
   logout: () => Promise<void>
-  refreshAuth: () => Promise<void> // Added refreshAuth function
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -24,14 +23,11 @@ export function useAuth() {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [isDemoUser, setIsDemoUser] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isInitialized, setIsInitialized] = useState(false)
 
   const checkAuthState = async () => {
     try {
-      console.log("[v0] Checking auth state...")
-
-      // First check for demo user cookie
       const demoUserCookie = document.cookie.split("; ").find((row) => row.startsWith("demo-user="))
 
       if (demoUserCookie) {
@@ -39,26 +35,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (cookieValue && cookieValue !== "") {
           try {
             const demoUserData = JSON.parse(decodeURIComponent(cookieValue))
-            console.log("[v0] Found demo user:", demoUserData)
             setUser(demoUserData)
-            setIsDemoUser(true)
-            setLoading(false)
+            setIsLoading(false)
+            setIsInitialized(true)
             return
           } catch (parseError) {
-            console.error("[v0] Failed to parse demo user cookie:", parseError)
-            // Clear invalid cookie
+            console.error("Failed to parse demo user cookie:", parseError)
             document.cookie = "demo-user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
           }
         }
       }
 
-      setIsDemoUser(false)
-
-      // Check Supabase auth if no demo user
       const { data } = await supabase.auth.getUser()
       const u = data.user
 
-      console.log("[v0] Supabase user data:", u)
+      // Debug logging to see what we're getting from Supabase
+      console.log("Supabase user data:", u)
+      console.log("User metadata:", u?.user_metadata)
 
       setUser(
         u
@@ -69,31 +62,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
           : null,
       )
-      setLoading(false)
+      setIsLoading(false)
+      setIsInitialized(true)
     } catch (error) {
-      console.error("[v0] Auth check error:", error)
+      console.error("Auth check error:", error)
       setUser(null)
-      setLoading(false)
+      setIsLoading(false)
+      setIsInitialized(true)
     }
-  }
-
-  const refreshAuth = async () => {
-    setLoading(true)
-    await checkAuthState()
   }
 
   useEffect(() => {
-    checkAuthState()
+    const performInitialCheck = async () => {
+      await checkAuthState()
+      setTimeout(async () => {
+        await checkAuthState()
+      }, 100)
+    }
 
-    const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("[v0] Auth state change:", event, session?.user?.id)
+    performInitialCheck()
 
-      if (isDemoUser) {
-        console.log("[v0] Demo user active, ignoring Supabase auth change")
-        return
-      }
-
+    const { data: sub } = supabase.auth.onAuthStateChange(async (_e, session) => {
       const u = session?.user
+
+      console.log("Auth state change - user:", u)
+      console.log("Auth state change - metadata:", u?.user_metadata)
+
       setUser(
         u
           ? {
@@ -103,42 +97,77 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
           : null,
       )
-      setLoading(false)
+      setIsLoading(false)
+      setIsInitialized(true)
+
+      if (u && !u.user_metadata?.name && !u.user_metadata?.full_name) {
+        setTimeout(async () => {
+          await checkAuthState()
+        }, 1000)
+      }
     })
 
     const handleFocus = () => {
-      console.log("[v0] Window focused, refreshing auth state")
       checkAuthState()
     }
-
     window.addEventListener("focus", handleFocus)
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        checkAuthState()
+      }
+    }
+    document.addEventListener("visibilitychange", handleVisibilityChange)
+
+    const handleStorageChange = () => {
+      if (isInitialized) {
+        checkAuthState()
+      }
+    }
+    window.addEventListener("storage", handleStorageChange)
+
+    let checkCount = 0
+    const cookieCheckInterval = setInterval(() => {
+      if (isInitialized) {
+        checkAuthState()
+        checkCount++
+        if (checkCount > 10) {
+          clearInterval(cookieCheckInterval)
+          const slowInterval = setInterval(() => {
+            if (isInitialized) {
+              checkAuthState()
+            }
+          }, 5000)
+          return () => clearInterval(slowInterval)
+        }
+      }
+    }, 500)
 
     return () => {
       sub.subscription.unsubscribe()
       window.removeEventListener("focus", handleFocus)
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
+      window.removeEventListener("storage", handleStorageChange)
+      clearInterval(cookieCheckInterval)
     }
-  }, [isDemoUser])
+  }, [])
 
   const logout = async () => {
-    setLoading(true)
+    setIsLoading(true)
     try {
-      console.log("[v0] Logging out...")
-      // Clear demo user cookie
       document.cookie = "demo-user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
-      setIsDemoUser(false)
-      // Sign out from Supabase
       await supabase.auth.signOut()
       setUser(null)
     } catch (error) {
-      console.error("[v0] Logout error:", error)
+      console.error("Logout error:", error)
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
   }
 
   const value: AuthContextType = {
     user,
-    loading,
+    isLoading,
     login: async () => {
       throw new Error("Use server actions for login")
     },
@@ -146,8 +175,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error("Use server actions for register")
     },
     logout,
-    refreshAuth, // Expose refreshAuth function
   }
-
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
