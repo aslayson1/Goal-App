@@ -25,7 +25,6 @@ import {
   Clock,
   GripVertical,
   ClipboardCheck,
-  TrendingUp,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -2880,30 +2879,6 @@ function GoalTrackerApp() {
                 <div className="w-full">
                   <Progress value={getTotalProgress().averageProgress} className="h-2 [&>div]:bg-[#05a7b0]" />
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-blue-50 to-indigo-100 border-blue-200">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg font-semibold text-blue-900 flex items-center gap-2">
-                <TrendingUp className="h-5 w-5" />
-                Overall Progress
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-2xl font-bold text-blue-900">{getTotalProgress().averageProgress}%</span>
-                  <span className="text-sm text-blue-700">{getTotalProgress().totalGoals} goals</span>
-                </div>
-                <div className="w-full bg-blue-200 rounded-full h-2">
-                  <div
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${getTotalProgress().averageProgress}%` }}
-                  ></div>
-                </div>
-                <p className="text-xs text-blue-700">Average completion across all 12-week goals</p>
               </div>
             </CardContent>
           </Card>
