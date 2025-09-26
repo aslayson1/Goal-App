@@ -1347,16 +1347,24 @@ function GoalTrackerApp() {
   )
 
   const incrementGoal = async (category: string, goalId: string, amount = 1) => {
+    console.log("[v0] incrementGoal called:", { category, goalId, amount })
     const goal = goalsData[category]?.find((g) => g.id === goalId)
     if (!goal) return
 
     const newCount = Math.min(goal.currentCount + amount, goal.targetCount)
+    console.log("[v0] incrementGoal - old count:", goal.currentCount, "new count:", newCount)
 
     // Update local state immediately for UI feedback
-    setGoalsData((prev) => ({
-      ...prev,
-      [category]: prev[category].map((goal) => (goal.id === goalId ? { ...goal, currentCount: newCount } : goal)),
-    }))
+    setGoalsData((prev) => {
+      const updated = {
+        ...prev,
+        [category]: prev[category].map((goal) => (goal.id === goalId ? { ...goal, currentCount: newCount } : goal)),
+      }
+      console.log("[v0] incrementGoal - updated goalsData:", updated)
+      return updated
+    })
+
+    console.log("[v0] incrementGoal - total progress after update:", getTotalProgress())
 
     // Check if this is a database goal (has UUID format) vs local goal
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(goalId)
@@ -2251,7 +2259,9 @@ function GoalTrackerApp() {
       })
     })
 
-    return totalTarget === 0 ? 0 : Math.round((totalCurrent / totalTarget) * 100)
+    const progress = totalTarget === 0 ? 0 : Math.round((totalCurrent / totalTarget) * 100)
+    console.log("[v0] getTotalProgress:", { totalCurrent, totalTarget, progress })
+    return progress
   }
 
   const getTotalTasks = () => {
