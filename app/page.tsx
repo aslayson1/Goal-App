@@ -3514,6 +3514,16 @@ function GoalTrackerApp() {
               </div>
             </div>
 
+            {(() => {
+              const allTasksForDay = dailyTasks[selectedDay] || []
+              console.log(`[v0] Daily tasks for ${selectedDay}:`, allTasksForDay.length)
+              console.log(`[v0] Task details:`, JSON.stringify(allTasksForDay, null, 2))
+              allTasksForDay.forEach((task) => {
+                console.log(`[v0] Task "${task.title}" - category: "${task.category}", completed: ${task.completed}`)
+              })
+              return null
+            })()}
+
             {/* Group daily tasks by category */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {Object.keys(goalsData).map((category) => {
