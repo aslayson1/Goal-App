@@ -2679,6 +2679,13 @@ function GoalTrackerApp() {
       console.log("Raw tasks from database:", JSON.stringify(tasks, null, 2))
       console.log("Number of tasks found:", tasks?.length || 0)
 
+      const completedTasks = tasks?.filter((t) => t.completed) || []
+      const incompleteTasks = tasks?.filter((t) => !t.completed) || []
+      console.log("[v0] Total tasks:", tasks?.length || 0)
+      console.log("[v0] Completed tasks:", completedTasks.length)
+      console.log("[v0] Incomplete tasks:", incompleteTasks.length)
+      console.log("[v0] Completed task details:", JSON.stringify(completedTasks, null, 2))
+
       const weeklyTasks: Record<string, WeeklyTask[]> = {}
       const dailyTasks: Record<string, DailyTask[]> = {}
 
@@ -2692,6 +2699,9 @@ function GoalTrackerApp() {
           const weekKey = `Week ${currentWeek}` // For now, only load current week's tasks
 
           console.log(`Adding weekly task to ${weekKey}`)
+          console.log(
+            `[v0] Weekly task "${task.title}" - completed: ${task.completed}, target_date: ${task.target_date}, assigned to: ${weekKey}`,
+          )
 
           const weeklyTask: WeeklyTask = {
             id: task.id,
@@ -2713,6 +2723,9 @@ function GoalTrackerApp() {
           const day = taskDate.toLocaleDateString("en-US", { weekday: "long" })
 
           console.log(`Adding daily task to ${day} (target_date: ${task.target_date})`)
+          console.log(
+            `[v0] Daily task "${task.title}" - completed: ${task.completed}, target_date: ${task.target_date}, assigned to: ${day}`,
+          )
 
           const dailyTask: DailyTask = {
             id: task.id,
@@ -2735,6 +2748,8 @@ function GoalTrackerApp() {
       console.log("=== FINAL ORGANIZED TASKS ===")
       console.log("Organized daily tasks:", JSON.stringify(dailyTasks, null, 2))
       console.log("Organized weekly tasks:", JSON.stringify(weeklyTasks, null, 2))
+      console.log("[v0] Final weekly tasks count:", Object.values(weeklyTasks).flat().length)
+      console.log("[v0] Final daily tasks count:", Object.values(dailyTasks).flat().length)
 
       return { weeklyTasks, dailyTasks }
     } catch (error) {
