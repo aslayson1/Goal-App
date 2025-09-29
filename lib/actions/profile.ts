@@ -1,7 +1,6 @@
 "use server"
 
-import { createClient } from "@/lib/supabase/server"
-import { createClient as createSupabaseClient } from "@supabase/supabase-js"
+import { createSupabaseServerClient, createSupabaseServiceClient } from "@/lib/supabase/server"
 
 export interface ProfileData {
   name: string
@@ -14,7 +13,7 @@ export interface ProfileData {
 
 export async function updateUserProfile(profileData: ProfileData) {
   try {
-    const supabase = await createClient()
+    const supabase = createSupabaseServerClient()
 
     const {
       data: { user },
@@ -25,16 +24,7 @@ export async function updateUserProfile(profileData: ProfileData) {
       return { success: false, error: "User not authenticated" }
     }
 
-    const supabaseAdmin = createSupabaseClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      },
-    )
+    const supabaseAdmin = createSupabaseServiceClient()
 
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
       user_metadata: {

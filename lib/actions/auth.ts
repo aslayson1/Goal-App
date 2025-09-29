@@ -1,6 +1,6 @@
 "use server"
 
-import { createClient } from "@/lib/supabase/server"
+import { createSupabaseServerClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 
 export async function signIn(prevState: any, formData: FormData) {
@@ -16,7 +16,7 @@ export async function signIn(prevState: any, formData: FormData) {
   }
 
   try {
-    const supabase = await createClient()
+    const supabase = createSupabaseServerClient()
 
     const { error } = await supabase.auth.signInWithPassword({
       email: email.toString(),
@@ -48,7 +48,7 @@ export async function signUp(prevState: any, formData: FormData) {
   }
 
   try {
-    const supabase = await createClient()
+    const supabase = createSupabaseServerClient()
 
     const { data, error } = await supabase.auth.signUp({
       email: email.toString(),
@@ -79,7 +79,7 @@ export async function signUp(prevState: any, formData: FormData) {
 
 export async function signOut() {
   try {
-    const supabase = await createClient()
+    const supabase = createSupabaseServerClient()
     await supabase.auth.signOut()
   } catch (error) {
     console.error("Sign out error:", error)

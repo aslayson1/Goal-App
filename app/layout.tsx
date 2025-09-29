@@ -5,7 +5,7 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from "@/components/auth/auth-provider"
-import { createClient } from "@/lib/supabase/server"
+import { createSupabaseServerClient } from "@/lib/supabase/server"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -22,7 +22,7 @@ export default async function RootLayout({
 }) {
   let initialUser = null
   try {
-    const supabase = await createClient()
+    const supabase = createSupabaseServerClient()
     const {
       data: { user },
     } = await supabase.auth.getUser()
