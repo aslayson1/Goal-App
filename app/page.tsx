@@ -1076,9 +1076,6 @@ function GoalTrackerApp() {
   const [editCategoryName, setEditCategoryName] = useState("")
   const [editCategoryColor, setEditCategoryColor] = useState("")
 
-  const [showCompletedWeekly, setShowCompletedWeekly] = useState(false)
-  const [showCompletedDaily, setShowCompletedDaily] = useState(false)
-
   // Add these state variables after the existing state declarations (around line 680):
   const [editingLongTermGoal, setEditingLongTermGoal] = useState<{
     timeframe: "1-year" | "5-year"
@@ -3291,7 +3288,7 @@ function GoalTrackerApp() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {Object.keys(goalsData).map((category) => {
                 const categoryTasks = (weeklyTasks[`Week ${currentWeek}`] || []).filter(
-                  (task) => task.category === category && !task.completed,
+                  (task) => task.category === category,
                 )
 
                 if (categoryTasks.length === 0) return null
@@ -3349,6 +3346,7 @@ function GoalTrackerApp() {
                                     }))
                                   } catch (error) {
                                     console.error("Error deleting weekly task:", error)
+                                    // Keep the task in UI if database deletion fails
                                   }
                                 }
                                 deleteWeeklyTask(`Week ${currentWeek}`, task.id)
@@ -3365,7 +3363,7 @@ function GoalTrackerApp() {
 
               {(() => {
                 const uncategorizedTasks = (weeklyTasks[`Week ${currentWeek}`] || []).filter(
-                  (task) => task.category === "Uncategorized" && !task.completed,
+                  (task) => task.category === "Uncategorized",
                 )
 
                 if (uncategorizedTasks.length === 0) return null
@@ -3420,6 +3418,7 @@ function GoalTrackerApp() {
                                     }))
                                   } catch (error) {
                                     console.error("Error deleting weekly task:", error)
+                                    // Keep the task in UI if database deletion fails
                                   }
                                 }
                                 deleteWeeklyTask(`Week ${currentWeek}`, task.id)
@@ -3434,6 +3433,57 @@ function GoalTrackerApp() {
                 )
               })()}
 
+              {/* Show category cards even if empty, with plus buttons */}
+              {Object.keys(goalsData).map((category) => {
+                const categoryTasks = (weeklyTasks[`Week ${currentWeek}`] || []).filter(
+                  (task) => task.category === category,
+                )
+
+                if (categoryTasks.length > 0) return null // Already rendered above
+
+                return (
+                  <Card key={`empty-${category}`} className="border-0 shadow-sm">
+                    <CardHeader className="pb-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-2">
+                            <Badge
+                              className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}
+                            >
+                              {category}
+                            </Badge>
+                          </CardTitle>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setNewWeeklyTask((prev) => ({ ...prev, category }))
+                            setShowAddWeeklyTask(true)
+                          }}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="py-8">
+                      <div className="text-center text-gray-500">
+                        <button
+                          onClick={() => {
+                            setNewWeeklyTask((prev) => ({ ...prev, category }))
+                            setShowAddWeeklyTask(true)
+                          }}
+                          className="text-sm hover:text-gray-700 cursor-pointer"
+                        >
+                          Click + to add your first task
+                        </button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })}
+
               {/* Show message if no tasks exist */}
               {(!weeklyTasks[`Week ${currentWeek}`] || weeklyTasks[`Week ${currentWeek}`].length === 0) && (
                 <div className="col-span-2 text-center py-12">
@@ -3442,157 +3492,6 @@ function GoalTrackerApp() {
                 </div>
               )}
             </div>
-
-            {(() => {
-              const completedTasks = (weeklyTasks[`Week ${currentWeek}`] || []).filter((task) => task.completed)
-
-              if (completedTasks.length === 0) return null
-
-              return (
-                <div className="mt-8">
-                  <Button
-                    variant="ghost"
-                    onClick={() => setShowCompletedWeekly(!showCompletedWeekly)}
-                    className="mb-4 text-gray-600 hover:text-gray-900"
-                  >
-                    {showCompletedWeekly ? (
-                      <ChevronUp className="h-4 w-4 mr-2" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4 mr-2" />
-                    )}
-                    Completed Tasks ({completedTasks.length})
-                  </Button>
-
-                  {showCompletedWeekly && (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                      {Object.keys(goalsData).map((category) => {
-                        const categoryCompletedTasks = completedTasks.filter((task) => task.category === category)
-
-                        if (categoryCompletedTasks.length === 0) return null
-
-                        return (
-                          <Card key={`completed-${category}`} className="border-0 shadow-sm bg-gray-50">
-                            <CardHeader className="pb-4">
-                              <div className="flex items-center justify-between">
-                                <CardTitle className="text-lg font-semibold text-gray-700 flex items-center gap-2">
-                                  <Badge
-                                    className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}
-                                  >
-                                    {category}
-                                  </Badge>
-                                </CardTitle>
-                              </div>
-                              <CardDescription>
-                                {categoryCompletedTasks.length} completed task
-                                {categoryCompletedTasks.length !== 1 ? "s" : ""}
-                              </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                              <DndContext
-                                sensors={sensors}
-                                collisionDetection={closestCenter}
-                                onDragEnd={(event) => handleWeeklyTaskDragEnd(event, category)}
-                              >
-                                <SortableContext
-                                  items={categoryCompletedTasks.map((task) => task.id)}
-                                  strategy={verticalListSortingStrategy}
-                                >
-                                  {categoryCompletedTasks.map((task) => (
-                                    <SortableWeeklyTaskItem
-                                      key={task.id}
-                                      task={task}
-                                      onToggle={() => toggleWeeklyTask(`Week ${currentWeek}`, task.id)}
-                                      onEdit={() => startEditingWeeklyTask(task)}
-                                      onDelete={() => {
-                                        const deleteWeeklyTask = async (weekKey: string, taskId: string) => {
-                                          try {
-                                            await supabase.from("tasks").delete().eq("id", taskId)
-                                            setWeeklyTasks((prev) => ({
-                                              ...prev,
-                                              [weekKey]: prev[weekKey]?.filter((task) => task.id !== taskId) || [],
-                                            }))
-                                          } catch (error) {
-                                            console.error("Error deleting weekly task:", error)
-                                          }
-                                        }
-                                        deleteWeeklyTask(`Week ${currentWeek}`, task.id)
-                                      }}
-                                      getPriorityColor={getPriorityColor}
-                                    />
-                                  ))}
-                                </SortableContext>
-                              </DndContext>
-                            </CardContent>
-                          </Card>
-                        )
-                      })}
-
-                      {(() => {
-                        const uncategorizedCompletedTasks = completedTasks.filter(
-                          (task) => task.category === "Uncategorized",
-                        )
-
-                        if (uncategorizedCompletedTasks.length === 0) return null
-
-                        return (
-                          <Card key="completed-uncategorized" className="border-0 shadow-sm bg-gray-50">
-                            <CardHeader className="pb-4">
-                              <div className="flex items-center justify-between">
-                                <CardTitle className="text-lg font-semibold text-gray-700 flex items-center gap-2">
-                                  <Badge className="px-3 py-1 rounded-full text-sm font-medium border bg-gray-100 text-gray-700 border-gray-300">
-                                    Uncategorized
-                                  </Badge>
-                                </CardTitle>
-                              </div>
-                              <CardDescription>
-                                {uncategorizedCompletedTasks.length} completed task
-                                {uncategorizedCompletedTasks.length !== 1 ? "s" : ""}
-                              </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                              <DndContext
-                                sensors={sensors}
-                                collisionDetection={closestCenter}
-                                onDragEnd={(event) => handleWeeklyTaskDragEnd(event, "Uncategorized")}
-                              >
-                                <SortableContext
-                                  items={uncategorizedCompletedTasks.map((task) => task.id)}
-                                  strategy={verticalListSortingStrategy}
-                                >
-                                  {uncategorizedCompletedTasks.map((task) => (
-                                    <SortableWeeklyTaskItem
-                                      key={task.id}
-                                      task={task}
-                                      onToggle={() => toggleWeeklyTask(`Week ${currentWeek}`, task.id)}
-                                      onEdit={() => startEditingWeeklyTask(task)}
-                                      onDelete={() => {
-                                        const deleteWeeklyTask = async (weekKey: string, taskId: string) => {
-                                          try {
-                                            await supabase.from("tasks").delete().eq("id", taskId)
-                                            setWeeklyTasks((prev) => ({
-                                              ...prev,
-                                              [weekKey]: prev[weekKey]?.filter((task) => task.id !== taskId) || [],
-                                            }))
-                                          } catch (error) {
-                                            console.error("Error deleting weekly task:", error)
-                                          }
-                                        }
-                                        deleteWeeklyTask(`Week ${currentWeek}`, task.id)
-                                      }}
-                                      getPriorityColor={getPriorityColor}
-                                    />
-                                  ))}
-                                </SortableContext>
-                              </DndContext>
-                            </CardContent>
-                          </Card>
-                        )
-                      })()}
-                    </div>
-                  )}
-                </div>
-              )
-            })()}
           </TabsContent>
 
           {/* Daily Tasks View */}
@@ -3617,20 +3516,36 @@ function GoalTrackerApp() {
 
             {(() => {
               const allTasksForDay = dailyTasks[selectedDay] || []
-              console.log(`[v0] Daily tasks for ${selectedDay}:`, allTasksForDay.length)
-              console.log(`[v0] Task details:`, JSON.stringify(allTasksForDay, null, 2))
-              allTasksForDay.forEach((task) => {
-                console.log(`[v0] Task "${task.title}" - category: "${task.category}", completed: ${task.completed}`)
+              console.log(`[v0] ===== DAILY TASKS DEBUG FOR ${selectedDay} =====`)
+              console.log(`[v0] Total tasks for ${selectedDay}:`, allTasksForDay.length)
+              console.log(`[v0] All tasks:`, JSON.stringify(allTasksForDay, null, 2))
+
+              const completedTasks = allTasksForDay.filter((t) => t.completed)
+              const incompleteTasks = allTasksForDay.filter((t) => !t.completed)
+              console.log(`[v0] Completed tasks: ${completedTasks.length}`)
+              console.log(`[v0] Incomplete tasks: ${incompleteTasks.length}`)
+
+              completedTasks.forEach((task) => {
+                console.log(`[v0] Completed task: "${task.title}" - category: "${task.category}", id: ${task.id}`)
               })
+
+              incompleteTasks.forEach((task) => {
+                console.log(`[v0] Incomplete task: "${task.title}" - category: "${task.category}", id: ${task.id}`)
+              })
+
+              console.log(`[v0] ===== END DEBUG =====`)
               return null
             })()}
 
             {/* Group daily tasks by category */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {Object.keys(goalsData).map((category) => {
-                const categoryTasks = (dailyTasks[selectedDay] || []).filter(
-                  (task) => task.category === category && !task.completed,
-                )
+                const categoryTasks = (dailyTasks[selectedDay] || []).filter((task) => task.category === category)
+
+                console.log(`[v0] Category "${category}" has ${categoryTasks.length} tasks for ${selectedDay}`)
+                categoryTasks.forEach((task) => {
+                  console.log(`[v0]   - "${task.title}" (completed: ${task.completed})`)
+                })
 
                 if (categoryTasks.length === 0) return null
 
@@ -3670,15 +3585,18 @@ function GoalTrackerApp() {
                           items={categoryTasks.map((task) => task.id)}
                           strategy={verticalListSortingStrategy}
                         >
-                          {categoryTasks.map((task) => (
-                            <SortableDailyTaskItem
-                              key={task.id}
-                              task={task}
-                              onToggle={() => toggleDailyTask(selectedDay, task.id)}
-                              onEdit={() => startEditingDailyTask(task)}
-                              onDelete={() => deleteDailyTask(selectedDay, task.id)}
-                            />
-                          ))}
+                          {categoryTasks.map((task) => {
+                            console.log(`[v0] Rendering daily task: "${task.title}" (completed: ${task.completed})`)
+                            return (
+                              <SortableDailyTaskItem
+                                key={task.id}
+                                task={task}
+                                onToggle={() => toggleDailyTask(selectedDay, task.id)}
+                                onEdit={() => startEditingDailyTask(task)}
+                                onDelete={() => deleteDailyTask(selectedDay, task.id)}
+                              />
+                            )
+                          })}
                         </SortableContext>
                       </DndContext>
                     </CardContent>
@@ -3688,8 +3606,10 @@ function GoalTrackerApp() {
 
               {(() => {
                 const uncategorizedTasks = (dailyTasks[selectedDay] || []).filter(
-                  (task) => task.category === "Uncategorized" && !task.completed,
+                  (task) => task.category === "Uncategorized",
                 )
+
+                console.log(`[v0] Uncategorized tasks for ${selectedDay}: ${uncategorizedTasks.length}`)
 
                 if (uncategorizedTasks.length === 0) return null
 
@@ -3742,178 +3662,20 @@ function GoalTrackerApp() {
                   </Card>
                 )
               })()}
-
-              {/* Show category cards even if empty, with plus buttons */}
-              {Object.keys(goalsData).map((category) => {
-                const categoryTasks = (dailyTasks[selectedDay] || []).filter((task) => task.category === category)
-
-                if (categoryTasks.length > 0) return null // Already rendered above
-
-                return (
-                  <Card key={`empty-${category}`} className="border-0 shadow-sm">
-                    <CardHeader className="pb-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-2">
-                            <Badge
-                              className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}
-                            >
-                              {category}
-                            </Badge>
-                          </CardTitle>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setNewDailyTask((prev) => ({ ...prev, category }))
-                            setShowAddDailyTask(true)
-                          }}
-                          className="h-8 w-8 p-0"
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="py-8">
-                      <div className="text-center text-gray-500">
-                        <button
-                          onClick={() => {
-                            setNewDailyTask((prev) => ({ ...prev, category }))
-                            setShowAddDailyTask(true)
-                          }}
-                          className="text-sm hover:text-gray-700 cursor-pointer"
-                        >
-                          Click + to add your first task
-                        </button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
-              })}
             </div>
 
+            {/* Show message if no tasks for selected day */}
             {(() => {
-              const completedTasks = (dailyTasks[selectedDay] || []).filter((task) => task.completed)
-
-              if (completedTasks.length === 0) return null
-
-              return (
-                <div className="mt-8">
-                  <Button
-                    variant="ghost"
-                    onClick={() => setShowCompletedDaily(!showCompletedDaily)}
-                    className="mb-4 text-gray-600 hover:text-gray-900"
-                  >
-                    {showCompletedDaily ? (
-                      <ChevronUp className="h-4 w-4 mr-2" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4 mr-2" />
-                    )}
-                    Completed Tasks ({completedTasks.length})
-                  </Button>
-
-                  {showCompletedDaily && (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                      {Object.keys(goalsData).map((category) => {
-                        const categoryCompletedTasks = completedTasks.filter((task) => task.category === category)
-
-                        if (categoryCompletedTasks.length === 0) return null
-
-                        return (
-                          <Card key={`completed-${category}`} className="border-0 shadow-sm bg-gray-50">
-                            <CardHeader className="pb-4">
-                              <div className="flex items-center justify-between">
-                                <CardTitle className="text-lg font-semibold text-gray-700 flex items-center gap-2">
-                                  <Badge
-                                    className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}
-                                  >
-                                    {category}
-                                  </Badge>
-                                </CardTitle>
-                              </div>
-                              <CardDescription>
-                                {categoryCompletedTasks.length} completed task
-                                {categoryCompletedTasks.length !== 1 ? "s" : ""}
-                              </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                              <DndContext
-                                sensors={sensors}
-                                collisionDetection={closestCenter}
-                                onDragEnd={(event) => handleDailyTaskDragEnd(event, category)}
-                              >
-                                <SortableContext
-                                  items={categoryCompletedTasks.map((task) => task.id)}
-                                  strategy={verticalListSortingStrategy}
-                                >
-                                  {categoryCompletedTasks.map((task) => (
-                                    <SortableDailyTaskItem
-                                      key={task.id}
-                                      task={task}
-                                      onToggle={() => toggleDailyTask(selectedDay, task.id)}
-                                      onEdit={() => startEditingDailyTask(task)}
-                                      onDelete={() => deleteDailyTask(selectedDay, task.id)}
-                                    />
-                                  ))}
-                                </SortableContext>
-                              </DndContext>
-                            </CardContent>
-                          </Card>
-                        )
-                      })}
-
-                      {(() => {
-                        const uncategorizedCompletedTasks = completedTasks.filter(
-                          (task) => task.category === "Uncategorized",
-                        )
-
-                        if (uncategorizedCompletedTasks.length === 0) return null
-
-                        return (
-                          <Card key="completed-uncategorized" className="border-0 shadow-sm bg-gray-50">
-                            <CardHeader className="pb-4">
-                              <div className="flex items-center justify-between">
-                                <CardTitle className="text-lg font-semibold text-gray-700 flex items-center gap-2">
-                                  <Badge className="px-3 py-1 rounded-full text-sm font-medium border bg-gray-100 text-gray-700 border-gray-300">
-                                    Uncategorized
-                                  </Badge>
-                                </CardTitle>
-                              </div>
-                              <CardDescription>
-                                {uncategorizedCompletedTasks.length} completed task
-                                {uncategorizedCompletedTasks.length !== 1 ? "s" : ""}
-                              </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                              <DndContext
-                                sensors={sensors}
-                                collisionDetection={closestCenter}
-                                onDragEnd={(event) => handleDailyTaskDragEnd(event, "Uncategorized")}
-                              >
-                                <SortableContext
-                                  items={uncategorizedCompletedTasks.map((task) => task.id)}
-                                  strategy={verticalListSortingStrategy}
-                                >
-                                  {uncategorizedCompletedTasks.map((task) => (
-                                    <SortableDailyTaskItem
-                                      key={task.id}
-                                      task={task}
-                                      onToggle={() => toggleDailyTask(selectedDay, task.id)}
-                                      onEdit={() => startEditingDailyTask(task)}
-                                      onDelete={() => deleteDailyTask(selectedDay, task.id)}
-                                    />
-                                  ))}
-                                </SortableContext>
-                              </DndContext>
-                            </CardContent>
-                          </Card>
-                        )
-                      })()}
-                    </div>
-                  )}
-                </div>
-              )
+              const allTasksForDay = dailyTasks[selectedDay] || []
+              if (allTasksForDay.length === 0) {
+                return (
+                  <div className="text-center py-12">
+                    <p className="text-gray-500 mb-4">No tasks for {selectedDay} yet</p>
+                    <p className="text-sm text-gray-400">Use the + buttons in each category to add tasks</p>
+                  </div>
+                )
+              }
+              return null
             })()}
           </TabsContent>
 
