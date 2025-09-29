@@ -41,7 +41,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 // Auth components
 import { useAuth } from "@/components/auth/auth-provider"
 import { SignOutButton } from "@/components/auth/sign-out-button"
-import { AuthScreen } from "@/components/auth/auth-screen"
 
 // Drag and Drop imports
 import {
@@ -4324,7 +4323,14 @@ export default function Page() {
   }
 
   if (!user) {
-    return <AuthScreen />
+    if (typeof window !== "undefined") {
+      window.location.href = "/auth/login"
+    }
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+      </div>
+    )
   }
 
   return <GoalTrackerApp />
