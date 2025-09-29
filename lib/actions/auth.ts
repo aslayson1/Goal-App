@@ -1,7 +1,9 @@
 "use server"
 
-import { createSupabaseServerClient } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
+import { createServerActionClient } from "@supabase/auth-helpers-nextjs"
+import { cookies } from "next/headers"
+import { mockLogin } from "@/lib/auth"
+import { createClient } from "@supabase/supabase-js"
 
 export async function signIn(prevState: any, formData: FormData) {
   if (!formData) {
@@ -15,9 +17,26 @@ export async function signIn(prevState: any, formData: FormData) {
     return { error: "Email and password are required" }
   }
 
-  try {
-    const supabase = createSupabaseServerClient()
+  if (email.toString() === "demo@example.com" && password.toString() === "password") {
+    try {
+      const user = await mockLogin(email.toString(), password.toString())
+      const cookieStore = cookies()
+      cookieStore.set("demo-user", JSON.stringify(user), {
+        httpOnly: false, // Allow client-side access
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+      })
+      return { success: true, isDemo: true }
+    } catch (error: any) {
+      return { error: error.message }
+    }
+  }
 
+  const cookieStore = cookies()
+  const supabase = createServerActionClient({ cookies: () => cookieStore })
+
+  try {
     const { error } = await supabase.auth.signInWithPassword({
       email: email.toString(),
       password: password.toString(),
@@ -47,18 +66,20 @@ export async function signUp(prevState: any, formData: FormData) {
     return { error: "Email and password are required" }
   }
 
-  try {
-    const supabase = createSupabaseServerClient()
+  const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  })
 
-    const { data, error } = await supabase.auth.signUp({
+  try {
+    const { data, error } = await supabaseAdmin.auth.admin.createUser({
       email: email.toString(),
       password: password.toString(),
-      options: {
-        emailRedirectTo:
-          process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/callback`,
-        data: {
-          name: name?.toString() || email.toString().split("@")[0],
-        },
+      email_confirm: true, // Pre-confirm the email
+      user_metadata: {
+        name: name?.toString() || email.toString().split("@")[0],
       },
     })
 
@@ -66,24 +87,9 @@ export async function signUp(prevState: any, formData: FormData) {
       return { error: error.message }
     }
 
-    if (data.user && !data.session) {
-      return { success: "Please check your email to confirm your account before signing in." }
-    }
-
     return { success: "Account created successfully! You can now sign in." }
   } catch (error) {
     console.error("Sign up error:", error)
     return { error: "An unexpected error occurred. Please try again." }
   }
-}
-
-export async function signOut() {
-  try {
-    const supabase = createSupabaseServerClient()
-    await supabase.auth.signOut()
-  } catch (error) {
-    console.error("Sign out error:", error)
-  }
-
-  redirect("/login")
 }

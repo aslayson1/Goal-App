@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { signIn } from "@/lib/actions/auth"
 
 function SubmitButton({ isLoading }: { isLoading: boolean }) {
@@ -20,16 +20,14 @@ function SubmitButton({ isLoading }: { isLoading: boolean }) {
 
 export function LoginForm() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [state, setState] = useState<{ success?: boolean; error?: string } | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     if (state?.success) {
-      const redirectTo = searchParams.get("redirectTo") || "/"
-      router.push(redirectTo)
+      router.push("/")
     }
-  }, [state, router, searchParams])
+  }, [state, router])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -56,12 +54,12 @@ export function LoginForm() {
 
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
-        <Input id="email" name="email" type="email" required />
+        <Input id="email" name="email" type="email" placeholder="Enter your email" required />
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="password">Password</Label>
-        <Input id="password" name="password" type="password" required />
+        <Input id="password" name="password" type="password" placeholder="Enter your password" required />
       </div>
 
       <SubmitButton isLoading={isLoading} />
