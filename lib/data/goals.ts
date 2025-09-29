@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/client"
 
 export interface Goal {
   id: string
@@ -17,6 +17,7 @@ export interface Goal {
 
 export async function getGoals(): Promise<Goal[]> {
   try {
+    const supabase = createClient()
     const { data, error } = await supabase.from("goals").select("*").order("created_at", { ascending: false })
     if (error) throw error
     return data || []
@@ -33,6 +34,7 @@ export async function createGoal(
   goal: Omit<Goal, "id" | "user_id" | "created_at" | "updated_at">,
 ): Promise<Goal | null> {
   try {
+    const supabase = createClient()
     const { data, error } = await supabase.from("goals").insert(goal).select().single()
     if (error) throw error
     return data
@@ -47,6 +49,7 @@ export async function createGoal(
 
 export async function updateGoal(id: string, updates: Partial<Goal>): Promise<void> {
   try {
+    const supabase = createClient()
     const { error } = await supabase
       .from("goals")
       .update({ ...updates, updated_at: new Date().toISOString() })
@@ -63,6 +66,7 @@ export async function updateGoal(id: string, updates: Partial<Goal>): Promise<vo
 
 export async function updateGoalProgress(id: string, progress: number): Promise<void> {
   try {
+    const supabase = createClient()
     const completed = progress >= 100
     const { error } = await supabase
       .from("goals")
@@ -85,6 +89,7 @@ export async function updateGoalProgress(id: string, progress: number): Promise<
 
 export async function deleteGoal(id: string): Promise<void> {
   try {
+    const supabase = createClient()
     const { error } = await supabase.from("goals").delete().eq("id", id)
     if (error) throw error
   } catch (error: any) {

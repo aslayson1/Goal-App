@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/client"
 
 export type TaskRow = {
   id: string
@@ -17,10 +17,11 @@ export type TaskRow = {
 export async function createTask(row: {
   title: string
   description?: string | null
-  target_date?: string | null // Changed from due_date
+  target_date?: string | null
   category_id?: string | null
   task_type?: string | null
 }) {
+  const supabase = createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -32,7 +33,7 @@ export async function createTask(row: {
       .insert([
         {
           user_id: user.id,
-          completed: false, // Use boolean instead of status string
+          completed: false,
           ...row,
         },
       ])
@@ -51,6 +52,7 @@ export async function createTask(row: {
 
 export async function setTaskCompleted(id: string, completed: boolean) {
   try {
+    const supabase = createClient()
     const updateData: any = { completed }
     if (completed) {
       updateData.completed_at = new Date().toISOString()
@@ -72,6 +74,7 @@ export async function setTaskCompleted(id: string, completed: boolean) {
 
 export async function listTasks(): Promise<TaskRow[]> {
   try {
+    const supabase = createClient()
     const { data, error } = await supabase.from("tasks").select("*").order("created_at", { ascending: false })
     if (error) throw error
     return data || []

@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/client"
 
 export interface LongTermGoal {
   id: string
@@ -14,6 +14,7 @@ export interface LongTermGoal {
 
 export async function getLongTermGoals(goalType?: "1_year" | "5_year"): Promise<LongTermGoal[]> {
   try {
+    const supabase = createClient()
     let query = supabase.from("long_term_goals").select("*").order("created_at", { ascending: false })
 
     if (goalType) {
@@ -36,6 +37,7 @@ export async function createLongTermGoal(
   goal: Omit<LongTermGoal, "id" | "user_id" | "created_at" | "updated_at">,
 ): Promise<LongTermGoal | null> {
   try {
+    const supabase = createClient()
     const { data, error } = await supabase.from("long_term_goals").insert(goal).select().single()
     if (error) throw error
     return data
@@ -50,6 +52,7 @@ export async function createLongTermGoal(
 
 export async function updateLongTermGoal(id: string, updates: Partial<LongTermGoal>): Promise<void> {
   try {
+    const supabase = createClient()
     const { error } = await supabase
       .from("long_term_goals")
       .update({ ...updates, updated_at: new Date().toISOString() })
@@ -66,6 +69,7 @@ export async function updateLongTermGoal(id: string, updates: Partial<LongTermGo
 
 export async function toggleLongTermGoalCompletion(id: string, completed: boolean): Promise<void> {
   try {
+    const supabase = createClient()
     const { error } = await supabase
       .from("long_term_goals")
       .update({
@@ -86,6 +90,7 @@ export async function toggleLongTermGoalCompletion(id: string, completed: boolea
 
 export async function deleteLongTermGoal(id: string): Promise<void> {
   try {
+    const supabase = createClient()
     const { error } = await supabase.from("long_term_goals").delete().eq("id", id)
     if (error) throw error
   } catch (error: any) {

@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
-import { supabase } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/client"
 
 type User = { id: string; email?: string | null; name?: string | null; avatar?: string | null }
 
@@ -27,6 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true
+    const supabase = createClient()
 
     const getInitialSession = async () => {
       try {
@@ -85,6 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     setIsLoading(true)
     try {
+      const supabase = createClient()
       await supabase.auth.signOut()
       setUser(null)
     } catch (error) {
