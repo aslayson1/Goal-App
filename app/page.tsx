@@ -2683,6 +2683,19 @@ function GoalTrackerApp() {
       console.log("[v0] Incomplete tasks:", incompleteTasks.length)
       console.log("[v0] Completed task details:", JSON.stringify(completedTasks, null, 2))
 
+      const buyCarTask = tasks?.find((t) => t.title?.includes("Buy Car1"))
+      if (buyCarTask) {
+        console.log("[v0] FOUND 'Buy Car1' task:")
+        console.log("[v0]   - ID:", buyCarTask.id)
+        console.log("[v0]   - Title:", buyCarTask.title)
+        console.log("[v0]   - Task Type:", buyCarTask.task_type)
+        console.log("[v0]   - Completed:", buyCarTask.completed)
+        console.log("[v0]   - Target Date:", buyCarTask.target_date)
+        console.log("[v0]   - Category:", buyCarTask.categories?.name || "Uncategorized")
+      } else {
+        console.log("[v0] 'Buy Car1' task NOT FOUND in database results")
+      }
+
       const weeklyTasks: Record<string, WeeklyTask[]> = {}
       const dailyTasks: Record<string, DailyTask[]> = {}
 
@@ -2724,6 +2737,12 @@ function GoalTrackerApp() {
             `[v0] Daily task "${task.title}" - completed: ${task.completed}, target_date: ${task.target_date}, assigned to: ${day}`,
           )
 
+          if (task.title?.includes("Buy Car1")) {
+            console.log("[v0] PROCESSING 'Buy Car1' as daily task:")
+            console.log("[v0]   - Will be added to day:", day)
+            console.log("[v0]   - Completed value:", !!task.completed)
+          }
+
           const dailyTask: DailyTask = {
             id: task.id,
             title: task.title || "",
@@ -2747,6 +2766,15 @@ function GoalTrackerApp() {
       console.log("Organized weekly tasks:", JSON.stringify(weeklyTasks, null, 2))
       console.log("[v0] Final weekly tasks count:", Object.values(weeklyTasks).flat().length)
       console.log("[v0] Final daily tasks count:", Object.values(dailyTasks).flat().length)
+
+      const allDailyTasksFlat = Object.values(dailyTasks).flat()
+      const buyCarInFinal = allDailyTasksFlat.find((t) => t.title?.includes("Buy Car1"))
+      if (buyCarInFinal) {
+        console.log("[v0] 'Buy Car1' IS in final dailyTasks object")
+        console.log("[v0]   - Completed:", buyCarInFinal.completed)
+      } else {
+        console.log("[v0] 'Buy Car1' is NOT in final dailyTasks object")
+      }
 
       return { weeklyTasks, dailyTasks }
     } catch (error) {
