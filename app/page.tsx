@@ -2525,6 +2525,19 @@ function GoalTrackerApp() {
         console.log("13. Category ID found:", categoryId)
       }
 
+      // Calculate the target_date based on the selected day
+      const today = new Date()
+      const currentDayIndex = today.getDay() // 0 = Sunday, 1 = Monday, etc.
+      const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+      const selectedDayIndex = daysOfWeek.indexOf(selectedDay)
+
+      // Calculate days difference
+      const daysDiff = selectedDayIndex - currentDayIndex
+
+      // Create target date
+      const targetDate = new Date(today)
+      targetDate.setDate(today.getDate() + daysDiff)
+
       const insertData = {
         id: taskId,
         user_id: user.id,
@@ -2533,7 +2546,7 @@ function GoalTrackerApp() {
         title: taskData.title,
         description: taskData.description,
         task_type: "daily",
-        target_date: new Date().toISOString().split("T")[0],
+        target_date: targetDate.toISOString().split("T")[0],
         completed: false,
       }
       console.log("14. Insert data prepared:", insertData)
@@ -2675,44 +2688,63 @@ function GoalTrackerApp() {
         const categoryName = task.categories?.name || "Uncategorized"
 
         if (task.task_type === "weekly") {
-          const weekKey = `Week ${currentWeek}`
-          console.log(`Adding weekly task to current ${weekKey}`)
+          // Use the target_date to determine which week this task belongs to
+          const taskDate = new Date(task.target_date)
+          const weekKey = `Week ${currentWeek}` // For now, only load current week's tasks
 
-          const weeklyTask: WeeklyTask = {
-            id: task.id,
-            title: task.title || "",
-            description: task.description || "",
-            category: categoryName, // Use actual category name
-            goalId: task.goal_id || "",
-            completed: task.completed || false,
-            priority: "medium",
-            estimatedHours: 1,
-          }
-
-          if (!weeklyTasks[weekKey]) {
-            weeklyTasks[weekKey] = []
-          }
-          weeklyTasks[weekKey].push(weeklyTask)
-        } else if (task.task_type === "daily") {
+          // Only load tasks for the current week
           const today = new Date()
-          const day = today.toLocaleDateString("en-US", { weekday: "long" })
-          console.log(`Adding daily task to current ${day}`)
+          const daysDiff = Math.floor((today.getTime() - taskDate.getTime()) / (1000 * 60 * 60 * 24))
 
-          const dailyTask: DailyTask = {
-            id: task.id,
-            title: task.title || "",
-            description: task.description || "",
-            category: categoryName, // Use actual category name
-            goalId: task.goal_id || "",
-            completed: task.completed || false,
-            timeBlock: "9:00 AM",
-            estimatedMinutes: 30,
-          }
+          // Only include tasks from the current week (within 7 days)
+          if (daysDiff >= 0 && daysDiff < 7) {
+            console.log(`Adding weekly task to ${weekKey}`)
 
-          if (!dailyTasks[day]) {
-            dailyTasks[day] = []
+            const weeklyTask: WeeklyTask = {
+              id: task.id,
+              title: task.title || "",
+              description: task.description || "",
+              category: categoryName,
+              goalId: task.goal_id || "",
+              completed: task.completed || false,
+              priority: "medium",
+              estimatedHours: 1,
+            }
+
+            if (!weeklyTasks[weekKey]) {
+              weeklyTasks[weekKey] = []
+            }
+            weeklyTasks[weekKey].push(weeklyTask)
           }
-          dailyTasks[day].push(dailyTask)
+        } else if (task.task_type === "daily") {
+          // Use the target_date to determine which day this task belongs to
+          const taskDate = new Date(task.target_date)
+          const day = taskDate.toLocaleDateString("en-US", { weekday: "long" })
+
+          // Only load tasks for the current week (within 7 days)
+          const today = new Date()
+          const daysDiff = Math.floor((today.getTime() - taskDate.getTime()) / (1000 * 60 * 60 * 24))
+
+          // Only include tasks from the current week (within 7 days)
+          if (daysDiff >= 0 && daysDiff < 7) {
+            console.log(`Adding daily task to ${day} (target_date: ${task.target_date})`)
+
+            const dailyTask: DailyTask = {
+              id: task.id,
+              title: task.title || "",
+              description: task.description || "",
+              category: categoryName,
+              goalId: task.goal_id || "",
+              completed: task.completed || false,
+              timeBlock: "9:00 AM",
+              estimatedMinutes: 30,
+            }
+
+            if (!dailyTasks[day]) {
+              dailyTasks[day] = []
+            }
+            dailyTasks[day].push(dailyTask)
+          }
         }
       })
 
