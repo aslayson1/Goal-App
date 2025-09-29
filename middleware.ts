@@ -8,9 +8,20 @@ export async function middleware(request: NextRequest) {
     },
   })
 
-  // Middleware runs in Edge Runtime and should use server-side variables
+  // The NEXT_PUBLIC_ vars are not available in process.env in middleware
+  // We'll use the request headers to pass the URL from the client
   const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  console.log("[v0] Middleware - checking env vars:", {
+    hasSupabaseUrl: !!supabaseUrl,
+    hasSupabaseAnonKey: !!supabaseAnonKey,
+    supabaseUrlSource: process.env.SUPABASE_URL
+      ? "SUPABASE_URL"
+      : process.env.NEXT_PUBLIC_SUPABASE_URL
+        ? "NEXT_PUBLIC_SUPABASE_URL"
+        : "none",
+  })
 
   // If Supabase credentials are not available, skip auth check
   if (!supabaseUrl || !supabaseAnonKey) {
@@ -61,7 +72,11 @@ export async function middleware(request: NextRequest) {
   })
 
   try {
-    await supabase.auth.getUser()
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser()
+    console.log("[v0] Middleware auth check:", { hasUser: !!user, error: error?.message })
   } catch (error) {
     console.error("[v0] Error in middleware auth check:", error)
   }
