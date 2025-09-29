@@ -18,7 +18,6 @@ export async function updateSession(request: NextRequest) {
 
   if (!supabaseUrl || !supabaseKey) {
     console.log("[v0] Middleware - Environment variables missing, skipping auth check")
-    // Return early but preserve cookies to avoid breaking the session
     return supabaseResponse
   }
 
@@ -64,7 +63,6 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse
   } catch (error) {
     console.log("[v0] Middleware - Error creating Supabase client:", error)
-    // Return early but preserve cookies to avoid breaking the session
     return supabaseResponse
   }
 }

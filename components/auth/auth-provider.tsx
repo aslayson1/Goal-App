@@ -27,37 +27,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true
-    let retryCount = 0
-    const maxRetries = 3
 
     const getInitialSession = async () => {
       try {
         const supabase = createClient()
+
         const {
-          data: { user: supabaseUser },
-          error,
-        } = await supabase.auth.getUser()
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession()
+
+        if (sessionError) {
+          console.error("[v0] AuthProvider: Session error:", sessionError)
+        }
 
         if (mounted) {
-          const userData = supabaseUser
+          const userData = session?.user
             ? {
-                id: supabaseUser.id,
-                email: supabaseUser.email ?? null,
-                name: supabaseUser.user_metadata?.name ?? supabaseUser.user_metadata?.full_name ?? null,
+                id: session.user.id,
+                email: session.user.email ?? null,
+                name: session.user.user_metadata?.name ?? session.user.user_metadata?.full_name ?? null,
               }
             : null
 
+          console.log("[v0] AuthProvider: Setting user:", userData?.email || "null")
           setUser(userData)
           setIsLoading(false)
         }
       } catch (error) {
         console.error("[v0] AuthProvider: Auth check error:", error)
-
-        if (retryCount < maxRetries && mounted) {
-          retryCount++
-          console.log(`[v0] AuthProvider: Retrying auth check (${retryCount}/${maxRetries})`)
-          setTimeout(() => getInitialSession(), 1000 * retryCount)
-        } else if (mounted) {
+        if (mounted) {
           setUser(null)
           setIsLoading(false)
         }
@@ -72,12 +71,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
         if (!mounted) return
 
-        const supabaseUser = session?.user
-        const userData = supabaseUser
+        console.log("[v0] AuthProvider: Auth state change:", event, session?.user?.email || "no user")
+
+        const userData = session?.user
           ? {
-              id: supabaseUser.id,
-              email: supabaseUser.email ?? null,
-              name: supabaseUser.user_metadata?.name ?? supabaseUser.user_metadata?.full_name ?? null,
+              id: session.user.id,
+              email: session.user.email ?? null,
+              name: session.user.user_metadata?.name ?? session.user.user_metadata?.full_name ?? null,
             }
           : null
 
