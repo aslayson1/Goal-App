@@ -21,7 +21,7 @@ export async function signIn(prevState: any, formData: FormData) {
   if (email.toString() === "demo@example.com" && password.toString() === "password") {
     try {
       const user = await mockLogin(email.toString(), password.toString())
-      const cookieStore = cookies()
+      const cookieStore = await cookies()
       cookieStore.set("demo-user", JSON.stringify(user), {
         httpOnly: false, // Allow client-side access
         secure: process.env.NODE_ENV === "production",
@@ -34,7 +34,7 @@ export async function signIn(prevState: any, formData: FormData) {
     }
   }
 
-  const supabase = createClient()
+  const supabase = await createClient()
 
   try {
     const { error } = await supabase.auth.signInWithPassword({
