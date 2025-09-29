@@ -38,7 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } = await supabase.auth.getSession()
 
         if (sessionError) {
-          console.error("[v0] AuthProvider: Session error:", sessionError)
+          console.error("AuthProvider: Session error:", sessionError)
         }
 
         if (mounted) {
@@ -50,12 +50,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               }
             : null
 
-          console.log("[v0] AuthProvider: Setting user:", userData?.email || "null")
           setUser(userData)
           setIsLoading(false)
         }
       } catch (error) {
-        console.error("[v0] AuthProvider: Auth check error:", error)
+        console.error("AuthProvider: Auth check error:", error)
         if (mounted) {
           setUser(null)
           setIsLoading(false)
@@ -71,8 +70,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
         if (!mounted) return
 
-        console.log("[v0] AuthProvider: Auth state change:", event, session?.user?.email || "no user")
-
         const userData = session?.user
           ? {
               id: session.user.id,
@@ -87,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       subscription = data.subscription
     } catch (error) {
-      console.error("[v0] AuthProvider: Error setting up auth listener:", error)
+      console.error("AuthProvider: Error setting up auth listener:", error)
       if (mounted) {
         setIsLoading(false)
       }

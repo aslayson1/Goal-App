@@ -1274,19 +1274,14 @@ function GoalTrackerApp() {
   useEffect(() => {
     const checkDatabaseAndLoadData = async () => {
       if (user?.id) {
-        console.log("[v0] User authenticated, loading data from database...")
-
         try {
           // Test database connection
           const { data, error } = await supabase.from("categories").select("count").limit(1)
 
           if (error) {
-            console.error("[v0] Database connection failed:", error)
-            console.log("[v0] No categories found in database, using initial data")
+            console.error("Database connection failed:", error)
             return
           }
-
-          console.log("[v0] Database connection successful!")
 
           const startDateKey = `goalTracker_startDate_${user.id}`
           let startDate = localStorage.getItem(startDateKey)
@@ -1307,19 +1302,12 @@ function GoalTrackerApp() {
           const dbData = await loadCategoriesAndGoalsFromDB(user.id)
           const taskData = await loadTasksFromDB(user.id)
 
-          console.log("[v0] Loading user data from database...")
-
           setGoalsData(dbData)
           setDailyTasks({ ...taskData.dailyTasks })
           setWeeklyTasks({ ...taskData.weeklyTasks })
-
-          console.log("[v0] User data loaded successfully from database")
         } catch (error) {
-          console.error("[v0] Error loading data:", error)
-          console.log("[v0] No categories found in database, using initial data")
+          console.error("Error loading data:", error)
         }
-      } else if (user === null) {
-        console.log("[v0] User not authenticated, using initial data")
       }
     }
 
