@@ -93,29 +93,24 @@ export async function signUp(prevState: any, formData: FormData) {
     },
   )
 
-  try {
-    const { data, error } = await supabase.auth.signUp({
-      email: email.toString(),
-      password: password.toString(),
-      options: {
-        emailRedirectTo:
-          process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
-          `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}`,
-        data: {
-          name: name?.toString() || email.toString().split("@")[0],
-        },
+  const { data, error } = await supabase.auth.signUp({
+    email: email.toString(),
+    password: password.toString(),
+    options: {
+      emailRedirectTo:
+        process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
+        `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}`,
+      data: {
+        name: name?.toString() || email.toString().split("@")[0],
       },
-    })
+    },
+  })
 
-    if (error) {
-      return { error: error.message }
-    }
-
-    return { success: "Account created successfully! Please check your email to confirm your account." }
-  } catch (error) {
-    console.error("Sign up error:", error)
-    return { error: "An unexpected error occurred. Please try again." }
+  if (error) {
+    return { error: error.message }
   }
+
+  return { success: "Account created successfully! Please check your email to confirm your account." }
 }
 
 export async function signOut() {
