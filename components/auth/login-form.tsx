@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { useRouter } from "next/navigation"
 import { signIn } from "@/lib/actions/auth"
 
 function SubmitButton({ isLoading }: { isLoading: boolean }) {
@@ -19,18 +18,16 @@ function SubmitButton({ isLoading }: { isLoading: boolean }) {
 }
 
 export function LoginForm() {
-  const router = useRouter()
   const [state, setState] = useState<{ success?: boolean; error?: string } | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     if (state?.success) {
       setTimeout(() => {
-        router.refresh()
-        router.push("/")
+        window.location.href = "/"
       }, 100)
     }
-  }, [state, router])
+  }, [state])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
