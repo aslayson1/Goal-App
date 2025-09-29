@@ -7,13 +7,23 @@ async function testTaskCreation() {
   try {
     console.log("Testing task creation...")
 
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser()
+
+    if (userError || !user) {
+      console.error("No authenticated user found. Please sign in first.")
+      return false
+    }
+
     // Test creating a simple task
     const testTask = {
       id: crypto.randomUUID(),
       title: "Test Task - " + Date.now(),
       task_type: "daily",
       target_date: new Date().toISOString().split("T")[0],
-      user_id: "00000000-0000-0000-0000-000000000001", // Demo user ID
+      user_id: user.id, // Use actual authenticated user ID
       category_id: null,
       completed: false,
     }

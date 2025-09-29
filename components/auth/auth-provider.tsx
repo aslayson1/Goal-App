@@ -21,9 +21,9 @@ export function useAuth() {
   return ctx
 }
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+export function AuthProvider({ children, initialUser }: { children: ReactNode; initialUser?: User | null }) {
+  const [user, setUser] = useState<User | null>(initialUser ?? null)
+  const [isLoading, setIsLoading] = useState(!initialUser)
 
   useEffect(() => {
     let mounted = true
@@ -31,6 +31,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const maxRetries = 3
 
     const getInitialSession = async () => {
+      if (initialUser) {
+        console.log("[v0] AuthProvider: Using server-provided initial user")
+        return
+      }
+
       try {
         const supabase = createClient()
         const {
@@ -44,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 id: supabaseUser.id,
                 email: supabaseUser.email ?? null,
                 name: supabaseUser.user_metadata?.name ?? supabaseUser.user_metadata?.full_name ?? null,
+                avatar: supabaseUser.user_metadata?.avatar_url ?? null,
               }
             : null
 
@@ -72,12 +78,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
         if (!mounted) return
 
+        console.log("[v0] AuthProvider: Auth state changed:", event)
+
         const supabaseUser = session?.user
         const userData = supabaseUser
           ? {
               id: supabaseUser.id,
               email: supabaseUser.email ?? null,
               name: supabaseUser.user_metadata?.name ?? supabaseUser.user_metadata?.full_name ?? null,
+              avatar: supabaseUser.user_metadata?.avatar_url ?? null,
             }
           : null
 
@@ -97,7 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       mounted = false
       subscription?.unsubscribe()
     }
-  }, [])
+  }, [initialUser]) // Add initialUser to dependency array
 
   const logout = async () => {
     setIsLoading(true)
