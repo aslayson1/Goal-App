@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
-import { createClient } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/client"
 
 type User = { id: string; email?: string | null; name?: string | null; avatar?: string | null }
 
@@ -30,31 +30,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const getInitialSession = async () => {
       try {
-        const supabase = createClient()
-
         const {
-          data: { session },
-          error: sessionError,
-        } = await supabase.auth.getSession()
-
-        if (sessionError) {
-          console.error("AuthProvider: Session error:", sessionError)
-        }
+          data: { user: supabaseUser },
+        } = await supabase.auth.getUser()
 
         if (mounted) {
-          const userData = session?.user
-            ? {
-                id: session.user.id,
-                email: session.user.email ?? null,
-                name: session.user.user_metadata?.name ?? session.user.user_metadata?.full_name ?? null,
-              }
-            : null
-
-          setUser(userData)
+          setUser(
+            supabaseUser
+              ? {
+                  id: supabaseUser.id,
+                  email: supabaseUser.email ?? null,
+                  name: supabaseUser.user_metadata?.name ?? supabaseUser.user_metadata?.full_name ?? null,
+                }
+              : null,
+          )
           setIsLoading(false)
         }
       } catch (error) {
-        console.error("AuthProvider: Auth check error:", error)
+        console.error("Auth check error:", error)
         if (mounted) {
           setUser(null)
           setIsLoading(false)
@@ -64,42 +57,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     getInitialSession()
 
-    let subscription: any
-    try {
-      const supabase = createClient()
-      const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
-        if (!mounted) return
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return
 
-        const userData = session?.user
+      const supabaseUser = session?.user
+
+      setUser(
+        supabaseUser
           ? {
-              id: session.user.id,
-              email: session.user.email ?? null,
-              name: session.user.user_metadata?.name ?? session.user.user_metadata?.full_name ?? null,
+              id: supabaseUser.id,
+              email: supabaseUser.email ?? null,
+              name: supabaseUser.user_metadata?.name ?? supabaseUser.user_metadata?.full_name ?? null,
             }
-          : null
-
-        setUser(userData)
-        setIsLoading(false)
-      })
-
-      subscription = data.subscription
-    } catch (error) {
-      console.error("AuthProvider: Error setting up auth listener:", error)
-      if (mounted) {
-        setIsLoading(false)
-      }
-    }
+          : null,
+      )
+      setIsLoading(false)
+    })
 
     return () => {
       mounted = false
-      subscription?.unsubscribe()
+      subscription.unsubscribe()
     }
   }, [])
 
   const logout = async () => {
     setIsLoading(true)
     try {
-      const supabase = createClient()
       await supabase.auth.signOut()
       setUser(null)
     } catch (error) {

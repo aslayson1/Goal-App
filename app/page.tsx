@@ -1,5 +1,5 @@
 "use client"
-import { createClient } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/client"
 import {
   Dialog,
   DialogContent,
@@ -41,6 +41,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 // Auth components
 import { useAuth } from "@/components/auth/auth-provider"
 import { SignOutButton } from "@/components/auth/sign-out-button"
+import { AuthScreen } from "@/components/auth/auth-screen"
 
 // Drag and Drop imports
 import {
@@ -55,9 +56,6 @@ import {
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-
-// Initialize Supabase client
-const supabase = createClient()
 
 // Custom CSS class for white checkbox background with thinner border
 const checkboxStyles =
@@ -550,7 +548,7 @@ const initialLongTermGoals = {
         milestones: [
           { id: "m1", title: "Complete Olympic triathlon", completed: false, targetDate: "2026-08-15" },
           { id: "m2", title: "Complete Half Ironman", completed: false, targetDate: "2027-06-15" },
-          { id: "m3", title: "Complete second Half Ironman", completed: false, targetDate: "2027-04-15" },
+          { id: "m3", title: "Complete second Half Ironman", completed: false, targetDate: "2028-04-15" },
           { id: "m4", title: "Complete full Ironman", completed: false, targetDate: "2028-10-15" },
         ],
       },
@@ -1273,37 +1271,64 @@ function GoalTrackerApp() {
   useEffect(() => {
     const checkDatabaseAndLoadData = async () => {
       if (user?.id) {
+        console.log("User authenticated, checking database connection...")
+
         try {
           // Test database connection
           const { data, error } = await supabase.from("categories").select("count").limit(1)
 
           if (error) {
             console.error("Database connection failed:", error)
-            return
+          } else {
+            console.log("Database connection successful!")
+
+            const startDateKey = `goalTracker_startDate_${user.id}`
+            let startDate = localStorage.getItem(startDateKey)
+
+            if (!startDate) {
+              startDate = new Date().toISOString()
+              localStorage.setItem(startDateKey, startDate)
+            }
+
+            const start = new Date(startDate)
+            const today = new Date()
+            const daysDiff = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+            const weekNumber = Math.floor(daysDiff / 7) + 1
+            const calculatedWeek = Math.min(Math.max(weekNumber, 1), 12)
+
+            setCurrentWeek(calculatedWeek)
+
+            const dbData = await loadCategoriesAndGoalsFromDB(user.id)
+            const taskData = await loadTasksFromDB(user.id)
+
+            console.log("=== COMPREHENSIVE TASK LOADING DEBUG ===")
+            console.log("Raw task data from database:", JSON.stringify(taskData, null, 2))
+            console.log("Daily tasks structure:", JSON.stringify(taskData.dailyTasks, null, 2))
+            console.log("Weekly tasks structure:", JSON.stringify(taskData.weeklyTasks, null, 2))
+
+            setGoalsData(dbData)
+
+            console.log("=== FORCING STATE UPDATES ===")
+
+            // Update daily tasks with force re-render
+            setDailyTasks(() => {
+              console.log("Setting daily tasks to:", JSON.stringify(taskData.dailyTasks, null, 2))
+              return { ...taskData.dailyTasks }
+            })
+
+            // Update weekly tasks with force re-render
+            setWeeklyTasks(() => {
+              console.log("Setting weekly tasks to:", JSON.stringify(taskData.weeklyTasks, null, 2))
+              return { ...taskData.weeklyTasks }
+            })
+
+            setTimeout(() => {
+              console.log("=== POST-UPDATE VERIFICATION ===")
+              console.log("Daily tasks count:", Object.keys(taskData.dailyTasks).length)
+              console.log("Weekly tasks count:", Object.keys(taskData.weeklyTasks).length)
+              console.log("State update completed successfully")
+            }, 100)
           }
-
-          const startDateKey = `goalTracker_startDate_${user.id}`
-          let startDate = localStorage.getItem(startDateKey)
-
-          if (!startDate) {
-            startDate = new Date().toISOString()
-            localStorage.setItem(startDateKey, startDate)
-          }
-
-          const start = new Date(startDate)
-          const today = new Date()
-          const daysDiff = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
-          const weekNumber = Math.floor(daysDiff / 7) + 1
-          const calculatedWeek = Math.min(Math.max(weekNumber, 1), 12)
-
-          setCurrentWeek(calculatedWeek)
-
-          const dbData = await loadCategoriesAndGoalsFromDB(user.id)
-          const taskData = await loadTasksFromDB(user.id)
-
-          setGoalsData(dbData)
-          setDailyTasks({ ...taskData.dailyTasks })
-          setWeeklyTasks({ ...taskData.weeklyTasks })
         } catch (error) {
           console.error("Error loading data:", error)
         }
@@ -1311,7 +1336,7 @@ function GoalTrackerApp() {
     }
 
     checkDatabaseAndLoadData()
-  }, [user?.id, user]) // Added user to dependency array to handle null -> authenticated transitions
+  }, [user?.id])
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -1322,24 +1347,16 @@ function GoalTrackerApp() {
   )
 
   const incrementGoal = async (category: string, goalId: string, amount = 1) => {
-    console.log("[v0] incrementGoal called:", { category, goalId, amount })
     const goal = goalsData[category]?.find((g) => g.id === goalId)
     if (!goal) return
 
     const newCount = Math.min(goal.currentCount + amount, goal.targetCount)
-    console.log("[v0] incrementGoal - old count:", goal.currentCount, "new count:", newCount)
 
     // Update local state immediately for UI feedback
-    setGoalsData((prev) => {
-      const updated = {
-        ...prev,
-        [category]: prev[category].map((goal) => (goal.id === goalId ? { ...goal, currentCount: newCount } : goal)),
-      }
-      console.log("[v0] incrementGoal - updated goalsData:", updated)
-      return updated
-    })
-
-    console.log("[v0] incrementGoal - total progress after update:", getTotalProgress())
+    setGoalsData((prev) => ({
+      ...prev,
+      [category]: prev[category].map((goal) => (goal.id === goalId ? { ...goal, currentCount: newCount } : goal)),
+    }))
 
     // Check if this is a database goal (has UUID format) vs local goal
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(goalId)
@@ -1711,6 +1728,17 @@ function GoalTrackerApp() {
     updateGoal()
     setEditingGoal(null)
     setShowAddGoal(false)
+  }
+
+  const startEditingGoal = (category: string, goal: Goal) => {
+    setEditingGoal({ category, goal })
+    setNewGoal({
+      title: goal.title,
+      description: goal.description,
+      targetCount: goal.targetCount,
+      weeklyTarget: goal.weeklyTarget,
+    })
+    setShowAddGoal(true)
   }
 
   const getPriorityColor = (priority: string) => {
@@ -2213,24 +2241,9 @@ function GoalTrackerApp() {
   }
 
   const getTotalProgress = () => {
-    console.log("[v0] getTotalProgress called")
-
-    let totalGoals = 0
-    let totalProgressSum = 0
-
-    Object.values(goalsData).forEach((goals) => {
-      goals.forEach((goal) => {
-        totalGoals++
-        const goalProgress = goal.targetCount > 0 ? (goal.currentCount / goal.targetCount) * 100 : 0
-        totalProgressSum += goalProgress
-      })
-    })
-
-    const averageProgress = totalGoals > 0 ? Math.round(totalProgressSum / totalGoals) : 0
-
-    // Also calculate the old way for comparison
     let totalCurrent = 0
     let totalTarget = 0
+
     Object.values(goalsData).forEach((goals) => {
       goals.forEach((goal) => {
         totalCurrent += goal.currentCount
@@ -2238,16 +2251,7 @@ function GoalTrackerApp() {
       })
     })
 
-    const result = {
-      averageProgress,
-      totalGoals,
-      totalCurrent,
-      totalTarget,
-      oldProgress: totalTarget > 0 ? Math.round((totalCurrent / totalTarget) * 100) : 0,
-    }
-
-    console.log("[v0] getTotalProgress:", result)
-    return result
+    return totalTarget === 0 ? 0 : Math.round((totalCurrent / totalTarget) * 100)
   }
 
   const getTotalTasks = () => {
@@ -2781,19 +2785,6 @@ function GoalTrackerApp() {
     }
   }, [user?.id])
 
-  // Function to start editing a goal
-  const startEditingGoal = (category: string, goal: Goal) => {
-    setEditingGoal({ category, goal })
-    setNewGoal({
-      title: goal.title,
-      description: goal.description,
-      targetCount: goal.targetCount,
-      weeklyTarget: goal.weeklyTarget,
-    })
-    setSelectedCategory(category) // Set the category for the dialog
-    setShowAddGoal(true)
-  }
-
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -2846,13 +2837,13 @@ function GoalTrackerApp() {
           <Card className="border-0 shadow-sm">
             <CardContent className="p-6">
               <div className="flex flex-col items-center justify-center text-center h-full space-y-3">
-                <p className="text-4xl font-bold text-gray-900">{getTotalProgress().averageProgress}%</p>
+                <p className="text-4xl font-bold text-gray-900">{getTotalProgress()}%</p>
                 <div className="flex items-center">
                   <Target className="h-4 w-4 mr-2 text-[#05a7b0]" />
                   <p className="text-sm font-medium text-gray-600">Overall Progress</p>
                 </div>
                 <div className="w-full">
-                  <Progress value={getTotalProgress().averageProgress} className="h-2 [&>div]:bg-[#05a7b0]" />
+                  <Progress value={getTotalProgress()} className="h-2 [&>div]:bg-[#05a7b0]" />
                 </div>
               </div>
             </CardContent>
@@ -4323,14 +4314,7 @@ export default function Page() {
   }
 
   if (!user) {
-    if (typeof window !== "undefined") {
-      window.location.href = "/auth/login"
-    }
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
-      </div>
-    )
+    return <AuthScreen />
   }
 
   return <GoalTrackerApp />

@@ -1,8 +1,10 @@
 "use server"
 
-import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
-import { redirect } from "next/navigation"
+import { mockLogin } from "@/lib/auth"
+import { createClient } from "@/lib/supabase/server"
+import { createClient as createAdminClient } from "@supabase/supabase-js"
+import { revalidatePath } from "next/cache"
 
 export async function signIn(prevState: any, formData: FormData) {
   if (!formData) {
@@ -16,38 +18,41 @@ export async function signIn(prevState: any, formData: FormData) {
     return { error: "Email and password are required" }
   }
 
-  const cookieStore = await cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-          } catch {
-            // The `setAll` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
-          }
-        },
-      },
-    },
-  )
-
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email: email.toString(),
-    password: password.toString(),
-  })
-
-  if (error) {
-    return { error: error.message }
+  if (email.toString() === "demo@example.com" && password.toString() === "password") {
+    try {
+      const user = await mockLogin(email.toString(), password.toString())
+      const cookieStore = cookies()
+      cookieStore.set("demo-user", JSON.stringify(user), {
+        httpOnly: false, // Allow client-side access
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+      })
+      return { success: true, isDemo: true }
+    } catch (error: any) {
+      return { error: error.message }
+    }
   }
 
-  redirect("/")
+  const supabase = createClient()
+
+  try {
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.toString(),
+      password: password.toString(),
+    })
+
+    if (error) {
+      return { error: error.message }
+    }
+
+    revalidatePath("/", "layout")
+
+    return { success: true }
+  } catch (error) {
+    console.error("Login error:", error)
+    return { error: "An unexpected error occurred. Please try again." }
+  }
 }
 
 export async function signUp(prevState: any, formData: FormData) {
@@ -63,71 +68,34 @@ export async function signUp(prevState: any, formData: FormData) {
     return { error: "Email and password are required" }
   }
 
-  const cookieStore = await cookies()
-  const supabase = createServerClient(
+  const supabaseAdmin = createAdminClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
     {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-          } catch {
-            // The `setAll` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
-          }
-        },
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
       },
     },
   )
 
-  const { data, error } = await supabase.auth.signUp({
-    email: email.toString(),
-    password: password.toString(),
-    options: {
-      emailRedirectTo:
-        process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
-        `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}`,
-      data: {
+  try {
+    const { data, error } = await supabaseAdmin.auth.admin.createUser({
+      email: email.toString(),
+      password: password.toString(),
+      email_confirm: true, // Pre-confirm the email
+      user_metadata: {
         name: name?.toString() || email.toString().split("@")[0],
       },
-    },
-  })
+    })
 
-  if (error) {
-    return { error: error.message }
+    if (error) {
+      return { error: error.message }
+    }
+
+    return { success: "Account created successfully! You can now sign in." }
+  } catch (error) {
+    console.error("Sign up error:", error)
+    return { error: "An unexpected error occurred. Please try again." }
   }
-
-  return { success: "Account created successfully! Please check your email to confirm your account." }
-}
-
-export async function signOut() {
-  const cookieStore = await cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-          } catch {
-            // The `setAll` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
-          }
-        },
-      },
-    },
-  )
-
-  await supabase.auth.signOut()
-  redirect("/")
 }
