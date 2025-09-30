@@ -2229,16 +2229,24 @@ function GoalTrackerApp() {
   }
 
   const getTotalProgress = () => {
+    console.log("[v0] getTotalProgress called")
     let totalCurrent = 0
     let totalTarget = 0
 
     // Calculate progress for 12-week goals (numerical goals)
     Object.values(goalsData).forEach((goals) => {
       goals.forEach((goal) => {
+        console.log("[v0] Processing 12-week goal:", {
+          title: goal.title,
+          currentCount: goal.currentCount,
+          targetCount: goal.targetCount,
+        })
         totalCurrent += goal.currentCount
         totalTarget += goal.targetCount
       })
     })
+
+    console.log("[v0] After 12-week goals:", { totalCurrent, totalTarget })
 
     // Calculate progress for long-term goals (1-year and 5-year)
     // These use milestones to track progress
@@ -2249,21 +2257,30 @@ function GoalTrackerApp() {
             // Completed goals count as 100%
             totalCurrent += 1
             totalTarget += 1
+            console.log("[v0] Long-term goal completed:", goal.title)
           } else if (goal.milestones && goal.milestones.length > 0) {
             // Calculate progress based on completed milestones
             const completedMilestones = goal.milestones.filter((m) => m.completed).length
             totalCurrent += completedMilestones
             totalTarget += goal.milestones.length
+            console.log("[v0] Long-term goal with milestones:", {
+              title: goal.title,
+              completedMilestones,
+              totalMilestones: goal.milestones.length,
+            })
           } else {
             // Goals without milestones count as incomplete
             totalCurrent += 0
             totalTarget += 1
+            console.log("[v0] Long-term goal without milestones:", goal.title)
           }
         })
       })
     })
 
-    return totalTarget === 0 ? 0 : Math.round((totalCurrent / totalTarget) * 100)
+    const percentage = totalTarget === 0 ? 0 : Math.round((totalCurrent / totalTarget) * 100)
+    console.log("[v0] Final progress calculation:", { totalCurrent, totalTarget, percentage })
+    return percentage
   }
 
   const getTotalTasks = () => {
