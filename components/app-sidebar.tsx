@@ -56,7 +56,7 @@ export function AppSidebar() {
   return (
     <Sidebar className="border-r" collapsible="icon">
       <SidebarContent className="pt-4">
-        <div className="px-3 pb-4">
+        <div className={state === "expanded" ? "px-3 pb-4" : "flex justify-center pb-4"}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button

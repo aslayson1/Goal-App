@@ -2875,10 +2875,6 @@ function GoalTrackerApp() {
               priority
             />
           </div>
-          <div className="flex-1" />
-          <div className="flex items-center gap-4">
-            {user && <SignOutButton className="text-sm text-gray-600 hover:text-gray-900" />}
-          </div>
         </header>
 
         <div className="flex flex-1 overflow-hidden">
@@ -4409,6 +4405,7 @@ function GoalTrackerApp() {
                   </DialogContent>
                 </Dialog>
 
+                {/* Delete Goal Confirmation Dialog */}
                 <Dialog open={!!showDeleteGoal} onOpenChange={() => setShowDeleteGoal(null)}>
                   <DialogContent className="sm:max-w-[425px]">
                     <DialogHeader>
