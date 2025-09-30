@@ -59,7 +59,13 @@ export function AppSidebar() {
         <div className="px-3 pb-4">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex w-full items-center gap-3 rounded-lg bg-white border border-gray-200 px-3 py-2.5 hover:bg-gray-50 transition-colors shadow-sm">
+              <button
+                className={
+                  state === "expanded"
+                    ? "flex w-full items-center gap-3 rounded-lg bg-white border border-gray-200 px-3 py-2.5 hover:bg-gray-50 transition-colors shadow-sm"
+                    : "flex items-center justify-center"
+                }
+              >
                 <Avatar className="size-8">
                   <AvatarImage src={selectedUser.avatar || undefined} />
                   <AvatarFallback className="bg-gray-100 text-gray-600 text-xs font-medium">
