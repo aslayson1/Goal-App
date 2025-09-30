@@ -3705,6 +3705,62 @@ function GoalTrackerApp() {
                       >
                         {category}
                       </Badge>
+                      <div className="flex items-center space-x-2">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setSelectedCategory(category)
+                                setSelectedTimeframe("1-year")
+                                setShowAddLongTermGoal(true)
+                              }}
+                            >
+                              <Target className="h-4 w-4 mr-2" />
+                              Add Goal
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setSelectedCategory(category)
+                                setSelectedTimeframe("1-year")
+                                setShowAddLongTermGoal(true)
+                              }}
+                            >
+                              <Plus className="h-4 w-4 mr-2" />
+                              Add Goal
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => startEditingCategory(category)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Edit Category
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                if (goals.length === 0) {
+                                  deleteCategory(category)
+                                }
+                              }}
+                              className={goals.length > 0 ? "text-gray-400 cursor-not-allowed" : "text-red-600"}
+                              disabled={goals.length > 0}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              {goals.length > 0 ? "Delete Category (remove goals first)" : "Delete Category"}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </div>
                     <CardDescription className="mt-2">
                       {goals.length} goal{goals.length !== 1 ? "s" : ""} • Long-term vision
@@ -3907,6 +3963,62 @@ function GoalTrackerApp() {
                       >
                         {category}
                       </Badge>
+                      <div className="flex items-center space-x-2">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setSelectedCategory(category)
+                                setSelectedTimeframe("5-year")
+                                setShowAddLongTermGoal(true)
+                              }}
+                            >
+                              <Target className="h-4 w-4 mr-2" />
+                              Add Goal
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setSelectedCategory(category)
+                                setSelectedTimeframe("5-year")
+                                setShowAddLongTermGoal(true)
+                              }}
+                            >
+                              <Plus className="h-4 w-4 mr-2" />
+                              Add Goal
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => startEditingCategory(category)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Edit Category
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                if (goals.length === 0) {
+                                  deleteCategory(category)
+                                }
+                              }}
+                              className={goals.length > 0 ? "text-gray-400 cursor-not-allowed" : "text-red-600"}
+                              disabled={goals.length > 0}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              {goals.length > 0 ? "Delete Category (remove goals first)" : "Delete Category"}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </div>
                     <CardDescription className="mt-2">
                       {goals.length} goal{goals.length !== 1 ? "s" : ""} • Long-term vision
