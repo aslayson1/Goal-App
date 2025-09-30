@@ -57,6 +57,8 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSo
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 
+import { addCategory } from "@/lib/actions/categories"
+
 // Custom CSS class for white checkbox background with thinner border
 const checkboxStyles =
   "bg-white border border-gray-400 data-[state=checked]:border-[#05a7b0] data-[state=checked]:bg-[#05a7b0]"
@@ -1620,31 +1622,11 @@ function GoalTrackerApp() {
     }
 
     try {
-      if (!user?.id) {
-        alert("User not authenticated. Please log in again.")
-        return
-      }
+      const result = await addCategory(categoryName)
 
-      // Validate UUID format
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-      if (!uuidRegex.test(user.id)) {
-        console.error("Invalid user ID format:", user.id)
-        alert("Authentication error. Please log out and log in again.")
-        return
-      }
-
-      const { error } = await supabase.from("categories").insert([
-        {
-          user_id: user.id,
-          name: categoryName,
-          color: "#05a7b0", // Default teal color
-        },
-      ])
-
-      if (error) {
-        console.error("Error saving category:", error)
-        console.error("User ID being used:", user.id)
-        alert(`Failed to save category: ${error.message}`)
+      if (!result.success) {
+        console.error("Error saving category:", result.error)
+        alert(`Failed to save category: ${result.error}`)
         return
       }
 
