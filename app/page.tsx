@@ -57,8 +57,6 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSo
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 
-import { addCategory } from "@/lib/actions/categories"
-
 // Custom CSS class for white checkbox background with thinner border
 const checkboxStyles =
   "bg-white border border-gray-400 data-[state=checked]:border-[#05a7b0] data-[state=checked]:bg-[#05a7b0]"
@@ -1622,11 +1620,19 @@ function GoalTrackerApp() {
     }
 
     try {
-      const result = await addCategory(categoryName)
+      const { data, error } = await supabase
+        .from("categories")
+        .insert({
+          name: categoryName,
+          user_id: user?.id || null,
+          color: "#3b82f6", // Default blue color
+        })
+        .select()
+        .single()
 
-      if (!result.success) {
-        console.error("Error saving category:", result.error)
-        alert(`Failed to save category: ${result.error}`)
+      if (error) {
+        console.error("Error saving category:", error)
+        alert(`Failed to save category: ${error.message}`)
         return
       }
 
