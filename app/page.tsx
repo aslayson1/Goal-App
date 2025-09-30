@@ -2864,7 +2864,7 @@ function GoalTrackerApp() {
   return (
     <SidebarProvider defaultOpen={true}>
       <div className="flex h-screen flex-col">
-        <header className="sticky top-0 z-50 flex h-16 shrink-0 items-center gap-4 border-b bg-white px-6">
+        <header className="sticky top-0 z-50 flex h-16 shrink-0 items-center justify-between gap-4 border-b bg-white px-6">
           <div className="flex items-center gap-3">
             <Image
               src="/layson-group-logo.png"
@@ -2875,6 +2875,28 @@ function GoalTrackerApp() {
               priority
             />
           </div>
+
+          {/* User Profile Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="flex items-center space-x-2">
+                <Avatar className="h-8 w-8 border-2 border-black">
+                  {user?.avatar && (
+                    <AvatarImage src={user.avatar || "/placeholder.svg?height=40&width=40&text=U"} alt={user?.name} />
+                  )}
+                  <AvatarFallback className="bg-white text-black text-xs font-semibold">
+                    {getInitials(user?.name)}
+                  </AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setShowProfile(true)}>Profile Settings</DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <SignOutButton className="w-full text-left" />
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </header>
 
         <div className="flex flex-1 overflow-hidden">
@@ -2904,30 +2926,6 @@ function GoalTrackerApp() {
                       <Plus className="h-4 w-4 mr-2" />
                       Add Category
                     </Button>
-                    {/* User Profile Button */}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="flex items-center space-x-2">
-                          <Avatar className="h-8 w-8 border-2 border-black">
-                            {user?.avatar && (
-                              <AvatarImage
-                                src={user.avatar || "/placeholder.svg?height=40&width=40&text=U"}
-                                alt={user?.name}
-                              />
-                            )}
-                            <AvatarFallback className="bg-white text-black text-xs font-semibold">
-                              {getInitials(user?.name)}
-                            </AvatarFallback>
-                          </Avatar>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setShowProfile(true)}>Profile Settings</DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <SignOutButton className="w-full text-left" />
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
                   </div>
                 </div>
 
