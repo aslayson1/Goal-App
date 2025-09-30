@@ -2229,24 +2229,25 @@ function GoalTrackerApp() {
   }
 
   const getTotalProgress = () => {
+    // This prevents goals with large targets from skewing the overall progress
     console.log("[v0] getTotalProgress called")
-    let totalCurrent = 0
-    let totalTarget = 0
+    const goalPercentages: number[] = []
 
     // Calculate progress for 12-week goals (numerical goals)
     Object.values(goalsData).forEach((goals) => {
       goals.forEach((goal) => {
+        const percentage = goal.targetCount === 0 ? 0 : (goal.currentCount / goal.targetCount) * 100
+        goalPercentages.push(percentage)
         console.log("[v0] Processing 12-week goal:", {
           title: goal.title,
           currentCount: goal.currentCount,
           targetCount: goal.targetCount,
+          percentage: percentage.toFixed(2) + "%",
         })
-        totalCurrent += goal.currentCount
-        totalTarget += goal.targetCount
       })
     })
 
-    console.log("[v0] After 12-week goals:", { totalCurrent, totalTarget })
+    console.log("[v0] After 12-week goals, total goals:", goalPercentages.length)
 
     // Calculate progress for long-term goals (1-year and 5-year)
     // These use milestones to track progress
@@ -2255,32 +2256,40 @@ function GoalTrackerApp() {
         goals.forEach((goal) => {
           if (goal.status === "completed") {
             // Completed goals count as 100%
-            totalCurrent += 1
-            totalTarget += 1
+            goalPercentages.push(100)
             console.log("[v0] Long-term goal completed:", goal.title)
           } else if (goal.milestones && goal.milestones.length > 0) {
             // Calculate progress based on completed milestones
             const completedMilestones = goal.milestones.filter((m) => m.completed).length
-            totalCurrent += completedMilestones
-            totalTarget += goal.milestones.length
+            const percentage = (completedMilestones / goal.milestones.length) * 100
+            goalPercentages.push(percentage)
             console.log("[v0] Long-term goal with milestones:", {
               title: goal.title,
               completedMilestones,
               totalMilestones: goal.milestones.length,
+              percentage: percentage.toFixed(2) + "%",
             })
           } else {
-            // Goals without milestones count as incomplete
-            totalCurrent += 0
-            totalTarget += 1
+            // Goals without milestones count as 0% (incomplete)
+            goalPercentages.push(0)
             console.log("[v0] Long-term goal without milestones:", goal.title)
           }
         })
       })
     })
 
-    const percentage = totalTarget === 0 ? 0 : Math.round((totalCurrent / totalTarget) * 100)
-    console.log("[v0] Final progress calculation:", { totalCurrent, totalTarget, percentage })
-    return percentage
+    // Calculate average of all goal percentages
+    const totalPercentage = goalPercentages.reduce((sum, p) => sum + p, 0)
+    const averagePercentage = goalPercentages.length === 0 ? 0 : totalPercentage / goalPercentages.length
+    const finalPercentage = Math.round(averagePercentage)
+
+    console.log("[v0] Final progress calculation:", {
+      totalGoals: goalPercentages.length,
+      averagePercentage: averagePercentage.toFixed(2) + "%",
+      finalPercentage: finalPercentage + "%",
+    })
+
+    return finalPercentage
   }
 
   const getTotalTasks = () => {
@@ -2318,6 +2327,12 @@ function GoalTrackerApp() {
     Object.values(goalsData).forEach((goals) => {
       totalGoals += goals.length
     })
+    // Add long-term goals to the total count
+    Object.values(longTermGoals).forEach((timeframeGoals) => {
+      Object.values(timeframeGoals).forEach((goals) => {
+        totalGoals += goals.length
+      })
+    })
     return totalGoals
   }
 
@@ -2328,6 +2343,16 @@ function GoalTrackerApp() {
         if (goal.currentCount >= goal.targetCount) {
           completedGoals++
         }
+      })
+    })
+    // Count completed long-term goals
+    Object.values(longTermGoals).forEach((timeframeGoals) => {
+      Object.values(timeframeGoals).forEach((goals) => {
+        goals.forEach((goal) => {
+          if (goal.status === "completed") {
+            completedGoals++
+          }
+        })
       })
     })
     return completedGoals
