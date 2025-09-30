@@ -2528,18 +2528,32 @@ function GoalTrackerApp() {
       const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
       const selectedDayIndex = daysOfWeek.indexOf(selectedDay)
 
+      console.log("[v0] TASK CREATION - Date Calculation:")
+      console.log("[v0]   - Today:", today.toISOString().split("T")[0], `(${daysOfWeek[currentDayIndex]})`)
+      console.log("[v0]   - Selected day:", selectedDay, `(index: ${selectedDayIndex})`)
+      console.log("[v0]   - Current day index:", currentDayIndex)
+
       // Calculate days difference
       let daysDiff = selectedDayIndex - currentDayIndex
+
+      console.log("[v0]   - Initial daysDiff:", daysDiff)
 
       // If the selected day is today, use today (daysDiff = 0)
       // If the selected day is in the past this week, move to next week
       if (daysDiff < 0) {
         daysDiff += 7
+        console.log("[v0]   - Adjusted daysDiff (added 7):", daysDiff)
       }
 
       // Create target date
       const targetDate = new Date(today)
       targetDate.setDate(today.getDate() + daysDiff)
+
+      console.log(
+        "[v0]   - Final target_date:",
+        targetDate.toISOString().split("T")[0],
+        `(${daysOfWeek[targetDate.getDay()]})`,
+      )
 
       const insertData = {
         id: taskId,
