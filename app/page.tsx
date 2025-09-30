@@ -654,7 +654,7 @@ const initialDailyTasks = {
       goalId: "up1",
       completed: false,
       timeBlock: "9:00 AM",
-      estimatedMinutes: 120,
+      estimatedHours: 120,
     },
   ],
   Tuesday: [
@@ -2447,20 +2447,11 @@ function GoalTrackerApp() {
   }
 
   const addDailyTask = async () => {
-    console.log("🚨🚨🚨 ADD DAILY TASK CALLED 🚨🚨🚨")
-    console.log("🚨 selectedDay at function start:", selectedDay)
-    console.log("🚨 newDailyTask:", newDailyTask)
-
-    console.log("=== TASK CREATION DEBUG START ===")
-    console.log("1. Function called, newDailyTask:", newDailyTask)
-
     if (!newDailyTask.title) {
-      console.log("2. No title provided, exiting")
       return
     }
 
     const taskId = crypto.randomUUID()
-    console.log("3. Generated task ID:", taskId)
 
     const taskData = {
       title: newDailyTask.title,
@@ -2468,11 +2459,6 @@ function GoalTrackerApp() {
       category: newDailyTask.category,
       goalId: newDailyTask.goalId,
     }
-    console.log("4. Task data prepared:", taskData)
-
-    console.log("5. User object:", user)
-    console.log("6. User ID:", user?.id)
-    console.log("7. User authenticated:", !!user)
 
     // Update local state immediately
     setDailyTasks((prev) => ({
@@ -2489,7 +2475,6 @@ function GoalTrackerApp() {
         },
       ],
     }))
-    console.log("8. Local state updated")
 
     setNewDailyTask({
       title: "",
@@ -2500,21 +2485,16 @@ function GoalTrackerApp() {
       estimatedMinutes: 30,
     })
     setShowAddDailyTask(false)
-    console.log("9. Form reset and dialog closed")
 
     try {
-      console.log("10. Starting database operation...")
-
       if (!user?.id) {
-        console.error("11. ERROR: No user ID available")
-        console.log("User object:", user)
+        console.error("No user ID available")
         return
       }
 
-      // Look up category ID if category is provided (same as weekly tasks)
+      // Look up category ID if category is provided
       let categoryId = null
       if (taskData.category) {
-        console.log("12. Looking up category:", taskData.category)
         const { data: categories } = await supabase
           .from("categories")
           .select("id")
@@ -2523,41 +2503,25 @@ function GoalTrackerApp() {
           .single()
 
         categoryId = categories?.id || null
-        console.log("13. Category ID found:", categoryId)
       }
 
       // Calculate the target_date based on the selected day
       const today = new Date()
-      const currentDayIndex = today.getDay() // 0 = Sunday, 1 = Monday, etc.
+      const currentDayIndex = today.getDay()
       const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
       const selectedDayIndex = daysOfWeek.indexOf(selectedDay)
-
-      console.log("[v0] TASK CREATION - Date Calculation:")
-      console.log("[v0]   - Today:", today.toISOString().split("T")[0], `(${daysOfWeek[currentDayIndex]})`)
-      console.log("[v0]   - Selected day:", selectedDay, `(index: ${selectedDayIndex})`)
-      console.log("[v0]   - Current day index:", currentDayIndex)
 
       // Calculate days difference
       let daysDiff = selectedDayIndex - currentDayIndex
 
-      console.log("[v0]   - Initial daysDiff:", daysDiff)
-
-      // If the selected day is today, use today (daysDiff = 0)
       // If the selected day is in the past this week, move to next week
       if (daysDiff < 0) {
         daysDiff += 7
-        console.log("[v0]   - Adjusted daysDiff (added 7):", daysDiff)
       }
 
       // Create target date
       const targetDate = new Date(today)
       targetDate.setDate(today.getDate() + daysDiff)
-
-      console.log(
-        "[v0]   - Final target_date:",
-        targetDate.toISOString().split("T")[0],
-        `(${daysOfWeek[targetDate.getDay()]})`,
-      )
 
       const insertData = {
         id: taskId,
@@ -2570,45 +2534,15 @@ function GoalTrackerApp() {
         target_date: targetDate.toISOString().split("T")[0],
         completed: false,
       }
-      console.log("14. Insert data prepared:", insertData)
 
-      console.log("15. Calling supabase.from('tasks').insert()...")
-      const { data, error } = await supabase.from("tasks").insert(insertData).select()
-
-      console.log("16. Database response - data:", data)
-      console.log("17. Database response - error:", error)
+      const { error } = await supabase.from("tasks").insert(insertData).select()
 
       if (error) {
-        console.error("18. DATABASE ERROR:", error)
-        console.error("Error message:", error.message)
-        console.error("Error details:", error.details)
-        console.error("Error hint:", error.hint)
-      } else {
-        console.log("19. Task saved successfully:", data)
-
-        // Verify it was saved
-        console.log("20. Starting verification query...")
-        const { data: verification, error: verifyError } = await supabase
-          .from("tasks")
-          .select("*")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(1)
-
-        console.log("21. Verification data:", verification)
-        console.log("22. Verification error:", verifyError)
-
-        if (verification && verification.length > 0) {
-          console.log("23. SUCCESS: Task verified in database:", verification[0])
-        } else {
-          console.log("24. WARNING: Task not found in verification query")
-        }
+        console.error("Error saving daily task:", error)
       }
     } catch (err) {
-      console.error("25. EXCEPTION during database operation:", err)
+      console.error("Exception during database operation:", err)
     }
-
-    console.log("=== TASK CREATION DEBUG END ===")
   }
 
   const addWeeklyTask = async () => {
