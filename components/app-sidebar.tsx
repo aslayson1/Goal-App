@@ -68,7 +68,6 @@ export function AppSidebar() {
                   <>
                     <div className="flex flex-1 flex-col items-start text-left">
                       <span className="text-sm font-semibold text-gray-900">{selectedUser.name}</span>
-                      <span className="text-xs text-gray-500">{selectedUser.email}</span>
                     </div>
                     <ChevronDown className="size-4 text-gray-400" />
                   </>
@@ -88,10 +87,7 @@ export function AppSidebar() {
                       {getInitials(mockUser.name)}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium">{mockUser.name}</span>
-                    <span className="text-xs text-gray-500">{mockUser.email}</span>
-                  </div>
+                  <span className="text-sm font-medium">{mockUser.name}</span>
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
