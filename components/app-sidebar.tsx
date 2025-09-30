@@ -54,7 +54,7 @@ export function AppSidebar() {
   }
 
   return (
-    <Sidebar className="border-r">
+    <Sidebar className="border-r" collapsible="icon">
       <SidebarContent className="pt-4">
         <div className="px-3 pb-4">
           <DropdownMenu>
