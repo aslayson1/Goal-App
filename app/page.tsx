@@ -2529,7 +2529,13 @@ function GoalTrackerApp() {
       const selectedDayIndex = daysOfWeek.indexOf(selectedDay)
 
       // Calculate days difference
-      const daysDiff = selectedDayIndex - currentDayIndex
+      let daysDiff = selectedDayIndex - currentDayIndex
+
+      // If the selected day is today, use today (daysDiff = 0)
+      // If the selected day is in the past this week, move to next week
+      if (daysDiff < 0) {
+        daysDiff += 7
+      }
 
       // Create target date
       const targetDate = new Date(today)
