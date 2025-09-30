@@ -37,6 +37,7 @@ import { Input } from "@/components/ui/input"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import Image from "next/image"
 
 // Auth components
 import { useAuth } from "@/components/auth/auth-provider"
@@ -2860,29 +2861,25 @@ function GoalTrackerApp() {
     <>
       <AppSidebar />
       <SidebarInset>
-        <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-6">
-          <SidebarTrigger />
-          <div className="flex flex-1 items-center justify-between">
-            <h1 className="text-lg font-semibold">Goal Tracker</h1>
-            <div className="flex items-center gap-4">
-              {user && (
-                <div className="flex items-center gap-2">
-                  <Avatar className="size-8">
-                    <AvatarImage src={user.avatar || "/placeholder.svg?height=32&width=32&text=U"} alt={user.name} />
-                    <AvatarFallback>
-                      {user.name
-                        ? user.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")
-                            .toUpperCase()
-                        : "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <SignOutButton className="text-sm text-muted-foreground hover:text-foreground" />
-                </div>
-              )}
-            </div>
+        <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-white px-6">
+          <SidebarTrigger className="-ml-2" />
+          <div className="flex items-center gap-3">
+            <Image
+              src="/layson-group-logo.png"
+              alt="Layson Group"
+              width={180}
+              height={40}
+              className="h-8 w-auto"
+              priority
+            />
+          </div>
+          <div className="flex-1" />
+          <div className="flex items-center gap-4">
+            {user && (
+              <div className="flex items-center gap-2">
+                <SignOutButton className="text-sm text-gray-600 hover:text-gray-900" />
+              </div>
+            )}
           </div>
         </header>
 

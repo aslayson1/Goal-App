@@ -5,8 +5,6 @@ import { LayoutDashboard, Target, Users, ChevronDown } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -14,8 +12,6 @@ import {
 } from "@/components/ui/sidebar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { useAuth } from "@/components/auth/auth-provider"
-import { SignOutButton } from "@/components/auth/sign-out-button"
 
 // Menu items with icons
 const menuItems = [
@@ -36,7 +32,7 @@ const menuItems = [
   },
 ]
 
-// Mock users for the dropdown - in a real app, this would come from your database
+// Mock users for the dropdown
 const mockUsers = [
   { id: "1", name: "Scott Anderson", email: "scott@example.com", avatar: null },
   { id: "2", name: "Sarah Johnson", email: "sarah@example.com", avatar: null },
@@ -44,7 +40,6 @@ const mockUsers = [
 ]
 
 export function AppSidebar() {
-  const { user } = useAuth()
   const { state } = useSidebar()
   const [selectedUser, setSelectedUser] = React.useState(mockUsers[0])
 
@@ -57,55 +52,45 @@ export function AppSidebar() {
   }
 
   return (
-    <Sidebar>
-      <SidebarHeader className="border-b border-sidebar-border p-4">
-        <div className="flex items-center gap-2 px-2">
-          <div className="flex size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-            <Target className="size-4" />
-          </div>
-          {state === "expanded" && (
-            <div className="flex flex-col">
-              <span className="text-sm font-semibold">Goal Tracker</span>
-            </div>
-          )}
-        </div>
-      </SidebarHeader>
-
-      <SidebarContent>
-        <div className="px-2 py-4">
-          {/* User Selector Dropdown */}
+    <Sidebar className="border-r">
+      <SidebarContent className="pt-4">
+        <div className="px-3 pb-4">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex w-full items-center gap-2 rounded-lg px-2 py-2 hover:bg-sidebar-accent transition-colors">
+              <button className="flex w-full items-center gap-3 rounded-lg bg-white border border-gray-200 px-3 py-2.5 hover:bg-gray-50 transition-colors shadow-sm">
                 <Avatar className="size-8">
                   <AvatarImage src={selectedUser.avatar || undefined} />
-                  <AvatarFallback className="bg-muted text-xs">{getInitials(selectedUser.name)}</AvatarFallback>
+                  <AvatarFallback className="bg-gray-100 text-gray-600 text-xs font-medium">
+                    {getInitials(selectedUser.name)}
+                  </AvatarFallback>
                 </Avatar>
                 {state === "expanded" && (
                   <>
                     <div className="flex flex-1 flex-col items-start text-left">
-                      <span className="text-sm font-medium">{selectedUser.name}</span>
-                      <span className="text-xs text-muted-foreground">{selectedUser.email}</span>
+                      <span className="text-sm font-semibold text-gray-900">{selectedUser.name}</span>
+                      <span className="text-xs text-gray-500">{selectedUser.email}</span>
                     </div>
-                    <ChevronDown className="size-4 text-muted-foreground" />
+                    <ChevronDown className="size-4 text-gray-400" />
                   </>
                 )}
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56">
+            <DropdownMenuContent align="start" className="w-56 bg-white">
               {mockUsers.map((mockUser) => (
                 <DropdownMenuItem
                   key={mockUser.id}
                   onClick={() => setSelectedUser(mockUser)}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 cursor-pointer"
                 >
                   <Avatar className="size-6">
                     <AvatarImage src={mockUser.avatar || undefined} />
-                    <AvatarFallback className="bg-muted text-xs">{getInitials(mockUser.name)}</AvatarFallback>
+                    <AvatarFallback className="bg-gray-100 text-gray-600 text-xs">
+                      {getInitials(mockUser.name)}
+                    </AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col">
                     <span className="text-sm font-medium">{mockUser.name}</span>
-                    <span className="text-xs text-muted-foreground">{mockUser.email}</span>
+                    <span className="text-xs text-gray-500">{mockUser.email}</span>
                   </div>
                 </DropdownMenuItem>
               ))}
@@ -125,38 +110,6 @@ export function AppSidebar() {
           ))}
         </SidebarMenu>
       </SidebarContent>
-
-      <SidebarFooter className="border-t border-sidebar-border p-4">
-        {user && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="flex w-full items-center gap-2 rounded-lg px-2 py-2 hover:bg-sidebar-accent transition-colors">
-                <Avatar className="size-8">
-                  <AvatarImage src={user.avatar || undefined} />
-                  <AvatarFallback className="bg-muted text-xs">
-                    {user.name ? getInitials(user.name) : "U"}
-                  </AvatarFallback>
-                </Avatar>
-                {state === "expanded" && (
-                  <>
-                    <div className="flex flex-1 flex-col items-start text-left">
-                      <span className="text-sm font-medium">{user.name || "User"}</span>
-                      <span className="text-xs text-muted-foreground">{user.email}</span>
-                    </div>
-                    <ChevronDown className="size-4 text-muted-foreground" />
-                  </>
-                )}
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56">
-              <DropdownMenuItem>Profile Settings</DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <SignOutButton className="w-full cursor-pointer" />
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-      </SidebarFooter>
     </Sidebar>
   )
 }
