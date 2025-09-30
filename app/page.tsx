@@ -1,5 +1,7 @@
 "use client"
 import { supabase } from "@/lib/supabase/client"
+import { SelectContent } from "@/components/ui/select"
+
 import {
   Dialog,
   DialogContent,
@@ -32,7 +34,7 @@ import { Progress } from "@/components/ui/progress"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Select, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -45,7 +47,7 @@ import { SignOutButton } from "@/components/auth/sign-out-button"
 import { AuthScreen } from "@/components/auth/auth-screen"
 
 import { AppSidebar } from "@/components/app-sidebar"
-import { SidebarInset } from "@/components/ui/sidebar"
+import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 
 // Drag and Drop imports
 import {
@@ -1105,8 +1107,6 @@ function GoalTrackerApp() {
 
   // Cal.com inspired color palette for category badges - each category gets a unique, distinct color
   const getCategoryColor = (category: string) => {
-    return "bg-black text-white border-black"
-
     // Check for custom colors first
     if (customCategoryColors[category]) {
       return customCategoryColors[category]
@@ -2864,6 +2864,7 @@ function GoalTrackerApp() {
   return (
     <div className="flex h-screen flex-col">
       <header className="sticky top-0 z-50 flex h-16 shrink-0 items-center gap-4 border-b bg-white px-6">
+        <SidebarTrigger className="-ml-2" />
         <div className="flex items-center gap-3">
           <Image
             src="/layson-group-logo.png"
@@ -3565,7 +3566,7 @@ function GoalTrackerApp() {
                       )
                     })}
 
-                    {/* Show message if no tasks exist */}
+                    {/* No tasks exist */}
                     {(!weeklyTasks[`Week ${currentWeek}`] || weeklyTasks[`Week ${currentWeek}`].length === 0) && (
                       <div className="col-span-2 text-center py-12">
                         <p className="text-gray-500 mb-4">No weekly tasks yet</p>
