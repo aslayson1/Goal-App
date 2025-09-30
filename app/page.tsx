@@ -2232,10 +2232,34 @@ function GoalTrackerApp() {
     let totalCurrent = 0
     let totalTarget = 0
 
+    // Calculate progress for 12-week goals (numerical goals)
     Object.values(goalsData).forEach((goals) => {
       goals.forEach((goal) => {
         totalCurrent += goal.currentCount
         totalTarget += goal.targetCount
+      })
+    })
+
+    // Calculate progress for long-term goals (1-year and 5-year)
+    // These use milestones to track progress
+    Object.values(longTermGoals).forEach((timeframeGoals) => {
+      Object.values(timeframeGoals).forEach((goals) => {
+        goals.forEach((goal) => {
+          if (goal.status === "completed") {
+            // Completed goals count as 100%
+            totalCurrent += 1
+            totalTarget += 1
+          } else if (goal.milestones && goal.milestones.length > 0) {
+            // Calculate progress based on completed milestones
+            const completedMilestones = goal.milestones.filter((m) => m.completed).length
+            totalCurrent += completedMilestones
+            totalTarget += goal.milestones.length
+          } else {
+            // Goals without milestones count as incomplete
+            totalCurrent += 0
+            totalTarget += 1
+          }
+        })
       })
     })
 
@@ -2842,7 +2866,7 @@ function GoalTrackerApp() {
                 <p className="text-4xl font-bold text-gray-900">{getTotalProgress()}%</p>
                 <div className="flex items-center">
                   <Target className="h-4 w-4 mr-2 text-[#05a7b0]" />
-                  <p className="text-sm font-medium text-gray-600">Overall Progress</p>
+                  <p className="text-sm font-medium text-gray-600">Overall Goal Progress</p>
                 </div>
                 <div className="w-full">
                   <Progress value={getTotalProgress()} className="h-2 [&>div]:bg-[#05a7b0]" />
