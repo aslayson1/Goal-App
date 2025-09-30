@@ -45,7 +45,7 @@ import { SignOutButton } from "@/components/auth/sign-out-button"
 import { AuthScreen } from "@/components/auth/auth-screen"
 
 import { AppSidebar } from "@/components/app-sidebar"
-import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
+import { SidebarInset } from "@/components/ui/sidebar"
 
 // Drag and Drop imports
 import {
@@ -2864,7 +2864,6 @@ function GoalTrackerApp() {
   return (
     <div className="flex h-screen flex-col">
       <header className="sticky top-0 z-50 flex h-16 shrink-0 items-center gap-4 border-b bg-white px-6">
-        <SidebarTrigger className="-ml-2" />
         <div className="flex items-center gap-3">
           <Image
             src="/layson-group-logo.png"
