@@ -2447,6 +2447,10 @@ function GoalTrackerApp() {
   }
 
   const addDailyTask = async () => {
+    console.log("🚨🚨🚨 ADD DAILY TASK CALLED 🚨🚨🚨")
+    console.log("🚨 selectedDay at function start:", selectedDay)
+    console.log("🚨 newDailyTask:", newDailyTask)
+
     console.log("=== TASK CREATION DEBUG START ===")
     console.log("1. Function called, newDailyTask:", newDailyTask)
 
