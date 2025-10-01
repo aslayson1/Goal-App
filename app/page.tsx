@@ -2905,9 +2905,16 @@ function GoalTrackerApp() {
   }
 
   const addAgent = async () => {
-    if (!newAgent.name.trim() || !newAgent.role.trim()) return
+    console.log("[v0] addAgent called")
+    console.log("[v0] newAgent values:", newAgent)
+
+    if (!newAgent.name.trim() || !newAgent.role.trim()) {
+      console.log("[v0] Validation failed - name or role is empty")
+      return
+    }
 
     try {
+      console.log("[v0] Attempting to insert agent into database")
       const { data, error } = await supabase
         .from("agents")
         .insert([
@@ -2920,15 +2927,19 @@ function GoalTrackerApp() {
         ])
         .select()
 
+      console.log("[v0] Insert response:", { data, error })
+
       if (error) throw error
 
       if (data) {
+        console.log("[v0] Agent added successfully, updating state")
         setAgents([...agents, data[0]])
         setNewAgent({ name: "", role: "", description: "" })
         setShowAddAgent(false)
+        console.log("[v0] Dialog closed")
       }
     } catch (error) {
-      console.error("Error adding agent:", error)
+      console.error("[v0] Error adding agent:", error)
     }
   }
 
