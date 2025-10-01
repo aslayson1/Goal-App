@@ -4616,6 +4616,152 @@ function GoalTrackerApp() {
                     )}
                   </div>
                 ) : null}
+
+                {showAddDailyTask && (
+                  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <Card className="w-full max-w-md mx-4">
+                      <CardHeader>
+                        <CardTitle>{editingDailyTask ? "Edit Daily Task" : "Add Daily Task"}</CardTitle>
+                        <CardDescription>
+                          {editingDailyTask ? "Update task details" : `Add a new task for ${selectedDay}`}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Title *</label>
+                          <Input
+                            placeholder="Enter task title"
+                            value={newDailyTask.title}
+                            onChange={(e) => setNewDailyTask({ ...newDailyTask, title: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Description (Optional)</label>
+                          <Textarea
+                            placeholder="Enter description"
+                            value={newDailyTask.description}
+                            onChange={(e) => setNewDailyTask({ ...newDailyTask, description: e.target.value })}
+                            rows={3}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Category</label>
+                          <select
+                            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                            value={newDailyTask.category}
+                            onChange={(e) => setNewDailyTask({ ...newDailyTask, category: e.target.value })}
+                          >
+                            <option value="">Select category</option>
+                            {Object.keys(goalsData).map((category) => (
+                              <option key={category} value={category}>
+                                {category}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </CardContent>
+                      <div className="flex justify-end gap-2 p-6 pt-0">
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setShowAddDailyTask(false)
+                            setEditingDailyTask(null)
+                            setNewDailyTask({
+                              title: "",
+                              description: "",
+                              category: "",
+                              goalId: "",
+                              timeBlock: "",
+                              estimatedMinutes: 30,
+                            })
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          onClick={editingDailyTask ? saveEditedDailyTask : addDailyTask}
+                          className="bg-black hover:bg-black/90 text-white"
+                          disabled={!newDailyTask.title.trim()}
+                        >
+                          {editingDailyTask ? "Save Changes" : "Add Task"}
+                        </Button>
+                      </div>
+                    </Card>
+                  </div>
+                )}
+
+                {showAddWeeklyTask && (
+                  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <Card className="w-full max-w-md mx-4">
+                      <CardHeader>
+                        <CardTitle>{editingWeeklyTask ? "Edit Weekly Task" : "Add Weekly Task"}</CardTitle>
+                        <CardDescription>
+                          {editingWeeklyTask ? "Update task details" : `Add a new task for Week ${currentWeek}`}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Title *</label>
+                          <Input
+                            placeholder="Enter task title"
+                            value={newWeeklyTask.title}
+                            onChange={(e) => setNewWeeklyTask({ ...newWeeklyTask, title: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Description (Optional)</label>
+                          <Textarea
+                            placeholder="Enter description"
+                            value={newWeeklyTask.description}
+                            onChange={(e) => setNewWeeklyTask({ ...newWeeklyTask, description: e.target.value })}
+                            rows={3}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Category *</label>
+                          <select
+                            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                            value={newWeeklyTask.category}
+                            onChange={(e) => setNewWeeklyTask({ ...newWeeklyTask, category: e.target.value })}
+                          >
+                            <option value="">Select category</option>
+                            {Object.keys(goalsData).map((category) => (
+                              <option key={category} value={category}>
+                                {category}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </CardContent>
+                      <div className="flex justify-end gap-2 p-6 pt-0">
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setShowAddWeeklyTask(false)
+                            setEditingWeeklyTask(null)
+                            setNewWeeklyTask({
+                              title: "",
+                              description: "",
+                              category: "",
+                              goalId: "",
+                              priority: "medium" as const,
+                              estimatedHours: 1,
+                            })
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          onClick={editingWeeklyTask ? saveEditedWeeklyTask : addWeeklyTask}
+                          className="bg-black hover:bg-black/90 text-white"
+                          disabled={!newWeeklyTask.title.trim() || !newWeeklyTask.category}
+                        >
+                          {editingWeeklyTask ? "Save Changes" : "Add Task"}
+                        </Button>
+                      </div>
+                    </Card>
+                  </div>
+                )}
               </div>
             </main>
           </SidebarInset>
