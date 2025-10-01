@@ -15,6 +15,25 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
+// Menu items with icons
+const menuItems = [
+  {
+    title: "Dashboard",
+    icon: LayoutDashboard,
+    isActive: true,
+  },
+  {
+    title: "Long-term Goals",
+    icon: Target,
+    isActive: false,
+  },
+  {
+    title: "Agents",
+    icon: Users,
+    isActive: false,
+  },
+]
+
 // Mock users for the dropdown
 const mockUsers = [
   { id: "1", name: "Scott Anderson", email: "scott@example.com", avatar: null },
@@ -22,32 +41,9 @@ const mockUsers = [
   { id: "3", name: "Mike Davis", email: "mike@example.com", avatar: null },
 ]
 
-interface AppSidebarProps {
-  currentPage: string
-  onPageChange: (page: string) => void
-}
-
-export function AppSidebar({ currentPage, onPageChange }: AppSidebarProps) {
+export function AppSidebar() {
   const { state } = useSidebar()
   const [selectedUser, setSelectedUser] = React.useState(mockUsers[0])
-
-  const menuItems = [
-    {
-      title: "Dashboard",
-      icon: LayoutDashboard,
-      page: "dashboard",
-    },
-    {
-      title: "Long-term Goals",
-      icon: Target,
-      page: "long-term",
-    },
-    {
-      title: "Agents",
-      icon: Users,
-      page: "agents",
-    },
-  ]
 
   const getInitials = (name: string) => {
     return name
@@ -110,11 +106,7 @@ export function AppSidebar({ currentPage, onPageChange }: AppSidebarProps) {
         <SidebarMenu className="px-2">
           {menuItems.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton
-                isActive={currentPage === item.page}
-                tooltip={item.title}
-                onClick={() => onPageChange(item.page)}
-              >
+              <SidebarMenuButton isActive={item.isActive} tooltip={item.title}>
                 <item.icon className="size-4" />
                 <span>{item.title}</span>
               </SidebarMenuButton>

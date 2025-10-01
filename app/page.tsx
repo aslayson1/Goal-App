@@ -1,5 +1,15 @@
 "use client"
 import { supabase } from "@/lib/supabase/client"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog"
+
+import { Label } from "@/components/ui/label"
 
 import { useState, useEffect } from "react"
 import {
@@ -15,7 +25,6 @@ import {
   Clock,
   GripVertical,
   ClipboardCheck,
-  Users,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -965,7 +974,7 @@ function SortableDailyTaskItem({
 }
 
 function GoalTrackerApp() {
-  const { user, isLoading } = useAuth()
+  const { user, isLoading: authLoading } = useAuth()
   const [goalsData, setGoalsData] = useState<GoalsData>(initialGoalsData)
   console.log("[v0] GoalTrackerApp render - goalsData keys:", Object.keys(goalsData))
   // The lint error was here: longTermGoals was used before it was declared.
@@ -980,8 +989,6 @@ function GoalTrackerApp() {
 
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set())
   const [activeView, setActiveView] = useState("daily")
-  const [currentPage, setCurrentPage] = useState("dashboard")
-
   const [currentWeek, setCurrentWeek] = useState(() => {
     // Get or set the 12-week start date
     const startDateKey = `goalTracker_startDate_${user?.id || "default"}`
@@ -1054,28 +1061,6 @@ function GoalTrackerApp() {
     timeBlock: "",
     estimatedMinutes: 30,
   })
-  // CHANGE START
-  const [agents, setAgents] = useState<
-    Array<{
-      id: string
-      name: string
-      role: string
-      description: string
-    }>
-  >([])
-  const [showAddAgent, setShowAddAgent] = useState(false)
-  const [editingAgent, setEditingAgent] = useState<{
-    id: string
-    name: string
-    role: string
-    description: string
-  } | null>(null)
-  const [newAgent, setNewAgent] = useState({
-    name: "",
-    role: "",
-    description: "",
-  })
-  // CHANGE END
 
   const [showAddCategory, setShowAddCategory] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState("")
@@ -1212,7 +1197,7 @@ function GoalTrackerApp() {
     }
 
     // Handle daily tasks - move all incomplete tasks from previous days to today
-    const allDays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+    const allDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
     // Get all days before today
     const previousDays = []
@@ -1287,94 +1272,75 @@ function GoalTrackerApp() {
     return () => clearInterval(intervalId)
   }, [])
 
-  // Load data on mount
   useEffect(() => {
-    if (user?.id) {
-      loadCategoriesAndGoalsFromDB(user.id).then(setGoalsData)
-      loadTasksFromDB(user.id).then((data) => {
-        setDailyTasks(data.dailyTasks)
-        setWeeklyTasks(data.weeklyTasks)
-      })
-      loadLongTermGoalsFromDB()
-      loadAgents() // Load agents on mount
-    }
-  }, [user?.id]) // Re-fetch if user ID changes
+    const checkDatabaseAndLoadData = async () => {
+      if (user?.id) {
+        console.log("User authenticated, checking database connection...")
 
-  // Load data on mount
-  useEffect(() => {
-    if (user?.id) {
-      // This is a placeholder. Replace with actual data loading functions.
-      const loadGoals = async () => {
-        console.log("Loading goals...")
-        // Replace with actual logic to fetch goals from Supabase
-        // For now, we'll stick with the initialGoalsData and rely on subsequent fetches.
-      }
-      const loadWeeklyTasks = async () => {
-        console.log("Loading weekly tasks...")
-        // Replace with actual logic to fetch weekly tasks
-        const { data, error } = await supabase
-          .from("tasks")
-          .select("*")
-          .eq("user_id", user.id)
-          .eq("task_type", "weekly")
-          .limit(10) // Limit for initial load
-
-        if (error) console.error("Error loading weekly tasks:", error)
-        // Process data and update weeklyTasks state
-      }
-      const loadDailyTasks = async () => {
-        console.log("Loading daily tasks...")
-        // Replace with actual logic to fetch daily tasks
-        const { data, error } = await supabase
-          .from("tasks")
-          .select("*")
-          .eq("user_id", user.id)
-          .eq("task_type", "daily")
-          .limit(10) // Limit for initial load
-
-        if (error) console.error("Error loading daily tasks:", error)
-        // Process data and update dailyTasks state
-      }
-      const loadLongTermGoals = async () => {
-        console.log("Loading long-term goals...")
-        // Replace with actual logic to fetch long-term goals
-        const { data, error } = await supabase.from("long_term_goals").select("*").eq("user_id", user.id)
-
-        if (error) console.error("Error loading long-term goals:", error)
-        // Process data and update longTermGoals state
-      }
-      const loadCategories = async () => {
-        console.log("Loading categories...")
-        // Replace with actual logic to fetch categories
-        const { data, error } = await supabase.from("categories").select("*").eq("user_id", user.id)
-
-        if (error) console.error("Error loading categories:", error)
-        // Process data and update goalsData state based on categories
-      }
-      const loadAgents = async () => {
-        console.log("Loading agents...")
         try {
-          const { data, error } = await supabase
-            .from("agents")
-            .select("*")
-            .eq("user_id", user?.id)
-            .order("created_at", { ascending: false })
+          // Test database connection
+          const { data, error } = await supabase.from("categories").select("count").limit(1)
 
-          if (error) throw error
-          setAgents(data || [])
+          if (error) {
+            console.error("Database connection failed:", error)
+          } else {
+            console.log("Database connection successful!")
+
+            const startDateKey = `goalTracker_startDate_${user.id}`
+            let startDate = localStorage.getItem(startDateKey)
+
+            if (!startDate) {
+              startDate = new Date().toISOString()
+              localStorage.setItem(startDateKey, startDate)
+            }
+
+            const start = new Date(startDate)
+            const today = new Date()
+            const daysDiff = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+            const weekNumber = Math.floor(daysDiff / 7) + 1
+            const calculatedWeek = Math.min(Math.max(weekNumber, 1), 12)
+
+            setCurrentWeek(calculatedWeek)
+
+            const dbData = await loadCategoriesAndGoalsFromDB(user.id)
+            const taskData = await loadTasksFromDB(user.id)
+
+            console.log("=== COMPREHENSIVE TASK LOADING DEBUG ===")
+            console.log("Raw task data from database:", JSON.stringify(taskData, null, 2))
+            console.log("Daily tasks structure:", JSON.stringify(taskData.dailyTasks, null, 2))
+            console.log("Weekly tasks structure:", JSON.stringify(taskData.weeklyTasks, null, 2))
+
+            setGoalsData(dbData)
+
+            console.log("=== FORCING STATE UPDATES ===")
+
+            // Update daily tasks with force re-render
+            setDailyTasks(() => {
+              console.log("Setting daily tasks to:", JSON.stringify(taskData.dailyTasks, null, 2))
+              return { ...taskData.dailyTasks }
+            })
+
+            // Update weekly tasks with force re-render
+            setWeeklyTasks(() => {
+              console.log("Setting weekly tasks to:", JSON.stringify(taskData.weeklyTasks, null, 2))
+              return { ...taskData.weeklyTasks }
+            })
+
+            setTimeout(() => {
+              console.log("=== POST-UPDATE VERIFICATION ===")
+              console.log("Daily tasks count:", Object.keys(taskData.dailyTasks).length)
+              console.log("Weekly tasks count:", Object.keys(taskData.weeklyTasks).length)
+              console.log("State update completed successfully")
+            }, 100)
+          }
         } catch (error) {
-          console.error("Error loading agents:", error)
+          console.error("Error loading data:", error)
         }
       }
-
-      loadGoals()
-      loadWeeklyTasks()
-      loadDailyTasks()
-      loadLongTermGoals()
-      loadCategories()
-      loadAgents() // Load agents on mount
     }
-  }, [user?.id]) // Re-fetch if user ID changes
+
+    checkDatabaseAndLoadData()
+  }, [user?.id])
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -1726,6 +1692,7 @@ function GoalTrackerApp() {
             description: newGoal.description,
             target_count: newGoal.targetCount,
             weekly_target: weeklyTargetValue,
+            notes: editingGoal.goal.notes, // Preserve existing notes
             updated_at: new Date().toISOString(),
           })
           .eq("id", editingGoal.goal.id)
@@ -2889,85 +2856,11 @@ function GoalTrackerApp() {
     }
   }
 
-  const loadAgents = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("agents")
-        .select("*")
-        .eq("user_id", user?.id)
-        .order("created_at", { ascending: false })
-
-      if (error) throw error
-      setAgents(data || [])
-    } catch (error) {
-      console.error("Error loading agents:", error)
+  useEffect(() => {
+    if (user?.id) {
+      loadLongTermGoalsFromDB()
     }
-  }
-
-  const addAgent = async () => {
-    // Remove debug logs and simplified validation
-    if (!newAgent.name.trim() || !newAgent.role.trim()) {
-      return
-    }
-
-    try {
-      const { data, error } = await supabase
-        .from("agents")
-        .insert([
-          {
-            user_id: user?.id,
-            name: newAgent.name,
-            role: newAgent.role,
-            description: newAgent.description,
-          },
-        ])
-        .select()
-
-      if (error) throw error
-
-      if (data) {
-        setAgents([...agents, data[0]])
-        setNewAgent({ name: "", role: "", description: "" })
-        setShowAddAgent(false)
-      }
-    } catch (error) {
-      console.error("Error adding agent:", error)
-    }
-  }
-
-  const updateAgent = async () => {
-    if (!editingAgent || !editingAgent.name.trim() || !editingAgent.role.trim()) return
-
-    try {
-      const { error } = await supabase
-        .from("agents")
-        .update({
-          name: editingAgent.name,
-          role: editingAgent.role,
-          description: editingAgent.description,
-        })
-        .eq("id", editingAgent.id)
-
-      if (error) throw error
-
-      setAgents(agents.map((a) => (a.id === editingAgent.id ? editingAgent : a)))
-      setEditingAgent(null)
-    } catch (error) {
-      console.error("Error updating agent:", error)
-    }
-  }
-
-  const deleteAgent = async (id: string) => {
-    try {
-      const { error } = await supabase.from("agents").delete().eq("id", id)
-
-      if (error) throw error
-
-      setAgents(agents.filter((a) => a.id !== id))
-    } catch (error) {
-      console.error("Error deleting agent:", error)
-    }
-  }
+  }, [user?.id])
 
   return (
     <SidebarProvider defaultOpen={true}>
@@ -3008,10 +2901,10 @@ function GoalTrackerApp() {
         </header>
 
         <div className="flex flex-1 overflow-hidden">
-          <AppSidebar currentPage={currentPage} onPageChange={setCurrentPage} />
+          <AppSidebar />
           <SidebarInset className="flex-1">
-            <main className="flex-1 overflow-auto">
-              <div className="space-y-6 pl-6 pt-6 pb-6 pr-6">
+            <main className="flex-1 overflow-auto p-6">
+              <div className="mx-auto max-w-7xl space-y-6">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-8">
                   <div>
@@ -3115,10 +3008,11 @@ function GoalTrackerApp() {
 
                 {/* View Toggle */}
                 <Tabs value={activeView} onValueChange={setActiveView} className="mb-8">
-                  <TabsList className="grid w-full max-w-2xl grid-cols-3">
-                    <TabsTrigger value="daily">Daily Tasks</TabsTrigger>
-                    <TabsTrigger value="weekly">Weekly Tasks</TabsTrigger>
-                    <TabsTrigger value="12-week">12-Week Goals</TabsTrigger>
+                  <TabsList className="grid w-full max-w-2xl grid-cols-4">
+                    <TabsTrigger value="daily">Daily</TabsTrigger>
+                    <TabsTrigger value="weekly">Weekly</TabsTrigger>
+                    <TabsTrigger value="12-week">12-Week</TabsTrigger>
+                    <TabsTrigger value="long-term">Long-term Goals</TabsTrigger>
                   </TabsList>
 
                   {/* 12-Week Goals View */}
@@ -3327,11 +3221,7 @@ function GoalTrackerApp() {
                                                 </DropdownMenuItem>
                                                 <DropdownMenuItem
                                                   onClick={() =>
-                                                    setShowDeleteGoal({
-                                                      category,
-                                                      goalId: goal.id,
-                                                      title: goal.title,
-                                                    })
+                                                    setShowDeleteGoal({ category, goalId: goal.id, title: goal.title })
                                                   }
                                                   className="text-red-600"
                                                 >
@@ -3893,875 +3783,1004 @@ function GoalTrackerApp() {
                     </div>
                   </TabsContent>
 
-                  {/* 1-Year Goals View */}
-                  <TabsContent value="1-year" className="mt-8">
-                    <div className="flex items-center justify-between mb-6">
-                      <h2 className="text-2xl font-bold text-gray-900">1-Year Goals</h2>
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedTimeframe("1-year")
-                          setShowAddLongTermGoal(true)
-                        }}
-                        className="text-sm bg-black hover:bg-black/90 text-white"
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add 1-Year Goal
-                      </Button>
-                    </div>
+                  {/* Long-term Goals View with nested tabs */}
+                  <TabsContent value="long-term" className="mt-8">
+                    <Tabs defaultValue="1-year" className="w-full">
+                      <TabsList className="grid w-full max-w-md grid-cols-2">
+                        <TabsTrigger value="1-year">1-Year</TabsTrigger>
+                        <TabsTrigger value="5-year">5-Year</TabsTrigger>
+                      </TabsList>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                      {Object.entries(longTermGoals["1-year"]).map(([category, goals]) => (
-                        <Card
-                          key={category}
-                          className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200"
-                        >
-                          <CardHeader className="pb-4">
-                            <div className="flex items-center justify-between">
-                              <Badge
-                                className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}
-                              >
-                                {category}
-                              </Badge>
-                              <div className="flex items-center space-x-2">
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                      <Plus className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem
-                                      onClick={() => {
-                                        setSelectedCategory(category)
-                                        setSelectedTimeframe("1-year")
-                                        setShowAddLongTermGoal(true)
-                                      }}
-                                    >
-                                      <Target className="h-4 w-4 mr-2" />
-                                      Add Goal
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                      <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem
-                                      onClick={() => {
-                                        setSelectedCategory(category)
-                                        setSelectedTimeframe("1-year")
-                                        setShowAddLongTermGoal(true)
-                                      }}
-                                    >
-                                      <Plus className="h-4 w-4 mr-2" />
-                                      Add Goal
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => startEditingCategory(category)}>
-                                      <Edit className="h-4 w-4 mr-2" />
-                                      Edit Category
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      onClick={() => {
-                                        if (goals.length === 0) {
-                                          deleteCategory(category)
-                                        }
-                                      }}
-                                      className={goals.length > 0 ? "text-gray-400 cursor-not-allowed" : "text-red-600"}
-                                      disabled={goals.length > 0}
-                                    >
-                                      <Trash2 className="h-4 w-4 mr-2" />
-                                      {goals.length > 0 ? "Delete Category (remove goals first)" : "Delete Category"}
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </div>
-                            </div>
-                            <CardDescription className="mt-2">
-                              {goals.length} goal{goals.length !== 1 ? "s" : ""} • Long-term vision
-                            </CardDescription>
-                          </CardHeader>
-                          <CardContent className="space-y-4">
-                            {goals.map((goal) => (
-                              <div key={goal.id} className="p-4 rounded-lg bg-gray-50 border border-border space-y-4">
-                                <div className="flex items-start space-x-3">
-                                  <Checkbox
-                                    checked={goal.status === "completed"}
-                                    onCheckedChange={async (checked) => {
-                                      const isValidUUID =
-                                        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(goal.id)
+                      {/* 1-Year Goals View */}
+                      <TabsContent value="1-year" className="mt-8">
+                        <div className="flex items-center justify-between mb-6">
+                          <h2 className="text-2xl font-bold text-gray-900">1-Year Goals</h2>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedTimeframe("1-year")
+                              setShowAddLongTermGoal(true)
+                            }}
+                            className="text-sm bg-black hover:bg-gray-800 text-white"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add 1-Year Goal
+                          </Button>
+                        </div>
 
-                                      if (isValidUUID) {
-                                        // Database goal - update both database and local state
-                                        try {
-                                          const { error } = await supabase
-                                            .from("long_term_goals")
-                                            .update({
-                                              completed: !!checked,
-                                              completed_at: checked ? new Date().toISOString() : null,
-                                            })
-                                            .eq("id", goal.id)
-
-                                          if (error) throw error
-
-                                          const newStatus = checked ? "completed" : "in-progress"
-                                          setLongTermGoals((prev) => ({
-                                            ...prev,
-                                            "1-year": {
-                                              ...prev["1-year"],
-                                              [category]: prev["1-year"][category].map((g) =>
-                                                g.id === goal.id ? { ...g, status: newStatus } : g,
-                                              ),
-                                            },
-                                          }))
-                                        } catch (error) {
-                                          console.error("Error updating long-term goal:", error)
-                                        }
-                                      } else {
-                                        // Local goal - update only local state
-                                        const newStatus = checked ? "completed" : "in-progress"
-                                        setLongTermGoals((prev) => ({
-                                          ...prev,
-                                          "1-year": {
-                                            ...prev["1-year"],
-                                            [category]: prev["1-year"][category].map((g) =>
-                                              g.id === goal.id ? { ...g, status: newStatus } : g,
-                                            ),
-                                          },
-                                        }))
-                                      }
-                                    }}
-                                    className={`h-5 w-5 mt-0.5 flex-shrink-0 ${checkboxStyles}`}
-                                  />
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-start justify-between">
-                                      <div className="flex-1">
-                                        <h4
-                                          className={`font-semibold mb-2 ${goal.status === "completed" ? "line-through text-gray-500" : "text-gray-900"}`}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                          {Object.entries(longTermGoals["1-year"]).map(([category, goals]) => (
+                            <Card
+                              key={category}
+                              className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200"
+                            >
+                              <CardHeader className="pb-4">
+                                <div className="flex items-center justify-between">
+                                  <Badge
+                                    className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}
+                                  >
+                                    {category}
+                                  </Badge>
+                                  <div className="flex items-center space-x-2">
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                          <Plus className="h-4 w-4" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end">
+                                        <DropdownMenuItem
+                                          onClick={() => {
+                                            setSelectedCategory(category)
+                                            setSelectedTimeframe("1-year")
+                                            setShowAddLongTermGoal(true)
+                                          }}
                                         >
-                                          {goal.title}
-                                        </h4>
-                                        <p
-                                          className={`text-sm mb-3 ${goal.status === "completed" ? "text-gray-400" : "text-gray-600"}`}
+                                          <Target className="h-4 w-4 mr-2" />
+                                          Add Goal
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                          <MoreHorizontal className="h-4 w-4" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end">
+                                        <DropdownMenuItem
+                                          onClick={() => {
+                                            setSelectedCategory(category)
+                                            setSelectedTimeframe("1-year")
+                                            setShowAddLongTermGoal(true)
+                                          }}
                                         >
-                                          {goal.description}
-                                        </p>
-                                        <div className="flex items-center space-x-4 text-xs text-gray-500">
-                                          <span>Target: {new Date(goal.targetDate).toLocaleDateString()}</span>
-                                          <Badge
-                                            variant="secondary"
-                                            className={
-                                              goal.status === "completed"
-                                                ? "bg-green-100 text-green-800"
-                                                : goal.status === "on-hold"
-                                                  ? "bg-yellow-100 text-yellow-800"
-                                                  : "bg-blue-100 text-blue-800"
+                                          <Plus className="h-4 w-4 mr-2" />
+                                          Add Goal
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => startEditingCategory(category)}>
+                                          <Edit className="h-4 w-4 mr-2" />
+                                          Edit Category
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                          onClick={() => {
+                                            if (goals.length === 0) {
+                                              deleteCategory(category)
                                             }
-                                          >
-                                            {goal.status.replace("-", " ")}
-                                          </Badge>
-                                        </div>
-                                      </div>
-                                      <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0">
-                                            <MoreHorizontal className="h-4 w-4" />
-                                          </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                          <DropdownMenuItem
-                                            onClick={() => startEditingLongTermGoal("1-year", category, goal)}
-                                          >
-                                            <Edit className="h-4 w-4 mr-2" />
-                                            Edit Goal
-                                          </DropdownMenuItem>
-                                          <DropdownMenuItem
-                                            onClick={() =>
-                                              setShowDeleteLongTermGoal({
-                                                timeframe: "1-year",
-                                                category,
-                                                goalId: goal.id,
-                                                title: goal.title,
-                                              })
-                                            }
-                                            className="text-red-600"
-                                          >
-                                            <Trash2 className="h-4 w-4 mr-2" />
-                                            Delete Goal
-                                          </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                      </DropdownMenu>
-                                    </div>
+                                          }}
+                                          className={
+                                            goals.length > 0 ? "text-gray-400 cursor-not-allowed" : "text-red-600"
+                                          }
+                                          disabled={goals.length > 0}
+                                        >
+                                          <Trash2 className="h-4 w-4 mr-2" />
+                                          {goals.length > 0
+                                            ? "Delete Category (remove goals first)"
+                                            : "Delete Category"}
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
                                   </div>
                                 </div>
+                                <CardDescription className="mt-2">
+                                  {goals.length} goal{goals.length !== 1 ? "s" : ""} • Long-term vision
+                                </CardDescription>
+                              </CardHeader>
+                              <CardContent className="space-y-4">
+                                {goals.map((goal) => (
+                                  <div
+                                    key={goal.id}
+                                    className="p-4 rounded-lg bg-gray-50 border border-border space-y-4"
+                                  >
+                                    <div className="flex items-start space-x-3">
+                                      <Checkbox
+                                        checked={goal.status === "completed"}
+                                        onCheckedChange={async (checked) => {
+                                          const isValidUUID =
+                                            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+                                              goal.id,
+                                            )
 
-                                {/* Milestones */}
-                                <div className="space-y-2">
-                                  <h5 className="text-sm font-medium text-gray-700">Milestones</h5>
-                                  <div className="space-y-2">
-                                    {goal.milestones.map((milestone, index) => (
-                                      <div key={milestone.id} className="flex items-center space-x-3">
-                                        <Checkbox
-                                          checked={milestone.completed}
-                                          onCheckedChange={(checked) => {
+                                          if (isValidUUID) {
+                                            // Database goal - update both database and local state
+                                            try {
+                                              const { error } = await supabase
+                                                .from("long_term_goals")
+                                                .update({
+                                                  completed: !!checked,
+                                                  completed_at: checked ? new Date().toISOString() : null,
+                                                })
+                                                .eq("id", goal.id)
+
+                                              if (error) throw error
+
+                                              const newStatus = checked ? "completed" : "in-progress"
+                                              setLongTermGoals((prev) => ({
+                                                ...prev,
+                                                "1-year": {
+                                                  ...prev["1-year"],
+                                                  [category]: prev["1-year"][category].map((g) =>
+                                                    g.id === goal.id ? { ...g, status: newStatus } : g,
+                                                  ),
+                                                },
+                                              }))
+                                            } catch (error) {
+                                              console.error("Error updating long-term goal:", error)
+                                            }
+                                          } else {
+                                            // Local goal - update only local state
+                                            const newStatus = checked ? "completed" : "in-progress"
                                             setLongTermGoals((prev) => ({
                                               ...prev,
                                               "1-year": {
                                                 ...prev["1-year"],
                                                 [category]: prev["1-year"][category].map((g) =>
-                                                  g.id === goal.id
-                                                    ? {
-                                                        ...g,
-                                                        milestones: g.milestones.map((m) =>
-                                                          m.id === milestone.id ? { ...m, completed: !!checked } : m,
-                                                        ),
-                                                      }
-                                                    : g,
+                                                  g.id === goal.id ? { ...g, status: newStatus } : g,
                                                 ),
                                               },
                                             }))
-                                          }}
-                                          className={`h-5 w-5 mt-0.5 flex-shrink-0 ${checkboxStyles}`}
-                                        />
-                                        <div className="flex-1">
-                                          <span
-                                            className={`text-sm ${milestone.completed ? "line-through text-gray-500" : "text-gray-700"}`}
-                                          >
-                                            {milestone.title}
-                                          </span>
-                                          <span className="text-xs text-gray-500 ml-2">
-                                            {new Date(milestone.targetDate).toLocaleDateString()}
-                                          </span>
+                                          }
+                                        }}
+                                        className={`h-5 w-5 mt-0.5 flex-shrink-0 ${checkboxStyles}`}
+                                      />
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-start justify-between">
+                                          <div className="flex-1">
+                                            <h4
+                                              className={`font-semibold mb-2 ${goal.status === "completed" ? "line-through text-gray-500" : "text-gray-900"}`}
+                                            >
+                                              {goal.title}
+                                            </h4>
+                                            <p
+                                              className={`text-sm mb-3 ${goal.status === "completed" ? "text-gray-400" : "text-gray-600"}`}
+                                            >
+                                              {goal.description}
+                                            </p>
+                                            <div className="flex items-center space-x-4 text-xs text-gray-500">
+                                              <span>Target: {new Date(goal.targetDate).toLocaleDateString()}</span>
+                                              <Badge
+                                                variant="secondary"
+                                                className={
+                                                  goal.status === "completed"
+                                                    ? "bg-green-100 text-green-800"
+                                                    : goal.status === "on-hold"
+                                                      ? "bg-yellow-100 text-yellow-800"
+                                                      : "bg-blue-100 text-blue-800"
+                                                }
+                                              >
+                                                {goal.status.replace("-", " ")}
+                                              </Badge>
+                                            </div>
+                                          </div>
+                                          <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0">
+                                                <MoreHorizontal className="h-4 w-4" />
+                                              </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                              <DropdownMenuItem
+                                                onClick={() => startEditingLongTermGoal("1-year", category, goal)}
+                                              >
+                                                <Edit className="h-4 w-4 mr-2" />
+                                                Edit Goal
+                                              </DropdownMenuItem>
+                                              <DropdownMenuItem
+                                                onClick={() =>
+                                                  setShowDeleteLongTermGoal({
+                                                    timeframe: "1-year",
+                                                    category,
+                                                    goalId: goal.id,
+                                                    title: goal.title,
+                                                  })
+                                                }
+                                                className="text-red-600"
+                                              >
+                                                <Trash2 className="h-4 w-4 mr-2" />
+                                                Delete Goal
+                                              </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                          </DropdownMenu>
                                         </div>
                                       </div>
-                                    ))}
-                                  </div>
-                                </div>
-
-                                {/* Notes */}
-                                {goal.notes && (
-                                  <div className="pt-2 border-t border-gray-200">
-                                    <p className="text-sm text-gray-600">{goal.notes}</p>
-                                  </div>
-                                )}
-                              </div>
-                            ))}
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  </TabsContent>
-
-                  {/* 5-Year Goals View */}
-                  <TabsContent value="5-year" className="mt-8">
-                    <div className="flex items-center justify-between mb-6">
-                      <h2 className="text-2xl font-bold text-gray-900">5-Year Goals</h2>
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedTimeframe("5-year")
-                          setShowAddLongTermGoal(true)
-                        }}
-                        className="text-sm bg-black hover:bg-black/90 text-white"
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add 5-Year Goal
-                      </Button>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                      {Object.entries(longTermGoals["5-year"]).map(([category, goals]) => (
-                        <Card
-                          key={category}
-                          className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200"
-                        >
-                          <CardHeader className="pb-4">
-                            <div className="flex items-center justify-between">
-                              <Badge
-                                className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}
-                              >
-                                {category}
-                              </Badge>
-                              <div className="flex items-center space-x-2">
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                      <Plus className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem
-                                      onClick={() => {
-                                        setSelectedCategory(category)
-                                        setSelectedTimeframe("5-year")
-                                        setShowAddLongTermGoal(true)
-                                      }}
-                                    >
-                                      <Target className="h-4 w-4 mr-2" />
-                                      Add Goal
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                      <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem
-                                      onClick={() => {
-                                        setSelectedCategory(category)
-                                        setSelectedTimeframe("5-year")
-                                        setShowAddLongTermGoal(true)
-                                      }}
-                                    >
-                                      <Plus className="h-4 w-4 mr-2" />
-                                      Add Goal
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => startEditingCategory(category)}>
-                                      <Edit className="h-4 w-4 mr-2" />
-                                      Edit Category
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      onClick={() => {
-                                        if (goals.length === 0) {
-                                          deleteCategory(category)
-                                        }
-                                      }}
-                                      className={goals.length > 0 ? "text-gray-400 cursor-not-allowed" : "text-red-600"}
-                                      disabled={goals.length > 0}
-                                    >
-                                      <Trash2 className="h-4 w-4 mr-2" />
-                                      {goals.length > 0 ? "Delete Category (remove goals first)" : "Delete Category"}
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </div>
-                            </div>
-                            <CardDescription className="mt-2">
-                              {goals.length} goal{goals.length !== 1 ? "s" : ""} • Long-term vision
-                            </CardDescription>
-                          </CardHeader>
-                          <CardContent className="space-y-4">
-                            {goals.map((goal) => (
-                              <div key={goal.id} className="p-4 rounded-lg bg-gray-50 border border-border space-y-4">
-                                <div className="flex items-start space-x-3">
-                                  <Checkbox
-                                    checked={goal.status === "completed"}
-                                    onCheckedChange={async (checked) => {
-                                      const isValidUUID =
-                                        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(goal.id)
-
-                                      if (isValidUUID) {
-                                        // Database goal - update both database and local state
-                                        try {
-                                          const { error } = await supabase
-                                            .from("long_term_goals")
-                                            .update({
-                                              completed: !!checked,
-                                              completed_at: checked ? new Date().toISOString() : null,
-                                            })
-                                            .eq("id", goal.id)
-
-                                          if (error) throw error
-
-                                          const newStatus = checked ? "completed" : "in-progress"
-                                          setLongTermGoals((prev) => ({
-                                            ...prev,
-                                            "5-year": {
-                                              ...prev["5-year"],
-                                              [category]: prev["5-year"][category].map((g) =>
-                                                g.id === goal.id ? { ...g, status: newStatus } : g,
-                                              ),
-                                            },
-                                          }))
-                                        } catch (error) {
-                                          console.error("Error updating long-term goal:", error)
-                                        }
-                                      } else {
-                                        // Local goal - update only local state
-                                        const newStatus = checked ? "completed" : "in-progress"
-                                        setLongTermGoals((prev) => ({
-                                          ...prev,
-                                          "5-year": {
-                                            ...prev["5-year"],
-                                            [category]: prev["5-year"][category].map((g) =>
-                                              g.id === goal.id ? { ...g, status: newStatus } : g,
-                                            ),
-                                          },
-                                        }))
-                                      }
-                                    }}
-                                    className={`h-5 w-5 mt-0.5 flex-shrink-0 ${checkboxStyles}`}
-                                  />
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-start justify-between">
-                                      <div className="flex-1">
-                                        <h4
-                                          className={`font-semibold mb-2 ${goal.status === "completed" ? "line-through text-gray-500" : "text-gray-900"}`}
-                                        >
-                                          {goal.title}
-                                        </h4>
-                                        <p
-                                          className={`text-sm mb-3 ${goal.status === "completed" ? "text-gray-400" : "text-gray-600"}`}
-                                        >
-                                          {goal.description}
-                                        </p>
-                                        <div className="flex items-center space-x-4 text-xs text-gray-500">
-                                          <span>Target: {new Date(goal.targetDate).toLocaleDateString()}</span>
-                                          <Badge
-                                            variant="secondary"
-                                            className={
-                                              goal.status === "completed"
-                                                ? "bg-green-100 text-green-800"
-                                                : goal.status === "on-hold"
-                                                  ? "bg-yellow-100 text-yellow-800"
-                                                  : "bg-blue-100 text-blue-800"
-                                            }
-                                          >
-                                            {goal.status.replace("-", " ")}
-                                          </Badge>
-                                        </div>
-                                      </div>
-                                      <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0">
-                                            <MoreHorizontal className="h-4 w-4" />
-                                          </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                          <DropdownMenuItem
-                                            onClick={() => startEditingLongTermGoal("5-year", category, goal)}
-                                          >
-                                            <Edit className="h-4 w-4 mr-2" />
-                                            Edit Goal
-                                          </DropdownMenuItem>
-                                          <DropdownMenuItem
-                                            onClick={() =>
-                                              setShowDeleteLongTermGoal({
-                                                timeframe: "5-year",
-                                                category,
-                                                goalId: goal.id,
-                                                title: goal.title,
-                                              })
-                                            }
-                                            className="text-red-600"
-                                          >
-                                            <Trash2 className="h-4 w-4 mr-2" />
-                                            Delete Goal
-                                          </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                      </DropdownMenu>
                                     </div>
+
+                                    {/* Milestones */}
+                                    <div className="space-y-2">
+                                      <h5 className="text-sm font-medium text-gray-700">Milestones</h5>
+                                      <div className="space-y-2">
+                                        {goal.milestones.map((milestone, index) => (
+                                          <div key={milestone.id} className="flex items-center space-x-3">
+                                            <Checkbox
+                                              checked={milestone.completed}
+                                              onCheckedChange={(checked) => {
+                                                setLongTermGoals((prev) => ({
+                                                  ...prev,
+                                                  "1-year": {
+                                                    ...prev["1-year"],
+                                                    [category]: prev["1-year"][category].map((g) =>
+                                                      g.id === goal.id
+                                                        ? {
+                                                            ...g,
+                                                            milestones: g.milestones.map((m) =>
+                                                              m.id === milestone.id
+                                                                ? { ...m, completed: !!checked }
+                                                                : m,
+                                                            ),
+                                                          }
+                                                        : g,
+                                                    ),
+                                                  },
+                                                }))
+                                              }}
+                                              className={`h-5 w-5 mt-0.5 flex-shrink-0 ${checkboxStyles}`}
+                                            />
+                                            <div className="flex-1">
+                                              <span
+                                                className={`text-sm ${milestone.completed ? "line-through text-gray-500" : "text-gray-700"}`}
+                                              >
+                                                {milestone.title}
+                                              </span>
+                                              <span className="text-xs text-gray-500 ml-2">
+                                                {new Date(milestone.targetDate).toLocaleDateString()}
+                                              </span>
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+
+                                    {/* Notes */}
+                                    {goal.notes && (
+                                      <div className="pt-2 border-t border-gray-200">
+                                        <p className="text-sm text-gray-600">{goal.notes}</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      </TabsContent>
+
+                      {/* 5-Year Goals View */}
+                      <TabsContent value="5-year" className="mt-8">
+                        <div className="flex items-center justify-between mb-6">
+                          <h2 className="text-2xl font-bold text-gray-900">5-Year Goals</h2>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedTimeframe("5-year")
+                              setShowAddLongTermGoal(true)
+                            }}
+                            className="text-sm bg-black hover:bg-gray-800 text-white"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add 5-Year Goal
+                          </Button>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                          {Object.entries(longTermGoals["5-year"]).map(([category, goals]) => (
+                            <Card
+                              key={category}
+                              className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200"
+                            >
+                              <CardHeader className="pb-4">
+                                <div className="flex items-center justify-between">
+                                  <Badge
+                                    className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}
+                                  >
+                                    {category}
+                                  </Badge>
+                                  <div className="flex items-center space-x-2">
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                          <Plus className="h-4 w-4" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end">
+                                        <DropdownMenuItem
+                                          onClick={() => {
+                                            setSelectedCategory(category)
+                                            setSelectedTimeframe("5-year")
+                                            setShowAddLongTermGoal(true)
+                                          }}
+                                        >
+                                          <Target className="h-4 w-4 mr-2" />
+                                          Add Goal
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                          <MoreHorizontal className="h-4 w-4" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end">
+                                        <DropdownMenuItem
+                                          onClick={() => {
+                                            setSelectedCategory(category)
+                                            setSelectedTimeframe("5-year")
+                                            setShowAddLongTermGoal(true)
+                                          }}
+                                        >
+                                          <Plus className="h-4 w-4 mr-2" />
+                                          Add Goal
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => startEditingCategory(category)}>
+                                          <Edit className="h-4 w-4 mr-2" />
+                                          Edit Category
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                          onClick={() => {
+                                            if (goals.length === 0) {
+                                              deleteCategory(category)
+                                            }
+                                          }}
+                                          className={
+                                            goals.length > 0 ? "text-gray-400 cursor-not-allowed" : "text-red-600"
+                                          }
+                                          disabled={goals.length > 0}
+                                        >
+                                          <Trash2 className="h-4 w-4 mr-2" />
+                                          {goals.length > 0
+                                            ? "Delete Category (remove goals first)"
+                                            : "Delete Category"}
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
                                   </div>
                                 </div>
+                                <CardDescription className="mt-2">
+                                  {goals.length} goal{goals.length !== 1 ? "s" : ""} • Long-term vision
+                                </CardDescription>
+                              </CardHeader>
+                              <CardContent className="space-y-4">
+                                {goals.map((goal) => (
+                                  <div
+                                    key={goal.id}
+                                    className="p-4 rounded-lg bg-gray-50 border border-border space-y-4"
+                                  >
+                                    <div className="flex items-start space-x-3">
+                                      <Checkbox
+                                        checked={goal.status === "completed"}
+                                        onCheckedChange={async (checked) => {
+                                          const isValidUUID =
+                                            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+                                              goal.id,
+                                            )
 
-                                {/* Milestones */}
-                                <div className="space-y-2">
-                                  <h5 className="text-sm font-medium text-gray-700">Milestones</h5>
-                                  <div className="space-y-2">
-                                    {goal.milestones.map((milestone, index) => (
-                                      <div key={milestone.id} className="flex items-center space-x-3">
-                                        <Checkbox
-                                          checked={milestone.completed}
-                                          onCheckedChange={(checked) => {
+                                          if (isValidUUID) {
+                                            // Database goal - update both database and local state
+                                            try {
+                                              const { error } = await supabase
+                                                .from("long_term_goals")
+                                                .update({
+                                                  completed: !!checked,
+                                                  completed_at: checked ? new Date().toISOString() : null,
+                                                })
+                                                .eq("id", goal.id)
+
+                                              if (error) throw error
+
+                                              const newStatus = checked ? "completed" : "in-progress"
+                                              setLongTermGoals((prev) => ({
+                                                ...prev,
+                                                "5-year": {
+                                                  ...prev["5-year"],
+                                                  [category]: prev["5-year"][category].map((g) =>
+                                                    g.id === goal.id ? { ...g, status: newStatus } : g,
+                                                  ),
+                                                },
+                                              }))
+                                            } catch (error) {
+                                              console.error("Error updating long-term goal:", error)
+                                            }
+                                          } else {
+                                            // Local goal - update only local state
+                                            const newStatus = checked ? "completed" : "in-progress"
                                             setLongTermGoals((prev) => ({
                                               ...prev,
                                               "5-year": {
                                                 ...prev["5-year"],
                                                 [category]: prev["5-year"][category].map((g) =>
-                                                  g.id === goal.id
-                                                    ? {
-                                                        ...g,
-                                                        milestones: g.milestones.map((m) =>
-                                                          m.id === milestone.id ? { ...m, completed: !!checked } : m,
-                                                        ),
-                                                      }
-                                                    : g,
+                                                  g.id === goal.id ? { ...g, status: newStatus } : g,
                                                 ),
                                               },
                                             }))
-                                          }}
-                                          className={`h-5 w-5 mt-0.5 flex-shrink-0 ${checkboxStyles}`}
-                                        />
-                                        <div className="flex-1">
-                                          <span
-                                            className={`text-sm ${milestone.completed ? "line-through text-gray-500" : "text-gray-700"}`}
-                                          >
-                                            {milestone.title}
-                                          </span>
-                                          <span className="text-xs text-gray-500 ml-2">
-                                            {new Date(milestone.targetDate).toLocaleDateString()}
-                                          </span>
+                                          }
+                                        }}
+                                        className={`h-5 w-5 mt-0.5 flex-shrink-0 ${checkboxStyles}`}
+                                      />
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-start justify-between">
+                                          <div className="flex-1">
+                                            <h4
+                                              className={`font-semibold mb-2 ${goal.status === "completed" ? "line-through text-gray-500" : "text-gray-900"}`}
+                                            >
+                                              {goal.title}
+                                            </h4>
+                                            <p
+                                              className={`text-sm mb-3 ${goal.status === "completed" ? "text-gray-400" : "text-gray-600"}`}
+                                            >
+                                              {goal.description}
+                                            </p>
+                                            <div className="flex items-center space-x-4 text-xs text-gray-500">
+                                              <span>Target: {new Date(goal.targetDate).toLocaleDateString()}</span>
+                                              <Badge
+                                                variant="secondary"
+                                                className={
+                                                  goal.status === "completed"
+                                                    ? "bg-green-100 text-green-800"
+                                                    : goal.status === "on-hold"
+                                                      ? "bg-yellow-100 text-yellow-800"
+                                                      : "bg-blue-100 text-blue-800"
+                                                }
+                                              >
+                                                {goal.status.replace("-", " ")}
+                                              </Badge>
+                                            </div>
+                                          </div>
+                                          <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0">
+                                                <MoreHorizontal className="h-4 w-4" />
+                                              </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                              <DropdownMenuItem
+                                                onClick={() => startEditingLongTermGoal("5-year", category, goal)}
+                                              >
+                                                <Edit className="h-4 w-4 mr-2" />
+                                                Edit Goal
+                                              </DropdownMenuItem>
+                                              <DropdownMenuItem
+                                                onClick={() =>
+                                                  setShowDeleteLongTermGoal({
+                                                    timeframe: "5-year",
+                                                    category,
+                                                    goalId: goal.id,
+                                                    title: goal.title,
+                                                  })
+                                                }
+                                                className="text-red-600"
+                                              >
+                                                <Trash2 className="h-4 w-4 mr-2" />
+                                                Delete Goal
+                                              </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                          </DropdownMenu>
                                         </div>
                                       </div>
-                                    ))}
-                                  </div>
-                                </div>
+                                    </div>
 
-                                {/* Notes */}
-                                {goal.notes && (
-                                  <div className="pt-2 border-t border-gray-200">
-                                    <p className="text-sm text-gray-600">{goal.notes}</p>
+                                    {/* Milestones */}
+                                    <div className="space-y-2">
+                                      <h5 className="text-sm font-medium text-gray-700">Milestones</h5>
+                                      <div className="space-y-2">
+                                        {goal.milestones.map((milestone, index) => (
+                                          <div key={milestone.id} className="flex items-center space-x-3">
+                                            <Checkbox
+                                              checked={milestone.completed}
+                                              onCheckedChange={(checked) => {
+                                                setLongTermGoals((prev) => ({
+                                                  ...prev,
+                                                  "5-year": {
+                                                    ...prev["5-year"],
+                                                    [category]: prev["5-year"][category].map((g) =>
+                                                      g.id === goal.id
+                                                        ? {
+                                                            ...g,
+                                                            milestones: g.milestones.map((m) =>
+                                                              m.id === milestone.id
+                                                                ? { ...m, completed: !!checked }
+                                                                : m,
+                                                            ),
+                                                          }
+                                                        : g,
+                                                    ),
+                                                  },
+                                                }))
+                                              }}
+                                              className={`h-5 w-5 mt-0.5 flex-shrink-0 ${checkboxStyles}`}
+                                            />
+                                            <div className="flex-1">
+                                              <span
+                                                className={`text-sm ${milestone.completed ? "line-through text-gray-500" : "text-gray-700"}`}
+                                              >
+                                                {milestone.title}
+                                              </span>
+                                              <span className="text-xs text-gray-500 ml-2">
+                                                {new Date(milestone.targetDate).toLocaleDateString()}
+                                              </span>
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+
+                                    {/* Notes */}
+                                    {goal.notes && (
+                                      <div className="pt-2 border-t border-gray-200">
+                                        <p className="text-sm text-gray-600">{goal.notes}</p>
+                                      </div>
+                                    )}
                                   </div>
-                                )}
-                              </div>
-                            ))}
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
+                                ))}
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      </TabsContent>
+                    </Tabs>
                   </TabsContent>
                 </Tabs>
 
-                {/* Agents Page Content */}
-                {currentPage === "agents" ? (
-                  <div className="space-y-6">
-                    <div className="flex items-center justify-between">
+                {/* Add Goal Dialog */}
+                <Dialog open={showAddGoal} onOpenChange={setShowAddGoal}>
+                  <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                      <DialogTitle>{editingGoal ? "Edit Goal" : "Add New Goal"}</DialogTitle>
+                      <DialogDescription>
+                        {editingGoal ? "Update your goal details" : "Create a new goal to track your progress"}
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
                       <div>
-                        <h2 className="text-3xl font-bold tracking-tight">Agents</h2>
-                        <p className="text-muted-foreground">Manage your team members</p>
+                        <Label htmlFor="goal-title">Goal Title</Label>
+                        <Input
+                          id="goal-title"
+                          placeholder="e.g., Run 100 miles, Read 12 books"
+                          value={newGoal.title}
+                          onChange={(e) => {
+                            const title = e.target.value
+                            const detectedNumber = extractNumberFromTitle(title)
+                            setNewGoal((prev) => ({
+                              ...prev,
+                              title,
+                              targetCount: detectedNumber > 0 ? detectedNumber : prev.targetCount,
+                            }))
+                          }}
+                        />
                       </div>
-                      <Button onClick={() => setShowAddAgent(true)} className="bg-black hover:bg-black/90 text-white">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Agent
+                      <div>
+                        <Label htmlFor="goal-description">Description (Optional)</Label>
+                        <Textarea
+                          id="goal-description"
+                          placeholder="Add more details about your goal..."
+                          value={newGoal.description}
+                          onChange={(e) => setNewGoal((prev) => ({ ...prev, description: e.target.value }))}
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="target-count">Target Count</Label>
+                          <Input
+                            id="target-count"
+                            type="number"
+                            min="1"
+                            value={newGoal.targetCount || ""}
+                            onChange={(e) =>
+                              setNewGoal((prev) => ({ ...prev, targetCount: Number.parseInt(e.target.value) || 0 }))
+                            }
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="weekly-target">Weekly Target</Label>
+                          <Input
+                            id="weekly-target"
+                            type="number"
+                            min="0"
+                            step="0.1"
+                            value={newGoal.weeklyTarget || ""}
+                            onChange={(e) =>
+                              setNewGoal((prev) => ({ ...prev, weeklyTarget: Number.parseFloat(e.target.value) || 0 }))
+                            }
+                            placeholder={`${Math.ceil((newGoal.targetCount || 1) / 12)}`}
+                          />
+                        </div>
+                      </div>
+                      {!editingGoal && (
+                        <div>
+                          <Label htmlFor="category">Category</Label>
+                          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Object.keys(goalsData).map((category) => (
+                                <SelectItem key={category} value={category}>
+                                  {category}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setShowAddGoal(false)}>
+                        Cancel
                       </Button>
-                    </div>
+                      <Button onClick={editingGoal ? saveEditedGoal : addNewGoal}>
+                        {editingGoal ? "Save Changes" : "Add Goal"}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {agents.map((agent) => (
-                        <Card key={agent.id} className="border-0 shadow-sm hover:shadow-md transition-shadow">
-                          <CardHeader>
-                            <div className="flex items-start justify-between">
-                              <div className="flex items-center space-x-3">
-                                <Avatar className="size-12">
-                                  <AvatarFallback className="bg-[#05a7b0] text-white">
-                                    {agent.name
-                                      .split(" ")
-                                      .map((n) => n[0])
-                                      .join("")
-                                      .toUpperCase()}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div>
-                                  <CardTitle className="text-lg">{agent.name}</CardTitle>
-                                  <Badge variant="secondary" className="mt-1">
-                                    {agent.role}
-                                  </Badge>
-                                </div>
-                              </div>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => setEditingAgent(agent)}>
-                                    <Edit className="h-4 w-4 mr-2" />
-                                    Edit
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => deleteAgent(agent.id)} className="text-red-600">
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
-                          </CardHeader>
-                          {agent.description && (
-                            <CardContent>
-                              <p className="text-sm text-muted-foreground">{agent.description}</p>
-                            </CardContent>
-                          )}
-                        </Card>
-                      ))}
-                    </div>
+                {/* Delete Goal Confirmation Dialog */}
+                <Dialog open={!!showDeleteGoal} onOpenChange={() => setShowDeleteGoal(null)}>
+                  <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                      <DialogTitle>Delete Goal</DialogTitle>
+                      <DialogDescription>
+                        Are you sure you want to delete "{showDeleteGoal?.title}"? This action cannot be undone.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setShowDeleteGoal(null)}>
+                        Cancel
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        onClick={() => {
+                          if (showDeleteGoal) {
+                            deleteGoal(showDeleteGoal.category, showDeleteGoal.goalId)
+                          }
+                        }}
+                      >
+                        Delete
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
 
-                    {agents.length === 0 && (
-                      <Card className="border-dashed">
-                        <CardContent className="flex flex-col items-center justify-center py-12">
-                          <Users className="h-12 w-12 text-muted-foreground mb-4" />
-                          <h3 className="text-lg font-semibold mb-2">No agents yet</h3>
-                          <p className="text-sm text-muted-foreground mb-4">
-                            Get started by adding your first team member
-                          </p>
-                          <Button
-                            onClick={() => setShowAddAgent(true)}
-                            className="bg-black hover:bg-black/90 text-white"
-                          >
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Agent
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    )}
-
-                    {/* Add Agent Dialog */}
-                    {showAddAgent && (
-                      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                        <Card className="w-full max-w-md mx-4">
-                          <CardHeader>
-                            <CardTitle>Add New Agent</CardTitle>
-                            <CardDescription>Add a new team member to your organization</CardDescription>
-                          </CardHeader>
-                          <CardContent className="space-y-4">
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium">Name</label>
-                              <Input
-                                placeholder="Enter agent name"
-                                value={newAgent.name}
-                                onChange={(e) => setNewAgent({ ...newAgent, name: e.target.value })}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium">Role</label>
-                              <Input
-                                placeholder="Enter role (e.g., Sales Agent, Manager)"
-                                value={newAgent.role}
-                                onChange={(e) => setNewAgent({ ...newAgent, role: e.target.value })}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium">Description (Optional)</label>
-                              <Textarea
-                                placeholder="Enter description"
-                                value={newAgent.description}
-                                onChange={(e) => setNewAgent({ ...newAgent, description: e.target.value })}
-                                rows={3}
-                              />
-                            </div>
-                          </CardContent>
-                          <div className="flex justify-end gap-2 p-6 pt-0">
-                            <Button
-                              variant="outline"
-                              onClick={() => {
-                                setShowAddAgent(false)
-                                setNewAgent({ name: "", role: "", description: "" })
-                              }}
-                            >
-                              Cancel
-                            </Button>
-                            <Button
-                              onClick={() => {
-                                console.log("[v0] Add Agent button clicked")
-                                console.log("[v0] newAgent state:", newAgent)
-                                console.log("[v0] Button disabled?", !newAgent.name.trim() || !newAgent.role.trim())
-                                addAgent()
-                              }}
-                              className="w-full bg-black hover:bg-black/90 text-white"
-                            >
-                              Add Agent
-                            </Button>
-                          </div>
-                        </Card>
+                {/* Add Long Term Goal Modal */}
+                <Dialog open={showAddLongTermGoal} onOpenChange={setShowAddLongTermGoal}>
+                  <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>
+                        {editingLongTermGoal ? "Edit" : "Add"} {selectedTimeframe === "1-year" ? "1-Year" : "5-Year"}{" "}
+                        Goal
+                      </DialogTitle>
+                      <DialogDescription>
+                        {editingLongTermGoal
+                          ? "Update your long-term goal"
+                          : "Create a new long-term goal with milestones"}
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="lt-goal-title">Goal Title</Label>
+                        <Input
+                          id="lt-goal-title"
+                          placeholder="e.g., Launch successful startup, Complete marathon"
+                          value={newLongTermGoal.title}
+                          onChange={(e) => setNewLongTermGoal((prev) => ({ ...prev, title: e.target.value }))}
+                        />
                       </div>
-                    )}
-
-                    {/* Edit Agent Dialog */}
-                    {editingAgent && (
-                      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                        <Card className="w-full max-w-md mx-4">
-                          <CardHeader>
-                            <CardTitle>Edit Agent</CardTitle>
-                            <CardDescription>Update agent information</CardDescription>
-                          </CardHeader>
-                          <CardContent className="space-y-4">
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium">Name</label>
-                              <Input
-                                placeholder="Enter agent name"
-                                value={editingAgent.name}
-                                onChange={(e) => setEditingAgent({ ...editingAgent, name: e.target.value })}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium">Role</label>
-                              <Input
-                                placeholder="Enter role"
-                                value={editingAgent.role}
-                                onChange={(e) => setEditingAgent({ ...editingAgent, role: e.target.value })}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium">Description (Optional)</label>
-                              <Textarea
-                                placeholder="Enter description"
-                                value={editingAgent.description}
-                                onChange={(e) => setEditingAgent({ ...editingAgent, description: e.target.value })}
-                                rows={3}
-                              />
-                            </div>
-                          </CardContent>
-                          <div className="flex justify-end gap-2 p-6 pt-0">
-                            <Button variant="outline" onClick={() => setEditingAgent(null)}>
-                              Cancel
-                            </Button>
-                            <Button
-                              onClick={updateAgent}
-                              className="bg-black hover:bg-black/90 text-white"
-                              disabled={!editingAgent.name.trim() || !editingAgent.role.trim()}
-                            >
-                              Save Changes
-                            </Button>
-                          </div>
-                        </Card>
+                      <div>
+                        <Label htmlFor="lt-goal-description">Description</Label>
+                        <Textarea
+                          id="lt-goal-description"
+                          placeholder="Describe your long-term vision..."
+                          value={newLongTermGoal.description}
+                          onChange={(e) => setNewLongTermGoal((prev) => ({ ...prev, description: e.target.value }))}
+                        />
                       </div>
-                    )}
-                  </div>
-                ) : null}
-
-                {showAddDailyTask && (
-                  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <Card className="w-full max-w-md mx-4">
-                      <CardHeader>
-                        <CardTitle>{editingDailyTask ? "Edit Daily Task" : "Add Daily Task"}</CardTitle>
-                        <CardDescription>
-                          {editingDailyTask ? "Update task details" : `Add a new task for ${selectedDay}`}
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Title *</label>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="lt-target-date">Target Date</Label>
                           <Input
-                            placeholder="Enter task title"
-                            value={newDailyTask.title}
-                            onChange={(e) => setNewDailyTask({ ...newDailyTask, title: e.target.value })}
+                            id="lt-target-date"
+                            type="date"
+                            value={newLongTermGoal.targetDate}
+                            onChange={(e) => setNewLongTermGoal((prev) => ({ ...prev, targetDate: e.target.value }))}
                           />
                         </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Description (Optional)</label>
-                          <Textarea
-                            placeholder="Enter description"
-                            value={newDailyTask.description}
-                            onChange={(e) => setNewDailyTask({ ...newDailyTask, description: e.target.value })}
-                            rows={3}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Category</label>
-                          <select
-                            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                            value={newDailyTask.category}
-                            onChange={(e) => setNewDailyTask({ ...newDailyTask, category: e.target.value })}
+                        <div>
+                          <Label htmlFor="lt-category">Category</Label>
+                          <Select
+                            value={newLongTermGoal.category}
+                            onValueChange={(value) => setNewLongTermGoal((prev) => ({ ...prev, category: value }))}
                           >
-                            <option value="">Select category</option>
-                            {Object.keys(goalsData).map((category) => (
-                              <option key={category} value={category}>
-                                {category}
-                              </option>
-                            ))}
-                          </select>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Business">Business</SelectItem>
+                              <SelectItem value="Personal">Personal</SelectItem>
+                              <SelectItem value="Financial">Financial</SelectItem>
+                              <SelectItem value="Health">Health</SelectItem>
+                              <SelectItem value="Education">Education</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
-                      </CardContent>
-                      <div className="flex justify-end gap-2 p-6 pt-0">
-                        <Button
-                          variant="outline"
-                          onClick={() => {
-                            setShowAddDailyTask(false)
-                            setEditingDailyTask(null)
-                            setNewDailyTask({
-                              title: "",
-                              description: "",
-                              category: "",
-                              goalId: "",
-                              timeBlock: "",
-                              estimatedMinutes: 30,
-                            })
-                          }}
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          onClick={editingDailyTask ? saveEditedDailyTask : addDailyTask}
-                          className="bg-black hover:bg-black/90 text-white"
-                          disabled={!newDailyTask.title.trim()}
-                        >
-                          {editingDailyTask ? "Save Changes" : "Add Task"}
-                        </Button>
                       </div>
-                    </Card>
-                  </div>
-                )}
+                      <div>
+                        <Label htmlFor="lt-notes">Notes</Label>
+                        <Textarea
+                          id="lt-notes"
+                          placeholder="Additional notes or strategy..."
+                          value={newLongTermGoal.notes}
+                          onChange={(e) => setNewLongTermGoal((prev) => ({ ...prev, notes: e.target.value }))}
+                        />
+                      </div>
+                      <div>
+                        <Label>Milestones (Optional)</Label>
+                        <div className="space-y-3 mt-2">
+                          {newLongTermGoal.milestones.map((milestone, index) => (
+                            <div key={index} className="grid grid-cols-2 gap-2">
+                              <Input
+                                placeholder={`Milestone ${index + 1} title`}
+                                value={milestone.title}
+                                onChange={(e) => {
+                                  const updatedMilestones = [...newLongTermGoal.milestones]
+                                  updatedMilestones[index] = { ...updatedMilestones[index], title: e.target.value }
+                                  setNewLongTermGoal((prev) => ({ ...prev, milestones: updatedMilestones }))
+                                }}
+                              />
+                              <Input
+                                type="date"
+                                value={milestone.targetDate}
+                                onChange={(e) => {
+                                  const updatedMilestones = [...newLongTermGoal.milestones]
+                                  updatedMilestones[index] = { ...updatedMilestones[index], targetDate: e.target.value }
+                                  setNewLongTermGoal((prev) => ({ ...prev, milestones: updatedMilestones }))
+                                }}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setShowAddLongTermGoal(false)}>
+                        Cancel
+                      </Button>
+                      <Button onClick={editingLongTermGoal ? saveEditedLongTermGoal : addLongTermGoal}>
+                        {editingLongTermGoal ? "Save Changes" : "Add Goal"}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
 
-                {showAddWeeklyTask && (
-                  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <Card className="w-full max-w-md mx-4">
-                      <CardHeader>
-                        <CardTitle>{editingWeeklyTask ? "Edit Weekly Task" : "Add Weekly Task"}</CardTitle>
-                        <CardDescription>
-                          {editingWeeklyTask ? "Update task details" : `Add a new task for Week ${currentWeek}`}
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Title *</label>
-                          <Input
-                            placeholder="Enter task title"
-                            value={newWeeklyTask.title}
-                            onChange={(e) => setNewWeeklyTask({ ...newWeeklyTask, title: e.target.value })}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Description (Optional)</label>
-                          <Textarea
-                            placeholder="Enter description"
-                            value={newWeeklyTask.description}
-                            onChange={(e) => setNewWeeklyTask({ ...newWeeklyTask, description: e.target.value })}
-                            rows={3}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Category *</label>
-                          <select
-                            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                            value={newWeeklyTask.category}
-                            onChange={(e) => setNewWeeklyTask({ ...newWeeklyTask, category: e.target.value })}
-                          >
-                            <option value="">Select category</option>
-                            {Object.keys(goalsData).map((category) => (
-                              <option key={category} value={category}>
-                                {category}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </CardContent>
-                      <div className="flex justify-end gap-2 p-6 pt-0">
-                        <Button
-                          variant="outline"
-                          onClick={() => {
-                            setShowAddWeeklyTask(false)
-                            setEditingWeeklyTask(null)
-                            setNewWeeklyTask({
-                              title: "",
-                              description: "",
-                              category: "",
-                              goalId: "",
-                              priority: "medium" as const,
-                              estimatedHours: 1,
-                            })
-                          }}
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          onClick={editingWeeklyTask ? saveEditedWeeklyTask : addWeeklyTask}
-                          className="bg-black hover:bg-black/90 text-white"
-                          disabled={!newWeeklyTask.title.trim() || !newWeeklyTask.category}
-                        >
-                          {editingWeeklyTask ? "Save Changes" : "Add Task"}
-                        </Button>
+                <Dialog open={showAddWeeklyTask} onOpenChange={setShowAddWeeklyTask}>
+                  <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                      <DialogTitle>{editingWeeklyTask ? "Edit" : "Add"} Weekly Task</DialogTitle>
+                      <DialogDescription>
+                        {editingWeeklyTask ? "Update your weekly task" : "Create a new weekly task"}
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="weekly-task-title">Task Title</Label>
+                        <Input
+                          id="weekly-task-title"
+                          placeholder="e.g., Review project proposals"
+                          value={newWeeklyTask.title}
+                          onChange={(e) => setNewWeeklyTask((prev) => ({ ...prev, title: e.target.value }))}
+                        />
                       </div>
-                    </Card>
-                  </div>
-                )}
+                      <div>
+                        <Label htmlFor="weekly-task-description">Description</Label>
+                        <Textarea
+                          id="weekly-task-description"
+                          placeholder="Describe the task..."
+                          value={newWeeklyTask.description}
+                          onChange={(e) => setNewWeeklyTask((prev) => ({ ...prev, description: e.target.value }))}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="weekly-task-category">Category</Label>
+                        <Select
+                          value={newWeeklyTask.category}
+                          onValueChange={(value) => setNewWeeklyTask((prev) => ({ ...prev, category: value }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.keys(goalsData).map((category) => (
+                              <SelectItem key={category} value={category}>
+                                {category}
+                              </SelectItem>
+                            ))}
+                            <SelectItem value="Uncategorized">Uncategorized</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="weekly-task-priority">Priority</Label>
+                        <Select
+                          value={newWeeklyTask.priority}
+                          onValueChange={(value) =>
+                            setNewWeeklyTask((prev) => ({ ...prev, priority: value as "low" | "medium" | "high" }))
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="low">Low</SelectItem>
+                            <SelectItem value="medium">Medium</SelectItem>
+                            <SelectItem value="high">High</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="weekly-task-hours">Estimated Hours</Label>
+                        <Input
+                          id="weekly-task-hours"
+                          type="number"
+                          min="1"
+                          max="40"
+                          value={newWeeklyTask.estimatedHours}
+                          onChange={(e) =>
+                            setNewWeeklyTask((prev) => ({
+                              ...prev,
+                              estimatedHours: Number.parseInt(e.target.value) || 1,
+                            }))
+                          }
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setShowAddWeeklyTask(false)}>
+                        Cancel
+                      </Button>
+                      <Button onClick={editingWeeklyTask ? saveEditedWeeklyTask : addWeeklyTask}>
+                        {editingWeeklyTask ? "Save Changes" : "Add Task"}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+
+                <Dialog open={showAddDailyTask} onOpenChange={setShowAddDailyTask}>
+                  <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                      <DialogTitle>Add Daily Task</DialogTitle>
+                      <DialogDescription>Create a new daily task</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="daily-task-title">Task Title</Label>
+                        <Input
+                          id="daily-task-title"
+                          placeholder="e.g., Review project proposals"
+                          value={newDailyTask.title}
+                          onChange={(e) => setNewDailyTask((prev) => ({ ...prev, title: e.target.value }))}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="daily-task-description">Description</Label>
+                        <Textarea
+                          id="daily-task-description"
+                          placeholder="Describe the task..."
+                          value={newDailyTask.description}
+                          onChange={(e) => setNewDailyTask((prev) => ({ ...prev, description: e.target.value }))}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="daily-task-category">Category</Label>
+                        <Select
+                          value={newDailyTask.category}
+                          onValueChange={(value) => setNewDailyTask((prev) => ({ ...prev, category: value }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.keys(goalsData).map((category) => (
+                              <SelectItem key={category} value={category}>
+                                {category}
+                              </SelectItem>
+                            ))}
+                            <SelectItem value="Uncategorized">Uncategorized</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="daily-task-timeblock">Time Block</Label>
+                        <Select
+                          value={newDailyTask.timeBlock}
+                          onValueChange={(value) => setNewDailyTask((prev) => ({ ...prev, timeBlock: value }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select time block" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="morning">Morning</SelectItem>
+                            <SelectItem value="afternoon">Afternoon</SelectItem>
+                            <SelectItem value="evening">Evening</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="daily-task-minutes">Estimated Minutes</Label>
+                        <Input
+                          id="daily-task-minutes"
+                          type="number"
+                          min="5"
+                          max="480"
+                          value={newDailyTask.estimatedMinutes}
+                          onChange={(e) =>
+                            setNewDailyTask((prev) => ({
+                              ...prev,
+                              estimatedMinutes: Number.parseInt(e.target.value) || 30,
+                            }))
+                          }
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setShowAddDailyTask(false)}>
+                        Cancel
+                      </Button>
+                      <Button onClick={addDailyTask}>Add Task</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+
+                {/* ADD CATEGORY DIALOG */}
+                <Dialog open={showAddCategory} onOpenChange={setShowAddCategory}>
+                  <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                      <DialogTitle>Add New Category</DialogTitle>
+                      <DialogDescription>Create a new category to organize your goals</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="category-name">Category Name</Label>
+                        <Input
+                          id="category-name"
+                          placeholder="e.g., Business, Personal, Health"
+                          value={newCategoryName}
+                          onChange={(e) => setNewCategoryName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              addNewCategory()
+                            }
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setShowAddCategory(false)}>
+                        Cancel
+                      </Button>
+                      <Button onClick={addNewCategory}>Add Category</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
             </main>
           </SidebarInset>
@@ -4772,11 +4791,11 @@ function GoalTrackerApp() {
 }
 
 export default function Page() {
-  const { user, isLoading } = useAuth()
+  const { user, isLoading: authLoading } = useAuth()
 
-  console.log("[v0] Page render - user:", user, "isLoading:", isLoading)
+  console.log("[v0] Page render - user:", user, "isLoading:", authLoading)
 
-  if (isLoading) {
+  if (authLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
