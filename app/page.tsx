@@ -15,6 +15,7 @@ import {
   Clock,
   GripVertical,
   ClipboardCheck,
+  Users,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -453,7 +454,6 @@ const initialLongTermGoals = {
         targetDate: "2025-10-31",
         category: "Business",
         status: "in-progress",
-        notes: "Research market conditions and local partnerships",
         milestones: [
           { id: "m1", title: "Market research complete", completed: true, targetDate: "2025-01-31" },
           { id: "m2", title: "Atlanta office opened", completed: false, targetDate: "2025-05-31" },
@@ -977,6 +977,120 @@ function GoalTrackerApp() {
   console.log("[v0] GoalTrackerApp render - weeklyTasks keys:", Object.keys(weeklyTasks))
   console.log("[v0] GoalTrackerApp render - dailyTasks keys:", Object.keys(dailyTasks))
 
+  const loadAgents = async () => {
+    if (!user) return
+
+    try {
+      const { data, error } = await supabase
+        .from("agents")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+
+      if (error) throw error
+
+      setAgents(data || [])
+    } catch (error) {
+      console.error("Error loading agents:", error)
+    }
+  }
+
+  const addAgent = async () => {
+    if (!user || !newAgent.name.trim()) return
+
+    try {
+      const { data, error } = await supabase
+        .from("agents")
+        .insert([
+          {
+            user_id: user.id,
+            name: newAgent.name,
+            description: newAgent.description,
+            role: newAgent.role,
+          },
+        ])
+        .select()
+
+      if (error) throw error
+
+      if (data) {
+        setAgents((prev) => [data[0], ...prev])
+        setNewAgent({ name: "", description: "", role: "" })
+        setShowAddAgent(false)
+      }
+    } catch (error) {
+      console.error("Error adding agent:", error)
+    }
+  }
+
+  const updateAgent = async () => {
+    if (!editingAgent || !editingAgent.name.trim()) return
+
+    try {
+      const { error } = await supabase
+        .from("agents")
+        .update({
+          name: editingAgent.name,
+          description: editingAgent.description,
+          role: editingAgent.role,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", editingAgent.id)
+
+      if (error) throw error
+
+      setAgents((prev) => prev.map((agent) => (agent.id === editingAgent.id ? { ...agent, ...editingAgent } : agent)))
+      setEditingAgent(null)
+    } catch (error) {
+      console.error("Error updating agent:", error)
+    }
+  }
+
+  const deleteAgent = async (agentId: string) => {
+    try {
+      const { error } = await supabase.from("agents").delete().eq("id", agentId)
+
+      if (error) throw error
+
+      setAgents((prev) => prev.filter((agent) => agent.id !== agentId))
+    } catch (error) {
+      console.error("Error deleting agent:", error)
+    }
+  }
+
+  const startEditingAgent = (agent: (typeof agents)[0]) => {
+    setEditingAgent({ ...agent })
+  }
+
+  // Load agents when user is available
+  useEffect(() => {
+    if (user) {
+      loadAgents()
+    }
+  }, [user])
+
+  const [agents, setAgents] = useState<
+    Array<{
+      id: string
+      name: string
+      description: string
+      role: string
+    }>
+  >([])
+  const [showAddAgent, setShowAddAgent] = useState(false)
+  const [editingAgent, setEditingAgent] = useState<{
+    id: string
+    name: string
+    description: string
+    role: string
+  } | null>(null)
+  const [newAgent, setNewAgent] = useState({
+    name: "",
+    description: "",
+    role: "",
+  })
+  // </CHANGE>
+
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set())
   const [activeView, setActiveView] = useState("daily")
   const [currentPage, setCurrentPage] = useState("dashboard")
@@ -1097,8 +1211,6 @@ function GoalTrackerApp() {
 
   // Cal.com inspired color palette for category badges - each category gets a unique, distinct color
   const getCategoryColor = (category: string) => {
-    return "bg-black text-white border-black"
-
     // Check for custom colors first
     if (customCategoryColors[category]) {
       return customCategoryColors[category]
@@ -1144,7 +1256,6 @@ function GoalTrackerApp() {
     return additionalColors[newCategoryIndex % additionalColors.length]
   }
 
-  // Enhance the moveIncompleteTasks function to be more robust
   const moveIncompleteTasks = () => {
     // Get current date information
     const today = new Date()
@@ -4318,313 +4429,65 @@ function GoalTrackerApp() {
                       </div>
                     </TabsContent>
                   </Tabs>
-                ) : currentPage === "long-term" ? (
-                  <Tabs value={activeView} onValueChange={setActiveView} className="mb-8">
-                    <TabsList className="grid w-full max-w-md grid-cols-2">
-                      <TabsTrigger value="1-year">1-Year</TabsTrigger>
-                      <TabsTrigger value="5-year">5-Year</TabsTrigger>
-                    </TabsList>
-
-                    <TabsContent value="1-year" className="mt-8">
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        {Object.entries(longTermGoals["1-year"]).map(([category, goals]) => (
-                          <Card
-                            key={category}
-                            className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200"
-                          >
-                            <CardHeader className="pb-4">
-                              <div className="flex items-center justify-between">
-                                <Badge
-                                  className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}
-                                >
-                                  {category}
-                                </Badge>
-                                <div className="flex items-center space-x-2">
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                        <Plus className="h-4 w-4" />
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                      <DropdownMenuItem
-                                        onClick={() => {
-                                          setSelectedCategory(category)
-                                          setSelectedTimeframe("1-year")
-                                          setShowAddLongTermGoal(true)
-                                        }}
-                                      >
-                                        <Target className="h-4 w-4 mr-2" />
-                                        Add Goal
-                                      </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                        <MoreHorizontal className="h-4 w-4" />
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                      <DropdownMenuItem
-                                        onClick={() => {
-                                          setSelectedCategory(category)
-                                          setSelectedTimeframe("1-year")
-                                          setShowAddLongTermGoal(true)
-                                        }}
-                                      >
-                                        <Plus className="h-4 w-4 mr-2" />
-                                        Add Goal
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem onClick={() => startEditingCategory(category)}>
-                                        <Edit className="h-4 w-4 mr-2" />
-                                        Edit Category
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem
-                                        onClick={() => {
-                                          if (goals.length === 0) {
-                                            deleteCategory(category)
-                                          }
-                                        }}
-                                        className={
-                                          goals.length > 0 ? "text-gray-400 cursor-not-allowed" : "text-red-600"
-                                        }
-                                        disabled={goals.length > 0}
-                                      >
-                                        <Trash2 className="h-4 w-4 mr-2" />
-                                        {goals.length > 0 ? "Delete Category (remove goals first)" : "Delete Category"}
-                                      </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                </div>
-                              </div>
-                              <CardDescription className="mt-2">
-                                {goals.length} goal{goals.length !== 1 ? "s" : ""} • Long-term vision
-                              </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                              {goals.map((goal) => (
-                                <div key={goal.id} className="p-4 rounded-lg bg-gray-50 border border-border space-y-4">
-                                  <div className="flex items-start space-x-3">
-                                    <Checkbox
-                                      checked={goal.status === "completed"}
-                                      onCheckedChange={async (checked) => {
-                                        const isValidUUID =
-                                          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-                                            goal.id,
-                                          )
-
-                                        if (isValidUUID) {
-                                          // Database goal - update both database and local state
-                                          try {
-                                            const { error } = await supabase
-                                              .from("long_term_goals")
-                                              .update({
-                                                completed: !!checked,
-                                                completed_at: checked ? new Date().toISOString() : null,
-                                              })
-                                              .eq("id", goal.id)
-
-                                            if (error) throw error
-
-                                            const newStatus = checked ? "completed" : "in-progress"
-                                            setLongTermGoals((prev) => ({
-                                              ...prev,
-                                              "1-year": {
-                                                ...prev["1-year"],
-                                                [category]: prev["1-year"][category].map((g) =>
-                                                  g.id === goal.id ? { ...g, status: newStatus } : g,
-                                                ),
-                                              },
-                                            }))
-                                          } catch (error) {
-                                            console.error("Error updating long-term goal:", error)
-                                          }
-                                        } else {
-                                          // Local goal - update only local state
-                                          const newStatus = checked ? "completed" : "in-progress"
-                                          setLongTermGoals((prev) => ({
-                                            ...prev,
-                                            "1-year": {
-                                              ...prev["1-year"],
-                                              [category]: prev["1-year"][category].map((g) =>
-                                                g.id === goal.id ? { ...g, status: newStatus } : g,
-                                              ),
-                                            },
-                                          }))
-                                        }
-                                      }}
-                                      className={`h-5 w-5 mt-0.5 flex-shrink-0 ${checkboxStyles}`}
-                                    />
-                                    <div className="flex-1 min-w-0">
-                                      <div className="flex items-start justify-between">
-                                        <div className="flex-1">
-                                          <h4
-                                            className={`font-semibold mb-2 ${goal.status === "completed" ? "line-through text-gray-500" : "text-gray-900"}`}
-                                          >
-                                            {goal.title}
-                                          </h4>
-                                          <p
-                                            className={`text-sm mb-3 ${goal.status === "completed" ? "text-gray-400" : "text-gray-600"}`}
-                                          >
-                                            {goal.description}
-                                          </p>
-                                          <div className="flex items-center space-x-4 text-xs text-gray-500">
-                                            <span>Target: {new Date(goal.targetDate).toLocaleDateString()}</span>
-                                            <Badge
-                                              variant="secondary"
-                                              className={
-                                                goal.status === "completed"
-                                                  ? "bg-green-100 text-green-800"
-                                                  : goal.status === "on-hold"
-                                                    ? "bg-yellow-100 text-yellow-800"
-                                                    : "bg-blue-100 text-blue-800"
-                                              }
-                                            >
-                                              {goal.status.replace("-", " ")}
-                                            </Badge>
-                                          </div>
-                                        </div>
-                                        <DropdownMenu>
-                                          <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0">
-                                              <MoreHorizontal className="h-4 w-4" />
-                                            </Button>
-                                          </DropdownMenuTrigger>
-                                          <DropdownMenuContent align="end">
-                                            <DropdownMenuItem
-                                              onClick={() => startEditingLongTermGoal("1-year", category, goal)}
-                                            >
-                                              <Edit className="h-4 w-4 mr-2" />
-                                              Edit Goal
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                              onClick={() =>
-                                                setShowDeleteLongTermGoal({
-                                                  timeframe: "1-year",
-                                                  category,
-                                                  goalId: goal.id,
-                                                  title: goal.title,
-                                                })
-                                              }
-                                              className="text-red-600"
-                                            >
-                                              <Trash2 className="h-4 w-4 mr-2" />
-                                              Delete Goal
-                                            </DropdownMenuItem>
-                                          </DropdownMenuContent>
-                                        </DropdownMenu>
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  {/* Milestones */}
-                                  <div className="space-y-2">
-                                    <h5 className="text-sm font-medium text-gray-700">Milestones</h5>
-                                    <div className="space-y-2">
-                                      {goal.milestones.map((milestone, index) => (
-                                        <div key={milestone.id} className="flex items-center space-x-3">
-                                          <Checkbox
-                                            checked={milestone.completed}
-                                            onCheckedChange={(checked) => {
-                                              setLongTermGoals((prev) => ({
-                                                ...prev,
-                                                "1-year": {
-                                                  ...prev["1-year"],
-                                                  [category]: prev["1-year"][category].map((g) =>
-                                                    g.id === goal.id
-                                                      ? {
-                                                          ...g,
-                                                          milestones: g.milestones.map((m) =>
-                                                            m.id === milestone.id ? { ...m, completed: !!checked } : m,
-                                                          ),
-                                                        }
-                                                      : g,
-                                                  ),
-                                                },
-                                              }))
-                                            }}
-                                            className={`h-5 w-5 mt-0.5 flex-shrink-0 ${checkboxStyles}`}
-                                          />
-                                          <div className="flex-1">
-                                            <span
-                                              className={`text-sm ${milestone.completed ? "line-through text-gray-500" : "text-gray-700"}`}
-                                            >
-                                              {milestone.title}
-                                            </span>
-                                            <span className="text-xs text-gray-500 ml-2">
-                                              {new Date(milestone.targetDate).toLocaleDateString()}
-                                            </span>
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-
-                                  {/* Notes */}
-                                  {goal.notes && (
-                                    <div className="pt-2 border-t border-gray-200">
-                                      <p className="text-sm text-gray-600">{goal.notes}</p>
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    </TabsContent>
-
-                    <TabsContent value="5-year" className="mt-8">
-                      <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-2xl font-bold text-gray-900">5-Year Goals</h2>
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedTimeframe("5-year")
-                            setShowAddLongTermGoal(true)
-                          }}
-                          className="text-sm bg-black hover:bg-gray-800 text-white"
-                        >
+                ) : (
+                  // Agents Page Content
+                  <div className="flex-1 overflow-auto">
+                    <div className="max-w-7xl mx-auto p-8">
+                      {/* Agents Header */}
+                      <div className="flex items-center justify-between mb-8">
+                        <div>
+                          <h1 className="text-3xl font-bold text-gray-900">Agents</h1>
+                          <p className="text-gray-600 mt-1">Manage your team members and agents</p>
+                        </div>
+                        <Button onClick={() => setShowAddAgent(true)} className="bg-black hover:bg-gray-800 text-white">
                           <Plus className="h-4 w-4 mr-2" />
-                          Add 5-Year Goal
+                          Add Agent
                         </Button>
                       </div>
 
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        {Object.entries(longTermGoals["5-year"]).map(([category, goals]) => (
-                          <Card
-                            key={category}
-                            className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200"
-                          >
-                            <CardHeader className="pb-4">
-                              <div className="flex items-center justify-between">
-                                <Badge
-                                  className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}
-                                >
-                                  {category}
-                                </Badge>
-                                <div className="flex items-center space-x-2">
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                        <Plus className="h-4 w-4" />
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                      <DropdownMenuItem
-                                        onClick={() => {
-                                          setSelectedCategory(category)
-                                          setSelectedTimeframe("5-year")
-                                          setShowAddLongTermGoal(true)
-                                        }}
-                                      >
-                                        <Target className="h-4 w-4 mr-2" />
-                                        Add Goal
-                                      </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
+                      {/* Agents List */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {agents.length === 0 ? (
+                          <Card className="col-span-full border-0 shadow-sm">
+                            <CardContent className="py-12">
+                              <div className="text-center text-gray-500">
+                                <Users className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                                <p className="text-lg font-medium mb-2">No agents yet</p>
+                                <p className="text-sm mb-4">Get started by adding your first agent</p>
+                                <Button onClick={() => setShowAddAgent(true)} variant="outline">
+                                  <Plus className="h-4 w-4 mr-2" />
+                                  Add Agent
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ) : (
+                          agents.map((agent) => (
+                            <Card key={agent.id} className="border-0 shadow-sm hover:shadow-md transition-shadow">
+                              <CardHeader className="pb-3">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex items-center gap-3">
+                                    <Avatar className="size-10">
+                                      <AvatarFallback className="bg-gray-100 text-gray-600 text-sm font-medium">
+                                        {agent.name
+                                          .split(" ")
+                                          .map((n) => n[0])
+                                          .join("")
+                                          .toUpperCase()
+                                          .slice(0, 2)}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                      <CardTitle className="text-lg font-semibold text-gray-900">
+                                        {agent.name}
+                                      </CardTitle>
+                                      {agent.role && (
+                                        <Badge variant="secondary" className="mt-1 text-xs">
+                                          {agent.role}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </div>
                                   <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                       <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -4632,216 +4495,144 @@ function GoalTrackerApp() {
                                       </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
-                                      <DropdownMenuItem
-                                        onClick={() => {
-                                          setSelectedCategory(category)
-                                          setSelectedTimeframe("5-year")
-                                          setShowAddLongTermGoal(true)
-                                        }}
-                                      >
-                                        <Plus className="h-4 w-4 mr-2" />
-                                        Add Goal
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem onClick={() => startEditingCategory(category)}>
+                                      <DropdownMenuItem onClick={() => startEditingAgent(agent)}>
                                         <Edit className="h-4 w-4 mr-2" />
-                                        Edit Category
+                                        Edit Agent
                                       </DropdownMenuItem>
-                                      <DropdownMenuItem
-                                        onClick={() => {
-                                          if (goals.length === 0) {
-                                            deleteCategory(category)
-                                          }
-                                        }}
-                                        className={
-                                          goals.length > 0 ? "text-gray-400 cursor-not-allowed" : "text-red-600"
-                                        }
-                                        disabled={goals.length > 0}
-                                      >
+                                      <DropdownMenuItem onClick={() => deleteAgent(agent.id)} className="text-red-600">
                                         <Trash2 className="h-4 w-4 mr-2" />
-                                        {goals.length > 0 ? "Delete Category (remove goals first)" : "Delete Category"}
+                                        Delete Agent
                                       </DropdownMenuItem>
                                     </DropdownMenuContent>
                                   </DropdownMenu>
                                 </div>
-                              </div>
-                              <CardDescription className="mt-2">
-                                {goals.length} goal{goals.length !== 1 ? "s" : ""} • Long-term vision
-                              </CardDescription>
+                              </CardHeader>
+                              <CardContent>
+                                <p className="text-sm text-gray-600">
+                                  {agent.description || "No description provided"}
+                                </p>
+                              </CardContent>
+                            </Card>
+                          ))
+                        )}
+                      </div>
+
+                      {/* Add Agent Dialog */}
+                      {showAddAgent && (
+                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                          <Card className="w-full max-w-md">
+                            <CardHeader>
+                              <CardTitle>Add New Agent</CardTitle>
+                              <CardDescription>Add a new team member or agent</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                              {goals.map((goal) => (
-                                <div key={goal.id} className="p-4 rounded-lg bg-gray-50 border border-border space-y-4">
-                                  <div className="flex items-start space-x-3">
-                                    <Checkbox
-                                      checked={goal.status === "completed"}
-                                      onCheckedChange={async (checked) => {
-                                        const isValidUUID =
-                                          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-                                            goal.id,
-                                          )
-
-                                        if (isValidUUID) {
-                                          // Database goal - update both database and local state
-                                          try {
-                                            const { error } = await supabase
-                                              .from("long_term_goals")
-                                              .update({
-                                                completed: !!checked,
-                                                completed_at: checked ? new Date().toISOString() : null,
-                                              })
-                                              .eq("id", goal.id)
-
-                                            if (error) throw error
-
-                                            const newStatus = checked ? "completed" : "in-progress"
-                                            setLongTermGoals((prev) => ({
-                                              ...prev,
-                                              "5-year": {
-                                                ...prev["5-year"],
-                                                [category]: prev["5-year"][category].map((g) =>
-                                                  g.id === goal.id ? { ...g, status: newStatus } : g,
-                                                ),
-                                              },
-                                            }))
-                                          } catch (error) {
-                                            console.error("Error updating long-term goal:", error)
-                                          }
-                                        } else {
-                                          // Local goal - update only local state
-                                          const newStatus = checked ? "completed" : "in-progress"
-                                          setLongTermGoals((prev) => ({
-                                            ...prev,
-                                            "5-year": {
-                                              ...prev["5-year"],
-                                              [category]: prev["5-year"][category].map((g) =>
-                                                g.id === goal.id ? { ...g, status: newStatus } : g,
-                                              ),
-                                            },
-                                          }))
-                                        }
-                                      }}
-                                      className={`h-5 w-5 mt-0.5 flex-shrink-0 ${checkboxStyles}`}
-                                    />
-                                    <div className="flex-1 min-w-0">
-                                      <div className="flex items-start justify-between">
-                                        <div className="flex-1">
-                                          <h4
-                                            className={`font-semibold mb-2 ${goal.status === "completed" ? "line-through text-gray-500" : "text-gray-900"}`}
-                                          >
-                                            {goal.title}
-                                          </h4>
-                                          <p
-                                            className={`text-sm mb-3 ${goal.status === "completed" ? "text-gray-400" : "text-gray-600"}`}
-                                          >
-                                            {goal.description}
-                                          </p>
-                                          <div className="flex items-center space-x-4 text-xs text-gray-500">
-                                            <span>Target: {new Date(goal.targetDate).toLocaleDateString()}</span>
-                                            <Badge
-                                              variant="secondary"
-                                              className={
-                                                goal.status === "completed"
-                                                  ? "bg-green-100 text-green-800"
-                                                  : goal.status === "on-hold"
-                                                    ? "bg-yellow-100 text-yellow-800"
-                                                    : "bg-blue-100 text-blue-800"
-                                              }
-                                            >
-                                              {goal.status.replace("-", " ")}
-                                            </Badge>
-                                          </div>
-                                        </div>
-                                        <DropdownMenu>
-                                          <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0">
-                                              <MoreHorizontal className="h-4 w-4" />
-                                            </Button>
-                                          </DropdownMenuTrigger>
-                                          <DropdownMenuContent align="end">
-                                            <DropdownMenuItem
-                                              onClick={() => startEditingLongTermGoal("5-year", category, goal)}
-                                            >
-                                              <Edit className="h-4 w-4 mr-2" />
-                                              Edit Goal
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                              onClick={() =>
-                                                setShowDeleteLongTermGoal({
-                                                  timeframe: "5-year",
-                                                  category,
-                                                  goalId: goal.id,
-                                                  title: goal.title,
-                                                })
-                                              }
-                                              className="text-red-600"
-                                            >
-                                              <Trash2 className="h-4 w-4 mr-2" />
-                                              Delete Goal
-                                            </DropdownMenuItem>
-                                          </DropdownMenuContent>
-                                        </DropdownMenu>
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  {/* Milestones */}
-                                  <div className="space-y-2">
-                                    <h5 className="text-sm font-medium text-gray-700">Milestones</h5>
-                                    <div className="space-y-2">
-                                      {goal.milestones.map((milestone, index) => (
-                                        <div key={milestone.id} className="flex items-center space-x-3">
-                                          <Checkbox
-                                            checked={milestone.completed}
-                                            onCheckedChange={(checked) => {
-                                              setLongTermGoals((prev) => ({
-                                                ...prev,
-                                                "5-year": {
-                                                  ...prev["5-year"],
-                                                  [category]: prev["5-year"][category].map((g) =>
-                                                    g.id === goal.id
-                                                      ? {
-                                                          ...g,
-                                                          milestones: g.milestones.map((m) =>
-                                                            m.id === milestone.id ? { ...m, completed: !!checked } : m,
-                                                          ),
-                                                        }
-                                                      : g,
-                                                  ),
-                                                },
-                                              }))
-                                            }}
-                                            className={`h-5 w-5 mt-0.5 flex-shrink-0 ${checkboxStyles}`}
-                                          />
-                                          <div className="flex-1">
-                                            <span
-                                              className={`text-sm ${milestone.completed ? "line-through text-gray-500" : "text-gray-700"}`}
-                                            >
-                                              {milestone.title}
-                                            </span>
-                                            <span className="text-xs text-gray-500 ml-2">
-                                              {new Date(milestone.targetDate).toLocaleDateString()}
-                                            </span>
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-
-                                  {/* Notes */}
-                                  {goal.notes && (
-                                    <div className="pt-2 border-t border-gray-200">
-                                      <p className="text-sm text-gray-600">{goal.notes}</p>
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
+                              <div>
+                                <label className="text-sm font-medium text-gray-700 mb-1 block">Name *</label>
+                                <Input
+                                  value={newAgent.name}
+                                  onChange={(e) => setNewAgent((prev) => ({ ...prev, name: e.target.value }))}
+                                  placeholder="Enter agent name"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-sm font-medium text-gray-700 mb-1 block">Role</label>
+                                <Input
+                                  value={newAgent.role}
+                                  onChange={(e) => setNewAgent((prev) => ({ ...prev, role: e.target.value }))}
+                                  placeholder="e.g., Real Estate Agent, Team Lead"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-sm font-medium text-gray-700 mb-1 block">Description</label>
+                                <Textarea
+                                  value={newAgent.description}
+                                  onChange={(e) => setNewAgent((prev) => ({ ...prev, description: e.target.value }))}
+                                  placeholder="Brief description about the agent"
+                                  rows={3}
+                                />
+                              </div>
                             </CardContent>
+                            <div className="flex justify-end gap-2 p-6 pt-0">
+                              <Button
+                                variant="outline"
+                                onClick={() => {
+                                  setShowAddAgent(false)
+                                  setNewAgent({ name: "", description: "", role: "" })
+                                }}
+                              >
+                                Cancel
+                              </Button>
+                              <Button
+                                onClick={addAgent}
+                                disabled={!newAgent.name.trim()}
+                                className="bg-black hover:bg-gray-800 text-white"
+                              >
+                                Add Agent
+                              </Button>
+                            </div>
                           </Card>
-                        ))}
-                      </div>
-                    </TabsContent>
-                  </Tabs>
-                ) : null}
+                        </div>
+                      )}
+
+                      {/* Edit Agent Dialog */}
+                      {editingAgent && (
+                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                          <Card className="w-full max-w-md">
+                            <CardHeader>
+                              <CardTitle>Edit Agent</CardTitle>
+                              <CardDescription>Update agent information</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                              <div>
+                                <label className="text-sm font-medium text-gray-700 mb-1 block">Name *</label>
+                                <Input
+                                  value={editingAgent.name}
+                                  onChange={(e) =>
+                                    setEditingAgent((prev) => (prev ? { ...prev, name: e.target.value } : null))
+                                  }
+                                  placeholder="Enter agent name"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-sm font-medium text-gray-700 mb-1 block">Role</label>
+                                <Input
+                                  value={editingAgent.role}
+                                  onChange={(e) =>
+                                    setEditingAgent((prev) => (prev ? { ...prev, role: e.target.value } : null))
+                                  }
+                                  placeholder="e.g., Real Estate Agent, Team Lead"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-sm font-medium text-gray-700 mb-1 block">Description</label>
+                                <Textarea
+                                  value={editingAgent.description}
+                                  onChange={(e) =>
+                                    setEditingAgent((prev) => (prev ? { ...prev, description: e.target.value } : null))
+                                  }
+                                  placeholder="Brief description about the agent"
+                                  rows={3}
+                                />
+                              </div>
+                            </CardContent>
+                            <div className="flex justify-end gap-2 p-6 pt-0">
+                              <Button variant="outline" onClick={() => setEditingAgent(null)}>
+                                Cancel
+                              </Button>
+                              <Button
+                                onClick={updateAgent}
+                                disabled={!editingAgent.name.trim()}
+                                className="bg-black hover:bg-gray-800 text-white"
+                              >
+                                Save Changes
+                              </Button>
+                            </div>
+                          </Card>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </main>
           </SidebarInset>
