@@ -1120,6 +1120,8 @@ function GoalTrackerApp() {
 
   // Cal.com inspired color palette for category badges - each category gets a unique, distinct color
   const getCategoryColor = (category: string) => {
+    return "bg-black text-white border-black"
+
     // Check for custom colors first
     if (customCategoryColors[category]) {
       return customCategoryColors[category]
@@ -2906,26 +2908,27 @@ function GoalTrackerApp() {
     if (!newAgent.name.trim() || !newAgent.role.trim()) return
 
     try {
-      console.log("[v0] Adding agent:", newAgent)
       const { data, error } = await supabase
         .from("agents")
-        .insert({
-          user_id: user?.id,
-          name: newAgent.name,
-          role: newAgent.role,
-          description: newAgent.description,
-        })
+        .insert([
+          {
+            user_id: user?.id,
+            name: newAgent.name,
+            role: newAgent.role,
+            description: newAgent.description,
+          },
+        ])
         .select()
-        .single()
 
       if (error) throw error
 
-      console.log("[v0] Agent added successfully:", data)
-      setAgents((prev) => [data, ...prev])
-      setShowAddAgent(false)
-      setNewAgent({ name: "", role: "", description: "" })
+      if (data) {
+        setAgents([...agents, data[0]])
+        setNewAgent({ name: "", role: "", description: "" })
+        setShowAddAgent(false)
+      }
     } catch (error) {
-      console.error("[v0] Error adding agent:", error)
+      console.error("Error adding agent:", error)
     }
   }
 
@@ -2933,38 +2936,33 @@ function GoalTrackerApp() {
     if (!editingAgent || !editingAgent.name.trim() || !editingAgent.role.trim()) return
 
     try {
-      console.log("[v0] Updating agent:", editingAgent)
       const { error } = await supabase
         .from("agents")
         .update({
           name: editingAgent.name,
           role: editingAgent.role,
           description: editingAgent.description,
-          updated_at: new Date().toISOString(),
         })
         .eq("id", editingAgent.id)
 
       if (error) throw error
 
-      console.log("[v0] Agent updated successfully")
-      setAgents((prev) => prev.map((agent) => (agent.id === editingAgent.id ? editingAgent : agent)))
+      setAgents(agents.map((a) => (a.id === editingAgent.id ? editingAgent : a)))
       setEditingAgent(null)
     } catch (error) {
-      console.error("[v0] Error updating agent:", error)
+      console.error("Error updating agent:", error)
     }
   }
 
-  const deleteAgent = async (agentId: string) => {
+  const deleteAgent = async (id: string) => {
     try {
-      console.log("[v0] Deleting agent:", agentId)
-      const { error } = await supabase.from("agents").delete().eq("id", agentId)
+      const { error } = await supabase.from("agents").delete().eq("id", id)
 
       if (error) throw error
 
-      console.log("[v0] Agent deleted successfully")
-      setAgents((prev) => prev.filter((agent) => agent.id !== agentId))
+      setAgents(agents.filter((a) => a.id !== id))
     } catch (error) {
-      console.error("[v0] Error deleting agent:", error)
+      console.error("Error deleting agent:", error)
     }
   }
 
@@ -3198,9 +3196,7 @@ function GoalTrackerApp() {
                                           deleteCategory(category)
                                         }
                                       }}
-                                      className={
-                                        goals.length > 0 ? "text-gray-400 cursor-not-allowed" : "text-red-600"
-                                      }
+                                      className={goals.length > 0 ? "text-gray-400 cursor-not-allowed" : "text-red-600"}
                                       disabled={goals.length > 0}
                                     >
                                       <Trash2 className="h-4 w-4 mr-2" />
@@ -3317,11 +3313,7 @@ function GoalTrackerApp() {
                                             )}
                                             <DropdownMenu>
                                               <DropdownMenuTrigger asChild>
-                                                <Button
-                                                  variant="ghost"
-                                                  size="sm"
-                                                  className="h-8 w-8 p-0 flex-shrink-0"
-                                                >
+                                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0">
                                                   <MoreHorizontal className="h-4 w-4" />
                                                 </Button>
                                               </DropdownMenuTrigger>
@@ -3976,9 +3968,7 @@ function GoalTrackerApp() {
                                           deleteCategory(category)
                                         }
                                       }}
-                                      className={
-                                        goals.length > 0 ? "text-gray-400 cursor-not-allowed" : "text-red-600"
-                                      }
+                                      className={goals.length > 0 ? "text-gray-400 cursor-not-allowed" : "text-red-600"}
                                       disabled={goals.length > 0}
                                     >
                                       <Trash2 className="h-4 w-4 mr-2" />
@@ -4000,9 +3990,7 @@ function GoalTrackerApp() {
                                     checked={goal.status === "completed"}
                                     onCheckedChange={async (checked) => {
                                       const isValidUUID =
-                                        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-                                          goal.id,
-                                        )
+                                        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(goal.id)
 
                                       if (isValidUUID) {
                                         // Database goal - update both database and local state
@@ -4243,9 +4231,7 @@ function GoalTrackerApp() {
                                           deleteCategory(category)
                                         }
                                       }}
-                                      className={
-                                        goals.length > 0 ? "text-gray-400 cursor-not-allowed" : "text-red-600"
-                                      }
+                                      className={goals.length > 0 ? "text-gray-400 cursor-not-allowed" : "text-red-600"}
                                       disabled={goals.length > 0}
                                     >
                                       <Trash2 className="h-4 w-4 mr-2" />
@@ -4267,9 +4253,7 @@ function GoalTrackerApp() {
                                     checked={goal.status === "completed"}
                                     onCheckedChange={async (checked) => {
                                       const isValidUUID =
-                                        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-                                          goal.id,
-                                        )
+                                        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(goal.id)
 
                                       if (isValidUUID) {
                                         // Database goal - update both database and local state
@@ -4432,248 +4416,196 @@ function GoalTrackerApp() {
                     </div>
                   </TabsContent>
                 </Tabs>
-              ) : currentPage === "agents" ? (
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-3xl font-bold tracking-tight">Agents</h2>
-                      <p className="text-muted-foreground">Manage your team members</p>
+
+                {currentPage === "agents" ? (
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h2 className="text-3xl font-bold tracking-tight">Agents</h2>
+                        <p className="text-muted-foreground">Manage your team members</p>
+                      </div>
+                      <Button onClick={() => setShowAddAgent(true)} className="bg-black hover:bg-black/90">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Agent
+                      </Button>
                     </div>
-                    <Button onClick={() => setShowAddAgent(true)} className="bg-black hover:bg-black/90">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Agent
-                    </Button>
-                  </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {agents.map((agent) => (
-                      <Card key={agent.id} className="border-0 shadow-sm hover:shadow-md transition-shadow">
-                        <CardHeader>
-                          <div className="flex items-start justify-between">
-                            <div className="flex items-center space-x-3">
-                              <Avatar className="size-12">
-                                <AvatarFallback className="bg-[#05a7b0] text-white">
-                                  {agent.name
-                                    .split(" ")
-                                    .map((n) => n[0])
-                                    .join("")
-                                    .toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <CardTitle className="text-lg">{agent.name}</CardTitle>
-                                <Badge variant="secondary" className="mt-1">
-                                  {agent.role}
-                                </Badge>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {agents.map((agent) => (
+                        <Card key={agent.id} className="border-0 shadow-sm hover:shadow-md transition-shadow">
+                          <CardHeader>
+                            <div className="flex items-start justify-between">
+                              <div className="flex items-center space-x-3">
+                                <Avatar className="size-12">
+                                  <AvatarFallback className="bg-[#05a7b0] text-white">
+                                    {agent.name
+                                      .split(" ")
+                                      .map((n) => n[0])
+                                      .join("")
+                                      .toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <CardTitle className="text-lg">{agent.name}</CardTitle>
+                                  <Badge variant="secondary" className="mt-1">
+                                    {agent.role}
+                                  </Badge>
+                                </div>
                               </div>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => setEditingAgent(agent)}>
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => deleteAgent(agent.id)} className="text-red-600">
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </div>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => setEditingAgent(agent)}>
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => deleteAgent(agent.id)} className="text-red-600">
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        </CardHeader>
-                        {agent.description && (
-                          <CardContent>
-                            <p className="text-sm text-muted-foreground">{agent.description}</p>
-                          </CardContent>
-                        )}
-                      </Card>
-                    ))}
-                  </div>
+                          </CardHeader>
+                          {agent.description && (
+                            <CardContent>
+                              <p className="text-sm text-muted-foreground">{agent.description}</p>
+                            </CardContent>
+                          )}
+                        </Card>
+                      ))}
+                    </div>
 
-                  {agents.length === 0 && (
-                    <Card className="border-dashed">
-                      <CardContent className="flex flex-col items-center justify-center py-12">
-                        <Users className="h-12 w-12 text-muted-foreground mb-4" />
-                        <h3 className="text-lg font-semibold mb-2">No agents yet</h3>
-                        <p className="text-sm text-muted-foreground mb-4">
-                          Get started by adding your first team member
-                        </p>
-                        <Button onClick={() => setShowAddAgent(true)} className="bg-black hover:bg-black/90">
-                          <Plus className="h-4 w-4 mr-2" />
-                          Add Agent
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {/* Add Agent Dialog */}
-                  {showAddAgent && (
-                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                      <Card className="w-full max-w-md mx-4">
-                        <CardHeader>
-                          <CardTitle>Add New Agent</CardTitle>
-                          <CardDescription>Add a new team member to your organization</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">Name</label>
-                            <Input
-                              placeholder="Enter agent name"
-                              value={newAgent.name}
-                              onChange={(e) => setNewAgent({ ...newAgent, name: e.target.value })}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">Role</label>
-                            <Input
-                              placeholder="Enter role (e.g., Sales Agent, Manager)"
-                              value={newAgent.role}
-                              onChange={(e) => setNewAgent({ ...newAgent, role: e.target.value })}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">Description (Optional)</label>
-                            <Textarea
-                              placeholder="Enter description"
-                              value={newAgent.description}
-                              onChange={(e) => setNewAgent({ ...newAgent, description: e.target.value })}
-                              rows={3}
-                            />
-                          </div>
-                        </CardContent>
-                        <div className="flex justify-end gap-2 p-6 pt-0">
-                          <Button
-                            variant="outline"
-                            onClick={() => {
-                              setShowAddAgent(false)
-                              setNewAgent({ name: "", role: "", description: "" })
-                            }}
-                          >
-                            Cancel
-                          </Button>
-                          <Button
-                            onClick={addAgent}
-                            className="bg-black hover:bg-black/90"
-                            disabled={!newAgent.name.trim() || !newAgent.role.trim()}
-                          >
+                    {agents.length === 0 && (
+                      <Card className="border-dashed">
+                        <CardContent className="flex flex-col items-center justify-center py-12">
+                          <Users className="h-12 w-12 text-muted-foreground mb-4" />
+                          <h3 className="text-lg font-semibold mb-2">No agents yet</h3>
+                          <p className="text-sm text-muted-foreground mb-4">
+                            Get started by adding your first team member
+                          </p>
+                          <Button onClick={() => setShowAddAgent(true)} className="bg-black hover:bg-black/90">
+                            <Plus className="h-4 w-4 mr-2" />
                             Add Agent
                           </Button>
-                        </div>
-                      </Card>
-                    </div>
-                  )}
-
-                  {/* Edit Agent Dialog */}
-                  {editingAgent && (
-                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                      <Card className="w-full max-w-md mx-4">
-                        <CardHeader>
-                          <CardTitle>Edit Agent</CardTitle>
-                          <CardDescription>Update agent information</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">Name</label>
-                            <Input
-                              placeholder="Enter agent name"
-                              value={editingAgent.name}
-                              onChange={(e) => setEditingAgent({ ...editingAgent, name: e.target.value })}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">Role</label>
-                            <Input
-                              placeholder="Enter role"
-                              value={editingAgent.role}
-                              onChange={(e) => setEditingAgent({ ...editingAgent, role: e.target.value })}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">Description (Optional)</label>
-                            <Textarea
-                              placeholder="Enter description"
-                              value={editingAgent.description}
-                              onChange={(e) => setEditingAgent({ ...editingAgent, description: e.target.value })}
-                              rows={3}
-                            />
-                          </div>
                         </CardContent>
-                        <div className="flex justify-end gap-2 p-6 pt-0">
-                          <Button variant="outline" onClick={() => setEditingAgent(null)}>
-                            Cancel
-                          </Button>
-                          <Button
-                            onClick={updateAgent}
-                            className="bg-black hover:bg-black/90"
-                            disabled={!editingAgent.name.trim() || !editingAgent.role.trim()}
-                          >
-                            Save Changes
-                          </Button>
-                        </div>
                       </Card>
-                    </div>
-                  )}
+                    )}
 
-                  {showDeleteGoal && (
-                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                      <Card className="w-full max-w-md mx-4">
-                        <CardHeader>
-                          <CardTitle>Delete Goal</CardTitle>
-                          <CardDescription>Are you sure you want to delete this goal?</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-sm text-gray-600">
-                            <span className="font-medium">"{showDeleteGoal.title}"</span> will be permanently deleted. This action cannot be undone.
-                          </p>
-                        </CardContent>
-                        <div className="flex justify-end gap-2 p-6 pt-0">
-                          <Button variant="outline" onClick={() => setShowDeleteGoal(null)}>
-                            Cancel
-                          </Button>
-                          <Button
-                            onClick={() => deleteGoal(showDeleteGoal.category, showDeleteGoal.goalId)}
-                            className="bg-red-600 hover:bg-red-700 text-white"
-                          >
-                            Delete Goal
-                          </Button>
-                        </div>
-                      </Card>
-                    </div>
-                  )}
+                    {/* Add Agent Dialog */}
+                    {showAddAgent && (
+                      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                        <Card className="w-full max-w-md mx-4">
+                          <CardHeader>
+                            <CardTitle>Add New Agent</CardTitle>
+                            <CardDescription>Add a new team member to your organization</CardDescription>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium">Name</label>
+                              <Input
+                                placeholder="Enter agent name"
+                                value={newAgent.name}
+                                onChange={(e) => setNewAgent({ ...newAgent, name: e.target.value })}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium">Role</label>
+                              <Input
+                                placeholder="Enter role (e.g., Sales Agent, Manager)"
+                                value={newAgent.role}
+                                onChange={(e) => setNewAgent({ ...newAgent, role: e.target.value })}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium">Description (Optional)</label>
+                              <Textarea
+                                placeholder="Enter description"
+                                value={newAgent.description}
+                                onChange={(e) => setNewAgent({ ...newAgent, description: e.target.value })}
+                                rows={3}
+                              />
+                            </div>
+                          </CardContent>
+                          <div className="flex justify-end gap-2 p-6 pt-0">
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                setShowAddAgent(false)
+                                setNewAgent({ name: "", role: "", description: "" })
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              onClick={addAgent}
+                              className="bg-black hover:bg-black/90"
+                              disabled={!newAgent.name.trim() || !newAgent.role.trim()}
+                            >
+                              Add Agent
+                            </Button>
+                          </div>
+                        </Card>
+                      </div>
+                    )}
 
-                  {showDeleteLongTermGoal && (
-                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                      <Card className="w-full max-w-md mx-4">
-                        <CardHeader>
-                          <CardTitle>Delete Long-Term Goal</CardTitle>
-                          <CardDescription>Are you sure you want to delete this long-term goal?</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-sm text-gray-600">
-                            <span className="font-medium">"{showDeleteLongTermGoal.title}"</span> will be permanently deleted. This action cannot be undone.
-                          </p>
-                        </CardContent>
-                        <div className="flex justify-end gap-2 p-6 pt-0">
-                          <Button variant="outline" onClick={() => setShowDeleteLongTermGoal(null)}>
-                            Cancel
-                          </Button>
-                          <Button
-                            onClick={() => deleteLongTermGoal(showDeleteLongTermGoal.timeframe, showDeleteLongTermGoal.category, showDeleteLongTermGoal.goalId)}
-                            className="bg-red-600 hover:bg-red-700 text-white"
-                          >
-                            Delete Goal
-                          </Button>
-                        </div>
-                      </Card>
-                    </div>
-                  )}
-                </div>
-              ) : null}
+                    {/* Edit Agent Dialog */}
+                    {editingAgent && (
+                      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                        <Card className="w-full max-w-md mx-4">
+                          <CardHeader>
+                            <CardTitle>Edit Agent</CardTitle>
+                            <CardDescription>Update agent information</CardDescription>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium">Name</label>
+                              <Input
+                                placeholder="Enter agent name"
+                                value={editingAgent.name}
+                                onChange={(e) => setEditingAgent({ ...editingAgent, name: e.target.value })}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium">Role</label>
+                              <Input
+                                placeholder="Enter role"
+                                value={editingAgent.role}
+                                onChange={(e) => setEditingAgent({ ...editingAgent, role: e.target.value })}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium">Description (Optional)</label>
+                              <Textarea
+                                placeholder="Enter description"
+                                value={editingAgent.description}
+                                onChange={(e) => setEditingAgent({ ...editingAgent, description: e.target.value })}
+                                rows={3}
+                              />
+                            </div>
+                          </CardContent>
+                          <div className="flex justify-end gap-2 p-6 pt-0">
+                            <Button variant="outline" onClick={() => setEditingAgent(null)}>
+                              Cancel
+                            </Button>
+                            <Button
+                              onClick={updateAgent}
+                              className="bg-black hover:bg-black/90"
+                              disabled={!editingAgent.name.trim() || !editingAgent.role.trim()}
+                            >
+                              Save Changes
+                            </Button>
+                          </div>
+                        </Card>
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+              </div>
             </main>
           </SidebarInset>
         </div>
@@ -4682,10 +4614,12 @@ function GoalTrackerApp() {
   )
 }
 
-export default function Page() {\
-  const { user, isLoading } = useAuth()
+export default function Page() {
+  const { user, isLoading: authLoading } = useAuth()
 
-  if (isLoading) {\
+  console.log("[v0] Page render - user:", user, "isLoading:", authLoading)
+
+  if (authLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
@@ -4696,9 +4630,9 @@ export default function Page() {\
     )
   }
 
-  if (!user) {\
+  if (!user) {
     return <AuthScreen />
   }
 
-  return <GoalTrackerApp />\
+  return <GoalTrackerApp />
 }
