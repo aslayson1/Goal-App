@@ -3010,7 +3010,7 @@ function GoalTrackerApp() {
         <div className="flex flex-1 overflow-hidden">
           <AppSidebar currentPage={currentPage} onPageChange={setCurrentPage} />
           <SidebarInset className="flex-1">
-            <main className="flex-1 overflow-auto p-6">
+            <main className="flex-1 overflow-auto pl-6 pt-6 pb-6">
               <div className="space-y-6">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-8">
