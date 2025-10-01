@@ -3001,9 +3001,9 @@ function GoalTrackerApp() {
                 {currentPage === "dashboard" ? (
                   <Tabs value={activeView} onValueChange={setActiveView} className="mb-8">
                     <TabsList className="grid w-full max-w-2xl grid-cols-3">
-                      <TabsTrigger value="daily">Daily</TabsTrigger>
-                      <TabsTrigger value="weekly">Weekly</TabsTrigger>
-                      <TabsTrigger value="12-week">12-Week</TabsTrigger>
+                      <TabsTrigger value="daily">Daily Tasks</TabsTrigger>
+                      <TabsTrigger value="weekly">Weekly Tasks</TabsTrigger>
+                      <TabsTrigger value="12-week">12-Week Goals</TabsTrigger>
                     </TabsList>
 
                     {/* 12-Week Goals View */}
