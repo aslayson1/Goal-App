@@ -3919,7 +3919,7 @@ function GoalTrackerApp() {
                             setSelectedTimeframe("1-year")
                             setShowAddLongTermGoal(true)
                           }}
-                          className="text-sm bg-black hover:bg-gray-800 text-white"
+                          className="text-sm bg-black hover:bg-black/90 text-white"
                         >
                           <Plus className="h-4 w-4 mr-2" />
                           Add 1-Year Goal
@@ -4186,7 +4186,7 @@ function GoalTrackerApp() {
                             setSelectedTimeframe("5-year")
                             setShowAddLongTermGoal(true)
                           }}
-                          className="text-sm bg-black hover:bg-gray-800 text-white"
+                          className="text-sm bg-black hover:bg-black/90 text-white"
                         >
                           <Plus className="h-4 w-4 mr-2" />
                           Add 5-Year Goal
@@ -4538,11 +4538,7 @@ function GoalTrackerApp() {
                               <Input
                                 placeholder="Enter agent name"
                                 value={newAgent.name}
-                                onChange={(e) => {
-                                  console.log("[v0] Name input changed:", e.target.value)
-                                  setNewAgent({ ...newAgent, name: e.target.value })
-                                  console.log("[v0] newAgent after name change:", { ...newAgent, name: e.target.value })
-                                }}
+                                onChange={(e) => setNewAgent({ ...newAgent, name: e.target.value })}
                               />
                             </div>
                             <div className="space-y-2">
@@ -4550,11 +4546,7 @@ function GoalTrackerApp() {
                               <Input
                                 placeholder="Enter role (e.g., Sales Agent, Manager)"
                                 value={newAgent.role}
-                                onChange={(e) => {
-                                  console.log("[v0] Role input changed:", e.target.value)
-                                  setNewAgent({ ...newAgent, role: e.target.value })
-                                  console.log("[v0] newAgent after role change:", { ...newAgent, role: e.target.value })
-                                }}
+                                onChange={(e) => setNewAgent({ ...newAgent, role: e.target.value })}
                               />
                             </div>
                             <div className="space-y-2">
@@ -4580,11 +4572,8 @@ function GoalTrackerApp() {
                             <Button
                               onClick={() => {
                                 console.log("[v0] Add Agent button clicked")
-                                console.log("[v0] Current newAgent state:", newAgent)
-                                console.log(
-                                  "[v0] Button disabled state:",
-                                  !newAgent.name.trim() || !newAgent.role.trim(),
-                                )
+                                console.log("[v0] newAgent state:", newAgent)
+                                console.log("[v0] Button disabled?", !newAgent.name.trim() || !newAgent.role.trim())
                                 addAgent()
                               }}
                               className="bg-black hover:bg-black/90 text-white"
