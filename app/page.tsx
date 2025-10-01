@@ -3904,6 +3904,14 @@ function GoalTrackerApp() {
                             </Card>
                           )
                         })}
+
+                        {/* Show message if no tasks exist */}
+                        {(!dailyTasks[selectedDay] || dailyTasks[selectedDay].length === 0) && (
+                          <div className="col-span-2 text-center py-12">
+                            <p className="text-gray-500 mb-4">No daily tasks yet for {selectedDay}</p>
+                            <p className="text-sm text-gray-400">Use the + buttons in each category to add tasks</p>
+                          </div>
+                        )}
                       </div>
                     </TabsContent>
 
@@ -4442,7 +4450,7 @@ function GoalTrackerApp() {
                     </TabsContent>
                   </Tabs>
                 ) : currentPage === "agents" ? (
-                  <div className="space-y-6">
+                  <div className="space-y-6 p-8">
                     <div className="flex items-center justify-between">
                       <div>
                         <h2 className="text-3xl font-bold tracking-tight">Agents</h2>
