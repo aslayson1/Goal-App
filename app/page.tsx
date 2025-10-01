@@ -4538,7 +4538,11 @@ function GoalTrackerApp() {
                               <Input
                                 placeholder="Enter agent name"
                                 value={newAgent.name}
-                                onChange={(e) => setNewAgent({ ...newAgent, name: e.target.value })}
+                                onChange={(e) => {
+                                  console.log("[v0] Name input changed:", e.target.value)
+                                  setNewAgent({ ...newAgent, name: e.target.value })
+                                  console.log("[v0] newAgent after name change:", { ...newAgent, name: e.target.value })
+                                }}
                               />
                             </div>
                             <div className="space-y-2">
@@ -4546,7 +4550,11 @@ function GoalTrackerApp() {
                               <Input
                                 placeholder="Enter role (e.g., Sales Agent, Manager)"
                                 value={newAgent.role}
-                                onChange={(e) => setNewAgent({ ...newAgent, role: e.target.value })}
+                                onChange={(e) => {
+                                  console.log("[v0] Role input changed:", e.target.value)
+                                  setNewAgent({ ...newAgent, role: e.target.value })
+                                  console.log("[v0] newAgent after role change:", { ...newAgent, role: e.target.value })
+                                }}
                               />
                             </div>
                             <div className="space-y-2">
@@ -4570,7 +4578,15 @@ function GoalTrackerApp() {
                               Cancel
                             </Button>
                             <Button
-                              onClick={addAgent}
+                              onClick={() => {
+                                console.log("[v0] Add Agent button clicked")
+                                console.log("[v0] Current newAgent state:", newAgent)
+                                console.log(
+                                  "[v0] Button disabled state:",
+                                  !newAgent.name.trim() || !newAgent.role.trim(),
+                                )
+                                addAgent()
+                              }}
                               className="bg-black hover:bg-black/90 text-white"
                               disabled={!newAgent.name.trim() || !newAgent.role.trim()}
                             >
