@@ -4683,11 +4683,9 @@ function GoalTrackerApp() {
 }
 
 export default function Page() {\
-  const { user, isLoading: authLoading } = useAuth()
+  const { user, isLoading } = useAuth()
 
-  console.log("[v0] Page render - user:", user, "isLoading:", authLoading)
-
-  if (authLoading) {\
+  if (isLoading) {\
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
@@ -4702,5 +4700,5 @@ export default function Page() {\
     return <AuthScreen />
   }
 
-  return <GoalTrackerApp />
-}\
+  return <GoalTrackerApp />\
+}
