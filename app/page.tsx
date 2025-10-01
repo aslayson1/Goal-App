@@ -1003,7 +1003,7 @@ function GoalTrackerApp() {
     return Math.min(Math.max(weekNumber, 1), 12)
   })
   const [selectedDay, setSelectedDay] = useState(() => {
-    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+    const days = ["Sunday", "Monday", "Tuesday", " Wednesday", "Thursday", "Friday", "Saturday"]
     const today = new Date().getDay()
     return days[today]
   })
@@ -1120,8 +1120,7 @@ function GoalTrackerApp() {
 
   // Cal.com inspired color palette for category badges - each category gets a unique, distinct color
   const getCategoryColor = (category: string) => {
-    // Removed the default 'bg-black text-white border-black' to avoid overriding actual colors.
-    // Removed the entire block and kept only the logic that assigns colors.
+    return "bg-black text-white border-black"
 
     // Check for custom colors first
     if (customCategoryColors[category]) {
@@ -1145,11 +1144,11 @@ function GoalTrackerApp() {
       "bg-slate-100 text-slate-800 border-slate-200",
       "bg-rose-100 text-rose-800 border-rose-200",
       "bg-cyan-100 text-cyan-800 border-cyan-200",
-      "bg-emerald-100 text-emerald-800 border-emerald-200", // Duplicate, but okay
+      "bg-emerald-100 text-emerald-800 border-emerald-200",
       "bg-green-100 text-green-800 border-green-200",
       "bg-yellow-100 text-yellow-800 border-yellow-200",
       "bg-red-100 text-red-800 border-red-200",
-      "bg-sky-100 text-sky-800 border-sky-200", // Duplicate, but okay
+      "bg-sky-100 text-sky-800 border-sky-200",
       "bg-fuchsia-100 text-fuchsia-800 border-fuchsia-200",
       "bg-stone-100 text-stone-800 border-stone-200",
       "bg-zinc-100 text-zinc-800 border-zinc-800 border-zinc-200",
@@ -1163,8 +1162,8 @@ function GoalTrackerApp() {
 
     // For new categories, assign a unique color from the additional palette
     const existingCategories = Object.keys(colors)
-    // Dynamically determine the index for new categories
-    const newCategoryIndex = Object.keys(colors).length + Object.keys(customCategoryColors).length
+    const newCategoryIndex = Object.keys(colors).length + Object.keys(colors).filter((cat) => !colors[cat]).length
+
     return additionalColors[newCategoryIndex % additionalColors.length]
   }
 
@@ -1213,7 +1212,7 @@ function GoalTrackerApp() {
     }
 
     // Handle daily tasks - move all incomplete tasks from previous days to today
-    const allDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    const allDays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 
     // Get all days before today
     const previousDays = []
@@ -3010,115 +3009,106 @@ function GoalTrackerApp() {
           <SidebarInset className="flex-1">
             <main className="flex-1 overflow-auto p-6">
               <div className="mx-auto max-w-7xl space-y-6">
-                {currentPage === "dashboard" && (
-                  <>
-                    {/* Header */}
-                    <div className="flex items-center justify-between mb-8">
-                      <div>
-                        <h1 className="text-4xl font-bold text-gray-900 mb-2">
-                          Hi {user?.name?.split(" ")[0] || "there"},
-                        </h1>
-                        <p className="text-gray-600">Here are your tasks for week {currentWeek} of 12.</p>
+                {/* Header */}
+                <div className="flex items-center justify-between mb-8">
+                  <div>
+                    <h1 className="text-4xl font-bold text-gray-900 mb-2">
+                      Hi {user?.name?.split(" ")[0] || "there"},
+                    </h1>
+                    <p className="text-gray-600">Here are your tasks for week {currentWeek} of 12.</p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => setShowAddGoal(true)}
+                      className="text-sm bg-black hover:bg-gray-800 text-white"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Goal
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setShowAddCategory(true)} className="text-sm">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Category
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Stats Overview */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                  <Card className="border-0 shadow-sm">
+                    <CardContent className="p-6">
+                      <div className="flex flex-col items-center justify-center text-center h-full space-y-3">
+                        <p className="text-4xl font-bold text-gray-900">{getTotalProgress()}%</p>
+                        <div className="flex items-center">
+                          <Target className="h-4 w-4 mr-2 text-[#05a7b0]" />
+                          <p className="text-sm font-medium text-gray-600">Overall Goal Progress</p>
+                        </div>
+                        <div className="w-full">
+                          <Progress value={getTotalProgress()} className="h-2 [&>div]:bg-[#05a7b0]" />
+                        </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={() => setShowAddGoal(true)}
-                          className="text-sm bg-black hover:bg-gray-800 text-white"
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Add Goal
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setShowAddCategory(true)}
-                          className="text-sm"
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Add Category
-                        </Button>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-0 shadow-sm">
+                    <CardContent className="p-6">
+                      <div className="flex flex-col items-center justify-center text-center h-full space-y-3">
+                        <p className="text-4xl font-bold text-gray-900">
+                          {getCompletedTasks()}/{getTotalTasks()}
+                        </p>
+                        <div className="flex items-center">
+                          <ClipboardCheck className="h-4 w-4 mr-2 text-[#05a7b0]" />
+                          <p className="text-sm font-medium text-gray-600">Tasks Completed</p>
+                        </div>
+                        <div className="w-full">
+                          <Progress
+                            value={getTotalTasks() > 0 ? (getCompletedTasks() / getTotalTasks()) * 100 : 0}
+                            className="h-2 [&>div]:bg-[#05a7b0]"
+                          />
+                        </div>
                       </div>
-                    </div>
+                    </CardContent>
+                  </Card>
 
-                    {/* Stats Overview */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                      <Card className="border-0 shadow-sm">
-                        <CardContent className="p-6">
-                          <div className="flex flex-col items-center justify-center text-center h-full space-y-3">
-                            <p className="text-4xl font-bold text-gray-900">{getTotalProgress()}%</p>
-                            <div className="flex items-center">
-                              <Target className="h-4 w-4 mr-2 text-[#05a7b0]" />
-                              <p className="text-sm font-medium text-gray-600">Overall Goal Progress</p>
-                            </div>
-                            <div className="w-full">
-                              <Progress value={getTotalProgress()} className="h-2 [&>div]:bg-[#05a7b0]" />
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
+                  <Card className="border-0 shadow-sm">
+                    <CardContent className="p-6">
+                      <div className="flex flex-col items-center justify-center text-center h-full space-y-3">
+                        <p className="text-4xl font-bold text-gray-900">
+                          {getCompletedGoals()}/{getTotalGoals()}
+                        </p>
+                        <div className="flex items-center">
+                          <CheckCircle className="h-4 w-4 mr-2 text-[#05a7b0]" />
+                          <p className="text-sm font-medium text-gray-600">Goals Completed</p>
+                        </div>
+                        <div className="w-full">
+                          <Progress
+                            value={getTotalGoals() > 0 ? (getCompletedGoals() / getTotalGoals()) * 100 : 0}
+                            className="h-2 [&>div]:bg-[#05a7b0]"
+                          />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
 
-                      <Card className="border-0 shadow-sm">
-                        <CardContent className="p-6">
-                          <div className="flex flex-col items-center justify-center text-center h-full space-y-3">
-                            <p className="text-4xl font-bold text-gray-900">
-                              {getCompletedTasks()}/{getTotalTasks()}
-                            </p>
-                            <div className="flex items-center">
-                              <ClipboardCheck className="h-4 w-4 mr-2 text-[#05a7b0]" />
-                              <p className="text-sm font-medium text-gray-600">Tasks Completed</p>
-                            </div>
-                            <div className="w-full">
-                              <Progress
-                                value={getTotalTasks() > 0 ? (getCompletedTasks() / getTotalTasks()) * 100 : 0}
-                                className="h-2 [&>div]:bg-[#05a7b0]"
-                              />
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-
-                      <Card className="border-0 shadow-sm">
-                        <CardContent className="p-6">
-                          <div className="flex flex-col items-center justify-center text-center h-full space-y-3">
-                            <p className="text-4xl font-bold text-gray-900">
-                              {getCompletedGoals()}/{getTotalGoals()}
-                            </p>
-                            <div className="flex items-center">
-                              <CheckCircle className="h-4 w-4 mr-2 text-[#05a7b0]" />
-                              <p className="text-sm font-medium text-gray-600">Goals Completed</p>
-                            </div>
-                            <div className="w-full">
-                              <Progress
-                                value={getTotalGoals() > 0 ? (getCompletedGoals() / getTotalGoals()) * 100 : 0}
-                                className="h-2 [&>div]:bg-[#05a7b0]"
-                              />
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-
-                      <Card className="border-0 shadow-sm">
-                        <CardContent className="p-6">
-                          <div className="flex flex-col items-center justify-center text-center h-full space-y-3">
-                            <p className="text-4xl font-bold text-gray-900">{12 - currentWeek}</p>
-                            <div className="flex items-center">
-                              <Calendar className="h-4 w-4 mr-2 text-[#05a7b0]" />
-                              <p className="text-sm font-medium text-gray-600">Weeks Left</p>
-                            </div>
-                            <div className="w-full">
-                              <Progress
-                                value={((12 - (12 - currentWeek)) / 12) * 100}
-                                className="h-2 [&>div]:bg-[#05a7b0]"
-                              />
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </>
-                )}
+                  <Card className="border-0 shadow-sm">
+                    <CardContent className="p-6">
+                      <div className="flex flex-col items-center justify-center text-center h-full space-y-3">
+                        <p className="text-4xl font-bold text-gray-900">{12 - currentWeek}</p>
+                        <div className="flex items-center">
+                          <Calendar className="h-4 w-4 mr-2 text-[#05a7b0]" />
+                          <p className="text-sm font-medium text-gray-600">Weeks Left</p>
+                        </div>
+                        <div className="w-full">
+                          <Progress
+                            value={((12 - (12 - currentWeek)) / 12) * 100}
+                            className="h-2 [&>div]:bg-[#05a7b0]"
+                          />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
 
                 {/* View Toggle */}
                 {currentPage === "dashboard" ? (
@@ -3904,14 +3894,6 @@ function GoalTrackerApp() {
                             </Card>
                           )
                         })}
-
-                        {/* Show message if no tasks exist */}
-                        {(!dailyTasks[selectedDay] || dailyTasks[selectedDay].length === 0) && (
-                          <div className="col-span-2 text-center py-12">
-                            <p className="text-gray-500 mb-4">No daily tasks yet for {selectedDay}</p>
-                            <p className="text-sm text-gray-400">Use the + buttons in each category to add tasks</p>
-                          </div>
-                        )}
                       </div>
                     </TabsContent>
 
@@ -4450,13 +4432,13 @@ function GoalTrackerApp() {
                     </TabsContent>
                   </Tabs>
                 ) : currentPage === "agents" ? (
-                  <div className="space-y-6 p-8">
+                  <div className="space-y-6">
                     <div className="flex items-center justify-between">
                       <div>
                         <h2 className="text-3xl font-bold tracking-tight">Agents</h2>
                         <p className="text-muted-foreground">Manage your team members</p>
                       </div>
-                      <Button onClick={() => setShowAddAgent(true)} className="bg-[#05a7b0] hover:bg-[#048a92]">
+                      <Button onClick={() => setShowAddAgent(true)} className="bg-black hover:bg-black/90 text-white">
                         <Plus className="h-4 w-4 mr-2" />
                         Add Agent
                       </Button>
@@ -4520,7 +4502,10 @@ function GoalTrackerApp() {
                           <p className="text-sm text-muted-foreground mb-4">
                             Get started by adding your first team member
                           </p>
-                          <Button onClick={() => setShowAddAgent(true)} className="bg-[#05a7b0] hover:bg-[#048a92]">
+                          <Button
+                            onClick={() => setShowAddAgent(true)}
+                            className="bg-black hover:bg-black/90 text-white"
+                          >
                             <Plus className="h-4 w-4 mr-2" />
                             Add Agent
                           </Button>
@@ -4575,7 +4560,7 @@ function GoalTrackerApp() {
                             </Button>
                             <Button
                               onClick={addAgent}
-                              className="bg-[#05a7b0] hover:bg-[#048a92]"
+                              className="bg-black hover:bg-black/90 text-white"
                               disabled={!newAgent.name.trim() || !newAgent.role.trim()}
                             >
                               Add Agent
@@ -4626,7 +4611,7 @@ function GoalTrackerApp() {
                             </Button>
                             <Button
                               onClick={updateAgent}
-                              className="bg-[#05a7b0] hover:bg-[#048a92]"
+                              className="bg-black hover:bg-black/90 text-white"
                               disabled={!editingAgent.name.trim() || !editingAgent.role.trim()}
                             >
                               Save Changes
