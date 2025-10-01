@@ -1003,7 +1003,7 @@ function GoalTrackerApp() {
     return Math.min(Math.max(weekNumber, 1), 12)
   })
   const [selectedDay, setSelectedDay] = useState(() => {
-    const days = ["Sunday", "Monday", "Tuesday", " Wednesday", "Thursday", "Friday", "Saturday"]
+    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
     const today = new Date().getDay()
     return days[today]
   })
