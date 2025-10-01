@@ -57,6 +57,13 @@ export function AppSidebar({ currentPage, onPageChange }: AppSidebarProps) {
       .toUpperCase()
   }
 
+  const handlePageChange = (page: string) => {
+    console.log("[v0] Sidebar navigation clicked:", page)
+    console.log("[v0] Current page before change:", currentPage)
+    onPageChange(page)
+    console.log("[v0] onPageChange called with:", page)
+  }
+
   return (
     <Sidebar className="border-r" collapsible="icon">
       <SidebarContent className="pt-4">
@@ -113,7 +120,7 @@ export function AppSidebar({ currentPage, onPageChange }: AppSidebarProps) {
               <SidebarMenuButton
                 isActive={currentPage === item.page}
                 tooltip={item.title}
-                onClick={() => onPageChange(item.page)}
+                onClick={() => handlePageChange(item.page)}
               >
                 <item.icon className="size-4" />
                 <span>{item.title}</span>
