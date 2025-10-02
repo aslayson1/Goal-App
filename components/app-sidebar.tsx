@@ -2,6 +2,8 @@
 
 import * as React from "react"
 import { LayoutDashboard, Target, Users, ChevronDown } from "lucide-react"
+import { usePathname } from "next/navigation"
+import Link from "next/link"
 import {
   Sidebar,
   SidebarContent,
@@ -20,17 +22,17 @@ const menuItems = [
   {
     title: "Dashboard",
     icon: LayoutDashboard,
-    view: "daily",
+    href: "/",
   },
   {
     title: "Long-term Goals",
     icon: Target,
-    view: "1-year",
+    href: "/long-term-goals",
   },
   {
     title: "Agents",
     icon: Users,
-    view: "agents",
+    href: "/agents",
   },
 ]
 
@@ -41,13 +43,9 @@ const mockUsers = [
   { id: "3", name: "Mike Davis", email: "mike@example.com", avatar: null },
 ]
 
-interface AppSidebarProps {
-  onNavigate?: (view: string) => void
-  activeView?: string
-}
-
-export function AppSidebar({ onNavigate, activeView = "daily" }: AppSidebarProps) {
+export function AppSidebar() {
   const { state } = useSidebar()
+  const pathname = usePathname()
   const [selectedUser, setSelectedUser] = React.useState(mockUsers[0])
 
   const getInitials = (name: string) => {
@@ -111,13 +109,11 @@ export function AppSidebar({ onNavigate, activeView = "daily" }: AppSidebarProps
         <SidebarMenu className="px-2">
           {menuItems.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton
-                isActive={activeView === item.view}
-                tooltip={item.title}
-                onClick={() => onNavigate?.(item.view)}
-              >
-                <item.icon className="size-4" />
-                <span>{item.title}</span>
+              <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={item.title}>
+                <Link href={item.href}>
+                  <item.icon className="size-4" />
+                  <span>{item.title}</span>
+                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}

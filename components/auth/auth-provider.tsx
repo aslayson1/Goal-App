@@ -1,6 +1,7 @@
 "use client"
 
-import { createContext, useContext, useState, type ReactNode } from "react"
+import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
+import { supabase } from "@/lib/supabase/client"
 
 type User = { id: string; email?: string | null; name?: string | null; avatar?: string | null }
 
@@ -21,21 +22,86 @@ export function useAuth() {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user] = useState<User | null>({ id: "demo-user", email: "demo@example.com", name: "Demo User" })
-  const [isLoading] = useState(false)
+  const [user, setUser] = useState<User | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    let mounted = true
+
+    const getInitialSession = async () => {
+      try {
+        const {
+          data: { user: supabaseUser },
+        } = await supabase.auth.getUser()
+
+        if (mounted) {
+          setUser(
+            supabaseUser
+              ? {
+                  id: supabaseUser.id,
+                  email: supabaseUser.email ?? null,
+                  name: supabaseUser.user_metadata?.name ?? supabaseUser.user_metadata?.full_name ?? null,
+                }
+              : null,
+          )
+          setIsLoading(false)
+        }
+      } catch (error) {
+        console.error("Auth check error:", error)
+        if (mounted) {
+          setUser(null)
+          setIsLoading(false)
+        }
+      }
+    }
+
+    getInitialSession()
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return
+
+      const supabaseUser = session?.user
+
+      setUser(
+        supabaseUser
+          ? {
+              id: supabaseUser.id,
+              email: supabaseUser.email ?? null,
+              name: supabaseUser.user_metadata?.name ?? supabaseUser.user_metadata?.full_name ?? null,
+            }
+          : null,
+      )
+      setIsLoading(false)
+    })
+
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
+  }, [])
 
   const logout = async () => {
-    console.log("Logout called (auth disabled)")
+    setIsLoading(true)
+    try {
+      await supabase.auth.signOut()
+      setUser(null)
+    } catch (error) {
+      console.error("Logout error:", error)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const value: AuthContextType = {
     user,
     isLoading,
     login: async () => {
-      console.log("Login called (auth disabled)")
+      throw new Error("Use server actions for login")
     },
     register: async () => {
-      console.log("Register called (auth disabled)")
+      throw new Error("Use server actions for register")
     },
     logout,
   }
