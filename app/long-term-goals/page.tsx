@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Plus, Target, Trash2, MoreHorizontal } from "lucide-react"
+import { useState } from "react"
+import { Plus, Target, Trash2, MoreHorizontal, Edit } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card"
 import {
@@ -23,17 +23,162 @@ import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useToast } from "@/hooks/use-toast"
-import { createBrowserClient } from "@supabase/ssr"
 
-type Milestone = {
-  id: string
-  title: string
-  completed: boolean
-  targetDate: string
+const initialLongTermGoals = {
+  "1-year": {
+    Business: [
+      {
+        id: "1y_b1",
+        title: "Scale Upside to 1,000 paid users",
+        description: "Grow the platform to 1,000 paying customers with strong retention",
+        targetDate: "2025-12-31",
+        category: "Business",
+        status: "in-progress" as const,
+        notes: "Focus on product-market fit and customer success",
+        milestones: [
+          { id: "m1", title: "Reach 250 users", completed: false, targetDate: "2025-03-31" },
+          { id: "m2", title: "Reach 500 users", completed: false, targetDate: "2025-06-30" },
+          { id: "m3", title: "Reach 750 users", completed: false, targetDate: "2025-09-30" },
+          { id: "m4", title: "Reach 1,000 users", completed: false, targetDate: "2025-12-31" },
+        ],
+      },
+      {
+        id: "1y_b2",
+        title: "Expand Layson Group to 3 new markets",
+        description: "Open offices in Atlanta, Birmingham, and Louisville",
+        targetDate: "2025-10-31",
+        category: "Business",
+        status: "in-progress" as const,
+        notes: "Research market conditions and local partnerships",
+        milestones: [
+          { id: "m1", title: "Market research complete", completed: true, targetDate: "2025-01-31" },
+          { id: "m2", title: "Atlanta office opened", completed: false, targetDate: "2025-05-31" },
+          { id: "m3", title: "Birmingham office opened", completed: false, targetDate: "2025-08-31" },
+          { id: "m4", title: "Louisville office opened", completed: false, targetDate: "2025-10-31" },
+        ],
+      },
+    ],
+    Personal: [
+      {
+        id: "1y_p1",
+        title: "Complete a marathon",
+        description: "Train for and complete a full 26.2 mile marathon",
+        targetDate: "2025-11-15",
+        category: "Personal",
+        status: "in-progress" as const,
+        notes: "Following a 20-week training program",
+        milestones: [
+          { id: "m1", title: "Complete 10K race", completed: false, targetDate: "2025-04-15" },
+          { id: "m2", title: "Complete half marathon", completed: false, targetDate: "2025-07-15" },
+          { id: "m3", title: "Complete 20-mile training run", completed: false, targetDate: "2025-10-01" },
+          { id: "m4", title: "Complete full marathon", completed: false, targetDate: "2025-11-15" },
+        ],
+      },
+    ],
+    Financial: [
+      {
+        id: "1y_f1",
+        title: "Build 6-month emergency fund",
+        description: "Save $50,000 for emergency expenses",
+        targetDate: "2025-12-31",
+        category: "Financial",
+        status: "in-progress" as const,
+        notes: "Currently at $15,000, need $35,000 more",
+        milestones: [
+          { id: "m1", title: "Save $20,000", completed: false, targetDate: "2025-03-31" },
+          { id: "m2", title: "Save $30,000", completed: false, targetDate: "2025-06-30" },
+          { id: "m3", title: "Save $40,000", completed: false, targetDate: "2025-09-30" },
+          { id: "m4", title: "Save $50,000", completed: false, targetDate: "2025-12-31" },
+        ],
+      },
+    ],
+  },
+  "5-year": {
+    Business: [
+      {
+        id: "5y_b1",
+        title: "Exit Upside for $50M+",
+        description: "Build Upside to a market-leading position and achieve successful exit",
+        targetDate: "2029-12-31",
+        category: "Business",
+        status: "in-progress" as const,
+        notes: "Focus on building defensible moats and strong unit economics",
+        milestones: [
+          { id: "m1", title: "Reach $5M ARR", completed: false, targetDate: "2026-12-31" },
+          { id: "m2", title: "Reach $15M ARR", completed: false, targetDate: "2027-12-31" },
+          { id: "m3", title: "Reach $30M ARR", completed: false, targetDate: "2028-12-31" },
+          { id: "m4", title: "Complete exit", completed: false, targetDate: "2029-12-31" },
+        ],
+      },
+      {
+        id: "5y_b2",
+        title: "Build Layson Group into regional powerhouse",
+        description: "Expand to 10+ markets with 100+ agents",
+        targetDate: "2029-12-31",
+        category: "Business",
+        status: "in-progress" as const,
+        notes: "Focus on culture, systems, and sustainable growth",
+        milestones: [
+          { id: "m1", title: "Reach 5 markets", completed: false, targetDate: "2026-12-31" },
+          { id: "m2", title: "Reach 50 agents", completed: false, targetDate: "2027-12-31" },
+          { id: "m3", title: "Reach 8 markets", completed: false, targetDate: "2028-12-31" },
+          { id: "m4", title: "Reach 10 markets, 100 agents", completed: false, targetDate: "2029-12-31" },
+        ],
+      },
+    ],
+    Personal: [
+      {
+        id: "5y_p1",
+        title: "Complete an Ironman triathlon",
+        description: "Train for and complete a full Ironman distance triathlon",
+        targetDate: "2028-08-15",
+        category: "Personal",
+        status: "in-progress" as const,
+        notes: "Build endurance progressively through shorter races",
+        milestones: [
+          { id: "m1", title: "Complete Olympic distance triathlon", completed: false, targetDate: "2026-06-15" },
+          { id: "m2", title: "Complete Half Ironman", completed: false, targetDate: "2027-06-15" },
+          { id: "m3", title: "Complete second Half Ironman", completed: false, targetDate: "2028-03-15" },
+          { id: "m4", title: "Complete full Ironman", completed: false, targetDate: "2028-08-15" },
+        ],
+      },
+      {
+        id: "5y_p2",
+        title: "Take family on month-long European adventure",
+        description: "Visit 6+ countries with the family for cultural immersion",
+        targetDate: "2027-07-31",
+        category: "Personal",
+        status: "in-progress" as const,
+        notes: "Plan for summer 2027, focus on history and culture",
+        milestones: [
+          { id: "m1", title: "Research and plan itinerary", completed: false, targetDate: "2026-12-31" },
+          { id: "m2", title: "Book flights and accommodations", completed: false, targetDate: "2027-03-31" },
+          { id: "m3", title: "Prepare kids with language basics", completed: false, targetDate: "2027-06-30" },
+          { id: "m4", title: "Complete the trip", completed: false, targetDate: "2027-07-31" },
+        ],
+      },
+    ],
+    Financial: [
+      {
+        id: "5y_f1",
+        title: "Achieve $5M net worth",
+        description: "Build wealth through business success and smart investments",
+        targetDate: "2029-12-31",
+        category: "Financial",
+        status: "in-progress" as const,
+        notes: "Diversify across businesses, real estate, and investments",
+        milestones: [
+          { id: "m1", title: "Reach $1M net worth", completed: false, targetDate: "2026-12-31" },
+          { id: "m2", title: "Reach $2M net worth", completed: false, targetDate: "2027-12-31" },
+          { id: "m3", title: "Reach $3.5M net worth", completed: false, targetDate: "2028-12-31" },
+          { id: "m4", title: "Reach $5M net worth", completed: false, targetDate: "2029-12-31" },
+        ],
+      },
+    ],
+  },
 }
 
-type LongTermGoal = {
+interface LongTermGoal {
   id: string
   title: string
   description: string
@@ -41,10 +186,15 @@ type LongTermGoal = {
   category: string
   status: "in-progress" | "completed" | "on-hold"
   notes: string
-  milestones: Milestone[]
+  milestones: {
+    id: string
+    title: string
+    completed: boolean
+    targetDate: string
+  }[]
 }
 
-type LongTermGoals = {
+interface LongTermGoalsData {
   "1-year": {
     [category: string]: LongTermGoal[]
   }
@@ -54,18 +204,7 @@ type LongTermGoals = {
 }
 
 export default function LongTermGoalsPage() {
-  const [longTermGoals, setLongTermGoals] = useState<LongTermGoals>({
-    "1-year": {
-      Business: [],
-      Personal: [],
-      Financial: [],
-    },
-    "5-year": {
-      Business: [],
-      Personal: [],
-      Financial: [],
-    },
-  })
+  const [longTermGoals, setLongTermGoals] = useState<LongTermGoalsData>(initialLongTermGoals)
   const [showAddLongTermGoal, setShowAddLongTermGoal] = useState(false)
   const [selectedTimeframe, setSelectedTimeframe] = useState<"1-year" | "5-year">("1-year")
   const [selectedCategory, setSelectedCategory] = useState("")
@@ -82,144 +221,137 @@ export default function LongTermGoalsPage() {
       { title: "", targetDate: "" },
     ],
   })
+  const [editingLongTermGoal, setEditingLongTermGoal] = useState<{
+    timeframe: "1-year" | "5-year"
+    category: string
+    goal: LongTermGoal
+  } | null>(null)
   const [showDeleteLongTermGoal, setShowDeleteLongTermGoal] = useState<{
     timeframe: "1-year" | "5-year"
     category: string
     goalId: string
     title: string
   } | null>(null)
-  const { toast } = useToast()
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  )
-
-  useEffect(() => {
-    loadGoals()
-  }, [])
-
-  const loadGoals = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("long_term_goals")
-        .select("*")
-        .order("created_at", { ascending: false })
-
-      if (error) throw error
-
-      // Transform database goals into the structure expected by the UI
-      const transformed: LongTermGoals = {
-        "1-year": {
-          Business: [],
-          Personal: [],
-          Financial: [],
-        },
-        "5-year": {
-          Business: [],
-          Personal: [],
-          Financial: [],
-        },
-      }
-
-      data?.forEach((goal) => {
-        const timeframe = goal.goal_type === "1_year" ? "1-year" : "5-year"
-        const category = goal.category || "Personal"
-
-        if (!transformed[timeframe][category]) {
-          transformed[timeframe][category] = []
-        }
-
-        transformed[timeframe][category].push({
-          id: goal.id,
-          title: goal.title,
-          description: goal.description || "",
-          targetDate: goal.target_date || "",
-          category: category,
-          status: goal.completed ? "completed" : "in-progress",
-          notes: goal.notes || "",
-          milestones: goal.milestones || [],
-        })
-      })
-
-      setLongTermGoals(transformed)
-    } catch (error) {
-      console.error("Error loading goals:", error)
-    }
+  const startEditingLongTermGoal = (timeframe: "1-year" | "5-year", category: string, goal: LongTermGoal) => {
+    setEditingLongTermGoal({ timeframe, category, goal })
+    setSelectedTimeframe(timeframe)
+    setNewLongTermGoal({
+      title: goal.title,
+      description: goal.description,
+      targetDate: goal.targetDate,
+      category: goal.category,
+      notes: goal.notes,
+      milestones: goal.milestones.map((m) => ({
+        title: m.title,
+        targetDate: m.targetDate,
+      })),
+    })
+    setShowAddLongTermGoal(true)
   }
 
-  const addLongTermGoal = async () => {
-    if (!newLongTermGoal.title) return
+  const saveEditedLongTermGoal = () => {
+    if (!editingLongTermGoal) return
 
-    try {
-      const goalType = selectedTimeframe === "1-year" ? "1_year" : "5_year"
+    const { timeframe, category, goal } = editingLongTermGoal
 
-      const { data, error } = await supabase
-        .from("long_term_goals")
-        .insert([
-          {
-            title: newLongTermGoal.title,
-            description: newLongTermGoal.description,
-            goal_type: goalType,
-            completed: false,
-          },
-        ])
-        .select()
+    setLongTermGoals((prev) => ({
+      ...prev,
+      [timeframe]: {
+        ...prev[timeframe],
+        [category]: prev[timeframe][category].map((g) =>
+          g.id === goal.id
+            ? {
+                ...g,
+                title: newLongTermGoal.title,
+                description: newLongTermGoal.description,
+                targetDate: newLongTermGoal.targetDate,
+                category: newLongTermGoal.category,
+                notes: newLongTermGoal.notes,
+                milestones: newLongTermGoal.milestones
+                  .filter((m) => m.title && m.targetDate)
+                  .map((m, index) => ({
+                    id: `${g.id}_m${index + 1}`,
+                    title: m.title,
+                    completed: g.milestones[index]?.completed || false,
+                    targetDate: m.targetDate,
+                  })),
+              }
+            : g,
+        ),
+      },
+    }))
 
-      if (error) throw error
-
-      await loadGoals()
-
-      setNewLongTermGoal({
-        title: "",
-        description: "",
-        targetDate: "",
-        category: "",
-        notes: "",
-        milestones: [
-          { title: "", targetDate: "" },
-          { title: "", targetDate: "" },
-          { title: "", targetDate: "" },
-          { title: "", targetDate: "" },
-        ],
-      })
-      setShowAddLongTermGoal(false)
-
-      toast({
-        title: "Success",
-        description: "Goal added successfully",
-      })
-    } catch (error) {
-      console.error("Error adding long-term goal:", error)
-      toast({
-        title: "Error",
-        description: "Failed to add goal",
-        variant: "destructive",
-      })
-    }
+    setNewLongTermGoal({
+      title: "",
+      description: "",
+      targetDate: "",
+      category: "",
+      notes: "",
+      milestones: [
+        { title: "", targetDate: "" },
+        { title: "", targetDate: "" },
+        { title: "", targetDate: "" },
+        { title: "", targetDate: "" },
+      ],
+    })
+    setEditingLongTermGoal(null)
+    setShowAddLongTermGoal(false)
   }
 
-  const deleteLongTermGoal = async (timeframe: "1-year" | "5-year", category: string, goalId: string) => {
-    try {
-      const { error } = await supabase.from("long_term_goals").delete().eq("id", goalId)
+  const addLongTermGoal = () => {
+    if (!newLongTermGoal.title || !newLongTermGoal.category) return
 
-      if (error) throw error
-
-      await loadGoals()
-
-      toast({
-        title: "Success",
-        description: "Goal deleted successfully",
-      })
-    } catch (error) {
-      console.error("Error deleting goal:", error)
-      toast({
-        title: "Error",
-        description: "Failed to delete goal",
-        variant: "destructive",
-      })
+    const newGoal: LongTermGoal = {
+      id: `${selectedTimeframe}_${Date.now()}`,
+      title: newLongTermGoal.title,
+      description: newLongTermGoal.description,
+      targetDate: newLongTermGoal.targetDate,
+      category: newLongTermGoal.category,
+      status: "in-progress",
+      notes: newLongTermGoal.notes,
+      milestones: newLongTermGoal.milestones
+        .filter((m) => m.title && m.targetDate)
+        .map((m, index) => ({
+          id: `m${index + 1}`,
+          title: m.title,
+          completed: false,
+          targetDate: m.targetDate,
+        })),
     }
 
+    setLongTermGoals((prev) => ({
+      ...prev,
+      [selectedTimeframe]: {
+        ...prev[selectedTimeframe],
+        [newLongTermGoal.category]: [...(prev[selectedTimeframe][newLongTermGoal.category] || []), newGoal],
+      },
+    }))
+
+    setNewLongTermGoal({
+      title: "",
+      description: "",
+      targetDate: "",
+      category: "",
+      notes: "",
+      milestones: [
+        { title: "", targetDate: "" },
+        { title: "", targetDate: "" },
+        { title: "", targetDate: "" },
+        { title: "", targetDate: "" },
+      ],
+    })
+    setShowAddLongTermGoal(false)
+  }
+
+  const deleteLongTermGoal = (timeframe: "1-year" | "5-year", category: string, goalId: string) => {
+    setLongTermGoals((prev) => ({
+      ...prev,
+      [timeframe]: {
+        ...prev[timeframe],
+        [category]: prev[timeframe][category].filter((g) => g.id !== goalId),
+      },
+    }))
     setShowDeleteLongTermGoal(null)
   }
 
@@ -290,6 +422,28 @@ export default function LongTermGoalsPage() {
                         >
                           {category}
                         </Badge>
+                        <div className="flex items-center space-x-2">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                <Plus className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setSelectedCategory(category)
+                                  setSelectedTimeframe("1-year")
+                                  setNewLongTermGoal((prev) => ({ ...prev, category }))
+                                  setShowAddLongTermGoal(true)
+                                }}
+                              >
+                                <Target className="h-4 w-4 mr-2" />
+                                Add Goal
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
                       <CardDescription className="mt-2">
                         {goals.length} goal{goals.length !== 1 ? "s" : ""} • Long-term vision
@@ -301,21 +455,17 @@ export default function LongTermGoalsPage() {
                           <div className="flex items-start space-x-3">
                             <Checkbox
                               checked={goal.status === "completed"}
-                              onCheckedChange={async (checked) => {
-                                try {
-                                  const { error } = await supabase
-                                    .from("long_term_goals")
-                                    .update({
-                                      completed: !!checked,
-                                      completed_at: checked ? new Date().toISOString() : null,
-                                    })
-                                    .eq("id", goal.id)
-
-                                  if (error) throw error
-                                  await loadGoals()
-                                } catch (error) {
-                                  console.error("Error updating goal:", error)
-                                }
+                              onCheckedChange={(checked) => {
+                                const newStatus = checked ? "completed" : "in-progress"
+                                setLongTermGoals((prev) => ({
+                                  ...prev,
+                                  "1-year": {
+                                    ...prev["1-year"],
+                                    [category]: prev["1-year"][category].map((g) =>
+                                      g.id === goal.id ? { ...g, status: newStatus } : g,
+                                    ),
+                                  },
+                                }))
                               }}
                               className={`h-5 w-5 mt-0.5 flex-shrink-0 ${checkboxStyles}`}
                             />
@@ -332,23 +482,21 @@ export default function LongTermGoalsPage() {
                                   >
                                     {goal.description}
                                   </p>
-                                  {goal.targetDate && (
-                                    <div className="flex items-center space-x-4 text-xs text-gray-500">
-                                      <span>Target: {new Date(goal.targetDate).toLocaleDateString()}</span>
-                                      <Badge
-                                        variant="secondary"
-                                        className={
-                                          goal.status === "completed"
-                                            ? "bg-green-100 text-green-800"
-                                            : goal.status === "on-hold"
-                                              ? "bg-yellow-100 text-yellow-800"
-                                              : "bg-blue-100 text-blue-800"
-                                        }
-                                      >
-                                        {goal.status.replace("-", " ")}
-                                      </Badge>
-                                    </div>
-                                  )}
+                                  <div className="flex items-center space-x-4 text-xs text-gray-500">
+                                    <span>Target: {new Date(goal.targetDate).toLocaleDateString()}</span>
+                                    <Badge
+                                      variant="secondary"
+                                      className={
+                                        goal.status === "completed"
+                                          ? "bg-green-100 text-green-800"
+                                          : goal.status === "on-hold"
+                                            ? "bg-yellow-100 text-yellow-800"
+                                            : "bg-blue-100 text-blue-800"
+                                      }
+                                    >
+                                      {goal.status.replace("-", " ")}
+                                    </Badge>
+                                  </div>
                                 </div>
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
@@ -357,6 +505,12 @@ export default function LongTermGoalsPage() {
                                     </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end">
+                                    <DropdownMenuItem
+                                      onClick={() => startEditingLongTermGoal("1-year", category, goal)}
+                                    >
+                                      <Edit className="h-4 w-4 mr-2" />
+                                      Edit Goal
+                                    </DropdownMenuItem>
                                     <DropdownMenuItem
                                       onClick={() =>
                                         setShowDeleteLongTermGoal({
@@ -378,49 +532,47 @@ export default function LongTermGoalsPage() {
                           </div>
 
                           {/* Milestones */}
-                          {goal.milestones && goal.milestones.length > 0 && (
+                          <div className="space-y-2">
+                            <h5 className="text-sm font-medium text-gray-700">Milestones</h5>
                             <div className="space-y-2">
-                              <h5 className="text-sm font-medium text-gray-700">Milestones</h5>
-                              <div className="space-y-2">
-                                {goal.milestones.map((milestone) => (
-                                  <div key={milestone.id} className="flex items-center space-x-3">
-                                    <Checkbox
-                                      checked={milestone.completed}
-                                      onCheckedChange={async (checked) => {
-                                        const updatedMilestones = goal.milestones.map((m) =>
-                                          m.id === milestone.id ? { ...m, completed: !!checked } : m,
-                                        )
-                                        try {
-                                          const { error } = await supabase
-                                            .from("long_term_goals")
-                                            .update({ milestones: updatedMilestones })
-                                            .eq("id", goal.id)
-
-                                          if (error) throw error
-                                          await loadGoals()
-                                        } catch (error) {
-                                          console.error("Error updating milestone:", error)
-                                        }
-                                      }}
-                                      className={`h-5 w-5 mt-0.5 flex-shrink-0 ${checkboxStyles}`}
-                                    />
-                                    <div className="flex-1">
-                                      <span
-                                        className={`text-sm ${milestone.completed ? "line-through text-gray-500" : "text-gray-700"}`}
-                                      >
-                                        {milestone.title}
-                                      </span>
-                                      {milestone.targetDate && (
-                                        <span className="text-xs text-gray-500 ml-2">
-                                          {new Date(milestone.targetDate).toLocaleDateString()}
-                                        </span>
-                                      )}
-                                    </div>
+                              {goal.milestones.map((milestone) => (
+                                <div key={milestone.id} className="flex items-center space-x-3">
+                                  <Checkbox
+                                    checked={milestone.completed}
+                                    onCheckedChange={(checked) => {
+                                      setLongTermGoals((prev) => ({
+                                        ...prev,
+                                        "1-year": {
+                                          ...prev["1-year"],
+                                          [category]: prev["1-year"][category].map((g) =>
+                                            g.id === goal.id
+                                              ? {
+                                                  ...g,
+                                                  milestones: g.milestones.map((m) =>
+                                                    m.id === milestone.id ? { ...m, completed: !!checked } : m,
+                                                  ),
+                                                }
+                                              : g,
+                                          ),
+                                        },
+                                      }))
+                                    }}
+                                    className={`h-5 w-5 mt-0.5 flex-shrink-0 ${checkboxStyles}`}
+                                  />
+                                  <div className="flex-1">
+                                    <span
+                                      className={`text-sm ${milestone.completed ? "line-through text-gray-500" : "text-gray-700"}`}
+                                    >
+                                      {milestone.title}
+                                    </span>
+                                    <span className="text-xs text-gray-500 ml-2">
+                                      {new Date(milestone.targetDate).toLocaleDateString()}
+                                    </span>
                                   </div>
-                                ))}
-                              </div>
+                                </div>
+                              ))}
                             </div>
-                          )}
+                          </div>
 
                           {/* Notes */}
                           {goal.notes && (
@@ -463,6 +615,28 @@ export default function LongTermGoalsPage() {
                         >
                           {category}
                         </Badge>
+                        <div className="flex items-center space-x-2">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                <Plus className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setSelectedCategory(category)
+                                  setSelectedTimeframe("5-year")
+                                  setNewLongTermGoal((prev) => ({ ...prev, category }))
+                                  setShowAddLongTermGoal(true)
+                                }}
+                              >
+                                <Target className="h-4 w-4 mr-2" />
+                                Add Goal
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
                       <CardDescription className="mt-2">
                         {goals.length} goal{goals.length !== 1 ? "s" : ""} • Long-term vision
@@ -474,21 +648,17 @@ export default function LongTermGoalsPage() {
                           <div className="flex items-start space-x-3">
                             <Checkbox
                               checked={goal.status === "completed"}
-                              onCheckedChange={async (checked) => {
-                                try {
-                                  const { error } = await supabase
-                                    .from("long_term_goals")
-                                    .update({
-                                      completed: !!checked,
-                                      completed_at: checked ? new Date().toISOString() : null,
-                                    })
-                                    .eq("id", goal.id)
-
-                                  if (error) throw error
-                                  await loadGoals()
-                                } catch (error) {
-                                  console.error("Error updating goal:", error)
-                                }
+                              onCheckedChange={(checked) => {
+                                const newStatus = checked ? "completed" : "in-progress"
+                                setLongTermGoals((prev) => ({
+                                  ...prev,
+                                  "5-year": {
+                                    ...prev["5-year"],
+                                    [category]: prev["5-year"][category].map((g) =>
+                                      g.id === goal.id ? { ...g, status: newStatus } : g,
+                                    ),
+                                  },
+                                }))
                               }}
                               className={`h-5 w-5 mt-0.5 flex-shrink-0 ${checkboxStyles}`}
                             />
@@ -505,23 +675,21 @@ export default function LongTermGoalsPage() {
                                   >
                                     {goal.description}
                                   </p>
-                                  {goal.targetDate && (
-                                    <div className="flex items-center space-x-4 text-xs text-gray-500">
-                                      <span>Target: {new Date(goal.targetDate).toLocaleDateString()}</span>
-                                      <Badge
-                                        variant="secondary"
-                                        className={
-                                          goal.status === "completed"
-                                            ? "bg-green-100 text-green-800"
-                                            : goal.status === "on-hold"
-                                              ? "bg-yellow-100 text-yellow-800"
-                                              : "bg-blue-100 text-blue-800"
-                                        }
-                                      >
-                                        {goal.status.replace("-", " ")}
-                                      </Badge>
-                                    </div>
-                                  )}
+                                  <div className="flex items-center space-x-4 text-xs text-gray-500">
+                                    <span>Target: {new Date(goal.targetDate).toLocaleDateString()}</span>
+                                    <Badge
+                                      variant="secondary"
+                                      className={
+                                        goal.status === "completed"
+                                          ? "bg-green-100 text-green-800"
+                                          : goal.status === "on-hold"
+                                            ? "bg-yellow-100 text-yellow-800"
+                                            : "bg-blue-100 text-blue-800"
+                                      }
+                                    >
+                                      {goal.status.replace("-", " ")}
+                                    </Badge>
+                                  </div>
                                 </div>
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
@@ -530,6 +698,12 @@ export default function LongTermGoalsPage() {
                                     </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end">
+                                    <DropdownMenuItem
+                                      onClick={() => startEditingLongTermGoal("5-year", category, goal)}
+                                    >
+                                      <Edit className="h-4 w-4 mr-2" />
+                                      Edit Goal
+                                    </DropdownMenuItem>
                                     <DropdownMenuItem
                                       onClick={() =>
                                         setShowDeleteLongTermGoal({
@@ -551,49 +725,47 @@ export default function LongTermGoalsPage() {
                           </div>
 
                           {/* Milestones */}
-                          {goal.milestones && goal.milestones.length > 0 && (
+                          <div className="space-y-2">
+                            <h5 className="text-sm font-medium text-gray-700">Milestones</h5>
                             <div className="space-y-2">
-                              <h5 className="text-sm font-medium text-gray-700">Milestones</h5>
-                              <div className="space-y-2">
-                                {goal.milestones.map((milestone) => (
-                                  <div key={milestone.id} className="flex items-center space-x-3">
-                                    <Checkbox
-                                      checked={milestone.completed}
-                                      onCheckedChange={async (checked) => {
-                                        const updatedMilestones = goal.milestones.map((m) =>
-                                          m.id === milestone.id ? { ...m, completed: !!checked } : m,
-                                        )
-                                        try {
-                                          const { error } = await supabase
-                                            .from("long_term_goals")
-                                            .update({ milestones: updatedMilestones })
-                                            .eq("id", goal.id)
-
-                                          if (error) throw error
-                                          await loadGoals()
-                                        } catch (error) {
-                                          console.error("Error updating milestone:", error)
-                                        }
-                                      }}
-                                      className={`h-5 w-5 mt-0.5 flex-shrink-0 ${checkboxStyles}`}
-                                    />
-                                    <div className="flex-1">
-                                      <span
-                                        className={`text-sm ${milestone.completed ? "line-through text-gray-500" : "text-gray-700"}`}
-                                      >
-                                        {milestone.title}
-                                      </span>
-                                      {milestone.targetDate && (
-                                        <span className="text-xs text-gray-500 ml-2">
-                                          {new Date(milestone.targetDate).toLocaleDateString()}
-                                        </span>
-                                      )}
-                                    </div>
+                              {goal.milestones.map((milestone) => (
+                                <div key={milestone.id} className="flex items-center space-x-3">
+                                  <Checkbox
+                                    checked={milestone.completed}
+                                    onCheckedChange={(checked) => {
+                                      setLongTermGoals((prev) => ({
+                                        ...prev,
+                                        "5-year": {
+                                          ...prev["5-year"],
+                                          [category]: prev["5-year"][category].map((g) =>
+                                            g.id === goal.id
+                                              ? {
+                                                  ...g,
+                                                  milestones: g.milestones.map((m) =>
+                                                    m.id === milestone.id ? { ...m, completed: !!checked } : m,
+                                                  ),
+                                                }
+                                              : g,
+                                          ),
+                                        },
+                                      }))
+                                    }}
+                                    className={`h-5 w-5 mt-0.5 flex-shrink-0 ${checkboxStyles}`}
+                                  />
+                                  <div className="flex-1">
+                                    <span
+                                      className={`text-sm ${milestone.completed ? "line-through text-gray-500" : "text-gray-700"}`}
+                                    >
+                                      {milestone.title}
+                                    </span>
+                                    <span className="text-xs text-gray-500 ml-2">
+                                      {new Date(milestone.targetDate).toLocaleDateString()}
+                                    </span>
                                   </div>
-                                ))}
-                              </div>
+                                </div>
+                              ))}
                             </div>
-                          )}
+                          </div>
 
                           {/* Notes */}
                           {goal.notes && (
@@ -615,8 +787,12 @@ export default function LongTermGoalsPage() {
       <Dialog open={showAddLongTermGoal} onOpenChange={setShowAddLongTermGoal}>
         <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Add {selectedTimeframe === "1-year" ? "1-Year" : "5-Year"} Goal</DialogTitle>
-            <DialogDescription>Create a new long-term goal with milestones</DialogDescription>
+            <DialogTitle>
+              {editingLongTermGoal ? "Edit" : "Add"} {selectedTimeframe === "1-year" ? "1-Year" : "5-Year"} Goal
+            </DialogTitle>
+            <DialogDescription>
+              {editingLongTermGoal ? "Update your long-term goal" : "Create a new long-term goal with milestones"}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -707,7 +883,9 @@ export default function LongTermGoalsPage() {
             <Button variant="outline" onClick={() => setShowAddLongTermGoal(false)}>
               Cancel
             </Button>
-            <Button onClick={addLongTermGoal}>Add Goal</Button>
+            <Button onClick={editingLongTermGoal ? saveEditedLongTermGoal : addLongTermGoal}>
+              {editingLongTermGoal ? "Save Changes" : "Add Goal"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
