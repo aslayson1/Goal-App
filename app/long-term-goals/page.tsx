@@ -161,18 +161,7 @@ export default function LongTermGoalsPage() {
             title: newLongTermGoal.title,
             description: newLongTermGoal.description,
             goal_type: goalType,
-            category: newLongTermGoal.category,
-            target_date: newLongTermGoal.targetDate,
-            notes: newLongTermGoal.notes,
             completed: false,
-            milestones: (newLongTermGoal.milestones || [])
-              .filter((m) => m.title && m.targetDate)
-              .map((m, index) => ({
-                id: `temp_m${index + 1}`,
-                title: m.title,
-                completed: false,
-                targetDate: m.targetDate,
-              })),
           },
         ])
         .select()
