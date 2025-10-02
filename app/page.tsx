@@ -4457,7 +4457,7 @@ function GoalTrackerApp() {
                         Delete
                       </Button>
                     </DialogFooter>
-                  </DialogContent>
+                  </Dialog>
                 </Dialog>
 
                 {/* Add Long Term Goal Modal */}
@@ -4567,7 +4567,7 @@ function GoalTrackerApp() {
                         {editingLongTermGoal ? "Save Changes" : "Add Goal"}
                       </Button>
                     </DialogFooter>
-                  </DialogContent>
+                  </Dialog>
                 </Dialog>
 
                 <Dialog open={showAddWeeklyTask} onOpenChange={setShowAddWeeklyTask}>
@@ -4659,7 +4659,7 @@ function GoalTrackerApp() {
                         {editingWeeklyTask ? "Save Changes" : "Add Task"}
                       </Button>
                     </DialogFooter>
-                  </DialogContent>
+                  </Dialog>
                 </Dialog>
 
                 <Dialog open={showAddDailyTask} onOpenChange={setShowAddDailyTask}>
