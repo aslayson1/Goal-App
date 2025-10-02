@@ -1692,7 +1692,6 @@ function GoalTrackerApp() {
             description: newGoal.description,
             target_count: newGoal.targetCount,
             weekly_target: weeklyTargetValue,
-            notes: editingGoal.goal.notes, // Preserve existing notes
             updated_at: new Date().toISOString(),
           })
           .eq("id", editingGoal.goal.id)
@@ -2901,7 +2900,7 @@ function GoalTrackerApp() {
         </header>
 
         <div className="flex flex-1 overflow-hidden">
-          <AppSidebar />
+          <AppSidebar onNavigate={setActiveView} activeView={activeView} />
           <SidebarInset className="flex-1">
             <main className="flex-1 overflow-auto p-6">
               <div className="mx-auto max-w-7xl space-y-6">
@@ -3783,16 +3782,15 @@ function GoalTrackerApp() {
                     </div>
                   </TabsContent>
 
-                  {/* Long-term Goals View with nested tabs */}
                   <TabsContent value="long-term" className="mt-8">
                     <Tabs defaultValue="1-year" className="w-full">
-                      <TabsList className="grid w-full max-w-md grid-cols-2">
+                      <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
                         <TabsTrigger value="1-year">1-Year</TabsTrigger>
                         <TabsTrigger value="5-year">5-Year</TabsTrigger>
                       </TabsList>
 
                       {/* 1-Year Goals View */}
-                      <TabsContent value="1-year" className="mt-8">
+                      <TabsContent value="1-year">
                         <div className="flex items-center justify-between mb-6">
                           <h2 className="text-2xl font-bold text-gray-900">1-Year Goals</h2>
                           <Button
@@ -4066,7 +4064,7 @@ function GoalTrackerApp() {
                       </TabsContent>
 
                       {/* 5-Year Goals View */}
-                      <TabsContent value="5-year" className="mt-8">
+                      <TabsContent value="5-year">
                         <div className="flex items-center justify-between mb-6">
                           <h2 className="text-2xl font-bold text-gray-900">5-Year Goals</h2>
                           <Button
@@ -4432,7 +4430,7 @@ function GoalTrackerApp() {
                         {editingGoal ? "Save Changes" : "Add Goal"}
                       </Button>
                     </DialogFooter>
-                  </DialogContent>
+                  </Dialog>
                 </Dialog>
 
                 {/* Delete Goal Confirmation Dialog */}

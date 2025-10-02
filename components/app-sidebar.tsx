@@ -15,24 +15,10 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
-// Menu items with icons
-const menuItems = [
-  {
-    title: "Dashboard",
-    icon: LayoutDashboard,
-    isActive: true,
-  },
-  {
-    title: "Long-term Goals",
-    icon: Target,
-    isActive: false,
-  },
-  {
-    title: "Agents",
-    icon: Users,
-    isActive: false,
-  },
-]
+interface AppSidebarProps {
+  onNavigate?: (view: string) => void
+  activeView?: string
+}
 
 // Mock users for the dropdown
 const mockUsers = [
@@ -41,7 +27,7 @@ const mockUsers = [
   { id: "3", name: "Mike Davis", email: "mike@example.com", avatar: null },
 ]
 
-export function AppSidebar() {
+export function AppSidebar({ onNavigate, activeView = "daily" }: AppSidebarProps) {
   const { state } = useSidebar()
   const [selectedUser, setSelectedUser] = React.useState(mockUsers[0])
 
@@ -52,6 +38,24 @@ export function AppSidebar() {
       .join("")
       .toUpperCase()
   }
+
+  const menuItems = [
+    {
+      title: "Dashboard",
+      icon: LayoutDashboard,
+      value: "daily",
+    },
+    {
+      title: "Long-term Goals",
+      icon: Target,
+      value: "long-term",
+    },
+    {
+      title: "Agents",
+      icon: Users,
+      value: "agents",
+    },
+  ]
 
   return (
     <Sidebar className="border-r" collapsible="icon">
@@ -106,7 +110,11 @@ export function AppSidebar() {
         <SidebarMenu className="px-2">
           {menuItems.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton isActive={item.isActive} tooltip={item.title}>
+              <SidebarMenuButton
+                isActive={activeView === item.value}
+                tooltip={item.title}
+                onClick={() => onNavigate?.(item.value)}
+              >
                 <item.icon className="size-4" />
                 <span>{item.title}</span>
               </SidebarMenuButton>
