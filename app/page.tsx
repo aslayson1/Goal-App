@@ -1,5 +1,4 @@
 "use client"
-import { supabase } from "@/lib/supabase/client"
 import {
   Dialog,
   DialogContent,
@@ -1279,60 +1278,60 @@ function GoalTrackerApp() {
 
         try {
           // Test database connection
-          const { data, error } = await supabase.from("categories").select("count").limit(1)
+          // const { data, error } = await supabase.from("categories").select("count").limit(1)
 
-          if (error) {
-            console.error("Database connection failed:", error)
-          } else {
-            console.log("Database connection successful!")
+          // if (error) {
+          //   console.error("Database connection failed:", error)
+          // } else {
+          //   console.log("Database connection successful!")
 
-            const startDateKey = `goalTracker_startDate_${user.id}`
-            let startDate = localStorage.getItem(startDateKey)
+          const startDateKey = `goalTracker_startDate_${user.id}`
+          let startDate = localStorage.getItem(startDateKey)
 
-            if (!startDate) {
-              startDate = new Date().toISOString()
-              localStorage.setItem(startDateKey, startDate)
-            }
-
-            const start = new Date(startDate)
-            const today = new Date()
-            const daysDiff = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
-            const weekNumber = Math.floor(daysDiff / 7) + 1
-            const calculatedWeek = Math.min(Math.max(weekNumber, 1), 12)
-
-            setCurrentWeek(calculatedWeek)
-
-            const dbData = await loadCategoriesAndGoalsFromDB(user.id)
-            const taskData = await loadTasksFromDB(user.id)
-
-            console.log("=== COMPREHENSIVE TASK LOADING DEBUG ===")
-            console.log("Raw task data from database:", JSON.stringify(taskData, null, 2))
-            console.log("Daily tasks structure:", JSON.stringify(taskData.dailyTasks, null, 2))
-            console.log("Weekly tasks structure:", JSON.stringify(taskData.weeklyTasks, null, 2))
-
-            setGoalsData(dbData)
-
-            console.log("=== FORCING STATE UPDATES ===")
-
-            // Update daily tasks with force re-render
-            setDailyTasks(() => {
-              console.log("Setting daily tasks to:", JSON.stringify(taskData.dailyTasks, null, 2))
-              return { ...taskData.dailyTasks }
-            })
-
-            // Update weekly tasks with force re-render
-            setWeeklyTasks(() => {
-              console.log("Setting weekly tasks to:", JSON.stringify(taskData.weeklyTasks, null, 2))
-              return { ...taskData.weeklyTasks }
-            })
-
-            setTimeout(() => {
-              console.log("=== POST-UPDATE VERIFICATION ===")
-              console.log("Daily tasks count:", Object.keys(taskData.dailyTasks).length)
-              console.log("Weekly tasks count:", Object.keys(taskData.weeklyTasks).length)
-              console.log("State update completed successfully")
-            }, 100)
+          if (!startDate) {
+            startDate = new Date().toISOString()
+            localStorage.setItem(startDateKey, startDate)
           }
+
+          const start = new Date(startDate)
+          const today = new Date()
+          const daysDiff = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+          const weekNumber = Math.floor(daysDiff / 7) + 1
+          const calculatedWeek = Math.min(Math.max(weekNumber, 1), 12)
+
+          setCurrentWeek(calculatedWeek)
+
+          // const dbData = await loadCategoriesAndGoalsFromDB(user.id)
+          // const taskData = await loadTasksFromDB(user.id)
+
+          // console.log("=== COMPREHENSIVE TASK LOADING DEBUG ===")
+          // console.log("Raw task data from database:", JSON.stringify(taskData, null, 2))
+          // console.log("Daily tasks structure:", JSON.stringify(taskData.dailyTasks, null, 2))
+          // console.log("Weekly tasks structure:", JSON.stringify(taskData.weeklyTasks, null, 2))
+
+          // setGoalsData(dbData)
+
+          // console.log("=== FORCING STATE UPDATES ===")
+
+          // Update daily tasks with force re-render
+          // setDailyTasks(() => {
+          //   console.log("Setting daily tasks to:", JSON.stringify(taskData.dailyTasks, null, 2))
+          //   return { ...taskData.dailyTasks }
+          // })
+
+          // Update weekly tasks with force re-render
+          // setWeeklyTasks(() => {
+          //   console.log("Setting weekly tasks to:", JSON.stringify(taskData.weeklyTasks, null, 2))
+          //   return { ...taskData.weeklyTasks }
+          // })
+
+          // setTimeout(() => {
+          //   console.log("=== POST-UPDATE VERIFICATION ===")
+          //   console.log("Daily tasks count:", Object.keys(taskData.dailyTasks).length)
+          //   console.log("Weekly tasks count:", Object.keys(taskData.weeklyTasks).length)
+          //   console.log("State update completed successfully")
+          // }, 100)
+          // }
         } catch (error) {
           console.error("Error loading data:", error)
         }
@@ -1366,22 +1365,21 @@ function GoalTrackerApp() {
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(goalId)
 
     if (isUUID) {
-      try {
-        const { error } = await supabase.from("goals").update({ current_progress: newCount }).eq("id", goalId)
-
-        if (error) {
-          console.error("Error updating goal progress:", error)
-          // Revert local state on error
-          setGoalsData((prev) => ({
-            ...prev,
-            [category]: prev[category].map((goal) =>
-              goal.id === goalId ? { ...goal, currentCount: goal.currentCount } : goal,
-            ),
-          }))
-        }
-      } catch (error) {
-        console.error("Error updating goal progress:", error)
-      }
+      // try {
+      //   const { error } = await supabase.from("goals").update({ current_progress: newCount }).eq("id", goalId)
+      //   if (error) {
+      //     console.error("Error updating goal progress:", error)
+      //     // Revert local state on error
+      //     setGoalsData((prev) => ({
+      //       ...prev,
+      //       [category]: prev[category].map((goal) =>
+      //         goal.id === goalId ? { ...goal, currentCount: goal.currentCount } : goal,
+      //       ),
+      //     }))
+      //   }
+      // } catch (error) {
+      //   console.error("Error updating goal progress:", error)
+      // }
     }
   }
 
@@ -1401,22 +1399,21 @@ function GoalTrackerApp() {
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(goalId)
 
     if (isUUID) {
-      try {
-        const { error } = await supabase.from("goals").update({ current_progress: clampedValue }).eq("id", goalId)
-
-        if (error) {
-          console.error("Error updating goal progress:", error)
-          // Revert local state on error
-          setGoalsData((prev) => ({
-            ...prev,
-            [category]: prev[category].map((goal) =>
-              goal.id === goalId ? { ...goal, currentCount: goal.currentCount } : goal,
-            ),
-          }))
-        }
-      } catch (error) {
-        console.error("Error updating goal progress:", error)
-      }
+      // try {
+      //   const { error } = await supabase.from("goals").update({ current_progress: clampedValue }).eq("id", goalId)
+      //   if (error) {
+      //     console.error("Error updating goal progress:", error)
+      //     // Revert local state on error
+      //     setGoalsData((prev) => ({
+      //       ...prev,
+      //       [category]: prev[category].map((goal) =>
+      //         goal.id === goalId ? { ...goal, currentCount: goal.currentCount } : goal,
+      //       ),
+      //     }))
+      //   }
+      // } catch (error) {
+      //   console.error("Error updating goal progress:", error)
+      // }
     }
   }
 
@@ -1426,26 +1423,24 @@ function GoalTrackerApp() {
 
     const newCurrentCount = goal.currentCount === 0 ? goal.targetCount : 0
 
-    try {
-      const { error } = await supabase
-        .from("goals")
-        .update({
-          current_progress: newCurrentCount,
-          completed: newCurrentCount >= goal.targetCount,
-        })
-        .eq("id", goalId)
+    // try {
+    //   const { error } = await supabase
+    //     .from("goals")
+    //     .update({
+    //       current_progress: newCurrentCount,
+    //       completed: newCurrentCount >= goal.targetCount,
+    //     })
+    //     .eq("id", goalId)
 
-      if (error) throw error
+    //   if (error) throw error
 
-      setGoalsData((prev) => ({
-        ...prev,
-        [category]: prev[category].map((goal) =>
-          goal.id === goalId ? { ...goal, currentCount: newCurrentCount } : goal,
-        ),
-      }))
-    } catch (error) {
-      console.error("Error updating binary goal:", error)
-    }
+    //   setGoalsData((prev) => ({
+    //     ...prev,
+    //     [category]: prev[category].map((goal) => (goal.id === goalId ? { ...goal, currentCount: newCurrentCount } : goal)),
+    //   }))
+    // } catch (error) {
+    //   console.error("Error updating binary goal:", error)
+    // }
   }
 
   const toggleGoalCompletion = async (goalId: string, category: string) => {
@@ -1494,28 +1489,28 @@ function GoalTrackerApp() {
         completed_at: isCompleted ? new Date().toISOString() : null,
       })
 
-      const { error } = await supabase
-        .from("goals")
-        .update({
-          current_progress: newProgress,
-          completed: isCompleted,
-          completed_at: isCompleted ? new Date().toISOString() : null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", goalId)
+      // const { error } = await supabase
+      //   .from("goals")
+      //   .update({
+      //     current_progress: newProgress,
+      //     completed: isCompleted,
+      //     completed_at: isCompleted ? new Date().toISOString() : null,
+      //     updated_at: new Date().toISOString(),
+      //   })
+      //   .eq("id", goalId)
 
-      if (error) {
-        console.error("[v0] Error updating goal completion:", error.message)
-        setGoalsData((prev) => ({
-          ...prev,
-          [category]: prev[category].map((goal) =>
-            goal.id === goalId
-              ? { ...goal, currentCount: goal.currentCount >= goal.targetCount ? goal.targetCount : 0 }
-              : goal,
-          ),
-        }))
-        return
-      }
+      // if (error) {
+      //   console.error("[v0] Error updating goal completion:", error.message)
+      //   setGoalsData((prev) => ({
+      //     ...prev,
+      //     [category]: prev[category].map((goal) =>
+      //       goal.id === goalId
+      //         ? { ...goal, currentCount: goal.currentCount >= goal.targetCount ? goal.targetCount : 0 }
+      //         : goal,
+      //     ),
+      //   }))
+      //   return
+      // }
 
       console.log("[v0] Database update successful")
     } catch (error) {
@@ -1564,44 +1559,44 @@ function GoalTrackerApp() {
       ],
     }))
 
-    try {
-      if (!user?.id) {
-        console.error("User not authenticated")
-        return
-      }
+    // try {
+    //   if (!user?.id) {
+    //     console.error("User not authenticated")
+    //     return
+    //   }
 
-      // Find the category ID from the database
-      const { data: categories } = await supabase
-        .from("categories")
-        .select("id")
-        .eq("name", selectedCategory)
-        .eq("user_id", user.id)
-        .single()
+    //   // Find the category ID from the database
+    //   const { data: categories } = await supabase
+    //     .from("categories")
+    //     .select("id")
+    //     .eq("name", selectedCategory)
+    //     .eq("user_id", user.id)
+    //     .single()
 
-      if (!categories) {
-        console.error("Category not found in database")
-        return
-      }
+    //   if (!categories) {
+    //     console.error("Category not found in database")
+    //     return
+    //   }
 
-      const { error } = await supabase.from("goals").insert({
-        id: goalId,
-        user_id: user.id,
-        category_id: categories.id,
-        title: newGoal.title,
-        description: newGoal.description,
-        target_count: targetCount,
-        current_progress: 0,
-        weekly_target: weeklyTargetValue,
-      })
+    //   const { error } = await supabase.from("goals").insert({
+    //     id: goalId,
+    //     user_id: user.id,
+    //     category_id: categories.id,
+    //     title: newGoal.title,
+    //     description: newGoal.description,
+    //     target_count: targetCount,
+    //     current_progress: 0,
+    //     weekly_target: weeklyTargetValue,
+    //   })
 
-      if (error) {
-        console.error("Error saving goal to database:", error)
-      } else {
-        console.log("Goal saved to database successfully")
-      }
-    } catch (error) {
-      console.error("Error saving goal:", error)
-    }
+    //   if (error) {
+    //     console.error("Error saving goal to database:", error)
+    //   } else {
+    //     console.log("Goal saved to database successfully")
+    //   }
+    // } catch (error) {
+    //   console.error("Error saving goal:", error)
+    // }
 
     setNewGoal({ title: "", description: "", targetCount: 0, weeklyTarget: 0 })
     setSelectedCategory("")
@@ -1623,36 +1618,36 @@ function GoalTrackerApp() {
       return
     }
 
-    try {
-      const { data, error } = await supabase
-        .from("categories")
-        .insert({
-          name: categoryName,
-          user_id: user?.id || null,
-          color: "#3b82f6", // Default blue color
-        })
-        .select()
-        .single()
+    // try {
+    //   const { data, error } = await supabase
+    //     .from("categories")
+    //     .insert({
+    //       name: categoryName,
+    //       user_id: user?.id || null,
+    //       color: "#3b82f6", // Default blue color
+    //     })
+    //     .select()
+    //     .single()
 
-      if (error) {
-        console.error("Error saving category:", error)
-        alert(`Failed to save category: ${error.message}`)
-        return
-      }
+    //   if (error) {
+    //     console.error("Error saving category:", error)
+    //     alert(`Failed to save category: ${error.message}`)
+    //     return
+    //   }
 
-      // Update local state
-      setGoalsData((prev) => ({
-        ...prev,
-        [categoryName]: [],
-      }))
+    //   // Update local state
+    //   setGoalsData((prev) => ({
+    //     ...prev,
+    //     [categoryName]: [],
+    //   }))
 
-      setNewCategoryName("")
-      setShowAddCategory(false)
-      console.log("Category saved successfully:", categoryName)
-    } catch (error) {
-      console.error("Error adding category:", error)
-      alert("Failed to add category. Please try again.")
-    }
+    //   setNewCategoryName("")
+    //   setShowAddCategory(false)
+    //   console.log("Category saved successfully:", categoryName)
+    // } catch (error) {
+    //   console.error("Error adding category:", error)
+    //   alert("Failed to add category. Please try again.")
+    // }
   }
 
   const editGoal = (category: string, goalId: string, updatedGoal: Partial<Goal>) => {
@@ -1664,15 +1659,25 @@ function GoalTrackerApp() {
 
   const deleteGoal = async (category: string, goalId: string) => {
     try {
-      await supabase.from("goals").delete().eq("id", goalId)
+      // Check if this is a database goal (has UUID format)
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(goalId)
+
+      if (isUUID) {
+        // Delete from database
+        // await supabase.from("goals").delete().eq("id", goalId)
+      }
+
+      // Update local state
       setGoalsData((prev) => ({
         ...prev,
         [category]: prev[category].filter((goal) => goal.id !== goalId),
       }))
+
       setShowDeleteGoal(null)
     } catch (error) {
       console.error("Error deleting goal:", error)
-      // Keep the goal in UI if database deletion fails
+      // Show error to user but keep the dialog open
+      alert("Failed to delete goal. Please try again.")
     }
   }
 
@@ -1684,23 +1689,22 @@ function GoalTrackerApp() {
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(editingGoal.goal.id)
 
     if (isUUID) {
-      try {
-        const { error } = await supabase
-          .from("goals")
-          .update({
-            title: newGoal.title,
-            description: newGoal.description,
-            target_count: newGoal.targetCount,
-            weekly_target: weeklyTargetValue,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", editingGoal.goal.id)
-
-        if (error) throw error
-      } catch (error) {
-        console.error("Error updating goal in database:", error)
-        // Continue with local update even if database fails
-      }
+      // try {
+      //   const { error } = await supabase
+      //     .from("goals")
+      //     .update({
+      //       title: newGoal.title,
+      //       description: newGoal.description,
+      //       target_count: newGoal.targetCount,
+      //       weekly_target: weeklyTargetValue,
+      //       updated_at: new Date().toISOString(),
+      //     })
+      //     .eq("id", editingGoal.goal.id)
+      //   if (error) throw error
+      // } catch (error) {
+      //   console.error("Error updating goal in database:", error)
+      //   // Continue with local update even if database fails
+      // }
     }
 
     editGoal(editingGoal.category, editingGoal.goal.id, {
@@ -1736,45 +1740,42 @@ function GoalTrackerApp() {
   }
 
   const editWeeklyTask = async (taskId: string, updatedTask: Partial<WeeklyTask>) => {
-    try {
-      const { error } = await supabase
-        .from("tasks")
-        .update({
-          title: updatedTask.title,
-          description: updatedTask.description,
-          // Remove category, priority, estimated_hours as they don't exist in database schema
-        })
-        .eq("id", taskId)
-
-      if (error) {
-        console.error("Database error updating weekly task:", error)
-        return
-      }
-
-      // Update local state only if database update succeeds
-      setWeeklyTasks((prev) => ({
-        ...prev,
-        [`Week ${currentWeek}`]:
-          prev[`Week ${currentWeek}`]?.map((task) => (task.id === taskId ? { ...task, ...updatedTask } : task)) || [],
-      }))
-    } catch (error) {
-      console.error("Error updating weekly task:", error)
-      // Don't update local state if database update fails
-    }
+    // try {
+    //   const { error } = await supabase
+    //     .from("tasks")
+    //     .update({
+    //       title: updatedTask.title,
+    //       description: updatedTask.description,
+    //       // Remove category, priority, estimated_hours as they don't exist in database schema
+    //     })
+    //     .eq("id", taskId)
+    //   if (error) {
+    //     console.error("Database error updating weekly task:", error)
+    //     return
+    //   }
+    //   // Update local state only if database update succeeds
+    //   setWeeklyTasks((prev) => ({
+    //     ...prev,
+    //     [`Week ${currentWeek}`]:
+    //       prev[`Week ${currentWeek}`]?.map((task) => (task.id === taskId ? { ...task, ...updatedTask } : task)) || [],
+    //   }))
+    // } catch (error) {
+    //   console.error("Error updating weekly task:", error)
+    //   // Don't update local state if database update fails
+    // }
   }
 
   const deleteDailyTask = async (day: string, taskId: string) => {
-    try {
-      await supabase.from("tasks").delete().eq("id", taskId)
-
-      setDailyTasks((prev) => ({
-        ...prev,
-        [day]: prev[day]?.filter((task) => task.id !== taskId) || [],
-      }))
-    } catch (error) {
-      console.error("Error deleting daily task:", error)
-      // Keep the task in UI if database deletion fails
-    }
+    // try {
+    //   await supabase.from("tasks").delete().eq("id", taskId)
+    //   setDailyTasks((prev) => ({
+    //     ...prev,
+    //     [day]: prev[day]?.filter((task) => task.id !== taskId) || [],
+    //   }))
+    // } catch (error) {
+    //   console.error("Error deleting daily task:", error)
+    //   // Keep the task in UI if database deletion fails
+    // }
   }
 
   const editDailyTask = (day: string, taskId: string, updatedTask: Partial<DailyTask>) => {
@@ -1894,196 +1895,183 @@ function GoalTrackerApp() {
     const oldCategoryName = showEditCategory
     const newCategoryName = editCategoryName.trim()
 
-    try {
-      const { data: categories, error: fetchError } = await supabase
-        .from("categories")
-        .select("id")
-        .eq("name", oldCategoryName)
-        .eq("user_id", (await supabase.auth.getUser()).data.user?.id)
+    // try {
+    //   const { data: categories, error: fetchError } = await supabase
+    //     .from("categories")
+    //     .select("id")
+    //     .eq("name", oldCategoryName)
+    //     .eq("user_id", (await supabase.auth.getUser()).data.user?.id)
 
-      if (fetchError) {
-        console.error("Error finding category:", fetchError)
-        return
-      }
+    //   if (fetchError) {
+    //     console.error("Error finding category:", fetchError)
+    //     return
+    //   }
 
-      if (categories) {
-        const { error: updateError } = await supabase
-          .from("categories")
-          .update({
-            name: newCategoryName,
-            color: editCategoryColor,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", categories.id)
+    //   if (categories) {
+    //     const { error: updateError } = await supabase
+    //       .from("categories")
+    //       .update({
+    //         name: newCategoryName,
+    //         color: editCategoryColor,
+    //         updated_at: new Date().toISOString(),
+    //       })
+    //       .eq("id", categories.id)
 
-        if (updateError) {
-          console.error("Database error updating category:", updateError)
-          return
-        }
-      }
+    //     if (updateError) {
+    //       console.error("Database error updating category:", updateError)
+    //       return
+    //     }
+    //   }
 
-      // If name changed, update the goals data structure
-      if (oldCategoryName !== newCategoryName) {
-        setGoalsData((prev) => {
-          const updated = { ...prev }
+    //   // If name changed, update the goals data structure
+    //   if (oldCategoryName !== newCategoryName) {
+    //     setGoalsData((prev) => {
+    //       const updated = { ...prev }
 
-          // Move goals to new category name
-          if (updated[oldCategoryName]) {
-            updated[newCategoryName] = updated[oldCategoryName]
-            delete updated[oldCategoryName]
-          }
+    //       // Move goals to new category name
+    //       if (updated[oldCategoryName]) {
+    //         updated[newCategoryName] = updated[oldCategoryName]
+    //         delete updated[oldCategoryName]
+    //       }
 
-          return updated
-        })
+    //       return updated
+    //     })
 
-        // Update tasks to use new category name
-        setWeeklyTasks((prev) => {
-          const updated = { ...prev }
-          Object.keys(updated).forEach((week) => {
-            updated[week] = updated[week].map((task) =>
-              task.category === oldCategoryName ? { ...task, category: newCategoryName } : task,
-            )
-          })
-          return updated
-        })
+    //     // Update tasks to use new category name
+    //     setWeeklyTasks((prev) => {
+    //       const updated = { ...prev }
+    //       Object.keys(updated).forEach((week) => {
+    //         updated[week] = updated[week].map((task) =>
+    //           task.category === oldCategoryName ? { ...task, category: newCategoryName } : task,
+    //         )
+    //       })
+    //       return updated
+    //     })
 
-        setDailyTasks((prev) => {
-          const updated = { ...prev }
-          Object.keys(updated).forEach((day) => {
-            updated[day] = updated[day].map((task) =>
-              task.category === oldCategoryName ? { ...task, category: newCategoryName } : task,
-            )
-          })
-          return updated
-        })
+    //     setDailyTasks((prev) => {
+    //       const updated = { ...prev }
+    //       Object.keys(updated).forEach((day) => {
+    //         updated[day] = updated[day].map((task) =>
+    //           task.category === oldCategoryName ? { ...task, category: newCategoryName } : task,
+    //         )
+    //       })
+    //       return updated
+    //     })
 
-        // Update custom colors
-        setCustomCategoryColors((prev) => {
-          const updated = { ...prev }
-          if (updated[oldCategoryName]) {
-            updated[newCategoryName] = updated[oldCategoryName]
-            delete updated[oldCategoryName]
-          }
-          return updated
-        })
-      }
+    //     // Update custom colors
+    //     setCustomCategoryColors((prev) => {
+    //       const updated = { ...prev }
+    //       if (updated[oldCategoryName]) {
+    //         updated[newCategoryName] = updated[oldCategoryName]
+    //         delete updated[oldCategoryName]
+    //       }
+    //       return updated
+    //     })
+    //   }
 
-      // Update color
-      setCustomCategoryColors((prev) => ({
-        ...prev,
-        [newCategoryName]: editCategoryColor,
-      }))
+    //   // Update color
+    //   setCustomCategoryColors((prev) => ({
+    //     ...prev,
+    //     [newCategoryName]: editCategoryColor,
+    //   }))
 
-      setShowEditCategory(null)
-      setEditCategoryName("")
-      setEditCategoryColor("")
-    } catch (error) {
-      console.error("Error updating category:", error)
-    }
+    //   setShowEditCategory(null)
+    //   setEditCategoryName("")
+    //   setEditCategoryColor("")
+    // } catch (error) {
+    //   console.error("Error updating category:", error)
+    // }
   }
 
   const deleteCategory = async (category: string) => {
-    try {
-      // Find the category ID from the categories data
-      const { data: categories } = await supabase
-        .from("categories")
-        .select("id")
-        .eq("name", category)
-        .eq("user_id", user?.id)
-        .single()
-
-      if (categories) {
-        // Delete from database first
-        const { error } = await supabase.from("categories").delete().eq("id", categories.id)
-        if (error) throw error
-      }
-
-      setGoalsData((prev) => {
-        const updated = { ...prev }
-        delete updated[category]
-        return updated
-      })
-
-      // Remove custom color if exists
-      setCustomCategoryColors((prev) => {
-        const updated = { ...prev }
-        delete updated[category]
-        return updated
-      })
-
-      setShowDeleteCategory(null)
-    } catch (error) {
-      console.error("Error deleting category:", error)
-      // Optionally show error message to user
-    }
+    // try {
+    //   // Find the category ID from the categories data
+    //   const { data: categories } = await supabase
+    //     .from("categories")
+    //     .select("id")
+    //     .eq("name", category)
+    //     .eq("user_id", user?.id)
+    //     .single()
+    //   if (categories) {
+    //     // Delete from database first
+    //     const { error } = await supabase.from("categories").delete().eq("id", categories.id)
+    //     if (error) throw error
+    //   }
+    //   setGoalsData((prev) => {
+    //     const updated = { ...prev }
+    //     delete updated[category]
+    //     return updated
+    //   })
+    //   // Remove custom color if exists
+    //   setCustomCategoryColors((prev) => {
+    //     const updated = { ...prev }
+    //     delete updated[category]
+    //     return updated
+    //   })
+    //   setShowDeleteCategory(null)
+    // } catch (error) {
+    //   console.error("Error deleting category:", error)
+    //   // Optionally show error message to user
+    // }
   }
 
   const loadCategoriesAndGoalsFromDB = async (userId: string) => {
-    try {
-      const { data: categories, error: categoriesError } = await supabase
-        .from("categories")
-        .select("*")
-        .eq("user_id", userId)
-
-      if (categoriesError) {
-        console.error("Error fetching categories:", categoriesError)
-        return initialGoalsData
-      }
-
-      const { data: goals, error: goalsError } = await supabase
-        .from("goals")
-        .select(
-          `
-        *,
-        categories (
-          name
-        )
-      `,
-        )
-        .eq("user_id", userId)
-
-      if (goalsError) {
-        console.error("Error fetching goals:", goalsError)
-        return initialGoalsData
-      }
-
-      // Group goals by category
-      const groupedGoals: GoalsData = {}
-
-      // Initialize with categories
-      categories.forEach((category) => {
-        groupedGoals[category.name] = []
-      })
-
-      // Add goals to their categories
-      goals.forEach((goal) => {
-        const categoryName = goal.categories?.name || "Uncategorized"
-        if (!groupedGoals[categoryName]) {
-          groupedGoals[categoryName] = []
-        }
-
-        groupedGoals[categoryName].push({
-          id: goal.id,
-          title: goal.title,
-          description: goal.description || "",
-          targetCount: goal.target_count || 1,
-          currentCount: goal.current_progress || 0,
-          notes: goal.notes || "",
-          weeklyTarget: goal.weekly_target || 1,
-          category: categoryName,
-        })
-      })
-
-      if (Object.keys(groupedGoals).length === 0) {
-        console.log("[v0] No categories found in database, using initial data")
-        return initialGoalsData
-      }
-
-      return groupedGoals
-    } catch (error) {
-      console.error("Error loading data from database:", error)
-      return initialGoalsData
-    }
+    // try {
+    //   const { data: categories, error: categoriesError } = await supabase
+    //     .from("categories")
+    //     .select("*")
+    //     .eq("user_id", userId)
+    //   if (categoriesError) {
+    //     console.error("Error fetching categories:", categoriesError)
+    //     return initialGoalsData
+    //   }
+    //   const { data: goals, error: goalsError } = await supabase
+    //     .from("goals")
+    //     .select(
+    //       `
+    //     *,
+    //     categories (
+    //       name
+    //     )
+    //   `,
+    //     )
+    //     .eq("user_id", userId)
+    //   if (goalsError) {
+    //     console.error("Error fetching goals:", goalsError)
+    //     return initialGoalsData
+    //   }
+    //   // Group goals by category
+    //   const groupedGoals: GoalsData = {}
+    //   // Initialize with categories
+    //   categories.forEach((category) => {
+    //     groupedGoals[category.name] = []
+    //   })
+    //   // Add goals to their categories
+    //   goals.forEach((goal) => {
+    //     const categoryName = goal.categories?.name || "Uncategorized"
+    //     if (!groupedGoals[categoryName]) {
+    //       groupedGoals[categoryName] = []
+    //     }
+    //     groupedGoals[categoryName].push({
+    //       id: goal.id,
+    //       title: goal.title,
+    //       description: goal.description || "",
+    //       targetCount: goal.target_count || 1,
+    //       currentCount: goal.current_progress || 0,
+    //       notes: goal.notes || "",
+    //       weeklyTarget: goal.weekly_target || 1,
+    //       category: categoryName,
+    //     })
+    //   })
+    //   if (Object.keys(groupedGoals).length === 0) {
+    //     console.log("[v0] No categories found in database, using initial data")
+    //     return initialGoalsData
+    //   }
+    //   return groupedGoals
+    // } catch (error) {
+    //   console.error("Error loading data from database:", error)
+    //   return initialGoalsData
+    // }
   }
 
   // Add these functions after the existing helper functions (around line 1200):
@@ -2155,72 +2143,72 @@ function GoalTrackerApp() {
   const addLongTermGoal = async () => {
     if (!newLongTermGoal.title || !user?.id) return
 
-    try {
-      const goalType = selectedTimeframe === "1-year" ? "1_year" : "5_year"
+    // try {
+    //   const goalType = selectedTimeframe === "1-year" ? "1_year" : "5_year"
 
-      // Save to database
-      const { data, error } = await supabase
-        .from("long_term_goals")
-        .insert([
-          {
-            user_id: user.id,
-            title: newLongTermGoal.title,
-            description: newLongTermGoal.description,
-            goal_type: goalType, // Use converted goal_type value
-            completed: false,
-          },
-        ])
-        .select()
+    //   // Save to database
+    //   const { data, error } = await supabase
+    //     .from("long_term_goals")
+    //     .insert([
+    //       {
+    //         user_id: user.id,
+    //         title: newLongTermGoal.title,
+    //         description: newLongTermGoal.description,
+    //         goal_type: goalType, // Use converted goal_type value
+    //         completed: false,
+    //       },
+    //     ])
+    //     .select()
 
-      if (error) throw error
+    //   if (error) throw error
 
-      // Update local state
-      if (data && data[0]) {
-        const newGoal = {
-          id: data[0].id,
-          title: newLongTermGoal.title,
-          description: newLongTermGoal.description,
-          targetDate: newLongTermGoal.targetDate,
-          category: newLongTermGoal.category,
-          status: "in-progress" as const,
-          notes: newLongTermGoal.notes,
-          milestones: newLongTermGoal.milestones
-            .filter((m) => m.title && m.targetDate)
-            .map((m, index) => ({
-              id: `${data[0].id}_m${index + 1}`,
-              title: m.title,
-              completed: false,
-              targetDate: m.targetDate,
-            })),
-        }
+    //   // Update local state
+    //   if (data && data[0]) {
+    //     const newGoal = {
+    //       id: data[0].id,
+    //       title: newLongTermGoal.title,
+    //       description: newLongTermGoal.description,
+    //       targetDate: newLongTermGoal.targetDate,
+    //       category: newLongTermGoal.category,
+    //       status: "in-progress" as const,
+    //       notes: "", // Database doesn't store notes
+    //       milestones: newLongTermGoal.milestones
+    //         .filter((m) => m.title && m.targetDate)
+    //         .map((m, index) => ({
+    //           id: `${data[0].id}_m${index + 1}`,
+    //           title: m.title,
+    //           completed: false,
+    //           targetDate: m.targetDate,
+    //         })),
+    //     }
 
-        setLongTermGoals((prev) => ({
-          ...prev,
-          [selectedTimeframe]: {
-            ...prev[selectedTimeframe],
-            [newLongTermGoal.category]: [...(prev[selectedTimeframe][newLongTermGoal.category] || []), newGoal],
-          },
-        }))
-      }
+    //     setLongTermGoals((prev) => ({
+    //       ...prev,
+    //       [selectedTimeframe]: {
+    //         ...prev[selectedTimeframe],
+    //         [newLongTermGoal.category]: [...(prev[selectedTimeframe][newLongTermGoal.category] || []), newGoal],
+    //       },
+    //     }))
+    //   }
 
-      // Reset form and close dialog
-      setNewLongTermGoal({
-        title: "",
-        description: "",
-        targetDate: "",
-        category: "",
-        notes: "",
-        milestones: [
-          { title: "", targetDate: "" },
-          { title: "", targetDate: "" },
-          { title: "", targetDate: "" },
-          { title: "", targetDate: "" },
-        ],
-      })
-      setShowAddLongTermGoal(false)
-    } catch (error) {
-      console.error("Error adding long-term goal:", error)
-    }
+    //   // Reset form and close dialog
+    //   setNewLongTermGoal({
+    //     title: "",
+    //     description: "",
+    //     targetDate: "",
+    //     category: "",
+    //     notes: "",
+    //     milestones: [
+    //       { title: "", targetDate: "" },
+    //       { title: "", targetDate: "" },
+    //       { title: "", targetDate: "" },
+    //       { title: "", targetDate: "" },
+    //     ],
+    //   })
+    //   setShowAddLongTermGoal(false)
+    // } catch (error) {
+    //   console.error("Error adding long-term goal:", error)
+    // }
   }
 
   const deleteLongTermGoal = (timeframe: "1-year" | "5-year", category: string, goalId: string) => {
@@ -2431,22 +2419,22 @@ function GoalTrackerApp() {
     }))
 
     // Update database
-    try {
-      const { error } = await supabase.from("tasks").update({ completed: newCompletedStatus }).eq("id", taskId)
+    // try {
+    //   const { error } = await supabase.from("tasks").update({ completed: newCompletedStatus }).eq("id", taskId)
 
-      if (error) {
-        console.error("Error updating task completion:", error)
-        // Revert local state on error
-        setWeeklyTasks((prev) => ({
-          ...prev,
-          [weekKey]:
-            prev[weekKey]?.map((task) => (task.id === taskId ? { ...task, completed: currentTask.completed } : task)) ||
-            [],
-        }))
-      }
-    } catch (error) {
-      console.error("Error updating task completion:", error)
-    }
+    //   if (error) {
+    //     console.error("Error updating task completion:", error)
+    //     // Revert local state on error
+    //     setWeeklyTasks((prev) => ({
+    //       ...prev,
+    //       [weekKey]:
+    //         prev[weekKey]?.map((task) => (task.id === taskId ? { ...task, completed: currentTask.completed } : task)) ||
+    //         [],
+    //     }))
+    //   }
+    // } catch (error) {
+    //   console.error("Error updating task completion:", error)
+    // }
   }
 
   const handleDailyTaskDragEnd = (event: DragEndEvent, category: string) => {
@@ -2487,23 +2475,23 @@ function GoalTrackerApp() {
     }))
 
     // Update database
-    try {
-      const { error } = await supabase.from("tasks").update({ completed: newCompletedStatus }).eq("id", taskId)
+    // try {
+    //   const { error } = await supabase.from("tasks").update({ completed: newCompletedStatus }).eq("id", taskId)
 
-      if (error) {
-        console.error("Error updating task completion:", error)
-        // Revert local state on error
-        setDailyTasks((prev) => ({
-          ...prev,
-          [selectedDay]:
-            prev[selectedDay]?.map((task) =>
-              task.id === taskId ? { ...task, completed: currentTask.completed } : task,
-            ) || [],
-        }))
-      }
-    } catch (error) {
-      console.error("Error updating task completion:", error)
-    }
+    //   if (error) {
+    //     console.error("Error updating task completion:", error)
+    //     // Revert local state on error
+    //     setDailyTasks((prev) => ({
+    //       ...prev,
+    //       [selectedDay]:
+    //         prev[selectedDay]?.map((task) =>
+    //           task.id === taskId ? { ...task, completed: currentTask.completed } : task,
+    //         ) || [],
+    //     }))
+    //   }
+    // } catch (error) {
+    //   console.error("Error updating task completion:", error)
+    // }
   }
 
   const addDailyTask = async () => {
@@ -2546,63 +2534,63 @@ function GoalTrackerApp() {
     })
     setShowAddDailyTask(false)
 
-    try {
-      if (!user?.id) {
-        console.error("No user ID available")
-        return
-      }
+    // try {
+    //   if (!user?.id) {
+    //     console.error("No user ID available")
+    //     return
+    //   }
 
-      // Look up category ID if category is provided
-      let categoryId = null
-      if (taskData.category) {
-        const { data: categories } = await supabase
-          .from("categories")
-          .select("id")
-          .eq("name", taskData.category)
-          .eq("user_id", user.id)
-          .single()
+    //   // Look up category ID if category is provided
+    //   let categoryId = null
+    //   if (taskData.category) {
+    //     const { data: categories } = await supabase
+    //       .from("categories")
+    //       .select("id")
+    //       .eq("name", taskData.category)
+    //       .eq("user_id", user.id)
+    //       .single()
 
-        categoryId = categories?.id || null
-      }
+    //     categoryId = categories?.id || null
+    //   }
 
-      // Calculate the target_date based on the selected day
-      const today = new Date()
-      const currentDayIndex = today.getDay()
-      const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
-      const selectedDayIndex = daysOfWeek.indexOf(selectedDay)
+    //   // Calculate the target_date based on the selected day
+    //   const today = new Date()
+    //   const currentDayIndex = today.getDay()
+    //   const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+    //   const selectedDayIndex = daysOfWeek.indexOf(selectedDay)
 
-      // Calculate days difference
-      let daysDiff = selectedDayIndex - currentDayIndex
+    //   // Calculate days difference
+    //   let daysDiff = selectedDayIndex - currentDayIndex
 
-      // If the selected day is in the past this week, move to next week
-      if (daysDiff < 0) {
-        daysDiff += 7
-      }
+    //   // If the selected day is in the past this week, move to next week
+    //   if (daysDiff < 0) {
+    //     daysDiff += 7
+    //   }
 
-      // Create target date
-      const targetDate = new Date(today)
-      targetDate.setDate(today.getDate() + daysDiff)
+    //   // Create target date
+    //   const targetDate = new Date(today)
+    //   targetDate.setDate(today.getDate() + daysDiff)
 
-      const insertData = {
-        id: taskId,
-        user_id: user.id,
-        category_id: categoryId,
-        goal_id: taskData.goalId || null,
-        title: taskData.title,
-        description: taskData.description,
-        task_type: "daily",
-        target_date: targetDate.toISOString().split("T")[0],
-        completed: false,
-      }
+    //   const insertData = {
+    //     id: taskId,
+    //     user_id: user.id,
+    //     category_id: categoryId,
+    //     goal_id: taskData.goalId || null,
+    //     title: taskData.title,
+    //     description: taskData.description,
+    //     task_type: "daily",
+    //     target_date: targetDate.toISOString().split("T")[0],
+    //     completed: false,
+    //   }
 
-      const { error } = await supabase.from("tasks").insert(insertData).select()
+    //   const { error } = await supabase.from("tasks").insert(insertData).select()
 
-      if (error) {
-        console.error("Error saving daily task:", error)
-      }
-    } catch (err) {
-      console.error("Exception during database operation:", err)
-    }
+    //   if (error) {
+    //     console.error("Error saving daily task:", error)
+    //   }
+    // } catch (err) {
+    //   console.error("Exception during database operation:", err)
+    // }
   }
 
   const addWeeklyTask = async () => {
@@ -2625,40 +2613,40 @@ function GoalTrackerApp() {
       ],
     }))
 
-    try {
-      if (!user?.id) {
-        console.error("User not authenticated")
-        return
-      }
+    // try {
+    //   if (!user?.id) {
+    //     console.error("User not authenticated")
+    //     return
+    //   }
 
-      // Find category ID from database
-      const { data: categories } = await supabase
-        .from("categories")
-        .select("id")
-        .eq("name", newWeeklyTask.category)
-        .eq("user_id", user.id)
-        .single()
+    //   // Find category ID from database
+    //   const { data: categories } = await supabase
+    //     .from("categories")
+    //     .select("id")
+    //     .eq("name", newWeeklyTask.category)
+    //     .eq("user_id", user.id)
+    //     .single()
 
-      const { error } = await supabase.from("tasks").insert({
-        id: taskId,
-        user_id: user.id,
-        category_id: categories?.id || null,
-        goal_id: newWeeklyTask.goalId || null,
-        title: newWeeklyTask.title,
-        description: newWeeklyTask.description,
-        task_type: "weekly",
-        target_date: new Date().toISOString().split("T")[0],
-        completed: false,
-      })
+    //   const { error } = await supabase.from("tasks").insert({
+    //     id: taskId,
+    //     user_id: user.id,
+    //     category_id: categories?.id || null,
+    //     goal_id: newWeeklyTask.goalId || null,
+    //     title: newWeeklyTask.title,
+    //     description: newWeeklyTask.description,
+    //     task_type: "weekly",
+    //     target_date: new Date().toISOString().split("T")[0],
+    //     completed: false,
+    //   })
 
-      if (error) {
-        console.error("Error saving weekly task to database:", error.message)
-      } else {
-        console.log("Weekly task saved to database successfully")
-      }
-    } catch (error) {
-      console.error("Error saving weekly task to database:", error)
-    }
+    //   if (error) {
+    //     console.error("Error saving weekly task to database:", error.message)
+    //   } else {
+    //     console.log("Weekly task saved to database successfully")
+    //   }
+    // } catch (error) {
+    //   console.error("Error saving weekly task to database:", error)
+    // }
 
     setNewWeeklyTask({
       title: "",
@@ -2672,193 +2660,166 @@ function GoalTrackerApp() {
   }
 
   async function loadTasksFromDB(userId: string) {
-    try {
-      console.log("=== LOADING TASKS FROM DATABASE ===")
-      console.log("Fetching tasks for user ID:", userId)
-
-      const { data: tasks, error: tasksError } = await supabase
-        .from("tasks")
-        .select(
-          `
-        *,
-        categories (
-          name
-        )
-      `,
-        )
-        .eq("user_id", userId)
-
-      if (tasksError) {
-        console.error("Error fetching tasks:", tasksError)
-        return { weeklyTasks: {}, dailyTasks: {} }
-      }
-
-      console.log("Raw tasks from database:", JSON.stringify(tasks, null, 2))
-      console.log("Number of tasks found:", tasks?.length || 0)
-
-      const completedTasks = tasks?.filter((t) => t.completed) || []
-      const incompleteTasks = tasks?.filter((t) => !t.completed) || []
-      console.log("[v0] Total tasks:", tasks?.length || 0)
-      console.log("[v0] Completed tasks:", completedTasks.length)
-      console.log("[v0] Incomplete tasks:", incompleteTasks.length)
-      console.log("[v0] Completed task details:", JSON.stringify(completedTasks, null, 2))
-
-      const buyCarTask = tasks?.find((t) => t.title?.includes("Buy Car1"))
-      if (buyCarTask) {
-        console.log("[v0] FOUND 'Buy Car1' task:")
-        console.log("[v0]   - ID:", buyCarTask.id)
-        console.log("[v0]   - Title:", buyCarTask.title)
-        console.log("[v0]   - Task Type:", buyCarTask.task_type)
-        console.log("[v0]   - Completed:", buyCarTask.completed)
-        console.log("[v0]   - Target Date:", buyCarTask.target_date)
-        console.log("[v0]   - Category:", buyCarTask.categories?.name || "Uncategorized")
-      } else {
-        console.log("[v0] 'Buy Car1' task NOT FOUND in database results")
-      }
-
-      const weeklyTasks: Record<string, WeeklyTask[]> = {}
-      const dailyTasks: Record<string, DailyTask[]> = {}
-
-      tasks.forEach((task, index) => {
-        console.log(`Processing task ${index + 1}:`, JSON.stringify(task, null, 2))
-
-        const categoryName = task.categories?.name || "Uncategorized"
-
-        if (task.task_type === "weekly") {
-          const taskDate = new Date(task.target_date)
-          const weekKey = `Week ${currentWeek}` // For now, only load current week's tasks
-
-          console.log(`Adding weekly task to ${weekKey}`)
-          console.log(
-            `[v0] Weekly task "${task.title}" - completed: ${task.completed}, target_date: ${task.target_date}, assigned to: ${weekKey}`,
-          )
-
-          const weeklyTask: WeeklyTask = {
-            id: task.id,
-            title: task.title || "",
-            description: task.description || "",
-            category: categoryName,
-            goalId: task.goal_id || "",
-            completed: !!task.completed,
-            priority: "medium",
-            estimatedHours: 1,
-          }
-
-          if (!weeklyTasks[weekKey]) {
-            weeklyTasks[weekKey] = []
-          }
-          weeklyTasks[weekKey].push(weeklyTask)
-        } else if (task.task_type === "daily") {
-          const taskDate = new Date(task.target_date)
-          const day = taskDate.toLocaleDateString("en-US", { weekday: "long" })
-
-          console.log(`Adding daily task to ${day} (target_date: ${task.target_date})`)
-          console.log(
-            `[v0] Daily task "${task.title}" - completed: ${task.completed}, target_date: ${task.target_date}, assigned to: ${day}`,
-          )
-
-          if (task.title?.includes("Buy Car1")) {
-            console.log("[v0] PROCESSING 'Buy Car1' as daily task:")
-            console.log("[v0]   - Will be added to day:", day)
-            console.log("[v0]   - Completed value:", !!task.completed)
-          }
-
-          const dailyTask: DailyTask = {
-            id: task.id,
-            title: task.title || "",
-            description: task.description || "",
-            category: categoryName,
-            goalId: task.goal_id || "",
-            completed: !!task.completed,
-            timeBlock: "9:00 AM",
-            estimatedMinutes: 30,
-          }
-
-          if (!dailyTasks[day]) {
-            dailyTasks[day] = []
-          }
-          dailyTasks[day].push(dailyTask)
-        }
-      })
-
-      console.log("=== FINAL ORGANIZED TASKS ===")
-      console.log("Organized daily tasks:", JSON.stringify(dailyTasks, null, 2))
-      console.log("Organized weekly tasks:", JSON.stringify(weeklyTasks, null, 2))
-      console.log("[v0] Final weekly tasks count:", Object.values(weeklyTasks).flat().length)
-      console.log("[v0] Final daily tasks count:", Object.values(dailyTasks).flat().length)
-
-      const allDailyTasksFlat = Object.values(dailyTasks).flat()
-      const buyCarInFinal = allDailyTasksFlat.find((t) => t.title?.includes("Buy Car1"))
-      if (buyCarInFinal) {
-        console.log("[v0] 'Buy Car1' IS in final dailyTasks object")
-        console.log("[v0]   - Completed:", buyCarInFinal.completed)
-      } else {
-        console.log("[v0] 'Buy Car1' is NOT in final dailyTasks object")
-      }
-
-      return { weeklyTasks, dailyTasks }
-    } catch (error) {
-      console.error("Error in loadTasksFromDB:", error)
-      return { weeklyTasks: {}, dailyTasks: {} }
-    }
+    // try {
+    //   console.log("=== LOADING TASKS FROM DATABASE ===")
+    //   console.log("Fetching tasks for user ID:", userId)
+    //   const { data: tasks, error: tasksError } = await supabase
+    //     .from("tasks")
+    //     .select(
+    //       `
+    //     *,
+    //     categories (
+    //       name
+    //     )
+    //   `,
+    //     )
+    //     .eq("user_id", userId)
+    //   if (tasksError) {
+    //     console.error("Error fetching tasks:", tasksError)
+    //     return { weeklyTasks: {}, dailyTasks: {} }
+    //   }
+    //   console.log("Raw tasks from database:", JSON.stringify(tasks, null, 2))
+    //   console.log("Number of tasks found:", tasks?.length || 0)
+    //   const completedTasks = tasks?.filter((t) => t.completed) || []
+    //   const incompleteTasks = tasks?.filter((t) => !t.completed) || []
+    //   console.log("[v0] Total tasks:", tasks?.length || 0)
+    //   console.log("[v0] Completed tasks:", completedTasks.length)
+    //   console.log("[v0] Incomplete tasks:", incompleteTasks.length)
+    //   console.log("[v0] Completed task details:", JSON.stringify(completedTasks, null, 2))
+    //   const buyCarTask = tasks?.find((t) => t.title?.includes("Buy Car1"))
+    //   if (buyCarTask) {
+    //     console.log("[v0] FOUND 'Buy Car1' task:")
+    //     console.log("[v0]   - ID:", buyCarTask.id)
+    //     console.log("[v0]   - Title:", buyCarTask.title)
+    //     console.log("[v0]   - Task Type:", buyCarTask.task_type)
+    //     console.log("[v0]   - Completed:", buyCarTask.completed)
+    //     console.log("[v0]   - Target Date:", buyCarTask.target_date)
+    //     console.log("[v0]   - Category:", buyCarTask.categories?.name || "Uncategorized")
+    //   } else {
+    //     console.log("[v0] 'Buy Car1' task NOT FOUND in database results")
+    //   }
+    //   const weeklyTasks: Record<string, WeeklyTask[]> = {}
+    //   const dailyTasks: Record<string, DailyTask[]> = {}
+    //   tasks.forEach((task, index) => {
+    //     console.log(`Processing task ${index + 1}:`, JSON.stringify(task, null, 2))
+    //     const categoryName = task.categories?.name || "Uncategorized"
+    //     if (task.task_type === "weekly") {
+    //       const taskDate = new Date(task.target_date)
+    //       const weekKey = `Week ${currentWeek}` // For now, only load current week's tasks
+    //       console.log(`Adding weekly task to ${weekKey}`)
+    //       console.log(
+    //         `[v0] Weekly task "${task.title}" - completed: ${task.completed}, target_date: ${task.target_date}, assigned to: ${weekKey}`,
+    //       )
+    //       const weeklyTask: WeeklyTask = {
+    //         id: task.id,
+    //         title: task.title || "",
+    //         description: task.description || "",
+    //         category: categoryName,
+    //         goalId: task.goal_id || "",
+    //         completed: !!task.completed,
+    //         priority: "medium",
+    //         estimatedHours: 1,
+    //       }
+    //       if (!weeklyTasks[weekKey]) {
+    //         weeklyTasks[weekKey] = []
+    //       }
+    //       weeklyTasks[weekKey].push(weeklyTask)
+    //     } else if (task.task_type === "daily") {
+    //       const taskDate = new Date(task.target_date)
+    //       const day = taskDate.toLocaleDateString("en-US", { weekday: "long" })
+    //       console.log(`Adding daily task to ${day} (target_date: ${task.target_date})`)
+    //       console.log(
+    //         `[v0] Daily task "${task.title}" - completed: ${task.completed}, target_date: ${task.target_date}, assigned to: ${day}`,
+    //       )
+    //       if (task.title?.includes("Buy Car1")) {
+    //         console.log("[v0] PROCESSING 'Buy Car1' as daily task:")
+    //         console.log("[v0]   - Will be added to day:", day)
+    //         console.log("[v0]   - Completed value:", !!task.completed)
+    //       }
+    //       const dailyTask: DailyTask = {
+    //         id: task.id,
+    //         title: task.title || "",
+    //         description: task.description || "",
+    //         category: categoryName,
+    //         goalId: task.goal_id || "",
+    //         completed: !!task.completed,
+    //         timeBlock: "9:00 AM",
+    //         estimatedMinutes: 30,
+    //       }
+    //       if (!dailyTasks[day]) {
+    //         dailyTasks[day] = []
+    //       }
+    //       dailyTasks[day].push(dailyTask)
+    //     }
+    //   })
+    //   console.log("=== FINAL ORGANIZED TASKS ===")
+    //   console.log("Organized daily tasks:", JSON.stringify(dailyTasks, null, 2))
+    //   console.log("Organized weekly tasks:", JSON.stringify(weeklyTasks, null, 2))
+    //   console.log("[v0] Final weekly tasks count:", Object.values(weeklyTasks).flat().length)
+    //   console.log("[v0] Final daily tasks count:", Object.values(dailyTasks).flat().length)
+    //   const allDailyTasksFlat = Object.values(dailyTasks).flat()
+    //   const buyCarInFinal = allDailyTasksFlat.find((t) => t.title?.includes("Buy Car1"))
+    //   if (buyCarInFinal) {
+    //     console.log("[v0] 'Buy Car1' IS in final dailyTasks object")
+    //     console.log("[v0]   - Completed:", buyCarInFinal.completed)
+    //   } else {
+    //     console.log("[v0] 'Buy Car1' is NOT in final dailyTasks object")
+    //   }
+    //   return { weeklyTasks, dailyTasks }
+    // } catch (error) {
+    //   console.error("Error in loadTasksFromDB:", error)
+    //   return { weeklyTasks: {}, dailyTasks: {} }
+    // }
   }
 
   const loadLongTermGoalsFromDB = async () => {
-    if (!user?.id) return
-
-    try {
-      const { data: longTermGoalsData, error } = await supabase
-        .from("long_term_goals")
-        .select("*")
-        .eq("user_id", user.id)
-
-      if (error) throw error
-
-      if (longTermGoalsData && longTermGoalsData.length > 0) {
-        // Group goals by timeframe and category
-        const groupedGoals: LongTermGoalsData = {
-          "1-year": {},
-          "5-year": {},
-        }
-
-        longTermGoalsData.forEach((goal) => {
-          // Convert database goal_type format to display format
-          const timeframe = goal.goal_type === "1_year" ? "1-year" : "5-year"
-          const category = "Business" // Default category since database doesn't store categories
-
-          if (!groupedGoals[timeframe][category]) {
-            groupedGoals[timeframe][category] = []
-          }
-
-          groupedGoals[timeframe][category].push({
-            id: goal.id,
-            title: goal.title,
-            description: goal.description || "",
-            targetDate: "", // Database doesn't store target_date
-            category: category,
-            status: goal.completed ? "completed" : "in-progress",
-            notes: "", // Database doesn't store notes
-            milestones: [], // Database doesn't store milestones
-          })
-        })
-
-        // Merge with initial data for categories that don't exist in database
-        const mergedGoals: LongTermGoalsData = {
-          "1-year": { ...initialLongTermGoals["1-year"], ...groupedGoals["1-year"] },
-          "5-year": { ...initialLongTermGoals["5-year"], ...groupedGoals["5-year"] },
-        }
-
-        setLongTermGoals(mergedGoals)
-      }
-    } catch (error) {
-      console.error("Error loading long-term goals:", error)
-    }
+    // if (!user?.id) return
+    // try {
+    //   const { data: longTermGoalsData, error } = await supabase
+    //     .from("long_term_goals")
+    //     .select("*")
+    //     .eq("user_id", user.id)
+    //   if (error) throw error
+    //   if (longTermGoalsData && longTermGoalsData.length > 0) {
+    //     // Group goals by timeframe and category
+    //     const groupedGoals: LongTermGoalsData = {
+    //       "1-year": {},
+    //       "5-year": {},
+    //     }
+    //     longTermGoalsData.forEach((goal) => {
+    //       // Convert database goal_type format to display format
+    //       const timeframe = goal.goal_type === "1_year" ? "1-year" : "5-year"
+    //       const category = "Business" // Default category since database doesn't store categories
+    //       if (!groupedGoals[timeframe][category]) {
+    //         groupedGoals[timeframe][category] = []
+    //       }
+    //       groupedGoals[timeframe][category].push({
+    //         id: goal.id,
+    //         title: goal.title,
+    //         description: goal.description || "",
+    //         targetDate: "", // Database doesn't store target_date
+    //         category: category,
+    //         status: goal.completed ? "completed" : "in-progress",
+    //         notes: "", // Database doesn't store notes
+    //         milestones: [], // Database doesn't store milestones
+    //       })
+    //     })
+    //     // Merge with initial data for categories that don't exist in database
+    //     const mergedGoals: LongTermGoalsData = {
+    //       "1-year": { ...initialLongTermGoals["1-year"], ...groupedGoals["1-year"] },
+    //       "5-year": { ...initialLongTermGoals["5-year"], ...groupedGoals["5-year"] },
+    //     }
+    //     setLongTermGoals(mergedGoals)
+    //   }
+    // } catch (error) {
+    //   console.error("Error loading long-term goals:", error)
+    // }
   }
 
   useEffect(() => {
-    if (user?.id) {
-      loadLongTermGoalsFromDB()
-    }
+    // if (user?.id) {
+    //   loadLongTermGoalsFromDB()
+    // }
   }, [user?.id])
 
   return (
@@ -3422,16 +3383,16 @@ function GoalTrackerApp() {
                                       onEdit={() => startEditingWeeklyTask(task)}
                                       onDelete={() => {
                                         const deleteWeeklyTask = async (weekKey: string, taskId: string) => {
-                                          try {
-                                            await supabase.from("tasks").delete().eq("id", taskId)
-                                            setWeeklyTasks((prev) => ({
-                                              ...prev,
-                                              [weekKey]: prev[weekKey]?.filter((task) => task.id !== taskId) || [],
-                                            }))
-                                          } catch (error) {
-                                            console.error("Error deleting weekly task:", error)
-                                            // Keep the task in UI if database deletion fails
-                                          }
+                                          // try {
+                                          //   await supabase.from("tasks").delete().eq("id", taskId)
+                                          //   setWeeklyTasks((prev) => ({
+                                          //     ...prev,
+                                          //     [weekKey]: prev[weekKey]?.filter((task) => task.id !== taskId) || [],
+                                          //   }))
+                                          // } catch (error) {
+                                          //   console.error("Error deleting weekly task:", error)
+                                          //   // Keep the task in UI if database deletion fails
+                                          // }
                                         }
                                         deleteWeeklyTask(`Week ${currentWeek}`, task.id)
                                       }}
@@ -3494,16 +3455,16 @@ function GoalTrackerApp() {
                                       onEdit={() => startEditingWeeklyTask(task)}
                                       onDelete={() => {
                                         const deleteWeeklyTask = async (weekKey: string, taskId: string) => {
-                                          try {
-                                            await supabase.from("tasks").delete().eq("id", taskId)
-                                            setWeeklyTasks((prev) => ({
-                                              ...prev,
-                                              [weekKey]: prev[weekKey]?.filter((task) => task.id !== taskId) || [],
-                                            }))
-                                          } catch (error) {
-                                            console.error("Error deleting weekly task:", error)
-                                            // Keep the task in UI if database deletion fails
-                                          }
+                                          // try {
+                                          //   await supabase.from("tasks").delete().eq("id", taskId)
+                                          //   setWeeklyTasks((prev) => ({
+                                          //     ...prev,
+                                          //     [weekKey]: prev[weekKey]?.filter((task) => task.id !== taskId) || [],
+                                          //   }))
+                                          // } catch (error) {
+                                          //   console.error("Error deleting weekly task:", error)
+                                          //   // Keep the task in UI if database deletion fails
+                                          // }
                                         }
                                         deleteWeeklyTask(`Week ${currentWeek}`, task.id)
                                       }}
@@ -3888,15 +3849,15 @@ function GoalTrackerApp() {
                                       if (isValidUUID) {
                                         // Database goal - update both database and local state
                                         try {
-                                          const { error } = await supabase
-                                            .from("long_term_goals")
-                                            .update({
-                                              completed: !!checked,
-                                              completed_at: checked ? new Date().toISOString() : null,
-                                            })
-                                            .eq("id", goal.id)
+                                          // const { error } = await supabase
+                                          //   .from("long_term_goals")
+                                          //   .update({
+                                          //     completed: !!checked,
+                                          //     completed_at: checked ? new Date().toISOString() : null,
+                                          //   })
+                                          //   .eq("id", goal.id)
 
-                                          if (error) throw error
+                                          // if (error) throw error
 
                                           const newStatus = checked ? "completed" : "in-progress"
                                           setLongTermGoals((prev) => ({
@@ -4151,15 +4112,15 @@ function GoalTrackerApp() {
                                       if (isValidUUID) {
                                         // Database goal - update both database and local state
                                         try {
-                                          const { error } = await supabase
-                                            .from("long_term_goals")
-                                            .update({
-                                              completed: !!checked,
-                                              completed_at: checked ? new Date().toISOString() : null,
-                                            })
-                                            .eq("id", goal.id)
+                                          // const { error } = await supabase
+                                          //   .from("long_term_goals")
+                                          //   .update({
+                                          //     completed: !!checked,
+                                          //     completed_at: checked ? new Date().toISOString() : null,
+                                          //   })
+                                          //   .eq("id", goal.id)
 
-                                          if (error) throw error
+                                          // if (error) throw error
 
                                           const newStatus = checked ? "completed" : "in-progress"
                                           setLongTermGoals((prev) => ({
@@ -4435,7 +4396,7 @@ function GoalTrackerApp() {
                   <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>
-                        {editingLongTermGoal ? "Edit" : "Add"} {selectedTimeframe === "1-year" ? "1-Year" : "5-Year"}{" "}
+                        {editingLongTermGoal ? "Edit" : "Add"} {selectedTimeframe === "1-year" ? "1-Year" : "5-Year"}
                         Goal
                       </DialogTitle>
                       <DialogDescription>
@@ -4537,7 +4498,7 @@ function GoalTrackerApp() {
                         {editingLongTermGoal ? "Save Changes" : "Add Goal"}
                       </Button>
                     </DialogFooter>
-                  </DialogContent>
+                  </Dialog>
                 </Dialog>
 
                 <Dialog open={showAddWeeklyTask} onOpenChange={setShowAddWeeklyTask}>
@@ -4629,7 +4590,7 @@ function GoalTrackerApp() {
                         {editingWeeklyTask ? "Save Changes" : "Add Task"}
                       </Button>
                     </DialogFooter>
-                  </DialogContent>
+                  </Dialog>
                 </Dialog>
 
                 <Dialog open={showAddDailyTask} onOpenChange={setShowAddDailyTask}>
@@ -4747,7 +4708,7 @@ function GoalTrackerApp() {
                       </Button>
                       <Button onClick={addNewCategory}>Add Category</Button>
                     </DialogFooter>
-                  </DialogContent>
+                  </Dialog>
                 </Dialog>
               </div>
             </main>
