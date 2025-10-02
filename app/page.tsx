@@ -1064,7 +1064,8 @@ function GoalTrackerApp() {
   })
 
   const [showAddCategory, setShowAddCategory] = useState(false)
-  const [newCategoryName, setNewCategoryName] = useState("")
+  // Removed: const [newCategoryName, setNewCategoryName] = useState("")
+  const [newCategory, setNewCategory] = useState({ name: "", color: "" }) // Replaced with newCategory object
 
   const [editingGoal, setEditingGoal] = useState<{ category: string; goal: Goal } | null>(null)
   const [showDeleteGoal, setShowDeleteGoal] = useState<{ category: string; goalId: string; title: string } | null>(null)
@@ -1106,8 +1107,6 @@ function GoalTrackerApp() {
 
   // Cal.com inspired color palette for category badges - each category gets a unique, distinct color
   const getCategoryColor = (category: string) => {
-    return "bg-black text-white border-black"
-
     // Check for custom colors first
     if (customCategoryColors[category]) {
       return customCategoryColors[category]
@@ -1604,11 +1603,11 @@ function GoalTrackerApp() {
     setShowAddGoal(false)
   }
 
-  const addNewCategory = async () => {
-    if (!newCategoryName.trim()) return
+  // Updated add and category logic
+  const addCategory = async () => {
+    if (!newCategory.name.trim() || !user?.id) return
 
-    // Convert to title case instead of uppercase
-    const categoryName = newCategoryName
+    const categoryName = newCategory.name
       .trim()
       .split(" ")
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
@@ -1624,8 +1623,8 @@ function GoalTrackerApp() {
     //     .from("categories")
     //     .insert({
     //       name: categoryName,
-    //       user_id: user?.id || null,
-    //       color: "#3b82f6", // Default blue color
+    //       user_id: user.id,
+    //       color: newCategory.color || getCategoryColor(categoryName), // Use selected color or default
     //     })
     //     .select()
     //     .single()
@@ -1642,7 +1641,15 @@ function GoalTrackerApp() {
     //     [categoryName]: [],
     //   }))
 
-    //   setNewCategoryName("")
+    //   // Update custom colors if a specific color was chosen
+    //   if (newCategory.color) {
+    //     setCustomCategoryColors((prev) => ({
+    //       ...prev,
+    //       [categoryName]: newCategory.color,
+    //     }))
+    //   }
+
+    //   setNewCategory({ name: "", color: "" }) // Reset form
     //   setShowAddCategory(false)
     //   console.log("Category saved successfully:", categoryName)
     // } catch (error) {
@@ -1664,9 +1671,14 @@ function GoalTrackerApp() {
       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(goalId)
 
       if (isUUID) {
-        // Delete from database
-        // const supabase = createBrowserClient() // This line was added from updates
-        // await supabase.from("goals").delete().eq("id", goalId)
+        // const supabase = createBrowserClient() // This line was commented out, but needed for the fix
+        const { error } = await supabase.from("goals").delete().eq("id", goalId)
+
+        if (error) {
+          console.error("Error deleting goal from database:", error)
+          alert("Failed to delete goal from database. Please try again.")
+          return
+        }
       }
 
       // Update local state
@@ -1864,26 +1876,12 @@ function GoalTrackerApp() {
     setShowAddDailyTask(false)
   }
 
-  const colorOptions = [
-    { name: "Blue", value: "bg-blue-100 text-blue-800 border-blue-200" },
-    { name: "Sky", value: "bg-sky-100 text-sky-800 border-sky-200" },
-    { name: "Violet", value: "bg-violet-100 text-violet-800 border-violet-200" },
-    { name: "Purple", value: "bg-purple-100 text-purple-800 border-purple-200" },
-    { name: "Pink", value: "bg-pink-100 text-pink-800 border-pink-200" },
-    { name: "Rose", value: "bg-rose-100 text-rose-800 border-rose-200" },
-    { name: "Red", value: "bg-red-100 text-red-800 border-red-200" },
-    { name: "Orange", value: "bg-orange-100 text-orange-800 border-orange-200" },
-    { name: "Amber", value: "bg-amber-100 text-amber-800 border-amber-200" },
-    { name: "Yellow", value: "bg-yellow-100 text-yellow-800 border-yellow-200" },
-    { name: "Lime", value: "bg-lime-100 text-lime-800 border-lime-200" },
-    { name: "Green", value: "bg-green-100 text-green-800 border-green-200" },
-    { name: "Emerald", value: "bg-emerald-100 text-emerald-800 border-emerald-200" },
-    { name: "Teal", value: "bg-teal-100 text-teal-800 border-teal-200" },
-    { name: "Cyan", value: "bg-cyan-100 text-cyan-800 border-cyan-200" },
-    { name: "Slate", value: "bg-slate-100 text-slate-800 border-slate-200" },
-    { name: "Gray", value: "bg-gray-100 text-gray-800 border-gray-200" },
-    { name: "Stone", value: "bg-stone-100 text-stone-800 border-stone-200" },
-  ]
+  // Updated categories for Select dropdowns, mapping from goalsData keys
+  const categories = Object.keys(goalsData).map((name) => ({
+    id: crypto.randomUUID(), // Temporary ID, ideally fetched from DB
+    name: name,
+    color: getCategoryColor(name),
+  }))
 
   const startEditingCategory = (category: string) => {
     setShowEditCategory(category)
@@ -1898,16 +1896,11 @@ function GoalTrackerApp() {
     const newCategoryName = editCategoryName.trim()
 
     // try {
-    //   const { data: categories, error: fetchError } = await supabase
+    //   const { data: categories } = await supabase // Use a more appropriate name to avoid shadowing
     //     .from("categories")
     //     .select("id")
     //     .eq("name", oldCategoryName)
     //     .eq("user_id", (await supabase.auth.getUser()).data.user?.id)
-
-    //   if (fetchError) {
-    //     console.error("Error finding category:", fetchError)
-    //     return
-    //   }
 
     //   if (categories) {
     //     const { error: updateError } = await supabase
@@ -1988,15 +1981,15 @@ function GoalTrackerApp() {
   const deleteCategory = async (category: string) => {
     // try {
     //   // Find the category ID from the categories data
-    //   const { data: categories } = await supabase
+    //   const { data: categories_db } = await supabase // Renamed to avoid conflict
     //     .from("categories")
     //     .select("id")
     //     .eq("name", category)
     //     .eq("user_id", user?.id)
     //     .single()
-    //   if (categories) {
+    //   if (categories_db) {
     //     // Delete from database first
-    //     const { error } = await supabase.from("categories").delete().eq("id", categories.id)
+    //     const { error } = await supabase.from("categories").delete().eq("id", categories_db.id)
     //     if (error) throw error
     //   }
     //   setGoalsData((prev) => {
@@ -4613,4 +4606,105 @@ function GoalTrackerApp() {
                       </div>
                       <div>
                         <Label htmlFor="daily-task-description">Description</Label>
-\
+                        <Textarea
+                          id="daily-task-description"
+                          placeholder="Add details about this task..."
+                          value={newDailyTask.description}
+                          onChange={(e) => setNewDailyTask((prev) => ({ ...prev, description: e.target.value }))}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="daily-task-category">Category</Label>
+                        <Select
+                          value={newDailyTask.category}
+                          onValueChange={(value) => setNewDailyTask((prev) => ({ ...prev, category: value }))}
+                        >
+                          <SelectTrigger id="daily-task-category">
+                            <SelectValue placeholder="Select a category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {categories.map((category) => (
+                              <SelectItem key={category.id} value={category.name}>
+                                <div className="flex items-center gap-2">
+                                  <div className={`w-3 h-3 rounded-full ${category.color}`} />
+                                  {category.name}
+                                </div>
+                              </SelectItem>
+                            ))}
+                            <SelectItem value="Uncategorized">Uncategorized</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setShowAddDailyTask(false)}>
+                        Cancel
+                      </Button>
+                      <Button onClick={addDailyTask}>Add Task</Button>
+                    </DialogFooter>
+                  </Dialog>
+                </Dialog>
+
+                <Dialog open={showAddCategory} onOpenChange={setShowAddCategory}>
+                  <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                      <DialogTitle>Add Category</DialogTitle>
+                      <DialogDescription>Create a new category for organizing your goals</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="category-name">Category Name</Label>
+                        <Input
+                          id="category-name"
+                          placeholder="e.g., Health & Fitness"
+                          value={newCategory.name}
+                          onChange={(e) => setNewCategory((prev) => ({ ...prev, name: e.target.value }))}
+                        />
+                      </div>
+                      <div>
+                        <Label>Color</Label>
+                        <div className="grid grid-cols-6 gap-2 mt-2">
+                          {[
+                            "bg-red-500",
+                            "bg-orange-500",
+                            "bg-yellow-500",
+                            "bg-green-500",
+                            "bg-blue-500",
+                            "bg-purple-500",
+                            "bg-pink-500",
+                            "bg-indigo-500",
+                            "bg-teal-500",
+                            "bg-cyan-500",
+                            "bg-lime-500",
+                            "bg-amber-500",
+                          ].map((color) => (
+                            <button
+                              key={color}
+                              type="button"
+                              className={`w-10 h-10 rounded-full ${color} ${
+                                newCategory.color === color ? "ring-2 ring-offset-2 ring-primary" : ""
+                              }`}
+                              onClick={() => setNewCategory((prev) => ({ ...prev, color }))}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setShowAddCategory(false)}>
+                        Cancel
+                      </Button>
+                      <Button onClick={addCategory}>Add Category</Button>
+                    </DialogFooter>
+                  </Dialog>
+                </Dialog>
+              </div>
+            </main>
+          </SidebarInset>
+        </div>
+      </div>
+    </SidebarProvider>
+  )
+}
+
+export default GoalTrackerApp
