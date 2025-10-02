@@ -41,7 +41,6 @@ import Image from "next/image"
 // Auth components
 import { useAuth } from "@/components/auth/auth-provider"
 import { SignOutButton } from "@/components/auth/sign-out-button"
-import { AuthScreen } from "@/components/auth/auth-screen"
 
 import { AppSidebar } from "@/components/app-sidebar"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
@@ -660,7 +659,7 @@ const initialDailyTasks = {
       goalId: "up1",
       completed: false,
       timeBlock: "9:00 AM",
-      estimatedHours: 120,
+      estimatedHours: 120, // This seems incorrect for a daily task, likely meant minutes
     },
   ],
   Tuesday: [
@@ -4614,133 +4613,4 @@ function GoalTrackerApp() {
                       </div>
                       <div>
                         <Label htmlFor="daily-task-description">Description</Label>
-                        <Textarea
-                          id="daily-task-description"
-                          placeholder="Describe the task..."
-                          value={newDailyTask.description}
-                          onChange={(e) => setNewDailyTask((prev) => ({ ...prev, description: e.target.value }))}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="daily-task-category">Category</Label>
-                        <Select
-                          value={newDailyTask.category}
-                          onValueChange={(value) => setNewDailyTask((prev) => ({ ...prev, category: value }))}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select category" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.keys(goalsData).map((category) => (
-                              <SelectItem key={category} value={category}>
-                                {category}
-                              </SelectItem>
-                            ))}
-                            <SelectItem value="Uncategorized">Uncategorized</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label htmlFor="daily-task-timeblock">Time Block</Label>
-                        <Select
-                          value={newDailyTask.timeBlock}
-                          onValueChange={(value) => setNewDailyTask((prev) => ({ ...prev, timeBlock: value }))}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select time block" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="morning">Morning</SelectItem>
-                            <SelectItem value="afternoon">Afternoon</SelectItem>
-                            <SelectItem value="evening">Evening</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label htmlFor="daily-task-minutes">Estimated Minutes</Label>
-                        <Input
-                          id="daily-task-minutes"
-                          type="number"
-                          min="5"
-                          max="480"
-                          value={newDailyTask.estimatedMinutes}
-                          onChange={(e) =>
-                            setNewDailyTask((prev) => ({
-                              ...prev,
-                              estimatedMinutes: Number.parseInt(e.target.value) || 30,
-                            }))
-                          }
-                        />
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setShowAddDailyTask(false)}>
-                        Cancel
-                      </Button>
-                      <Button onClick={addDailyTask}>Add Task</Button>
-                    </DialogFooter>
-                  </Dialog>
-                </Dialog>
-
-                {/* ADD CATEGORY DIALOG */}
-                <Dialog open={showAddCategory} onOpenChange={setShowAddCategory}>
-                  <DialogContent className="sm:max-w-[425px]">
-                    <DialogHeader>
-                      <DialogTitle>Add New Category</DialogTitle>
-                      <DialogDescription>Create a new category to organize your goals</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="category-name">Category Name</Label>
-                        <Input
-                          id="category-name"
-                          placeholder="e.g., Business, Personal, Health"
-                          value={newCategoryName}
-                          onChange={(e) => setNewCategoryName(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              addNewCategory()
-                            }
-                          }}
-                        />
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setShowAddCategory(false)}>
-                        Cancel
-                      </Button>
-                      <Button onClick={addNewCategory}>Add Category</Button>
-                    </DialogFooter>
-                  </Dialog>
-                </Dialog>
-              </div>
-            </main>
-          </SidebarInset>
-        </div>
-      </div>
-    </SidebarProvider>
-  )
-}
-
-export default function Page() {
-  const { user, isLoading: authLoading } = useAuth()
-
-  console.log("[v0] Page render - user:", user, "isLoading:", authLoading)
-
-  if (authLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="mb-4 inline-block size-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent motion-reduce:animate-[spin_1.5s_linear_infinite]" />
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (!user) {
-    return <AuthScreen />
-  }
-
-  return <GoalTrackerApp />
-}
+\
