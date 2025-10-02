@@ -60,6 +60,9 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSo
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 
+// Auth components
+// import { createBrowserClient } from "@supabase/ssr";
+
 // Custom CSS class for white checkbox background with thinner border
 const checkboxStyles =
   "bg-white border border-gray-400 data-[state=checked]:border-[#05a7b0] data-[state=checked]:bg-[#05a7b0]"
@@ -1520,7 +1523,6 @@ function GoalTrackerApp() {
 
   const getGoalType = (targetCount: number) => {
     if (targetCount === 1) return "binary"
-    if (targetCount <= 20) return "small"
     if (targetCount <= 100) return "medium"
     return "large"
   }
@@ -1664,6 +1666,7 @@ function GoalTrackerApp() {
 
       if (isUUID) {
         // Delete from database
+        // const supabase = createBrowserClient() // This line was added from updates
         // await supabase.from("goals").delete().eq("id", goalId)
       }
 
@@ -3221,8 +3224,8 @@ function GoalTrackerApp() {
                                         {/* Progress Update Controls */}
                                         <div className="flex items-center justify-between">
                                           <div className="flex items-center space-x-1">
-                                            {goalType === "small" ? (
-                                              // Small numbers - single + button
+                                            {goalType === "medium" ? (
+                                              // Medium numbers - single + button
                                               <Button
                                                 size="sm"
                                                 variant="outline"
@@ -3234,7 +3237,7 @@ function GoalTrackerApp() {
                                                 +1
                                               </Button>
                                             ) : (
-                                              // Medium/Large numbers - multiple increment buttons
+                                              // Large numbers - multiple increment buttons
                                               <>
                                                 {quickIncrements.map((increment) => (
                                                   <Button
@@ -4676,7 +4679,7 @@ function GoalTrackerApp() {
                       </Button>
                       <Button onClick={addDailyTask}>Add Task</Button>
                     </DialogFooter>
-                  </DialogContent>
+                  </Dialog>
                 </Dialog>
 
                 {/* ADD CATEGORY DIALOG */}
