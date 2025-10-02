@@ -1,40 +1,39 @@
 "use client"
 
-import { useState } from "react"
+import { AuthScreen } from "@/components/auth/auth-screen"
+import { AppSidebar } from "@/components/app-sidebar"
+import { useAuth } from "@/components/auth/auth-provider"
+import { SidebarInset } from "@/components/ui/sidebar"
 
-const Page = () => {
-  const [goalsData, setGoalsData] = useState({})
-  const [showDeleteGoal, setShowDeleteGoal] = useState(null)
+export default function Page() {
+  const { user, loading } = useAuth()
 
-  const deleteGoal = async (category: string, goalId: string) => {
-    try {
-      // Check if this is a database goal (has UUID format)
-      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(goalId)
-
-      if (isUUID) {
-        // const { error } = await supabase.from("goals").delete().eq("id", goalId);
-        // if (error) {
-        //   console.error("Error deleting goal from database:", error);
-        //   alert("Failed to delete goal from database. Please try again.");
-        //   return;
-        // }
-      }
-
-      // Update local state
-      setGoalsData((prev) => ({
-        ...prev,
-        [category]: prev[category].filter((goal) => goal.id !== goalId),
-      }))
-
-      setShowDeleteGoal(null)
-    } catch (error) {
-      console.error("Error deleting goal:", error)
-      // Show error to user but keep the dialog open
-      alert("Failed to delete goal. Please try again.")
-    }
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" />
+          <p className="mt-4 text-sm text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    )
   }
 
-  return <div>{/* Page content here */}</div>
-}
+  if (!user) {
+    return <AuthScreen />
+  }
 
-export default Page
+  return (
+    <>
+      <AppSidebar />
+      <SidebarInset>
+        <div className="flex flex-1 flex-col gap-4 p-4">
+          <div className="min-h-screen">
+            <h1 className="text-3xl font-bold">Welcome to Goal Tracker</h1>
+            <p className="mt-2 text-muted-foreground">Start tracking your goals and achieving your dreams.</p>
+          </div>
+        </div>
+      </SidebarInset>
+    </>
+  )
+}
