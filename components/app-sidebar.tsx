@@ -15,10 +15,24 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
-interface AppSidebarProps {
-  onNavigate?: (view: string) => void
-  activeView?: string
-}
+// Menu items with icons
+const menuItems = [
+  {
+    title: "Dashboard",
+    icon: LayoutDashboard,
+    view: "daily",
+  },
+  {
+    title: "Long-term Goals",
+    icon: Target,
+    view: "1-year",
+  },
+  {
+    title: "Agents",
+    icon: Users,
+    view: "agents",
+  },
+]
 
 // Mock users for the dropdown
 const mockUsers = [
@@ -26,6 +40,11 @@ const mockUsers = [
   { id: "2", name: "Sarah Johnson", email: "sarah@example.com", avatar: null },
   { id: "3", name: "Mike Davis", email: "mike@example.com", avatar: null },
 ]
+
+interface AppSidebarProps {
+  onNavigate?: (view: string) => void
+  activeView?: string
+}
 
 export function AppSidebar({ onNavigate, activeView = "daily" }: AppSidebarProps) {
   const { state } = useSidebar()
@@ -38,24 +57,6 @@ export function AppSidebar({ onNavigate, activeView = "daily" }: AppSidebarProps
       .join("")
       .toUpperCase()
   }
-
-  const menuItems = [
-    {
-      title: "Dashboard",
-      icon: LayoutDashboard,
-      value: "daily",
-    },
-    {
-      title: "Long-term Goals",
-      icon: Target,
-      value: "long-term",
-    },
-    {
-      title: "Agents",
-      icon: Users,
-      value: "agents",
-    },
-  ]
 
   return (
     <Sidebar className="border-r" collapsible="icon">
@@ -111,9 +112,9 @@ export function AppSidebar({ onNavigate, activeView = "daily" }: AppSidebarProps
           {menuItems.map((item) => (
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton
-                isActive={activeView === item.value}
+                isActive={activeView === item.view}
                 tooltip={item.title}
-                onClick={() => onNavigate?.(item.value)}
+                onClick={() => onNavigate?.(item.view)}
               >
                 <item.icon className="size-4" />
                 <span>{item.title}</span>

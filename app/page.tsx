@@ -3007,11 +3007,12 @@ function GoalTrackerApp() {
 
                 {/* View Toggle */}
                 <Tabs value={activeView} onValueChange={setActiveView} className="mb-8">
-                  <TabsList className="grid w-full max-w-2xl grid-cols-4">
+                  <TabsList className="grid w-full max-w-2xl grid-cols-5">
                     <TabsTrigger value="daily">Daily</TabsTrigger>
                     <TabsTrigger value="weekly">Weekly</TabsTrigger>
                     <TabsTrigger value="12-week">12-Week</TabsTrigger>
-                    <TabsTrigger value="long-term">Long-term Goals</TabsTrigger>
+                    <TabsTrigger value="1-year">1-Year</TabsTrigger>
+                    <TabsTrigger value="5-year">5-Year</TabsTrigger>
                   </TabsList>
 
                   {/* 12-Week Goals View */}
@@ -3782,561 +3783,530 @@ function GoalTrackerApp() {
                     </div>
                   </TabsContent>
 
-                  <TabsContent value="long-term" className="mt-8">
-                    <Tabs defaultValue="1-year" className="w-full">
-                      <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
-                        <TabsTrigger value="1-year">1-Year</TabsTrigger>
-                        <TabsTrigger value="5-year">5-Year</TabsTrigger>
-                      </TabsList>
+                  {/* 1-Year Goals View */}
+                  <TabsContent value="1-year" className="mt-8">
+                    <div className="flex items-center justify-between mb-6">
+                      <h2 className="text-2xl font-bold text-gray-900">1-Year Goals</h2>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedTimeframe("1-year")
+                          setShowAddLongTermGoal(true)
+                        }}
+                        className="text-sm bg-black hover:bg-gray-800 text-white"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add 1-Year Goal
+                      </Button>
+                    </div>
 
-                      {/* 1-Year Goals View */}
-                      <TabsContent value="1-year">
-                        <div className="flex items-center justify-between mb-6">
-                          <h2 className="text-2xl font-bold text-gray-900">1-Year Goals</h2>
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedTimeframe("1-year")
-                              setShowAddLongTermGoal(true)
-                            }}
-                            className="text-sm bg-black hover:bg-gray-800 text-white"
-                          >
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add 1-Year Goal
-                          </Button>
-                        </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                      {Object.entries(longTermGoals["1-year"]).map(([category, goals]) => (
+                        <Card
+                          key={category}
+                          className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200"
+                        >
+                          <CardHeader className="pb-4">
+                            <div className="flex items-center justify-between">
+                              <Badge
+                                className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}
+                              >
+                                {category}
+                              </Badge>
+                              <div className="flex items-center space-x-2">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                      <Plus className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem
+                                      onClick={() => {
+                                        setSelectedCategory(category)
+                                        setSelectedTimeframe("1-year")
+                                        setShowAddLongTermGoal(true)
+                                      }}
+                                    >
+                                      <Target className="h-4 w-4 mr-2" />
+                                      Add Goal
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem
+                                      onClick={() => {
+                                        setSelectedCategory(category)
+                                        setSelectedTimeframe("1-year")
+                                        setShowAddLongTermGoal(true)
+                                      }}
+                                    >
+                                      <Plus className="h-4 w-4 mr-2" />
+                                      Add Goal
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => startEditingCategory(category)}>
+                                      <Edit className="h-4 w-4 mr-2" />
+                                      Edit Category
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() => {
+                                        if (goals.length === 0) {
+                                          deleteCategory(category)
+                                        }
+                                      }}
+                                      className={goals.length > 0 ? "text-gray-400 cursor-not-allowed" : "text-red-600"}
+                                      disabled={goals.length > 0}
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      {goals.length > 0 ? "Delete Category (remove goals first)" : "Delete Category"}
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            </div>
+                            <CardDescription className="mt-2">
+                              {goals.length} goal{goals.length !== 1 ? "s" : ""} • Long-term vision
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                            {goals.map((goal) => (
+                              <div key={goal.id} className="p-4 rounded-lg bg-gray-50 border border-border space-y-4">
+                                <div className="flex items-start space-x-3">
+                                  <Checkbox
+                                    checked={goal.status === "completed"}
+                                    onCheckedChange={async (checked) => {
+                                      const isValidUUID =
+                                        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(goal.id)
 
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                          {Object.entries(longTermGoals["1-year"]).map(([category, goals]) => (
-                            <Card
-                              key={category}
-                              className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200"
-                            >
-                              <CardHeader className="pb-4">
-                                <div className="flex items-center justify-between">
-                                  <Badge
-                                    className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}
-                                  >
-                                    {category}
-                                  </Badge>
-                                  <div className="flex items-center space-x-2">
-                                    <DropdownMenu>
-                                      <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                          <Plus className="h-4 w-4" />
-                                        </Button>
-                                      </DropdownMenuTrigger>
-                                      <DropdownMenuContent align="end">
-                                        <DropdownMenuItem
-                                          onClick={() => {
-                                            setSelectedCategory(category)
-                                            setSelectedTimeframe("1-year")
-                                            setShowAddLongTermGoal(true)
-                                          }}
+                                      if (isValidUUID) {
+                                        // Database goal - update both database and local state
+                                        try {
+                                          const { error } = await supabase
+                                            .from("long_term_goals")
+                                            .update({
+                                              completed: !!checked,
+                                              completed_at: checked ? new Date().toISOString() : null,
+                                            })
+                                            .eq("id", goal.id)
+
+                                          if (error) throw error
+
+                                          const newStatus = checked ? "completed" : "in-progress"
+                                          setLongTermGoals((prev) => ({
+                                            ...prev,
+                                            "1-year": {
+                                              ...prev["1-year"],
+                                              [category]: prev["1-year"][category].map((g) =>
+                                                g.id === goal.id ? { ...g, status: newStatus } : g,
+                                              ),
+                                            },
+                                          }))
+                                        } catch (error) {
+                                          console.error("Error updating long-term goal:", error)
+                                        }
+                                      } else {
+                                        // Local goal - update only local state
+                                        const newStatus = checked ? "completed" : "in-progress"
+                                        setLongTermGoals((prev) => ({
+                                          ...prev,
+                                          "1-year": {
+                                            ...prev["1-year"],
+                                            [category]: prev["1-year"][category].map((g) =>
+                                              g.id === goal.id ? { ...g, status: newStatus } : g,
+                                            ),
+                                          },
+                                        }))
+                                      }
+                                    }}
+                                    className={`h-5 w-5 mt-0.5 flex-shrink-0 ${checkboxStyles}`}
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-start justify-between">
+                                      <div className="flex-1">
+                                        <h4
+                                          className={`font-semibold mb-2 ${goal.status === "completed" ? "line-through text-gray-500" : "text-gray-900"}`}
                                         >
-                                          <Target className="h-4 w-4 mr-2" />
-                                          Add Goal
-                                        </DropdownMenuItem>
-                                      </DropdownMenuContent>
-                                    </DropdownMenu>
-                                    <DropdownMenu>
-                                      <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                          <MoreHorizontal className="h-4 w-4" />
-                                        </Button>
-                                      </DropdownMenuTrigger>
-                                      <DropdownMenuContent align="end">
-                                        <DropdownMenuItem
-                                          onClick={() => {
-                                            setSelectedCategory(category)
-                                            setSelectedTimeframe("1-year")
-                                            setShowAddLongTermGoal(true)
-                                          }}
+                                          {goal.title}
+                                        </h4>
+                                        <p
+                                          className={`text-sm mb-3 ${goal.status === "completed" ? "text-gray-400" : "text-gray-600"}`}
                                         >
-                                          <Plus className="h-4 w-4 mr-2" />
-                                          Add Goal
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => startEditingCategory(category)}>
-                                          <Edit className="h-4 w-4 mr-2" />
-                                          Edit Category
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem
-                                          onClick={() => {
-                                            if (goals.length === 0) {
-                                              deleteCategory(category)
+                                          {goal.description}
+                                        </p>
+                                        <div className="flex items-center space-x-4 text-xs text-gray-500">
+                                          <span>Target: {new Date(goal.targetDate).toLocaleDateString()}</span>
+                                          <Badge
+                                            variant="secondary"
+                                            className={
+                                              goal.status === "completed"
+                                                ? "bg-green-100 text-green-800"
+                                                : goal.status === "on-hold"
+                                                  ? "bg-yellow-100 text-yellow-800"
+                                                  : "bg-blue-100 text-blue-800"
                                             }
-                                          }}
-                                          className={
-                                            goals.length > 0 ? "text-gray-400 cursor-not-allowed" : "text-red-600"
-                                          }
-                                          disabled={goals.length > 0}
-                                        >
-                                          <Trash2 className="h-4 w-4 mr-2" />
-                                          {goals.length > 0
-                                            ? "Delete Category (remove goals first)"
-                                            : "Delete Category"}
-                                        </DropdownMenuItem>
-                                      </DropdownMenuContent>
-                                    </DropdownMenu>
+                                          >
+                                            {goal.status.replace("-", " ")}
+                                          </Badge>
+                                        </div>
+                                      </div>
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0">
+                                            <MoreHorizontal className="h-4 w-4" />
+                                          </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                          <DropdownMenuItem
+                                            onClick={() => startEditingLongTermGoal("1-year", category, goal)}
+                                          >
+                                            <Edit className="h-4 w-4 mr-2" />
+                                            Edit Goal
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem
+                                            onClick={() =>
+                                              setShowDeleteLongTermGoal({
+                                                timeframe: "1-year",
+                                                category,
+                                                goalId: goal.id,
+                                                title: goal.title,
+                                              })
+                                            }
+                                            className="text-red-600"
+                                          >
+                                            <Trash2 className="h-4 w-4 mr-2" />
+                                            Delete Goal
+                                          </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    </div>
                                   </div>
                                 </div>
-                                <CardDescription className="mt-2">
-                                  {goals.length} goal{goals.length !== 1 ? "s" : ""} • Long-term vision
-                                </CardDescription>
-                              </CardHeader>
-                              <CardContent className="space-y-4">
-                                {goals.map((goal) => (
-                                  <div
-                                    key={goal.id}
-                                    className="p-4 rounded-lg bg-gray-50 border border-border space-y-4"
-                                  >
-                                    <div className="flex items-start space-x-3">
-                                      <Checkbox
-                                        checked={goal.status === "completed"}
-                                        onCheckedChange={async (checked) => {
-                                          const isValidUUID =
-                                            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-                                              goal.id,
-                                            )
 
-                                          if (isValidUUID) {
-                                            // Database goal - update both database and local state
-                                            try {
-                                              const { error } = await supabase
-                                                .from("long_term_goals")
-                                                .update({
-                                                  completed: !!checked,
-                                                  completed_at: checked ? new Date().toISOString() : null,
-                                                })
-                                                .eq("id", goal.id)
-
-                                              if (error) throw error
-
-                                              const newStatus = checked ? "completed" : "in-progress"
-                                              setLongTermGoals((prev) => ({
-                                                ...prev,
-                                                "1-year": {
-                                                  ...prev["1-year"],
-                                                  [category]: prev["1-year"][category].map((g) =>
-                                                    g.id === goal.id ? { ...g, status: newStatus } : g,
-                                                  ),
-                                                },
-                                              }))
-                                            } catch (error) {
-                                              console.error("Error updating long-term goal:", error)
-                                            }
-                                          } else {
-                                            // Local goal - update only local state
-                                            const newStatus = checked ? "completed" : "in-progress"
+                                {/* Milestones */}
+                                <div className="space-y-2">
+                                  <h5 className="text-sm font-medium text-gray-700">Milestones</h5>
+                                  <div className="space-y-2">
+                                    {goal.milestones.map((milestone, index) => (
+                                      <div key={milestone.id} className="flex items-center space-x-3">
+                                        <Checkbox
+                                          checked={milestone.completed}
+                                          onCheckedChange={(checked) => {
                                             setLongTermGoals((prev) => ({
                                               ...prev,
                                               "1-year": {
                                                 ...prev["1-year"],
                                                 [category]: prev["1-year"][category].map((g) =>
-                                                  g.id === goal.id ? { ...g, status: newStatus } : g,
+                                                  g.id === goal.id
+                                                    ? {
+                                                        ...g,
+                                                        milestones: g.milestones.map((m) =>
+                                                          m.id === milestone.id ? { ...m, completed: !!checked } : m,
+                                                        ),
+                                                      }
+                                                    : g,
                                                 ),
                                               },
                                             }))
-                                          }
-                                        }}
-                                        className={`h-5 w-5 mt-0.5 flex-shrink-0 ${checkboxStyles}`}
-                                      />
-                                      <div className="flex-1 min-w-0">
-                                        <div className="flex items-start justify-between">
-                                          <div className="flex-1">
-                                            <h4
-                                              className={`font-semibold mb-2 ${goal.status === "completed" ? "line-through text-gray-500" : "text-gray-900"}`}
-                                            >
-                                              {goal.title}
-                                            </h4>
-                                            <p
-                                              className={`text-sm mb-3 ${goal.status === "completed" ? "text-gray-400" : "text-gray-600"}`}
-                                            >
-                                              {goal.description}
-                                            </p>
-                                            <div className="flex items-center space-x-4 text-xs text-gray-500">
-                                              <span>Target: {new Date(goal.targetDate).toLocaleDateString()}</span>
-                                              <Badge
-                                                variant="secondary"
-                                                className={
-                                                  goal.status === "completed"
-                                                    ? "bg-green-100 text-green-800"
-                                                    : goal.status === "on-hold"
-                                                      ? "bg-yellow-100 text-yellow-800"
-                                                      : "bg-blue-100 text-blue-800"
-                                                }
-                                              >
-                                                {goal.status.replace("-", " ")}
-                                              </Badge>
-                                            </div>
-                                          </div>
-                                          <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0">
-                                                <MoreHorizontal className="h-4 w-4" />
-                                              </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                              <DropdownMenuItem
-                                                onClick={() => startEditingLongTermGoal("1-year", category, goal)}
-                                              >
-                                                <Edit className="h-4 w-4 mr-2" />
-                                                Edit Goal
-                                              </DropdownMenuItem>
-                                              <DropdownMenuItem
-                                                onClick={() =>
-                                                  setShowDeleteLongTermGoal({
-                                                    timeframe: "1-year",
-                                                    category,
-                                                    goalId: goal.id,
-                                                    title: goal.title,
-                                                  })
-                                                }
-                                                className="text-red-600"
-                                              >
-                                                <Trash2 className="h-4 w-4 mr-2" />
-                                                Delete Goal
-                                              </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                          </DropdownMenu>
+                                          }}
+                                          className={`h-5 w-5 mt-0.5 flex-shrink-0 ${checkboxStyles}`}
+                                        />
+                                        <div className="flex-1">
+                                          <span
+                                            className={`text-sm ${milestone.completed ? "line-through text-gray-500" : "text-gray-700"}`}
+                                          >
+                                            {milestone.title}
+                                          </span>
+                                          <span className="text-xs text-gray-500 ml-2">
+                                            {new Date(milestone.targetDate).toLocaleDateString()}
+                                          </span>
                                         </div>
                                       </div>
-                                    </div>
-
-                                    {/* Milestones */}
-                                    <div className="space-y-2">
-                                      <h5 className="text-sm font-medium text-gray-700">Milestones</h5>
-                                      <div className="space-y-2">
-                                        {goal.milestones.map((milestone, index) => (
-                                          <div key={milestone.id} className="flex items-center space-x-3">
-                                            <Checkbox
-                                              checked={milestone.completed}
-                                              onCheckedChange={(checked) => {
-                                                setLongTermGoals((prev) => ({
-                                                  ...prev,
-                                                  "1-year": {
-                                                    ...prev["1-year"],
-                                                    [category]: prev["1-year"][category].map((g) =>
-                                                      g.id === goal.id
-                                                        ? {
-                                                            ...g,
-                                                            milestones: g.milestones.map((m) =>
-                                                              m.id === milestone.id
-                                                                ? { ...m, completed: !!checked }
-                                                                : m,
-                                                            ),
-                                                          }
-                                                        : g,
-                                                    ),
-                                                  },
-                                                }))
-                                              }}
-                                              className={`h-5 w-5 mt-0.5 flex-shrink-0 ${checkboxStyles}`}
-                                            />
-                                            <div className="flex-1">
-                                              <span
-                                                className={`text-sm ${milestone.completed ? "line-through text-gray-500" : "text-gray-700"}`}
-                                              >
-                                                {milestone.title}
-                                              </span>
-                                              <span className="text-xs text-gray-500 ml-2">
-                                                {new Date(milestone.targetDate).toLocaleDateString()}
-                                              </span>
-                                            </div>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </div>
-
-                                    {/* Notes */}
-                                    {goal.notes && (
-                                      <div className="pt-2 border-t border-gray-200">
-                                        <p className="text-sm text-gray-600">{goal.notes}</p>
-                                      </div>
-                                    )}
-                                  </div>
-                                ))}
-                              </CardContent>
-                            </Card>
-                          ))}
-                        </div>
-                      </TabsContent>
-
-                      {/* 5-Year Goals View */}
-                      <TabsContent value="5-year">
-                        <div className="flex items-center justify-between mb-6">
-                          <h2 className="text-2xl font-bold text-gray-900">5-Year Goals</h2>
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedTimeframe("5-year")
-                              setShowAddLongTermGoal(true)
-                            }}
-                            className="text-sm bg-black hover:bg-gray-800 text-white"
-                          >
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add 5-Year Goal
-                          </Button>
-                        </div>
-
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                          {Object.entries(longTermGoals["5-year"]).map(([category, goals]) => (
-                            <Card
-                              key={category}
-                              className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200"
-                            >
-                              <CardHeader className="pb-4">
-                                <div className="flex items-center justify-between">
-                                  <Badge
-                                    className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}
-                                  >
-                                    {category}
-                                  </Badge>
-                                  <div className="flex items-center space-x-2">
-                                    <DropdownMenu>
-                                      <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                          <Plus className="h-4 w-4" />
-                                        </Button>
-                                      </DropdownMenuTrigger>
-                                      <DropdownMenuContent align="end">
-                                        <DropdownMenuItem
-                                          onClick={() => {
-                                            setSelectedCategory(category)
-                                            setSelectedTimeframe("5-year")
-                                            setShowAddLongTermGoal(true)
-                                          }}
-                                        >
-                                          <Target className="h-4 w-4 mr-2" />
-                                          Add Goal
-                                        </DropdownMenuItem>
-                                      </DropdownMenuContent>
-                                    </DropdownMenu>
-                                    <DropdownMenu>
-                                      <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                          <MoreHorizontal className="h-4 w-4" />
-                                        </Button>
-                                      </DropdownMenuTrigger>
-                                      <DropdownMenuContent align="end">
-                                        <DropdownMenuItem
-                                          onClick={() => {
-                                            setSelectedCategory(category)
-                                            setSelectedTimeframe("5-year")
-                                            setShowAddLongTermGoal(true)
-                                          }}
-                                        >
-                                          <Plus className="h-4 w-4 mr-2" />
-                                          Add Goal
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => startEditingCategory(category)}>
-                                          <Edit className="h-4 w-4 mr-2" />
-                                          Edit Category
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem
-                                          onClick={() => {
-                                            if (goals.length === 0) {
-                                              deleteCategory(category)
-                                            }
-                                          }}
-                                          className={
-                                            goals.length > 0 ? "text-gray-400 cursor-not-allowed" : "text-red-600"
-                                          }
-                                          disabled={goals.length > 0}
-                                        >
-                                          <Trash2 className="h-4 w-4 mr-2" />
-                                          {goals.length > 0
-                                            ? "Delete Category (remove goals first)"
-                                            : "Delete Category"}
-                                        </DropdownMenuItem>
-                                      </DropdownMenuContent>
-                                    </DropdownMenu>
+                                    ))}
                                   </div>
                                 </div>
-                                <CardDescription className="mt-2">
-                                  {goals.length} goal{goals.length !== 1 ? "s" : ""} • Long-term vision
-                                </CardDescription>
-                              </CardHeader>
-                              <CardContent className="space-y-4">
-                                {goals.map((goal) => (
-                                  <div
-                                    key={goal.id}
-                                    className="p-4 rounded-lg bg-gray-50 border border-border space-y-4"
-                                  >
-                                    <div className="flex items-start space-x-3">
-                                      <Checkbox
-                                        checked={goal.status === "completed"}
-                                        onCheckedChange={async (checked) => {
-                                          const isValidUUID =
-                                            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-                                              goal.id,
-                                            )
 
-                                          if (isValidUUID) {
-                                            // Database goal - update both database and local state
-                                            try {
-                                              const { error } = await supabase
-                                                .from("long_term_goals")
-                                                .update({
-                                                  completed: !!checked,
-                                                  completed_at: checked ? new Date().toISOString() : null,
-                                                })
-                                                .eq("id", goal.id)
+                                {/* Notes */}
+                                {goal.notes && (
+                                  <div className="pt-2 border-t border-gray-200">
+                                    <p className="text-sm text-gray-600">{goal.notes}</p>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </TabsContent>
 
-                                              if (error) throw error
+                  {/* 5-Year Goals View */}
+                  <TabsContent value="5-year" className="mt-8">
+                    <div className="flex items-center justify-between mb-6">
+                      <h2 className="text-2xl font-bold text-gray-900">5-Year Goals</h2>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedTimeframe("5-year")
+                          setShowAddLongTermGoal(true)
+                        }}
+                        className="text-sm bg-black hover:bg-gray-800 text-white"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add 5-Year Goal
+                      </Button>
+                    </div>
 
-                                              const newStatus = checked ? "completed" : "in-progress"
-                                              setLongTermGoals((prev) => ({
-                                                ...prev,
-                                                "5-year": {
-                                                  ...prev["5-year"],
-                                                  [category]: prev["5-year"][category].map((g) =>
-                                                    g.id === goal.id ? { ...g, status: newStatus } : g,
-                                                  ),
-                                                },
-                                              }))
-                                            } catch (error) {
-                                              console.error("Error updating long-term goal:", error)
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                      {Object.entries(longTermGoals["5-year"]).map(([category, goals]) => (
+                        <Card
+                          key={category}
+                          className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200"
+                        >
+                          <CardHeader className="pb-4">
+                            <div className="flex items-center justify-between">
+                              <Badge
+                                className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}
+                              >
+                                {category}
+                              </Badge>
+                              <div className="flex items-center space-x-2">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                      <Plus className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem
+                                      onClick={() => {
+                                        setSelectedCategory(category)
+                                        setSelectedTimeframe("5-year")
+                                        setShowAddLongTermGoal(true)
+                                      }}
+                                    >
+                                      <Target className="h-4 w-4 mr-2" />
+                                      Add Goal
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem
+                                      onClick={() => {
+                                        setSelectedCategory(category)
+                                        setSelectedTimeframe("5-year")
+                                        setShowAddLongTermGoal(true)
+                                      }}
+                                    >
+                                      <Plus className="h-4 w-4 mr-2" />
+                                      Add Goal
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => startEditingCategory(category)}>
+                                      <Edit className="h-4 w-4 mr-2" />
+                                      Edit Category
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() => {
+                                        if (goals.length === 0) {
+                                          deleteCategory(category)
+                                        }
+                                      }}
+                                      className={goals.length > 0 ? "text-gray-400 cursor-not-allowed" : "text-red-600"}
+                                      disabled={goals.length > 0}
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      {goals.length > 0 ? "Delete Category (remove goals first)" : "Delete Category"}
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            </div>
+                            <CardDescription className="mt-2">
+                              {goals.length} goal{goals.length !== 1 ? "s" : ""} • Long-term vision
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                            {goals.map((goal) => (
+                              <div key={goal.id} className="p-4 rounded-lg bg-gray-50 border border-border space-y-4">
+                                <div className="flex items-start space-x-3">
+                                  <Checkbox
+                                    checked={goal.status === "completed"}
+                                    onCheckedChange={async (checked) => {
+                                      const isValidUUID =
+                                        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(goal.id)
+
+                                      if (isValidUUID) {
+                                        // Database goal - update both database and local state
+                                        try {
+                                          const { error } = await supabase
+                                            .from("long_term_goals")
+                                            .update({
+                                              completed: !!checked,
+                                              completed_at: checked ? new Date().toISOString() : null,
+                                            })
+                                            .eq("id", goal.id)
+
+                                          if (error) throw error
+
+                                          const newStatus = checked ? "completed" : "in-progress"
+                                          setLongTermGoals((prev) => ({
+                                            ...prev,
+                                            "5-year": {
+                                              ...prev["5-year"],
+                                              [category]: prev["5-year"][category].map((g) =>
+                                                g.id === goal.id ? { ...g, status: newStatus } : g,
+                                              ),
+                                            },
+                                          }))
+                                        } catch (error) {
+                                          console.error("Error updating long-term goal:", error)
+                                        }
+                                      } else {
+                                        // Local goal - update only local state
+                                        const newStatus = checked ? "completed" : "in-progress"
+                                        setLongTermGoals((prev) => ({
+                                          ...prev,
+                                          "5-year": {
+                                            ...prev["5-year"],
+                                            [category]: prev["5-year"][category].map((g) =>
+                                              g.id === goal.id ? { ...g, status: newStatus } : g,
+                                            ),
+                                          },
+                                        }))
+                                      }
+                                    }}
+                                    className={`h-5 w-5 mt-0.5 flex-shrink-0 ${checkboxStyles}`}
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-start justify-between">
+                                      <div className="flex-1">
+                                        <h4
+                                          className={`font-semibold mb-2 ${goal.status === "completed" ? "line-through text-gray-500" : "text-gray-900"}`}
+                                        >
+                                          {goal.title}
+                                        </h4>
+                                        <p
+                                          className={`text-sm mb-3 ${goal.status === "completed" ? "text-gray-400" : "text-gray-600"}`}
+                                        >
+                                          {goal.description}
+                                        </p>
+                                        <div className="flex items-center space-x-4 text-xs text-gray-500">
+                                          <span>Target: {new Date(goal.targetDate).toLocaleDateString()}</span>
+                                          <Badge
+                                            variant="secondary"
+                                            className={
+                                              goal.status === "completed"
+                                                ? "bg-green-100 text-green-800"
+                                                : goal.status === "on-hold"
+                                                  ? "bg-yellow-100 text-yellow-800"
+                                                  : "bg-blue-100 text-blue-800"
                                             }
-                                          } else {
-                                            // Local goal - update only local state
-                                            const newStatus = checked ? "completed" : "in-progress"
+                                          >
+                                            {goal.status.replace("-", " ")}
+                                          </Badge>
+                                        </div>
+                                      </div>
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0">
+                                            <MoreHorizontal className="h-4 w-4" />
+                                          </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                          <DropdownMenuItem
+                                            onClick={() => startEditingLongTermGoal("5-year", category, goal)}
+                                          >
+                                            <Edit className="h-4 w-4 mr-2" />
+                                            Edit Goal
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem
+                                            onClick={() =>
+                                              setShowDeleteLongTermGoal({
+                                                timeframe: "5-year",
+                                                category,
+                                                goalId: goal.id,
+                                                title: goal.title,
+                                              })
+                                            }
+                                            className="text-red-600"
+                                          >
+                                            <Trash2 className="h-4 w-4 mr-2" />
+                                            Delete Goal
+                                          </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Milestones */}
+                                <div className="space-y-2">
+                                  <h5 className="text-sm font-medium text-gray-700">Milestones</h5>
+                                  <div className="space-y-2">
+                                    {goal.milestones.map((milestone, index) => (
+                                      <div key={milestone.id} className="flex items-center space-x-3">
+                                        <Checkbox
+                                          checked={milestone.completed}
+                                          onCheckedChange={(checked) => {
                                             setLongTermGoals((prev) => ({
                                               ...prev,
                                               "5-year": {
                                                 ...prev["5-year"],
                                                 [category]: prev["5-year"][category].map((g) =>
-                                                  g.id === goal.id ? { ...g, status: newStatus } : g,
+                                                  g.id === goal.id
+                                                    ? {
+                                                        ...g,
+                                                        milestones: g.milestones.map((m) =>
+                                                          m.id === milestone.id ? { ...m, completed: !!checked } : m,
+                                                        ),
+                                                      }
+                                                    : g,
                                                 ),
                                               },
                                             }))
-                                          }
-                                        }}
-                                        className={`h-5 w-5 mt-0.5 flex-shrink-0 ${checkboxStyles}`}
-                                      />
-                                      <div className="flex-1 min-w-0">
-                                        <div className="flex items-start justify-between">
-                                          <div className="flex-1">
-                                            <h4
-                                              className={`font-semibold mb-2 ${goal.status === "completed" ? "line-through text-gray-500" : "text-gray-900"}`}
-                                            >
-                                              {goal.title}
-                                            </h4>
-                                            <p
-                                              className={`text-sm mb-3 ${goal.status === "completed" ? "text-gray-400" : "text-gray-600"}`}
-                                            >
-                                              {goal.description}
-                                            </p>
-                                            <div className="flex items-center space-x-4 text-xs text-gray-500">
-                                              <span>Target: {new Date(goal.targetDate).toLocaleDateString()}</span>
-                                              <Badge
-                                                variant="secondary"
-                                                className={
-                                                  goal.status === "completed"
-                                                    ? "bg-green-100 text-green-800"
-                                                    : goal.status === "on-hold"
-                                                      ? "bg-yellow-100 text-yellow-800"
-                                                      : "bg-blue-100 text-blue-800"
-                                                }
-                                              >
-                                                {goal.status.replace("-", " ")}
-                                              </Badge>
-                                            </div>
-                                          </div>
-                                          <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0">
-                                                <MoreHorizontal className="h-4 w-4" />
-                                              </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                              <DropdownMenuItem
-                                                onClick={() => startEditingLongTermGoal("5-year", category, goal)}
-                                              >
-                                                <Edit className="h-4 w-4 mr-2" />
-                                                Edit Goal
-                                              </DropdownMenuItem>
-                                              <DropdownMenuItem
-                                                onClick={() =>
-                                                  setShowDeleteLongTermGoal({
-                                                    timeframe: "5-year",
-                                                    category,
-                                                    goalId: goal.id,
-                                                    title: goal.title,
-                                                  })
-                                                }
-                                                className="text-red-600"
-                                              >
-                                                <Trash2 className="h-4 w-4 mr-2" />
-                                                Delete Goal
-                                              </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                          </DropdownMenu>
+                                          }}
+                                          className={`h-5 w-5 mt-0.5 flex-shrink-0 ${checkboxStyles}`}
+                                        />
+                                        <div className="flex-1">
+                                          <span
+                                            className={`text-sm ${milestone.completed ? "line-through text-gray-500" : "text-gray-700"}`}
+                                          >
+                                            {milestone.title}
+                                          </span>
+                                          <span className="text-xs text-gray-500 ml-2">
+                                            {new Date(milestone.targetDate).toLocaleDateString()}
+                                          </span>
                                         </div>
                                       </div>
-                                    </div>
-
-                                    {/* Milestones */}
-                                    <div className="space-y-2">
-                                      <h5 className="text-sm font-medium text-gray-700">Milestones</h5>
-                                      <div className="space-y-2">
-                                        {goal.milestones.map((milestone, index) => (
-                                          <div key={milestone.id} className="flex items-center space-x-3">
-                                            <Checkbox
-                                              checked={milestone.completed}
-                                              onCheckedChange={(checked) => {
-                                                setLongTermGoals((prev) => ({
-                                                  ...prev,
-                                                  "5-year": {
-                                                    ...prev["5-year"],
-                                                    [category]: prev["5-year"][category].map((g) =>
-                                                      g.id === goal.id
-                                                        ? {
-                                                            ...g,
-                                                            milestones: g.milestones.map((m) =>
-                                                              m.id === milestone.id
-                                                                ? { ...m, completed: !!checked }
-                                                                : m,
-                                                            ),
-                                                          }
-                                                        : g,
-                                                    ),
-                                                  },
-                                                }))
-                                              }}
-                                              className={`h-5 w-5 mt-0.5 flex-shrink-0 ${checkboxStyles}`}
-                                            />
-                                            <div className="flex-1">
-                                              <span
-                                                className={`text-sm ${milestone.completed ? "line-through text-gray-500" : "text-gray-700"}`}
-                                              >
-                                                {milestone.title}
-                                              </span>
-                                              <span className="text-xs text-gray-500 ml-2">
-                                                {new Date(milestone.targetDate).toLocaleDateString()}
-                                              </span>
-                                            </div>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </div>
-
-                                    {/* Notes */}
-                                    {goal.notes && (
-                                      <div className="pt-2 border-t border-gray-200">
-                                        <p className="text-sm text-gray-600">{goal.notes}</p>
-                                      </div>
-                                    )}
+                                    ))}
                                   </div>
-                                ))}
-                              </CardContent>
-                            </Card>
-                          ))}
-                        </div>
-                      </TabsContent>
-                    </Tabs>
+                                </div>
+
+                                {/* Notes */}
+                                {goal.notes && (
+                                  <div className="pt-2 border-t border-gray-200">
+                                    <p className="text-sm text-gray-600">{goal.notes}</p>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
                   </TabsContent>
                 </Tabs>
 
@@ -4567,7 +4537,7 @@ function GoalTrackerApp() {
                         {editingLongTermGoal ? "Save Changes" : "Add Goal"}
                       </Button>
                     </DialogFooter>
-                  </Dialog>
+                  </DialogContent>
                 </Dialog>
 
                 <Dialog open={showAddWeeklyTask} onOpenChange={setShowAddWeeklyTask}>
@@ -4659,7 +4629,7 @@ function GoalTrackerApp() {
                         {editingWeeklyTask ? "Save Changes" : "Add Task"}
                       </Button>
                     </DialogFooter>
-                  </Dialog>
+                  </DialogContent>
                 </Dialog>
 
                 <Dialog open={showAddDailyTask} onOpenChange={setShowAddDailyTask}>
