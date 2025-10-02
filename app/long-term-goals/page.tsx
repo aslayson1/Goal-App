@@ -165,7 +165,7 @@ export default function LongTermGoalsPage() {
             target_date: newLongTermGoal.targetDate,
             notes: newLongTermGoal.notes,
             completed: false,
-            milestones: newLongTermGoal.milestones
+            milestones: (newLongTermGoal.milestones || [])
               .filter((m) => m.title && m.targetDate)
               .map((m, index) => ({
                 id: `temp_m${index + 1}`,
