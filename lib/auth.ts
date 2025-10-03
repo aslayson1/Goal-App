@@ -8,6 +8,7 @@ export interface User {
     weekStartDay: "sunday" | "monday"
     timezone: string
     notifications: boolean
+    dashboardMode?: "standard" | "12-week"
   }
 }
 
@@ -35,6 +36,7 @@ export const mockLogin = async (email: string, password: string): Promise<User> 
         weekStartDay: "monday",
         timezone: "America/New_York",
         notifications: true,
+        dashboardMode: "12-week",
       },
     }
   }
@@ -55,6 +57,7 @@ export const mockRegister = async (name: string, email: string, password: string
       weekStartDay: "monday",
       timezone: "America/New_York",
       notifications: true,
+      dashboardMode: "12-week",
     },
   }
 }

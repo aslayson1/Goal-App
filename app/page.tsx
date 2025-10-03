@@ -1,5 +1,7 @@
 "use client"
 import { supabase } from "@/lib/supabase/client"
+import { DialogTrigger } from "@/components/ui/dialog"
+
 import {
   Dialog,
   DialogContent,
@@ -43,6 +45,7 @@ import Image from "next/image"
 import { useAuth } from "@/components/auth/auth-provider"
 import { SignOutButton } from "@/components/auth/sign-out-button"
 import { AuthScreen } from "@/components/auth/auth-screen"
+import { UserProfile } from "@/components/profile/user-profile"
 
 import { AppSidebar } from "@/components/app-sidebar"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
@@ -2861,6 +2864,8 @@ function GoalTrackerApp() {
     }
   }, [user?.id])
 
+  const dashboardMode = user?.preferences?.dashboardMode || "12-week"
+
   return (
     <SidebarProvider defaultOpen={true}>
       <div className="flex h-screen flex-col">
@@ -2891,7 +2896,24 @@ function GoalTrackerApp() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setShowProfile(true)}>Profile Settings</DropdownMenuItem>
+              {/* NEW: Profile Settings Dialog */}
+              <Dialog open={showProfile} onOpenChange={setShowProfile}>
+                <DialogTrigger asChild>
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>Profile Settings</DropdownMenuItem>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[450px]">
+                  <DialogHeader>
+                    <DialogTitle>Profile Settings</DialogTitle>
+                    <DialogDescription>Manage your user profile information.</DialogDescription>
+                  </DialogHeader>
+                  <UserProfile userId={user.id} />
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setShowProfile(false)}>
+                      Close
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
               <DropdownMenuItem asChild>
                 <SignOutButton className="w-full text-left" />
               </DropdownMenuItem>
@@ -3009,7 +3031,9 @@ function GoalTrackerApp() {
                   <TabsList className="grid w-full max-w-2xl grid-cols-3">
                     <TabsTrigger value="daily">Daily Tasks</TabsTrigger>
                     <TabsTrigger value="weekly">Weekly Tasks</TabsTrigger>
-                    <TabsTrigger value="12-week">12-Week Goals</TabsTrigger>
+                    <TabsTrigger value={dashboardMode === "12-week" ? "12-week" : "1-year"}>
+                      {dashboardMode === "12-week" ? "12-Week Goals" : "1-Year Goals"}
+                    </TabsTrigger>
                   </TabsList>
 
                   {/* 12-Week Goals View */}
@@ -4224,6 +4248,9 @@ function GoalTrackerApp() {
             </main>
           </SidebarInset>
         </div>
+
+        {/* CHANGE: Added UserProfile dialog that opens when showProfile is true */}
+        {showProfile && <UserProfile onClose={() => setShowProfile(false)} />}
       </div>
     </SidebarProvider>
   )

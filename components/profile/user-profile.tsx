@@ -40,6 +40,7 @@ export function UserProfile({ onClose }: UserProfileProps) {
     weekStartDay: user?.preferences?.weekStartDay || "monday",
     timezone: user?.preferences?.timezone || "America/New_York",
     notifications: user?.preferences?.notifications ?? true,
+    dashboardMode: user?.preferences?.dashboardMode || "12-week",
   })
 
   if (!user) return null
@@ -73,6 +74,7 @@ export function UserProfile({ onClose }: UserProfileProps) {
         weekStartDay: formData.weekStartDay as "sunday" | "monday",
         timezone: formData.timezone,
         notifications: formData.notifications,
+        dashboardMode: formData.dashboardMode as "standard" | "12-week",
       }
 
       const result = await updateUserProfile(profileData)
@@ -200,6 +202,26 @@ export function UserProfile({ onClose }: UserProfileProps) {
                           <SelectItem value="light">Light</SelectItem>
                           <SelectItem value="dark">Dark</SelectItem>
                           <SelectItem value="system">System</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>Dashboard View</Label>
+                        <p className="text-sm text-gray-600">Choose your dashboard layout</p>
+                      </div>
+                      <Select
+                        name="dashboardMode"
+                        value={formData.dashboardMode}
+                        onValueChange={(value) => handleInputChange("dashboardMode", value)}
+                      >
+                        <SelectTrigger className="w-40">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="12-week">12-Week Year</SelectItem>
+                          <SelectItem value="standard">Standard</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
