@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -21,10 +20,30 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useAuth } from "@/components/auth/auth-provider"
 import { Camera, LogOut, User, Settings, Bell, Loader2 } from "lucide-react"
-import { updateUserProfile, type ProfileData } from "@/lib/actions/profile"
 
 interface UserProfileProps {
   onClose: () => void
+}
+
+const PREFERENCES_KEY = "user_preferences"
+
+const loadPreferences = (userId: string) => {
+  if (typeof window === "undefined") return null
+  try {
+    const stored = localStorage.getItem(`${PREFERENCES_KEY}_${userId}`)
+    return stored ? JSON.parse(stored) : null
+  } catch {
+    return null
+  }
+}
+
+const savePreferences = (userId: string, preferences: any) => {
+  if (typeof window === "undefined") return
+  try {
+    localStorage.setItem(`${PREFERENCES_KEY}_${userId}`, JSON.stringify(preferences))
+  } catch (error) {
+    console.error("[v0] Failed to save preferences to localStorage:", error)
+  }
 }
 
 export function UserProfile({ onClose }: UserProfileProps) {
@@ -33,21 +52,35 @@ export function UserProfile({ onClose }: UserProfileProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
 
-  const [formData, setFormData] = useState({
-    name: user?.name || "",
-    email: user?.email || "",
-    theme: user?.preferences?.theme || "system",
-    weekStartDay: user?.preferences?.weekStartDay || "monday",
-    timezone: user?.preferences?.timezone || "America/New_York",
-    notifications: user?.preferences?.notifications ?? true,
-    dashboardMode: user?.preferences?.dashboardMode || "12-week",
+  const [formData, setFormData] = useState(() => {
+    if (!user)
+      return {
+        name: "",
+        email: "",
+        theme: "system",
+        weekStartDay: "monday",
+        timezone: "America/New_York",
+        notifications: true,
+        dashboardMode: "12-week",
+      }
+
+    const savedPrefs = loadPreferences(user.id)
+    return {
+      name: savedPrefs?.name || user?.name || "",
+      email: user?.email || "",
+      theme: savedPrefs?.theme || user?.preferences?.theme || "system",
+      weekStartDay: savedPrefs?.weekStartDay || user?.preferences?.weekStartDay || "monday",
+      timezone: savedPrefs?.timezone || user?.preferences?.timezone || "America/New_York",
+      notifications: savedPrefs?.notifications ?? user?.preferences?.notifications ?? true,
+      dashboardMode: savedPrefs?.dashboardMode || user?.preferences?.dashboardMode || "12-week",
+    }
   })
 
   if (!user) return null
 
   const getInitials = (name: string | null | undefined) => {
     if (!name || typeof name !== "string") {
-      return "U" // Default to "U" for User
+      return "U"
     }
 
     return name
@@ -67,26 +100,28 @@ export function UserProfile({ onClose }: UserProfileProps) {
     setMessage(null)
 
     try {
-      const profileData: ProfileData = {
+      console.log("[v0] Starting profile update with data:", formData)
+
+      const preferences = {
         name: formData.name,
-        email: formData.email,
-        theme: formData.theme as "light" | "dark" | "system",
-        weekStartDay: formData.weekStartDay as "sunday" | "monday",
+        theme: formData.theme,
+        weekStartDay: formData.weekStartDay,
         timezone: formData.timezone,
         notifications: formData.notifications,
-        dashboardMode: formData.dashboardMode as "standard" | "12-week",
+        dashboardMode: formData.dashboardMode,
       }
 
-      const result = await updateUserProfile(profileData)
+      savePreferences(user.id, preferences)
+      console.log("[v0] Preferences saved to localStorage successfully")
 
-      if (result.success) {
-        setMessage({ type: "success", text: "Profile updated successfully!" })
-        // Trigger a page refresh to update the auth context
+      setMessage({ type: "success", text: "Profile updated successfully!" })
+
+      // Trigger a page refresh to update the UI with new preferences
+      setTimeout(() => {
         window.location.reload()
-      } else {
-        setMessage({ type: "error", text: result.error || "Failed to update profile" })
-      }
+      }, 1000)
     } catch (error) {
+      console.error("[v0] Unexpected error:", error)
       setMessage({ type: "error", text: "An unexpected error occurred" })
     } finally {
       setIsLoading(false)

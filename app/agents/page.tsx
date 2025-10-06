@@ -222,7 +222,7 @@ export default function AgentsPage() {
         <div className="flex flex-1 overflow-hidden">
           <AppSidebar />
           <SidebarInset className="flex-1 overflow-auto">
-            <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
+            <div className="flex flex-1 flex-col gap-4 py-4 md:py-6">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900">Team Agents</h2>

@@ -2,12 +2,14 @@
 
 import type React from "react"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { signIn } from "@/lib/actions/auth"
+import { supabase } from "@/lib/supabase/client"
+import { mockLogin } from "@/lib/auth"
+import Cookies from "js-cookie"
 
 function SubmitButton({ isLoading }: { isLoading: boolean }) {
   return (
@@ -18,27 +20,54 @@ function SubmitButton({ isLoading }: { isLoading: boolean }) {
 }
 
 export function LoginForm() {
-  const [state, setState] = useState<{ success?: boolean; error?: string } | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-
-  useEffect(() => {
-    if (state?.success) {
-      setTimeout(() => {
-        window.location.href = "/"
-      }, 100)
-    }
-  }, [state])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsLoading(true)
+    setError(null)
 
     try {
       const formData = new FormData(e.currentTarget)
-      const result = await signIn(null, formData)
-      setState(result)
+      const email = formData.get("email")?.toString()
+      const password = formData.get("password")?.toString()
+
+      if (!email || !password) {
+        setError("Email and password are required")
+        return
+      }
+
+      if (email === "demo@example.com" && password === "password") {
+        try {
+          const user = await mockLogin(email, password)
+          Cookies.set("demo-user", JSON.stringify(user), {
+            expires: 7,
+            sameSite: "lax",
+          })
+          // Auth provider will detect the cookie and update state
+          window.location.reload()
+          return
+        } catch (error: any) {
+          setError(error.message)
+          return
+        }
+      }
+
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (signInError) {
+        setError(signInError.message)
+        return
+      }
+
+      // The onAuthStateChange listener will detect the login and update the UI
     } catch (error) {
-      setState({ error: "An unexpected error occurred" })
+      console.error("[v0] Login error:", error)
+      setError("An unexpected error occurred")
     } finally {
       setIsLoading(false)
     }
@@ -46,9 +75,9 @@ export function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {state?.error && (
+      {error && (
         <Alert variant="destructive">
-          <AlertDescription>{state.error}</AlertDescription>
+          <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 

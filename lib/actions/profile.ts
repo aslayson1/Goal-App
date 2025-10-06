@@ -21,13 +21,12 @@ export async function updateUserProfile(profileData: ProfileData) {
     const demoUserCookie = cookieStore.get("demo-user")
 
     console.log("[v0] Demo user cookie exists:", !!demoUserCookie)
-    console.log("[v0] Demo user cookie value:", demoUserCookie?.value)
 
     if (demoUserCookie) {
       // Handle demo user profile update
       try {
         const demoUser = JSON.parse(demoUserCookie.value)
-        console.log("[v0] Parsed demo user:", demoUser)
+        console.log("[v0] Updating demo user profile")
 
         const updatedDemoUser = {
           ...demoUser,
@@ -41,8 +40,6 @@ export async function updateUserProfile(profileData: ProfileData) {
             dashboardMode: profileData.dashboardMode,
           },
         }
-
-        console.log("[v0] Updated demo user:", updatedDemoUser)
 
         cookieStore.set("demo-user", JSON.stringify(updatedDemoUser), {
           httpOnly: false,
@@ -59,23 +56,10 @@ export async function updateUserProfile(profileData: ProfileData) {
       }
     }
 
-    // Handle Supabase user profile update
-    console.log("[v0] No demo user, checking Supabase auth")
+    console.log("[v0] Attempting Supabase profile update")
     const supabase = await createClient()
 
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser()
-
-    console.log("[v0] Supabase user:", user)
-    console.log("[v0] Supabase user error:", userError)
-
-    if (userError || !user) {
-      console.log("[v0] User not authenticated")
-      return { success: false, error: "User not authenticated" }
-    }
-
+    // Try to update user directly - if not authenticated, this will fail with auth error
     const { error: updateError } = await supabase.auth.updateUser({
       data: {
         name: profileData.name,
@@ -92,6 +76,10 @@ export async function updateUserProfile(profileData: ProfileData) {
 
     if (updateError) {
       console.error("[v0] Profile update error:", updateError)
+      // Check if it's an auth error
+      if (updateError.message.includes("session") || updateError.message.includes("authenticated")) {
+        return { success: false, error: "User not authenticated" }
+      }
       return { success: false, error: updateError.message }
     }
 

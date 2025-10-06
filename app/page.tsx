@@ -1,5 +1,7 @@
 "use client"
 import { supabase } from "@/lib/supabase/client"
+import { SidebarProvider } from "@/components/ui/sidebar"
+
 import { DialogTrigger } from "@/components/ui/dialog"
 
 import {
@@ -48,7 +50,7 @@ import { AuthScreen } from "@/components/auth/auth-screen"
 import { UserProfile } from "@/components/profile/user-profile"
 
 import { AppSidebar } from "@/components/app-sidebar"
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import { SidebarInset } from "@/components/ui/sidebar"
 
 // Drag and Drop imports
 import {
@@ -989,6 +991,18 @@ function GoalTrackerApp() {
   const [dailyTasks, setDailyTasks] = useState<Record<string, DailyTask[]>>({})
   console.log("[v0] GoalTrackerApp render - weeklyTasks keys:", Object.keys(weeklyTasks))
   console.log("[v0] GoalTrackerApp render - dailyTasks keys:", Object.keys(dailyTasks))
+
+  const [dashboardMode, setDashboardMode] = useState<"12-week" | "standard">("12-week")
+
+  useEffect(() => {
+    if (user) {
+      const prefs = localStorage.getItem(`user_preferences_${user.id}`)
+      if (prefs) {
+        const preferences = JSON.parse(prefs)
+        setDashboardMode(preferences.dashboardMode || "12-week")
+      }
+    }
+  }, [user])
 
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set())
   const [activeView, setActiveView] = useState("daily")
@@ -2609,7 +2623,13 @@ function GoalTrackerApp() {
   }
 
   const addWeeklyTask = async () => {
-    if (!newWeeklyTask.title || !newWeeklyTask.category) return
+    console.log("[v0] addWeeklyTask called with:", newWeeklyTask)
+    console.log("[v0] User ID:", user?.id)
+
+    if (!newWeeklyTask.title || !newWeeklyTask.category) {
+      console.log("[v0] Validation failed - title or category missing")
+      return
+    }
 
     const taskId = crypto.randomUUID()
 
@@ -2630,9 +2650,11 @@ function GoalTrackerApp() {
 
     try {
       if (!user?.id) {
-        console.error("User not authenticated")
+        console.error("[v0] User not authenticated")
         return
       }
+
+      console.log("[v0] Looking up category:", newWeeklyTask.category)
 
       // Find category ID from database
       const { data: categories } = await supabase
@@ -2641,6 +2663,8 @@ function GoalTrackerApp() {
         .eq("name", newWeeklyTask.category)
         .eq("user_id", user.id)
         .single()
+
+      console.log("[v0] Category lookup result:", categories)
 
       const { error } = await supabase.from("tasks").insert({
         id: taskId,
@@ -2655,13 +2679,15 @@ function GoalTrackerApp() {
       })
 
       if (error) {
-        console.error("Error saving weekly task to database:", error.message)
+        console.error("[v0] Error saving weekly task to database:", error.message)
       } else {
-        console.log("Weekly task saved to database successfully")
+        console.log("[v0] Weekly task saved to database successfully")
       }
     } catch (error) {
-      console.error("Error saving weekly task to database:", error)
+      console.error("[v0] Error saving weekly task to database:", error)
     }
+
+    console.log("[v0] Resetting form and closing dialog")
 
     setNewWeeklyTask({
       title: "",
@@ -2864,7 +2890,7 @@ function GoalTrackerApp() {
     }
   }, [user?.id])
 
-  const dashboardMode = user?.preferences?.dashboardMode || "12-week"
+  // const dashboardMode = user?.preferences?.dashboardMode || "12-week" // OLD CODE
 
   return (
     <SidebarProvider defaultOpen={true}>
@@ -2925,9 +2951,9 @@ function GoalTrackerApp() {
           <AppSidebar />
           <SidebarInset className="flex-1">
             <main className="flex-1 overflow-auto p-6">
-              <div className="mx-auto max-w-7xl space-y-6">
+              <div className="mx-auto space-y-6">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-8">
+                <div className="max-w-7xl mx-auto flex items-center justify-between mb-8">
                   <div>
                     <h1 className="text-4xl font-bold text-gray-900 mb-2">
                       Hi {user?.name?.split(" ")[0] || "there"},
@@ -2952,7 +2978,7 @@ function GoalTrackerApp() {
                 </div>
 
                 {/* Stats Overview */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   <Card className="border-0 shadow-sm">
                     <CardContent className="p-6">
                       <div className="flex flex-col items-center justify-center text-center h-full space-y-3">
@@ -3028,17 +3054,19 @@ function GoalTrackerApp() {
                 </div>
 
                 <Tabs value={activeView} onValueChange={setActiveView} className="mb-8">
-                  <TabsList className="grid w-full max-w-2xl grid-cols-3">
-                    <TabsTrigger value="daily">Daily Tasks</TabsTrigger>
-                    <TabsTrigger value="weekly">Weekly Tasks</TabsTrigger>
-                    <TabsTrigger value={dashboardMode === "12-week" ? "12-week" : "1-year"}>
-                      {dashboardMode === "12-week" ? "12-Week Goals" : "1-Year Goals"}
-                    </TabsTrigger>
-                  </TabsList>
+                  <div className="max-w-7xl mx-auto">
+                    <TabsList className="grid w-full max-w-2xl grid-cols-3">
+                      <TabsTrigger value="daily">Daily Tasks</TabsTrigger>
+                      <TabsTrigger value="weekly">Weekly Tasks</TabsTrigger>
+                      <TabsTrigger value={dashboardMode === "12-week" ? "12-week" : "1-year"}>
+                        {dashboardMode === "12-week" ? "12-Week Goals" : "1-Year Goals"}
+                      </TabsTrigger>
+                    </TabsList>
+                  </div>
 
                   {/* 12-Week Goals View */}
-                  <TabsContent value="12-week" className="mt-8">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <TabsContent value="12-week" className="mt-8 w-full">
+                    <div className="w-full px-4 md:px-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
                       {Object.entries(goalsData).map(([category, goals]) => (
                         <Card
                           key={category}
@@ -3384,13 +3412,13 @@ function GoalTrackerApp() {
                   </TabsContent>
 
                   {/* Weekly Tasks View */}
-                  <TabsContent value="weekly" className="mt-8">
-                    <div className="flex items-center justify-between mb-6">
+                  <TabsContent value="weekly" className="mt-8 w-full">
+                    <div className="w-full px-4 md:px-6 flex items-center justify-between mb-6">
                       <h2 className="text-2xl font-bold text-gray-900">Week {currentWeek} Tasks</h2>
                     </div>
 
                     {/* Group weekly tasks by category */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="w-full px-4 md:px-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
                       {Object.keys(goalsData).map((category) => {
                         const categoryTasks = (weeklyTasks[`Week ${currentWeek}`] || []).filter(
                           (task) => task.category === category,
@@ -3600,8 +3628,8 @@ function GoalTrackerApp() {
                   </TabsContent>
 
                   {/* Daily Tasks View */}
-                  <TabsContent value="daily" className="mt-8">
-                    <div className="flex items-center justify-between mb-6">
+                  <TabsContent value="daily" className="mt-8 w-full">
+                    <div className="w-full px-4 md:px-6 flex items-center justify-between mb-6">
                       <div className="flex items-center space-x-4">
                         <h2 className="text-2xl font-bold text-gray-900">Daily Tasks</h2>
                         <Select value={selectedDay} onValueChange={setSelectedDay}>
@@ -3634,7 +3662,7 @@ function GoalTrackerApp() {
                     })()}
 
                     {/* Group daily tasks by category */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="w-full px-4 md:px-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
                       {Object.keys(goalsData).map((category) => {
                         const categoryTasks = (dailyTasks[selectedDay] || []).filter(
                           (task) => task.category === category,
@@ -3803,6 +3831,197 @@ function GoalTrackerApp() {
                       })}
                     </div>
                   </TabsContent>
+
+                  {/* 1-Year Goals View */}
+                  <TabsContent value="1-year" className="mt-8 w-full">
+                    <div className="w-full px-4 md:px-6 space-y-8">
+                      {/* Timeframe selector */}
+                      <div className="flex items-center justify-between">
+                        <h2 className="text-2xl font-bold text-gray-900">Long-Term Goals</h2>
+                        <Select
+                          value={selectedTimeframe}
+                          onValueChange={(value: "1-year" | "5-year") => setSelectedTimeframe(value)}
+                        >
+                          <SelectTrigger className="w-40">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="1-year">1-Year Goals</SelectItem>
+                            <SelectItem value="5-year">5-Year Goals</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Display goals by category */}
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {Object.entries(longTermGoals[selectedTimeframe]).map(([category, goals]) => (
+                          <Card
+                            key={category}
+                            className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200"
+                          >
+                            <CardHeader className="pb-4">
+                              <div className="flex items-center justify-between">
+                                <Badge
+                                  className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}
+                                >
+                                  {category}
+                                </Badge>
+                              </div>
+                              <CardDescription className="mt-2">
+                                {goals.length} goal{goals.length !== 1 ? "s" : ""}
+                              </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                              {goals.map((goal) => {
+                                const completedMilestones = goal.milestones.filter((m) => m.completed).length
+                                const totalMilestones = goal.milestones.length
+                                const progressPercentage = (completedMilestones / totalMilestones) * 100
+
+                                return (
+                                  <div
+                                    key={goal.id}
+                                    className="p-3 rounded-lg bg-gray-50 border border-border space-y-3"
+                                  >
+                                    <div className="flex items-start justify-between gap-3">
+                                      <div className="flex-1 min-w-0">
+                                        <h4 className="font-medium text-gray-900 break-words">{goal.title}</h4>
+                                        <p className="text-sm mt-1 text-gray-600 break-words">{goal.description}</p>
+                                        <p className="text-xs mt-1 text-gray-500">
+                                          Target: {new Date(goal.targetDate).toLocaleDateString()}
+                                        </p>
+                                      </div>
+                                      <Badge
+                                        variant="secondary"
+                                        className={
+                                          goal.status === "completed"
+                                            ? "bg-green-100 text-green-800"
+                                            : goal.status === "in-progress"
+                                              ? "bg-blue-100 text-blue-800"
+                                              : "bg-gray-100 text-gray-800"
+                                        }
+                                      >
+                                        {goal.status === "in-progress"
+                                          ? "In Progress"
+                                          : goal.status === "completed"
+                                            ? "Complete"
+                                            : "On Hold"}
+                                      </Badge>
+                                    </div>
+
+                                    {/* Progress bar */}
+                                    <div className="space-y-2">
+                                      <div className="flex justify-between text-sm">
+                                        <span className="text-gray-600">
+                                          {completedMilestones} / {totalMilestones} milestones
+                                        </span>
+                                        <span className="font-medium text-gray-900">
+                                          {Math.round(progressPercentage)}%
+                                        </span>
+                                      </div>
+                                      <Progress value={progressPercentage} className="h-2 [&>div]:bg-[#05a7b0]" />
+                                    </div>
+
+                                    {/* Milestones */}
+                                    <div className="space-y-2">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => toggleNotes(goal.id)}
+                                        className="text-xs text-gray-500 hover:text-gray-700 p-0 h-auto"
+                                      >
+                                        {expandedNotes.has(goal.id) ? (
+                                          <>
+                                            <ChevronUp className="h-3 w-3 mr-1" />
+                                            Hide milestones
+                                          </>
+                                        ) : (
+                                          <>
+                                            <ChevronDown className="h-3 w-3 mr-1" />
+                                            Show milestones
+                                          </>
+                                        )}
+                                      </Button>
+
+                                      {expandedNotes.has(goal.id) && (
+                                        <div className="animate-in slide-in-from-top-2 duration-200 space-y-2">
+                                          {goal.milestones.map((milestone) => (
+                                            <div key={milestone.id} className="flex items-center space-x-2 text-sm">
+                                              <Checkbox
+                                                checked={milestone.completed}
+                                                onCheckedChange={() => {
+                                                  setLongTermGoals((prev) => ({
+                                                    ...prev,
+                                                    [selectedTimeframe]: {
+                                                      ...prev[selectedTimeframe],
+                                                      [category]: prev[selectedTimeframe][category].map((g) =>
+                                                        g.id === goal.id
+                                                          ? {
+                                                              ...g,
+                                                              milestones: g.milestones.map((m) =>
+                                                                m.id === milestone.id
+                                                                  ? { ...m, completed: !m.completed }
+                                                                  : m,
+                                                              ),
+                                                            }
+                                                          : g,
+                                                      ),
+                                                    },
+                                                  }))
+                                                }}
+                                                className={`h-4 w-4 ${checkboxStyles}`}
+                                              />
+                                              <span
+                                                className={
+                                                  milestone.completed ? "line-through text-gray-500" : "text-gray-700"
+                                                }
+                                              >
+                                                {milestone.title}
+                                              </span>
+                                              <span className="text-xs text-gray-400">
+                                                ({new Date(milestone.targetDate).toLocaleDateString()})
+                                              </span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {/* Notes */}
+                                    {goal.notes && <p className="text-xs text-gray-500 italic">{goal.notes}</p>}
+                                  </div>
+                                )
+                              })}
+                              {/* Add button for new long-term goals */}
+                              <div className="text-center py-4">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setShowAddLongTermGoal(true)
+                                    setNewLongTermGoal({
+                                      title: "",
+                                      description: "",
+                                      targetDate: "",
+                                      category: category, // Pre-fill category
+                                      notes: "",
+                                      milestones: [
+                                        { title: "", targetDate: "" },
+                                        { title: "", targetDate: "" },
+                                        { title: "", targetDate: "" },
+                                        { title: "", targetDate: "" },
+                                      ],
+                                    })
+                                  }}
+                                >
+                                  <Plus className="h-4 w-4 mr-2" /> Add Milestone Goal
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  </TabsContent>
                 </Tabs>
 
                 {/* Add Goal Dialog */}
@@ -3930,7 +4149,7 @@ function GoalTrackerApp() {
                   <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>
-                        {editingLongTermGoal ? "Edit" : "Add"} {selectedTimeframe === "1-year" ? "1-Year" : "5-Year"}{" "}
+                        {editingLongTermGoal ? "Edit" : "Add"} {selectedTimeframe === "1-year" ? "1-Year" : "5-Year"}
                         Goal
                       </DialogTitle>
                       <DialogDescription>
