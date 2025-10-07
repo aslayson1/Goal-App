@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/sidebar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useAuth } from "@/components/auth/auth-provider"
+import { createClient } from "@/lib/supabase/client"
 
 // Menu items with icons
 const menuItems = [
@@ -36,17 +38,63 @@ const menuItems = [
   },
 ]
 
-// Mock users for the dropdown
-const mockUsers = [
-  { id: "1", name: "Scott Anderson", email: "scott@example.com", avatar: null },
-  { id: "2", name: "Sarah Johnson", email: "sarah@example.com", avatar: null },
-  { id: "3", name: "Mike Davis", email: "mike@example.com", avatar: null },
-]
+// Agent interface
+interface Agent {
+  id: string
+  name: string
+  role: string
+  avatar?: string | null
+}
 
 export function AppSidebar() {
   const { state } = useSidebar()
   const pathname = usePathname()
-  const [selectedUser, setSelectedUser] = React.useState(mockUsers[0])
+  const { user } = useAuth()
+  const [agents, setAgents] = React.useState<Agent[]>([])
+  const [selectedAgent, setSelectedAgent] = React.useState<Agent | null>(null)
+  const supabase = createClient()
+
+  React.useEffect(() => {
+    const loadAgents = async () => {
+      if (!user?.id) return
+
+      try {
+        const { data, error } = await supabase
+          .from("agents")
+          .select("id, name, role")
+          .eq("user_id", user.id)
+          .order("name", { ascending: true })
+
+        if (error) throw error
+
+        const agentsList: Agent[] = data || []
+
+        // Add current user as the first option
+        const currentUserAgent: Agent = {
+          id: user.id,
+          name: user.name || "My Dashboard",
+          role: "Owner",
+          avatar: user.avatar,
+        }
+
+        setAgents([currentUserAgent, ...agentsList])
+        setSelectedAgent(currentUserAgent)
+      } catch (error) {
+        console.error("Error loading agents:", error)
+        // Fallback to just showing current user
+        const currentUserAgent: Agent = {
+          id: user.id,
+          name: user.name || "My Dashboard",
+          role: "Owner",
+          avatar: user.avatar,
+        }
+        setAgents([currentUserAgent])
+        setSelectedAgent(currentUserAgent)
+      }
+    }
+
+    loadAgents()
+  }, [user?.id])
 
   const getInitials = (name: string) => {
     return name
@@ -54,6 +102,10 @@ export function AppSidebar() {
       .map((n) => n[0])
       .join("")
       .toUpperCase()
+  }
+
+  if (!selectedAgent) {
+    return null
   }
 
   return (
@@ -70,15 +122,16 @@ export function AppSidebar() {
                 }
               >
                 <Avatar className="size-8">
-                  <AvatarImage src={selectedUser.avatar || undefined} />
+                  <AvatarImage src={selectedAgent.avatar || undefined} />
                   <AvatarFallback className="bg-gray-100 text-gray-600 text-xs font-medium">
-                    {getInitials(selectedUser.name)}
+                    {getInitials(selectedAgent.name)}
                   </AvatarFallback>
                 </Avatar>
                 {state === "expanded" && (
                   <>
                     <div className="flex flex-1 flex-col items-start text-left">
-                      <span className="text-sm font-semibold text-gray-900">{selectedUser.name}</span>
+                      <span className="text-sm font-semibold text-gray-900">{selectedAgent.name}</span>
+                      <span className="text-xs text-gray-500">{selectedAgent.role}</span>
                     </div>
                     <ChevronDown className="size-4 text-gray-400" />
                   </>
@@ -86,19 +139,22 @@ export function AppSidebar() {
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-56 bg-white">
-              {mockUsers.map((mockUser) => (
+              {agents.map((agent) => (
                 <DropdownMenuItem
-                  key={mockUser.id}
-                  onClick={() => setSelectedUser(mockUser)}
+                  key={agent.id}
+                  onClick={() => setSelectedAgent(agent)}
                   className="flex items-center gap-2 cursor-pointer"
                 >
                   <Avatar className="size-6">
-                    <AvatarImage src={mockUser.avatar || undefined} />
+                    <AvatarImage src={agent.avatar || undefined} />
                     <AvatarFallback className="bg-gray-100 text-gray-600 text-xs">
-                      {getInitials(mockUser.name)}
+                      {getInitials(agent.name)}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="text-sm font-medium">{mockUser.name}</span>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium">{agent.name}</span>
+                    <span className="text-xs text-gray-500">{agent.role}</span>
+                  </div>
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>

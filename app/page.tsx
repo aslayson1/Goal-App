@@ -2175,7 +2175,6 @@ function GoalTrackerApp() {
     try {
       const goalType = selectedTimeframe === "1-year" ? "1_year" : "5_year"
 
-      // Save to database
       const { data, error } = await supabase
         .from("long_term_goals")
         .insert([
@@ -2524,11 +2523,18 @@ function GoalTrackerApp() {
   }
 
   const addDailyTask = async () => {
+    console.log("[v0] addDailyTask called")
+    console.log("[v0] newDailyTask:", newDailyTask)
+    console.log("[v0] selectedDay:", selectedDay)
+    console.log("[v0] user:", user)
+
     if (!newDailyTask.title) {
+      console.log("[v0] No title provided, returning")
       return
     }
 
     const taskId = crypto.randomUUID()
+    console.log("[v0] Generated task ID:", taskId)
 
     const taskData = {
       title: newDailyTask.title,
@@ -2538,6 +2544,8 @@ function GoalTrackerApp() {
       timeBlock: newDailyTask.timeBlock,
       estimatedMinutes: newDailyTask.estimatedMinutes,
     }
+
+    console.log("[v0] Task data prepared:", taskData)
 
     setDailyTasks((prev) => ({
       ...prev,
@@ -2556,6 +2564,8 @@ function GoalTrackerApp() {
       ],
     }))
 
+    console.log("[v0] Task added to local state for day:", selectedDay)
+
     setNewDailyTask({
       title: "",
       description: "",
@@ -2568,13 +2578,18 @@ function GoalTrackerApp() {
 
     try {
       if (!user?.id) {
-        console.error("No user ID available")
+        console.error("[v0] ERROR: No user ID available - task will not be saved to database!")
+        console.error("[v0] User object:", user)
         return
       }
+
+      console.log("[v0] User authenticated, proceeding with database save")
+      console.log("[v0] User ID:", user.id)
 
       // Look up category ID if category is provided
       let categoryId = null
       if (taskData.category) {
+        console.log("[v0] Looking up category ID for:", taskData.category)
         const { data: categories } = await supabase
           .from("categories")
           .select("id")
@@ -2583,6 +2598,7 @@ function GoalTrackerApp() {
           .single()
 
         categoryId = categories?.id || null
+        console.log("[v0] Category ID found:", categoryId)
       }
 
       // Calculate the target_date based on the selected day
@@ -2590,6 +2606,12 @@ function GoalTrackerApp() {
       const currentDayIndex = today.getDay()
       const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
       const selectedDayIndex = daysOfWeek.indexOf(selectedDay)
+
+      console.log("[v0] Date calculation:")
+      console.log("[v0]   - Today:", today.toISOString())
+      console.log("[v0]   - Current day index:", currentDayIndex)
+      console.log("[v0]   - Selected day:", selectedDay)
+      console.log("[v0]   - Selected day index:", selectedDayIndex)
 
       // Calculate days difference
       let daysDiff = selectedDayIndex - currentDayIndex
@@ -2599,9 +2621,14 @@ function GoalTrackerApp() {
         daysDiff += 7
       }
 
+      console.log("[v0]   - Days difference:", daysDiff)
+
       // Create target date
       const targetDate = new Date(today)
       targetDate.setDate(today.getDate() + daysDiff)
+
+      console.log("[v0]   - Target date:", targetDate.toISOString())
+      console.log("[v0]   - Target date (formatted):", targetDate.toISOString().split("T")[0])
 
       const insertData = {
         id: taskId,
@@ -2617,13 +2644,20 @@ function GoalTrackerApp() {
         estimated_minutes: taskData.estimatedMinutes || null,
       }
 
-      const { error } = await supabase.from("tasks").insert(insertData).select()
+      console.log("[v0] Inserting into database:", JSON.stringify(insertData, null, 2))
+
+      const { data: insertedData, error } = await supabase.from("tasks").insert(insertData).select()
 
       if (error) {
-        console.error("Error saving daily task:", error)
+        console.error("[v0] ERROR saving daily task to database:", error)
+        console.error("[v0] Error details:", JSON.stringify(error, null, 2))
+      } else {
+        console.log("[v0] SUCCESS! Task saved to database")
+        console.log("[v0] Inserted data:", JSON.stringify(insertedData, null, 2))
       }
     } catch (err) {
-      console.error("Exception during database operation:", err)
+      console.error("[v0] EXCEPTION during database operation:", err)
+      console.error("[v0] Exception details:", JSON.stringify(err, null, 2))
     }
   }
 
@@ -2783,17 +2817,18 @@ function GoalTrackerApp() {
           }
           weeklyTasks[weekKey].push(weeklyTask)
         } else if (task.task_type === "daily") {
-          const taskDate = new Date(task.target_date)
-          const day = taskDate.toLocaleDateString("en-US", { weekday: "long" })
+          const [year, month, day] = task.target_date.split("-").map(Number)
+          const taskDate = new Date(year, month - 1, day) // month is 0-indexed
+          const dayName = taskDate.toLocaleDateString("en-US", { weekday: "long" })
 
-          console.log(`Adding daily task to ${day} (target_date: ${task.target_date})`)
+          console.log(`Adding daily task to ${dayName} (target_date: ${task.target_date})`)
           console.log(
-            `[v0] Daily task "${task.title}" - completed: ${task.completed}, target_date: ${task.target_date}, assigned to: ${day}`,
+            `[v0] Daily task "${task.title}" - completed: ${task.completed}, target_date: ${task.target_date}, assigned to: ${dayName}`,
           )
 
           if (task.title?.includes("Buy Car1")) {
             console.log("[v0] PROCESSING 'Buy Car1' as daily task:")
-            console.log("[v0]   - Will be added to day:", day)
+            console.log("[v0]   - Will be added to day:", dayName)
             console.log("[v0]   - Completed value:", !!task.completed)
           }
 
@@ -2808,10 +2843,10 @@ function GoalTrackerApp() {
             estimatedMinutes: task.estimated_minutes || 30, // Use stored estimated_minutes
           }
 
-          if (!dailyTasks[day]) {
-            dailyTasks[day] = []
+          if (!dailyTasks[dayName]) {
+            dailyTasks[dayName] = []
           }
-          dailyTasks[day].push(dailyTask)
+          dailyTasks[dayName].push(dailyTask)
         }
       })
 
@@ -4473,8 +4508,8 @@ function GoalTrackerApp() {
           </SidebarInset>
         </div>
 
-        {/* CHANGE: Added UserProfile dialog that opens when showProfile is true */}
-        {showProfile && <UserProfile onClose={() => setShowProfile(false)} />}
+        {/* UserProfile component */}
+        {showProfile && <UserProfile userId={user?.id} onClose={() => setShowProfile(false)} />}
       </div>
     </SidebarProvider>
   )
