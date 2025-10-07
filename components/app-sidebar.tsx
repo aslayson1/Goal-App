@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { LayoutDashboard, Target, Users, ChevronDown } from "lucide-react"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import {
   Sidebar,
@@ -49,6 +49,8 @@ interface Agent {
 export function AppSidebar() {
   const { state } = useSidebar()
   const pathname = usePathname()
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const { user } = useAuth()
   const [agents, setAgents] = React.useState<Agent[]>([])
   const [selectedAgent, setSelectedAgent] = React.useState<Agent | null>(null)
@@ -59,42 +61,72 @@ export function AppSidebar() {
       if (!user?.id) return
 
       try {
-        const { data, error } = await supabase
+        const { data: currentUserAgent, error: currentUserError } = await supabase
           .from("agents")
           .select("id, name, role")
           .eq("user_id", user.id)
-          .order("name", { ascending: true })
+          .maybeSingle()
 
-        if (error) throw error
+        if (currentUserError) throw currentUserError
 
-        const agentsList: Agent[] = data || []
+        const isOwner = currentUserAgent?.role === "Owner"
 
-        // Add current user as the first option
-        const currentUserAgent: Agent = {
+        let agentsList: Agent[] = []
+
+        if (isOwner) {
+          const { data: teamAgents, error: teamError } = await supabase
+            .from("agents")
+            .select("id, name, role, user_id")
+            .eq("user_id", user.id)
+            .order("name", { ascending: true })
+
+          if (teamError) throw teamError
+          agentsList = teamAgents || []
+        }
+
+        const currentAgent: Agent = {
           id: user.id,
-          name: user.name || "My Dashboard",
-          role: "Owner",
+          name: currentUserAgent?.name || user.name || "My Dashboard",
+          role: currentUserAgent?.role || "Owner",
           avatar: user.avatar,
         }
 
-        setAgents([currentUserAgent, ...agentsList])
-        setSelectedAgent(currentUserAgent)
+        const allAgents = [currentAgent, ...agentsList]
+        setAgents(allAgents)
+
+        const agentIdFromUrl = searchParams.get("agentId")
+        const agentToSelect = agentIdFromUrl
+          ? allAgents.find((a) => a.id === agentIdFromUrl) || currentAgent
+          : currentAgent
+
+        setSelectedAgent(agentToSelect)
       } catch (error) {
         console.error("Error loading agents:", error)
-        // Fallback to just showing current user
-        const currentUserAgent: Agent = {
+        const currentAgent: Agent = {
           id: user.id,
           name: user.name || "My Dashboard",
           role: "Owner",
           avatar: user.avatar,
         }
-        setAgents([currentUserAgent])
-        setSelectedAgent(currentUserAgent)
+        setAgents([currentAgent])
+        setSelectedAgent(currentAgent)
       }
     }
 
     loadAgents()
-  }, [user?.id])
+  }, [user?.id, searchParams])
+
+  const handleAgentSelect = (agent: Agent) => {
+    setSelectedAgent(agent)
+    const params = new URLSearchParams(searchParams.toString())
+    if (agent.id === user?.id) {
+      params.delete("agentId")
+    } else {
+      params.set("agentId", agent.id)
+    }
+    const newUrl = params.toString() ? `${pathname}?${params}` : pathname
+    router.push(newUrl)
+  }
 
   const getInitials = (name: string) => {
     return name
@@ -142,7 +174,7 @@ export function AppSidebar() {
               {agents.map((agent) => (
                 <DropdownMenuItem
                   key={agent.id}
-                  onClick={() => setSelectedAgent(agent)}
+                  onClick={() => handleAgentSelect(agent)}
                   className="flex items-center gap-2 cursor-pointer"
                 >
                   <Avatar className="size-6">

@@ -42,6 +42,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Checkbox } from "@/components/ui/checkbox"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import Image from "next/image"
+import { useSearchParams } from "next/navigation"
 
 // Auth components
 import { useAuth } from "@/components/auth/auth-provider"
@@ -980,6 +981,9 @@ function SortableDailyTaskItem({
 
 function GoalTrackerApp() {
   const { user, isLoading: authLoading } = useAuth()
+  const searchParams = useSearchParams()
+  const selectedAgentId = searchParams.get("agentId") || user?.id
+
   const [goalsData, setGoalsData] = useState<GoalsData>(initialGoalsData)
   console.log("[v0] GoalTrackerApp render - goalsData keys:", Object.keys(goalsData))
   // The lint error was here: longTermGoals was used before it was declared.
@@ -1291,8 +1295,9 @@ function GoalTrackerApp() {
 
   useEffect(() => {
     const checkDatabaseAndLoadData = async () => {
-      if (user?.id) {
+      if (user?.id && selectedAgentId) {
         console.log("User authenticated, checking database connection...")
+        console.log("[v0] Loading data for agent:", selectedAgentId)
 
         try {
           // Test database connection
@@ -1303,7 +1308,7 @@ function GoalTrackerApp() {
           } else {
             console.log("Database connection successful!")
 
-            const startDateKey = `goalTracker_startDate_${user.id}`
+            const startDateKey = `goalTracker_startDate_${selectedAgentId}`
             let startDate = localStorage.getItem(startDateKey)
 
             if (!startDate) {
@@ -1319,8 +1324,8 @@ function GoalTrackerApp() {
 
             setCurrentWeek(calculatedWeek)
 
-            const dbData = await loadCategoriesAndGoalsFromDB(user.id)
-            const taskData = await loadTasksFromDB(user.id)
+            const dbData = await loadCategoriesAndGoalsFromDB(selectedAgentId)
+            const taskData = await loadTasksFromDB(selectedAgentId)
 
             console.log("=== COMPREHENSIVE TASK LOADING DEBUG ===")
             console.log("Raw task data from database:", JSON.stringify(taskData, null, 2))
@@ -1357,7 +1362,7 @@ function GoalTrackerApp() {
     }
 
     checkDatabaseAndLoadData()
-  }, [user?.id])
+  }, [user?.id, selectedAgentId])
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -2873,13 +2878,13 @@ function GoalTrackerApp() {
   }
 
   const loadLongTermGoalsFromDB = async () => {
-    if (!user?.id) return
+    if (!selectedAgentId) return
 
     try {
       const { data: longTermGoalsData, error } = await supabase
         .from("long_term_goals")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("user_id", selectedAgentId)
 
       if (error) throw error
 
@@ -2925,10 +2930,10 @@ function GoalTrackerApp() {
   }
 
   useEffect(() => {
-    if (user?.id) {
+    if (user?.id && selectedAgentId) {
       loadLongTermGoalsFromDB()
     }
-  }, [user?.id])
+  }, [user?.id, selectedAgentId])
 
   // const dashboardMode = user?.preferences?.dashboardMode || "12-week" // OLD CODE
 
