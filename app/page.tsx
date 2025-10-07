@@ -2535,9 +2535,10 @@ function GoalTrackerApp() {
       description: newDailyTask.description,
       category: newDailyTask.category,
       goalId: newDailyTask.goalId,
+      timeBlock: newDailyTask.timeBlock,
+      estimatedMinutes: newDailyTask.estimatedMinutes,
     }
 
-    // Update local state immediately
     setDailyTasks((prev) => ({
       ...prev,
       [selectedDay]: [
@@ -2549,6 +2550,8 @@ function GoalTrackerApp() {
           category: taskData.category,
           goalId: taskData.goalId,
           completed: false,
+          timeBlock: taskData.timeBlock,
+          estimatedMinutes: taskData.estimatedMinutes,
         },
       ],
     }))
@@ -2610,6 +2613,8 @@ function GoalTrackerApp() {
         task_type: "daily",
         target_date: targetDate.toISOString().split("T")[0],
         completed: false,
+        time_block: taskData.timeBlock || null,
+        estimated_minutes: taskData.estimatedMinutes || null,
       }
 
       const { error } = await supabase.from("tasks").insert(insertData).select()
@@ -2799,8 +2804,8 @@ function GoalTrackerApp() {
             category: categoryName,
             goalId: task.goal_id || "",
             completed: !!task.completed,
-            timeBlock: "9:00 AM",
-            estimatedMinutes: 30,
+            timeBlock: task.time_block || "9:00 AM", // Use stored time_block
+            estimatedMinutes: task.estimated_minutes || 30, // Use stored estimated_minutes
           }
 
           if (!dailyTasks[day]) {
