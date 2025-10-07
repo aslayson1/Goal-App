@@ -22,7 +22,7 @@ import Image from "next/image"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAuth } from "@/components/auth/auth-provider"
 import { SignOutButton } from "@/components/auth/sign-out-button"
-import { createClient } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/client"
 
 interface Agent {
   id: string
@@ -47,8 +47,6 @@ export default function AgentsPage() {
   })
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
-
-  const supabase = createClient()
 
   const getInitials = (name: string | null | undefined) => {
     if (!name || typeof name !== "string") return "U"
