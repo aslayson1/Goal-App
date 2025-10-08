@@ -2256,8 +2256,6 @@ function GoalTrackerApp() {
   }
 
   const getTotalProgress = () => {
-    // This prevents goals with large targets from skewing the overall progress
-    console.log("[v0] getTotalProgress called")
     const goalPercentages: number[] = []
 
     // Calculate progress for 12-week goals (numerical goals)
@@ -2265,58 +2263,31 @@ function GoalTrackerApp() {
       goals.forEach((goal) => {
         const percentage = goal.targetCount === 0 ? 0 : (goal.currentCount / goal.targetCount) * 100
         goalPercentages.push(percentage)
-        console.log("[v0] Processing 12-week goal:", {
-          title: goal.title,
-          currentCount: goal.currentCount,
-          targetCount: goal.targetCount,
-          percentage: percentage.toFixed(2) + "%",
-        })
       })
     })
 
-    console.log("[v0] After 12-week goals, total goals:", goalPercentages.length)
-
-    // Calculate progress for long-term goals (1-year and 5-year)
-    // These use milestones to track progress
-    Object.values(longTermGoals).forEach((timeframeGoals) => {
-      Object.values(timeframeGoals).forEach((goals) => {
-        goals.forEach((goal) => {
-          if (goal.status === "completed") {
-            // Completed goals count as 100%
-            goalPercentages.push(100)
-            console.log("[v0] Long-term goal completed:", goal.title)
-          } else if (goal.milestones && goal.milestones.length > 0) {
-            // Calculate progress based on completed milestones
-            const completedMilestones = goal.milestones.filter((m) => m.completed).length
-            const percentage = (completedMilestones / goal.milestones.length) * 100
-            goalPercentages.push(percentage)
-            console.log("[v0] Long-term goal with milestones:", {
-              title: goal.title,
-              completedMilestones,
-              totalMilestones: goal.milestones.length,
-              percentage: percentage.toFixed(2) + "%",
-            })
-          } else {
-            // Goals without milestones count as 0% (incomplete)
-            goalPercentages.push(0)
-            console.log("[v0] Long-term goal without milestones:", goal.title)
-          }
+    if (dashboardMode === "standard") {
+      // Calculate progress for long-term goals (1-year and 5-year)
+      Object.values(longTermGoals).forEach((timeframeGoals) => {
+        Object.values(timeframeGoals).forEach((goals) => {
+          goals.forEach((goal) => {
+            if (goal.status === "completed") {
+              goalPercentages.push(100)
+            } else if (goal.milestones && goal.milestones.length > 0) {
+              const completedMilestones = goal.milestones.filter((m) => m.completed).length
+              const percentage = (completedMilestones / goal.milestones.length) * 100
+              goalPercentages.push(percentage)
+            } else {
+              goalPercentages.push(0)
+            }
+          })
         })
       })
-    })
+    }
 
-    // Calculate average of all goal percentages
     const totalPercentage = goalPercentages.reduce((sum, p) => sum + p, 0)
     const averagePercentage = goalPercentages.length === 0 ? 0 : totalPercentage / goalPercentages.length
-    const finalPercentage = Math.round(averagePercentage)
-
-    console.log("[v0] Final progress calculation:", {
-      totalGoals: goalPercentages.length,
-      averagePercentage: averagePercentage.toFixed(2) + "%",
-      finalPercentage: finalPercentage + "%",
-    })
-
-    return finalPercentage
+    return Math.round(averagePercentage)
   }
 
   const getTotalTasks = () => {
@@ -2354,12 +2325,16 @@ function GoalTrackerApp() {
     Object.values(goalsData).forEach((goals) => {
       totalGoals += goals.length
     })
-    // Add long-term goals to the total count
-    Object.values(longTermGoals).forEach((timeframeGoals) => {
-      Object.values(timeframeGoals).forEach((goals) => {
-        totalGoals += goals.length
+
+    // Only add long-term goals in standard dashboard mode
+    if (dashboardMode === "standard") {
+      Object.values(longTermGoals).forEach((timeframeGoals) => {
+        Object.values(timeframeGoals).forEach((goals) => {
+          totalGoals += goals.length
+        })
       })
-    })
+    }
+
     return totalGoals
   }
 
@@ -2372,16 +2347,20 @@ function GoalTrackerApp() {
         }
       })
     })
-    // Count completed long-term goals
-    Object.values(longTermGoals).forEach((timeframeGoals) => {
-      Object.values(timeframeGoals).forEach((goals) => {
-        goals.forEach((goal) => {
-          if (goal.status === "completed") {
-            completedGoals++
-          }
+
+    // Only count completed long-term goals in standard dashboard mode
+    if (dashboardMode === "standard") {
+      Object.values(longTermGoals).forEach((timeframeGoals) => {
+        Object.values(timeframeGoals).forEach((goals) => {
+          goals.forEach((goal) => {
+            if (goal.status === "completed") {
+              completedGoals++
+            }
+          })
         })
       })
-    })
+    }
+
     return completedGoals
   }
 
@@ -3110,7 +3089,7 @@ function GoalTrackerApp() {
                   </div>
 
                   {/* 12-Week Goals View */}
-                  <TabsContent value="12-week" className="mt-8 w-full">
+                  <TabsContent value="1-week" className="mt-8 w-full">
                     <div className="w-full px-4 md:px-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
                       {Object.entries(goalsData).map(([category, goals]) => (
                         <Card

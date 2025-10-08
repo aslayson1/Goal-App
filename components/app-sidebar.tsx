@@ -56,18 +56,13 @@ export function AppSidebar() {
   const [selectedAgent, setSelectedAgent] = React.useState<Agent | null>(null)
   const [isOwner, setIsOwner] = React.useState(false)
 
+  const hasLoadedAgents = React.useRef(false)
+
   React.useEffect(() => {
     const loadAgents = async () => {
-      if (!user?.id) {
-        const fallbackAgent: Agent = {
-          id: "loading",
-          name: "Loading...",
-          role: "User",
-        }
-        setAgents([fallbackAgent])
-        setSelectedAgent(fallbackAgent)
-        return
-      }
+      if (!user?.id || hasLoadedAgents.current) return
+
+      hasLoadedAgents.current = true
 
       try {
         const { data: allTeamAgents, error: agentsError } = await supabase
@@ -78,13 +73,8 @@ export function AppSidebar() {
 
         if (agentsError) throw agentsError
 
-        console.log("[v0] Loaded agents from database:", allTeamAgents)
-
         const currentUserAgent = allTeamAgents?.find((agent) => agent.name === user.name) || allTeamAgents?.[0]
         const userIsOwner = currentUserAgent?.role === "Owner"
-
-        console.log("[v0] Current user agent:", currentUserAgent)
-        console.log("[v0] Is owner:", userIsOwner)
 
         setIsOwner(userIsOwner)
 
@@ -94,8 +84,6 @@ export function AppSidebar() {
           role: agent.role,
           avatar: agent.name === user.name ? user.avatar : undefined,
         }))
-
-        console.log("[v0] Final agents list:", agentsList)
 
         if (agentsList.length === 0) {
           const fallbackAgent: Agent = {
@@ -109,12 +97,12 @@ export function AppSidebar() {
         } else {
           setAgents(agentsList)
 
+          // Set initial selected agent based on URL or default to current user
           const agentIdFromUrl = searchParams.get("agentId")
           const agentToSelect = agentIdFromUrl
             ? agentsList.find((a) => a.id === agentIdFromUrl) || agentsList[0]
             : agentsList.find((a) => a.name === user.name) || agentsList[0]
 
-          console.log("[v0] Selected agent:", agentToSelect)
           setSelectedAgent(agentToSelect)
         }
       } catch (error) {
@@ -131,7 +119,25 @@ export function AppSidebar() {
     }
 
     loadAgents()
-  }, [user?.id, user?.name, user?.avatar, searchParams])
+  }, [user?.id, user?.name, user?.avatar]) // Removed searchParams from dependencies
+
+  React.useEffect(() => {
+    if (agents.length === 0 || !user?.name) return
+
+    const agentIdFromUrl = searchParams.get("agentId")
+    if (agentIdFromUrl) {
+      const agentFromUrl = agents.find((a) => a.id === agentIdFromUrl)
+      if (agentFromUrl && agentFromUrl.id !== selectedAgent?.id) {
+        setSelectedAgent(agentFromUrl)
+      }
+    } else {
+      // No agentId in URL, select current user's agent
+      const currentUserAgent = agents.find((a) => a.name === user.name)
+      if (currentUserAgent && currentUserAgent.id !== selectedAgent?.id) {
+        setSelectedAgent(currentUserAgent)
+      }
+    }
+  }, [searchParams, agents, user?.name]) // Separate URL sync effect
 
   const handleAgentSelect = (agent: Agent) => {
     setSelectedAgent(agent)
