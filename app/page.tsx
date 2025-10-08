@@ -3078,8 +3078,8 @@ function GoalTrackerApp() {
                 </div>
 
                 <Tabs value={activeView} onValueChange={setActiveView} className="mb-8">
-                  <div className="max-w-7xl mx-auto">
-                    <TabsList className="grid w-full max-w-2xl grid-cols-3">
+                  <div className="mx-auto">
+                    <TabsList className="grid w-full max-w-4xl grid-cols-3">
                       <TabsTrigger value="daily">Daily Tasks</TabsTrigger>
                       <TabsTrigger value="weekly">Weekly Tasks</TabsTrigger>
                       <TabsTrigger value={dashboardMode === "12-week" ? "12-week" : "1-year"}>
@@ -3089,7 +3089,7 @@ function GoalTrackerApp() {
                   </div>
 
                   {/* 12-Week Goals View */}
-                  <TabsContent value="1-week" className="mt-8 w-full">
+                  <TabsContent value="12-week" className="mt-8 w-full">
                     <div className="w-full px-4 md:px-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
                       {Object.entries(goalsData).map(([category, goals]) => (
                         <Card
