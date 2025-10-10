@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 import { Plus, Target, Trash2, MoreHorizontal, Edit } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card"
@@ -26,6 +27,7 @@ import Image from "next/image"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAuth } from "@/components/auth/auth-provider"
 import { SignOutButton } from "@/components/auth/sign-out-button"
+import { createBrowserClient } from "@supabase/ssr"
 
 const initialLongTermGoals = {
   "1-year": {
@@ -208,6 +210,8 @@ interface LongTermGoalsData {
 
 export default function LongTermGoalsPage() {
   const { user } = useAuth()
+  const searchParams = useSearchParams()
+  const selectedAgentId = searchParams.get("agent")
 
   const getInitials = (name: string | null | undefined) => {
     if (!name || typeof name !== "string") return "U"
@@ -218,7 +222,10 @@ export default function LongTermGoalsPage() {
       .toUpperCase()
   }
 
-  const [longTermGoals, setLongTermGoals] = useState<LongTermGoalsData>(initialLongTermGoals)
+  const [longTermGoals, setLongTermGoals] = useState<LongTermGoalsData>({
+    "1-year": {},
+    "5-year": {},
+  })
   const [showAddLongTermGoal, setShowAddLongTermGoal] = useState(false)
   const [selectedTimeframe, setSelectedTimeframe] = useState<"1-year" | "5-year">("1-year")
   const [selectedCategory, setSelectedCategory] = useState("")
@@ -248,6 +255,62 @@ export default function LongTermGoalsPage() {
   } | null>(null)
   const [showProfile, setShowProfile] = useState(false)
 
+  useEffect(() => {
+    const loadLongTermGoalsFromDB = async () => {
+      if (!user?.id) return
+
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      )
+
+      const targetUserId = selectedAgentId || user.id
+
+      const { data: longTermGoalsData, error } = await supabase
+        .from("long_term_goals")
+        .select("*")
+        .eq("user_id", targetUserId)
+
+      if (error) {
+        console.error("Error loading long-term goals:", error)
+        return
+      }
+
+      if (longTermGoalsData && longTermGoalsData.length > 0) {
+        const groupedGoals: LongTermGoalsData = {
+          "1-year": {},
+          "5-year": {},
+        }
+
+        longTermGoalsData.forEach((goal) => {
+          const timeframe = goal.timeframe as "1-year" | "5-year"
+          if (!groupedGoals[timeframe][goal.category]) {
+            groupedGoals[timeframe][goal.category] = []
+          }
+          groupedGoals[timeframe][goal.category].push({
+            id: goal.id,
+            title: goal.title,
+            description: goal.description || "",
+            targetDate: goal.target_date || "",
+            category: goal.category,
+            status: goal.status || "in-progress",
+            notes: goal.notes || "",
+            milestones: goal.milestones || [],
+          })
+        })
+
+        setLongTermGoals(groupedGoals)
+      } else {
+        setLongTermGoals({
+          "1-year": {},
+          "5-year": {},
+        })
+      }
+    }
+
+    loadLongTermGoalsFromDB()
+  }, [user?.id, selectedAgentId])
+
   const startEditingLongTermGoal = (timeframe: "1-year" | "5-year", category: string, goal: LongTermGoal) => {
     setEditingLongTermGoal({ timeframe, category, goal })
     setSelectedTimeframe(timeframe)
@@ -270,6 +333,7 @@ export default function LongTermGoalsPage() {
 
     const { timeframe, category, goal } = editingLongTermGoal
 
+    // TODO: Update in Supabase
     setLongTermGoals((prev) => ({
       ...prev,
       [timeframe]: {
@@ -286,7 +350,7 @@ export default function LongTermGoalsPage() {
                 milestones: newLongTermGoal.milestones
                   .filter((m) => m.title && m.targetDate)
                   .map((m, index) => ({
-                    id: `${g.id}_m${index + 1}`,
+                    id: `${g.id}_m${index + 1}`, // Ensure unique milestone IDs
                     title: m.title,
                     completed: g.milestones[index]?.completed || false,
                     targetDate: m.targetDate,
@@ -318,7 +382,7 @@ export default function LongTermGoalsPage() {
     if (!newLongTermGoal.title || !newLongTermGoal.category) return
 
     const newGoal: LongTermGoal = {
-      id: `${selectedTimeframe}_${Date.now()}`,
+      id: `goal_${Date.now()}`, // Generate a more robust ID if needed
       title: newLongTermGoal.title,
       description: newLongTermGoal.description,
       targetDate: newLongTermGoal.targetDate,
@@ -328,13 +392,14 @@ export default function LongTermGoalsPage() {
       milestones: newLongTermGoal.milestones
         .filter((m) => m.title && m.targetDate)
         .map((m, index) => ({
-          id: `m${index + 1}`,
+          id: `m_${Date.now()}_${index + 1}`, // Generate a more robust ID if needed
           title: m.title,
           completed: false,
           targetDate: m.targetDate,
         })),
     }
 
+    // TODO: Add to Supabase
     setLongTermGoals((prev) => ({
       ...prev,
       [selectedTimeframe]: {
@@ -360,6 +425,7 @@ export default function LongTermGoalsPage() {
   }
 
   const deleteLongTermGoal = (timeframe: "1-year" | "5-year", category: string, goalId: string) => {
+    // TODO: Delete from Supabase
     setLongTermGoals((prev) => ({
       ...prev,
       [timeframe]: {
@@ -432,7 +498,7 @@ export default function LongTermGoalsPage() {
           <AppSidebar />
           <SidebarInset className="flex-1 overflow-auto">
             <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
-              <Tabs defaultValue="1-year" className="w-full">
+              <Tabs defaultValue={selectedTimeframe || "1-year"} className="w-full">
                 <TabsList className="grid w-full max-w-md grid-cols-2">
                   <TabsTrigger value="1-year">1-Year Goals</TabsTrigger>
                   <TabsTrigger value="5-year">5-Year Goals</TabsTrigger>
@@ -447,6 +513,20 @@ export default function LongTermGoalsPage() {
                       onClick={() => {
                         setSelectedTimeframe("1-year")
                         setShowAddLongTermGoal(true)
+                        setNewLongTermGoal({
+                          // Reset form for new goal
+                          title: "",
+                          description: "",
+                          targetDate: "",
+                          category: "",
+                          notes: "",
+                          milestones: [
+                            { title: "", targetDate: "" },
+                            { title: "", targetDate: "" },
+                            { title: "", targetDate: "" },
+                            { title: "", targetDate: "" },
+                          ],
+                        })
                       }}
                       className="text-sm bg-black hover:bg-gray-800 text-white"
                     >
@@ -503,6 +583,7 @@ export default function LongTermGoalsPage() {
                                   checked={goal.status === "completed"}
                                   onCheckedChange={(checked) => {
                                     const newStatus = checked ? "completed" : "in-progress"
+                                    // TODO: Update status in Supabase
                                     setLongTermGoals((prev) => ({
                                       ...prev,
                                       "1-year": {
@@ -586,6 +667,7 @@ export default function LongTermGoalsPage() {
                                       <Checkbox
                                         checked={milestone.completed}
                                         onCheckedChange={(checked) => {
+                                          // TODO: Update milestone completion in Supabase
                                           setLongTermGoals((prev) => ({
                                             ...prev,
                                             "1-year": {
@@ -643,6 +725,20 @@ export default function LongTermGoalsPage() {
                       onClick={() => {
                         setSelectedTimeframe("5-year")
                         setShowAddLongTermGoal(true)
+                        setNewLongTermGoal({
+                          // Reset form for new goal
+                          title: "",
+                          description: "",
+                          targetDate: "",
+                          category: "",
+                          notes: "",
+                          milestones: [
+                            { title: "", targetDate: "" },
+                            { title: "", targetDate: "" },
+                            { title: "", targetDate: "" },
+                            { title: "", targetDate: "" },
+                          ],
+                        })
                       }}
                       className="text-sm bg-black hover:bg-gray-800 text-white"
                     >
@@ -699,6 +795,7 @@ export default function LongTermGoalsPage() {
                                   checked={goal.status === "completed"}
                                   onCheckedChange={(checked) => {
                                     const newStatus = checked ? "completed" : "in-progress"
+                                    // TODO: Update status in Supabase
                                     setLongTermGoals((prev) => ({
                                       ...prev,
                                       "5-year": {
@@ -782,6 +879,7 @@ export default function LongTermGoalsPage() {
                                       <Checkbox
                                         checked={milestone.completed}
                                         onCheckedChange={(checked) => {
+                                          // TODO: Update milestone completion in Supabase
                                           setLongTermGoals((prev) => ({
                                             ...prev,
                                             "5-year": {
