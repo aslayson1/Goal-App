@@ -2049,7 +2049,7 @@ function GoalTrackerApp() {
 
       if (categoriesError) {
         console.error("Error fetching categories:", categoriesError)
-        return initialGoalsData
+        return {}
       }
 
       const { data: goals, error: goalsError } = await supabase
@@ -2066,7 +2066,7 @@ function GoalTrackerApp() {
 
       if (goalsError) {
         console.error("Error fetching goals:", goalsError)
-        return initialGoalsData
+        return {}
       }
 
       // Group goals by category
@@ -2097,14 +2097,14 @@ function GoalTrackerApp() {
       })
 
       if (Object.keys(groupedGoals).length === 0) {
-        console.log("[v0] No categories found in database, using initial data")
-        return initialGoalsData
+        console.log("[v0] No categories found in database")
+        return {}
       }
 
       return groupedGoals
     } catch (error) {
       console.error("Error loading data from database:", error)
-      return initialGoalsData
+      return {}
     }
   }
 
@@ -2896,12 +2896,12 @@ function GoalTrackerApp() {
         })
 
         // Merge with initial data for categories that don't exist in database
-        const mergedGoals: LongTermGoalsData = {
-          "1-year": { ...initialLongTermGoals["1-year"], ...groupedGoals["1-year"] },
-          "5-year": { ...initialLongTermGoals["5-year"], ...groupedGoals["5-year"] },
-        }
-
-        setLongTermGoals(mergedGoals)
+        setLongTermGoals(groupedGoals)
+      } else {
+        setLongTermGoals({
+          "1-year": {},
+          "5-year": {},
+        })
       }
     } catch (error) {
       console.error("Error loading long-term goals:", error)
@@ -3082,14 +3082,14 @@ function GoalTrackerApp() {
                     <TabsList className="grid w-full max-w-4xl grid-cols-3">
                       <TabsTrigger value="daily">Daily Tasks</TabsTrigger>
                       <TabsTrigger value="weekly">Weekly Tasks</TabsTrigger>
-                      <TabsTrigger value={dashboardMode === "12-week" ? "12-week" : "1-year"}>
+                      <TabsTrigger value={dashboardMode === "12-week" ? "1-week" : "1-year"}>
                         {dashboardMode === "12-week" ? "12-Week Goals" : "1-Year Goals"}
                       </TabsTrigger>
                     </TabsList>
                   </div>
 
                   {/* 12-Week Goals View */}
-                  <TabsContent value="12-week" className="mt-8 w-full">
+                  <TabsContent value="1-week" className="mt-8 w-full">
                     <div className="w-full px-4 md:px-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
                       {Object.entries(goalsData).map(([category, goals]) => (
                         <Card
@@ -4138,8 +4138,9 @@ function GoalTrackerApp() {
                         {editingGoal ? "Save Changes" : "Add Goal"}
                       </Button>
                     </DialogFooter>
-                  </DialogContent>
-                </Dialog>
+                  
+  </DialogContent>
+</Dialog>
 
                 {/* Delete Goal Confirmation Dialog */}
                 <Dialog open={!!showDeleteGoal} onOpenChange={() => setShowDeleteGoal(null)}>
