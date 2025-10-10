@@ -43,6 +43,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import Image from "next/image"
 import { useSearchParams } from "next/navigation"
+import React from "react" // Ensure React is imported
 
 // Auth components
 import { useAuth } from "@/components/auth/auth-provider"
@@ -469,7 +470,6 @@ const initialLongTermGoals = {
         targetDate: "2025-10-31",
         category: "Business",
         status: "in-progress",
-        notes: "Research market conditions and local partnerships",
         milestones: [
           { id: "m1", title: "Market research complete", completed: true, targetDate: "2025-01-31" },
           { id: "m2", title: "Atlanta office opened", completed: false, targetDate: "2025-05-31" },
@@ -984,11 +984,16 @@ function GoalTrackerApp() {
   const searchParams = useSearchParams()
   const selectedAgentId = searchParams.get("agentId") || user?.id
 
+  const [agents, setAgents] = React.useState<Array<{ id: string; name: string }>>([])
+  const [selectedAgentName, setSelectedAgentName] = React.useState<string>("")
+
   const [goalsData, setGoalsData] = useState<GoalsData>(initialGoalsData)
   console.log("[v0] GoalTrackerApp render - goalsData keys:", Object.keys(goalsData))
-  // The lint error was here: longTermGoals was used before it was declared.
-  // It has been moved down to be declared before its first use.
-  const [longTermGoals, setLongTermGoals] = useState<LongTermGoalsData>(initialLongTermGoals)
+  // </CHANGE> Initialize with empty long-term goals instead of owner's default data
+  const [longTermGoals, setLongTermGoals] = useState<LongTermGoalsData>({
+    "1-year": {},
+    "5-year": {},
+  })
   console.log("[v0] GoalTrackerApp render - longTermGoals 1-year keys:", Object.keys(longTermGoals["1-year"]))
   console.log("[v0] GoalTrackerApp render - longTermGoals 5-year keys:", Object.keys(longTermGoals["5-year"]))
   const [weeklyTasks, setWeeklyTasks] = useState<Record<string, WeeklyTask[]>>({})
@@ -1126,8 +1131,6 @@ function GoalTrackerApp() {
 
   // Cal.com inspired color palette for category badges - each category gets a unique, distinct color
   const getCategoryColor = (category: string) => {
-    return "bg-black text-white border-black"
-
     // Check for custom colors first
     if (customCategoryColors[category]) {
       return customCategoryColors[category]
@@ -1363,6 +1366,30 @@ function GoalTrackerApp() {
 
     checkDatabaseAndLoadData()
   }, [user?.id, selectedAgentId])
+
+  React.useEffect(() => {
+    const loadAgents = async () => {
+      if (!user?.id) return
+
+      try {
+        const { data: agentsData, error } = await supabase.from("agents").select("id, name").eq("user_id", user.id)
+
+        if (error) throw error
+
+        const agentsList = agentsData || []
+        setAgents(agentsList)
+
+        // Find selected agent's name
+        const selectedAgent = agentsList.find((a) => a.id === selectedAgentId)
+        setSelectedAgentName(selectedAgent?.name || user?.name || "")
+      } catch (error) {
+        console.error("[v0] Error loading agents:", error)
+        setSelectedAgentName(user?.name || "")
+      }
+    }
+
+    loadAgents()
+  }, [user?.id, user?.name, selectedAgentId])
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -2980,7 +3007,7 @@ function GoalTrackerApp() {
                 <div className="max-w-7xl mx-auto flex items-center justify-between mb-8">
                   <div>
                     <h1 className="text-4xl font-bold text-gray-900 mb-2">
-                      Hi {user?.name?.split(" ")[0] || "there"},
+                      Hi {selectedAgentName?.split(" ")[0] || user?.name?.split(" ")[0] || "there"},
                     </h1>
                     <p className="text-gray-600">Here are your tasks for week {currentWeek} of 12.</p>
                   </div>
@@ -4137,7 +4164,8 @@ function GoalTrackerApp() {
                       <Button onClick={editingGoal ? saveEditedGoal : addNewGoal}>
                         {editingGoal ? "Save Changes" : "Add Goal"}
                       </Button>
-                    </DialogFooter></DialogContent>
+                    </DialogFooter>
+                  </DialogContent>
 </Dialog>
 
                 {/* Delete Goal Confirmation Dialog */}
@@ -4275,7 +4303,7 @@ function GoalTrackerApp() {
                       </Button>
                     </DialogFooter>
                   </DialogContent>
-                </Dialog>
+</Dialog>
 
                 <Dialog open={showAddWeeklyTask} onOpenChange={setShowAddWeeklyTask}>
                   <DialogContent className="sm:max-w-[500px]">
