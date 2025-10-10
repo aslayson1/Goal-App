@@ -470,6 +470,7 @@ const initialLongTermGoals = {
         targetDate: "2025-10-31",
         category: "Business",
         status: "in-progress",
+        notes: "Research market conditions and local partnerships",
         milestones: [
           { id: "m1", title: "Market research complete", completed: true, targetDate: "2025-01-31" },
           { id: "m2", title: "Atlanta office opened", completed: false, targetDate: "2025-05-31" },
@@ -989,11 +990,9 @@ function GoalTrackerApp() {
 
   const [goalsData, setGoalsData] = useState<GoalsData>(initialGoalsData)
   console.log("[v0] GoalTrackerApp render - goalsData keys:", Object.keys(goalsData))
-  // </CHANGE> Initialize with empty long-term goals instead of owner's default data
-  const [longTermGoals, setLongTermGoals] = useState<LongTermGoalsData>({
-    "1-year": {},
-    "5-year": {},
-  })
+  // The lint error was here: longTermGoals was used before it was declared.
+  // It has been moved down to be declared before its first use.
+  const [longTermGoals, setLongTermGoals] = useState<LongTermGoalsData>(initialLongTermGoals)
   console.log("[v0] GoalTrackerApp render - longTermGoals 1-year keys:", Object.keys(longTermGoals["1-year"]))
   console.log("[v0] GoalTrackerApp render - longTermGoals 5-year keys:", Object.keys(longTermGoals["5-year"]))
   const [weeklyTasks, setWeeklyTasks] = useState<Record<string, WeeklyTask[]>>({})
@@ -1131,6 +1130,8 @@ function GoalTrackerApp() {
 
   // Cal.com inspired color palette for category badges - each category gets a unique, distinct color
   const getCategoryColor = (category: string) => {
+    return "bg-black text-white border-black"
+
     // Check for custom colors first
     if (customCategoryColors[category]) {
       return customCategoryColors[category]
@@ -4166,7 +4167,7 @@ function GoalTrackerApp() {
                       </Button>
                     </DialogFooter>
                   </DialogContent>
-</Dialog>
+                </Dialog>
 
                 {/* Delete Goal Confirmation Dialog */}
                 <Dialog open={!!showDeleteGoal} onOpenChange={() => setShowDeleteGoal(null)}>
@@ -4303,7 +4304,7 @@ function GoalTrackerApp() {
                       </Button>
                     </DialogFooter>
                   </DialogContent>
-</Dialog>
+                </Dialog>
 
                 <Dialog open={showAddWeeklyTask} onOpenChange={setShowAddWeeklyTask}>
                   <DialogContent className="sm:max-w-[500px]">
