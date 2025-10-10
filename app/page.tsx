@@ -4137,9 +4137,7 @@ function GoalTrackerApp() {
                       <Button onClick={editingGoal ? saveEditedGoal : addNewGoal}>
                         {editingGoal ? "Save Changes" : "Add Goal"}
                       </Button>
-                    </DialogFooter>
-                  
-  </DialogContent>
+                    </DialogFooter></DialogContent>
 </Dialog>
 
                 {/* Delete Goal Confirmation Dialog */}
