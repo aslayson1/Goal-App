@@ -2776,6 +2776,45 @@ function GoalTrackerApp() {
       console.log("Raw tasks from database:", JSON.stringify(tasks, null, 2))
       console.log("Number of tasks found:", tasks?.length || 0)
 
+      const today = new Date()
+      today.setHours(0, 0, 0, 0) // Reset time to start of day for accurate comparison
+      const todayString = today.toISOString().split("T")[0] // Format: YYYY-MM-DD
+
+      if (tasks && tasks.length > 0) {
+        const tasksToUpdate: string[] = []
+
+        for (const task of tasks) {
+          // Only process daily tasks that are incomplete
+          if (task.task_type === "daily" && !task.completed) {
+            const taskDate = new Date(task.target_date)
+            taskDate.setHours(0, 0, 0, 0)
+
+            // If task date is in the past, move it to today
+            if (taskDate < today) {
+              console.log(`[v0] Moving incomplete task "${task.title}" from ${task.target_date} to ${todayString}`)
+              tasksToUpdate.push(task.id)
+
+              // Update the task's target_date in the database
+              const { error: updateError } = await supabase
+                .from("tasks")
+                .update({ target_date: todayString })
+                .eq("id", task.id)
+
+              if (updateError) {
+                console.error(`Error updating task ${task.id}:`, updateError)
+              } else {
+                // Update the task object in memory so it's organized correctly
+                task.target_date = todayString
+              }
+            }
+          }
+        }
+
+        if (tasksToUpdate.length > 0) {
+          console.log(`[v0] Moved ${tasksToUpdate.length} incomplete task(s) to today`)
+        }
+      }
+
       const completedTasks = tasks?.filter((t) => t.completed) || []
       const incompleteTasks = tasks?.filter((t) => !t.completed) || []
       console.log("[v0] Total tasks:", tasks?.length || 0)
