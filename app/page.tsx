@@ -1404,7 +1404,7 @@ function GoalTrackerApp() {
     const goal = goalsData[category]?.find((g) => g.id === goalId)
     if (!goal) return
 
-    const newCount = Math.min(goal.currentCount + amount, goal.targetCount)
+    const newCount = goal.currentCount + amount
 
     // Update local state immediately for UI feedback
     setGoalsData((prev) => ({
@@ -2695,6 +2695,8 @@ function GoalTrackerApp() {
           category: newWeeklyTask.category,
           goalId: newWeeklyTask.goalId,
           completed: false,
+          priority: newWeeklyTask.priority, // Added priority to local state
+          estimatedHours: newWeeklyTask.estimatedHours, // Added estimatedHours to local state
         },
       ],
     }))
@@ -2727,6 +2729,7 @@ function GoalTrackerApp() {
         task_type: "weekly",
         target_date: new Date().toISOString().split("T")[0],
         completed: false,
+        // Note: priority and estimated_hours are not directly mapped to the 'tasks' table in Supabase
       })
 
       if (error) {
@@ -2779,32 +2782,64 @@ function GoalTrackerApp() {
       const today = new Date()
       today.setHours(0, 0, 0, 0) // Reset time to start of day for accurate comparison
       const todayString = today.toISOString().split("T")[0] // Format: YYYY-MM-DD
+      const dayOfWeek = today.getDay() // 0 = Sunday, 1 = Monday, etc.
+
+      if (dayOfWeek === 1 && tasks && tasks.length > 0) {
+        const completedDailyTasksToDelete = tasks.filter(
+          (task) => task.task_type === "daily" && task.completed && task.target_date < todayString,
+        )
+
+        if (completedDailyTasksToDelete.length > 0) {
+          const taskIds = completedDailyTasksToDelete.map((t) => t.id)
+          const { error: deleteError } = await supabase.from("tasks").delete().in("id", taskIds)
+
+          if (deleteError) {
+            console.error("[v0] Error deleting completed daily tasks:", deleteError)
+          } else {
+            console.log(`[v0] Deleted ${completedDailyTasksToDelete.length} completed daily task(s) from previous week`)
+            // Remove deleted tasks from the tasks array
+            tasks.splice(0, tasks.length, ...tasks.filter((t) => !taskIds.includes(t.id)))
+          }
+        }
+      }
+
+      console.log("[v0] Today's date:", todayString)
+      console.log("[v0] Checking for incomplete daily tasks to move...")
 
       if (tasks && tasks.length > 0) {
         const tasksToUpdate: string[] = []
 
         for (const task of tasks) {
-          // Only process daily tasks that are incomplete
-          if (task.task_type === "daily" && !task.completed) {
-            const taskDate = new Date(task.target_date)
-            taskDate.setHours(0, 0, 0, 0)
+          if (task.task_type === "daily") {
+            console.log(
+              `[v0] Daily task: "${task.title}", completed: ${task.completed}, target_date: ${task.target_date}`,
+            )
 
-            // If task date is in the past, move it to today
-            if (taskDate < today) {
-              console.log(`[v0] Moving incomplete task "${task.title}" from ${task.target_date} to ${todayString}`)
-              tasksToUpdate.push(task.id)
+            if (!task.completed) {
+              const taskDate = new Date(task.target_date)
+              taskDate.setHours(0, 0, 0, 0)
 
-              // Update the task's target_date in the database
-              const { error: updateError } = await supabase
-                .from("tasks")
-                .update({ target_date: todayString })
-                .eq("id", task.id)
+              console.log(
+                `[v0] Task date: ${taskDate.toISOString()}, Today: ${today.toISOString()}, Is past: ${taskDate < today}`,
+              )
 
-              if (updateError) {
-                console.error(`Error updating task ${task.id}:`, updateError)
-              } else {
-                // Update the task object in memory so it's organized correctly
-                task.target_date = todayString
+              if (taskDate < today) {
+                console.log(`[v0] Moving incomplete task "${task.title}" from ${task.target_date} to ${todayString}`)
+                tasksToUpdate.push(task.id)
+
+                // Update the task's target_date in the database
+                const { error: updateError } = await supabase
+                  .from("tasks")
+                  .update({ target_date: todayString })
+                  .eq("id", task.id)
+
+                if (updateError) {
+                  console.error(`[v0] Error updating task ${task.id}:`, updateError)
+                } else {
+                  console.log(`[v0] Successfully updated task ${task.id} in database`)
+                  // Update the task object in memory so it's organized correctly
+                  task.target_date = todayString
+                }
               }
             }
           }
@@ -2812,6 +2847,8 @@ function GoalTrackerApp() {
 
         if (tasksToUpdate.length > 0) {
           console.log(`[v0] Moved ${tasksToUpdate.length} incomplete task(s) to today`)
+        } else {
+          console.log(`[v0] No incomplete tasks needed to be moved`)
         }
       }
 
@@ -2859,8 +2896,8 @@ function GoalTrackerApp() {
             category: categoryName,
             goalId: task.goal_id || "",
             completed: !!task.completed,
-            priority: "medium",
-            estimatedHours: 1,
+            priority: "medium", // Default priority, not stored in DB
+            estimatedHours: 1, // Default hours, not stored in DB
           }
 
           if (!weeklyTasks[weekKey]) {
@@ -3406,7 +3443,6 @@ function GoalTrackerApp() {
                                                 size="sm"
                                                 variant="outline"
                                                 onClick={() => incrementGoal(category, goal.id, 1)}
-                                                disabled={isCompleted}
                                                 className="h-7 px-2"
                                               >
                                                 <Plus className="h-3 w-3 mr-1" />
@@ -3421,7 +3457,6 @@ function GoalTrackerApp() {
                                                     size="sm"
                                                     variant="outline"
                                                     onClick={() => incrementGoal(category, goal.id, increment)}
-                                                    disabled={isCompleted}
                                                     className="h-7 px-2 text-xs"
                                                   >
                                                     +{increment >= 1000 ? `${increment / 1000}k` : increment}
