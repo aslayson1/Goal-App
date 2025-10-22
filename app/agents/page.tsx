@@ -273,10 +273,10 @@ export default function AgentsPage() {
         <div className="flex flex-1 overflow-hidden">
           <AppSidebar />
           <SidebarInset className="flex-1 overflow-auto">
-            <div className="flex flex-1 flex-col gap-4 py-4 md:py-6">
+            <div className="flex flex-1 flex-col gap-4 py-4 md:py-6 px-4 md:px-6">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900">Team Agents</h2>
+                  <h2 className="text-2xl font-bold text-gray-900">My Team</h2>
                   <p className="text-sm text-gray-600 mt-1">Manage your team members and their roles</p>
                 </div>
                 <Button

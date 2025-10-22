@@ -2066,11 +2066,10 @@ function GoalTrackerApp() {
         .select("id")
         .eq("name", category)
         .eq("user_id", user?.id)
-        .single()
 
-      if (categories) {
+      if (categories && categories.length > 0) {
         // Delete from database first
-        const { error } = await supabase.from("categories").delete().eq("id", categories.id)
+        const { error } = await supabase.from("categories").delete().eq("id", categories[0].id)
         if (error) throw error
       }
 
@@ -2503,7 +2502,7 @@ function GoalTrackerApp() {
     }
   }
 
-  const handleDailyTaskDragEnd = (event: DragEndEvent, category: string) => {
+  const handleDailyTaskDragEnd = async (event: DragEndEvent, category: string) => {
     const { active, over } = event
 
     if (!over) return
@@ -2516,6 +2515,18 @@ function GoalTrackerApp() {
         if (oldIndex === -1 || newIndex === -1) return prev
 
         const newItems = arrayMove(prev[selectedDay], oldIndex, newIndex)
+
+        const updates = newItems.map((task, index) => ({
+          id: task.id,
+          sort_order: index,
+        }))
+
+        // Update database with new sort order
+        Promise.all(
+          updates.map((update) => supabase.from("tasks").update({ sort_order: update.sort_order }).eq("id", update.id)),
+        ).catch((error) => {
+          console.error("[v0] Error updating task order:", error)
+        })
 
         return {
           ...prev,
@@ -3102,10 +3113,10 @@ function GoalTrackerApp() {
           </DropdownMenu>
         </header>
 
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-1 overflow-hidden overflow-x-hidden">
           <AppSidebar />
-          <SidebarInset className="flex-1">
-            <main className="flex-1 overflow-auto p-6">
+          <SidebarInset className="flex-1 w-full min-w-0">
+            <main className="flex-1 min-w-0 overflow-auto p-6">
               <div className="mx-auto space-y-6">
                 {/* Header */}
                 <div className="max-w-7xl mx-auto flex items-center justify-between mb-8">
@@ -3609,8 +3620,6 @@ function GoalTrackerApp() {
                           (task) => task.category === category,
                         )
 
-                        if (categoryTasks.length === 0) return null
-
                         return (
                           <Card key={category} className="border-0 shadow-sm">
                             <CardHeader className="pb-4">
@@ -3638,43 +3647,45 @@ function GoalTrackerApp() {
                                 {categoryTasks.length} task{categoryTasks.length !== 1 ? "s" : ""} this week
                               </CardDescription>
                             </CardHeader>
-                            <CardContent className="space-y-4">
-                              <DndContext
-                                sensors={sensors}
-                                collisionDetection={closestCenter}
-                                onDragEnd={(event) => handleWeeklyTaskDragEnd(event, category)}
-                              >
-                                <SortableContext
-                                  items={categoryTasks.map((task) => task.id)}
-                                  strategy={verticalListSortingStrategy}
+                            {categoryTasks.length > 0 && (
+                              <CardContent className="space-y-4">
+                                <DndContext
+                                  sensors={sensors}
+                                  collisionDetection={closestCenter}
+                                  onDragEnd={(event) => handleWeeklyTaskDragEnd(event, category)}
                                 >
-                                  {categoryTasks.map((task) => (
-                                    <SortableWeeklyTaskItem
-                                      key={task.id}
-                                      task={task}
-                                      onToggle={() => toggleWeeklyTask(`Week ${currentWeek}`, task.id)}
-                                      onEdit={() => startEditingWeeklyTask(task)}
-                                      onDelete={() => {
-                                        const deleteWeeklyTask = async (weekKey: string, taskId: string) => {
-                                          try {
-                                            await supabase.from("tasks").delete().eq("id", taskId)
-                                            setWeeklyTasks((prev) => ({
-                                              ...prev,
-                                              [weekKey]: prev[weekKey]?.filter((task) => task.id !== taskId) || [],
-                                            }))
-                                          } catch (error) {
-                                            console.error("Error deleting weekly task:", error)
-                                            // Keep the task in UI if database deletion fails
+                                  <SortableContext
+                                    items={categoryTasks.map((task) => task.id)}
+                                    strategy={verticalListSortingStrategy}
+                                  >
+                                    {categoryTasks.map((task) => (
+                                      <SortableWeeklyTaskItem
+                                        key={task.id}
+                                        task={task}
+                                        onToggle={() => toggleWeeklyTask(`Week ${currentWeek}`, task.id)}
+                                        onEdit={() => startEditingWeeklyTask(task)}
+                                        onDelete={() => {
+                                          const deleteWeeklyTask = async (weekKey: string, taskId: string) => {
+                                            try {
+                                              await supabase.from("tasks").delete().eq("id", taskId)
+                                              setWeeklyTasks((prev) => ({
+                                                ...prev,
+                                                [weekKey]: prev[weekKey]?.filter((task) => task.id !== taskId) || [],
+                                              }))
+                                            } catch (error) {
+                                              console.error("Error deleting weekly task:", error)
+                                              // Keep the task in UI if database deletion fails
+                                            }
                                           }
-                                        }
-                                        deleteWeeklyTask(`Week ${currentWeek}`, task.id)
-                                      }}
-                                      getPriorityColor={getPriorityColor}
-                                    />
-                                  ))}
-                                </SortableContext>
-                              </DndContext>
-                            </CardContent>
+                                          deleteWeeklyTask(`Week ${currentWeek}`, task.id)
+                                        }}
+                                        getPriorityColor={getPriorityColor}
+                                      />
+                                    ))}
+                                  </SortableContext>
+                                </DndContext>
+                              </CardContent>
+                            )}
                           </Card>
                         )
                       })}
@@ -3763,8 +3774,8 @@ function GoalTrackerApp() {
 
                   {/* Daily Tasks View */}
                   <TabsContent value="daily" className="mt-8 w-full" data-page="daily">
+                    {/* CHANGE: Moving Daily Tasks header outside the grid to match 12-Week Goals structure */}
                     <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-8">
-                      {/* Moving Daily Tasks header outside the grid to match 12-Week Goals structure */}
                       <div className="lg:col-span-2 flex items-center justify-between mb-6">
                         <div className="flex items-center space-x-4">
                           <h2 className="text-2xl font-bold text-gray-900">Daily Tasks</h2>
@@ -3783,6 +3794,18 @@ function GoalTrackerApp() {
                             </SelectContent>
                           </Select>
                         </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setNewDailyTask((prev) => ({ ...prev, category: "" }))
+                            setShowAddDailyTask(true)
+                          }}
+                          className="text-sm"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Daily Task
+                        </Button>
                       </div>
 
                       {(() => {
@@ -3802,8 +3825,6 @@ function GoalTrackerApp() {
                         const categoryTasks = (dailyTasks[selectedDay] || []).filter(
                           (task) => task.category === category,
                         )
-
-                        if (categoryTasks.length === 0) return null
 
                         return (
                           <Card key={category} className="border-0 shadow-sm">
@@ -3831,28 +3852,30 @@ function GoalTrackerApp() {
                                 </Button>
                               </div>
                             </CardHeader>
-                            <CardContent className="space-y-4">
-                              <DndContext
-                                sensors={sensors}
-                                collisionDetection={closestCenter}
-                                onDragEnd={(event) => handleDailyTaskDragEnd(event, category)}
-                              >
-                                <SortableContext
-                                  items={categoryTasks.map((task) => task.id)}
-                                  strategy={verticalListSortingStrategy}
+                            {categoryTasks.length > 0 && (
+                              <CardContent className="space-y-4">
+                                <DndContext
+                                  sensors={sensors}
+                                  collisionDetection={closestCenter}
+                                  onDragEnd={(event) => handleDailyTaskDragEnd(event, category)}
                                 >
-                                  {categoryTasks.map((task) => (
-                                    <SortableDailyTaskItem
-                                      key={task.id}
-                                      task={task}
-                                      onToggle={() => toggleDailyTask(selectedDay, task.id)}
-                                      onEdit={() => startEditingDailyTask(task)}
-                                      onDelete={() => deleteDailyTask(selectedDay, task.id)}
-                                    />
-                                  ))}
-                                </SortableContext>
-                              </DndContext>
-                            </CardContent>
+                                  <SortableContext
+                                    items={categoryTasks.map((task) => task.id)}
+                                    strategy={verticalListSortingStrategy}
+                                  >
+                                    {categoryTasks.map((task) => (
+                                      <SortableDailyTaskItem
+                                        key={task.id}
+                                        task={task}
+                                        onToggle={() => toggleDailyTask(selectedDay, task.id)}
+                                        onEdit={() => startEditingDailyTask(task)}
+                                        onDelete={() => deleteDailyTask(selectedDay, task.id)}
+                                      />
+                                    ))}
+                                  </SortableContext>
+                                </DndContext>
+                              </CardContent>
+                            )}
                           </Card>
                         )
                       })}
