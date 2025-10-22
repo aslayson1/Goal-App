@@ -34,16 +34,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           data: { user: supabaseUser },
         } = await supabase.auth.getUser()
 
-        if (mounted) {
-          setUser(
-            supabaseUser
-              ? {
-                  id: supabaseUser.id,
-                  email: supabaseUser.email ?? null,
-                  name: supabaseUser.user_metadata?.name ?? supabaseUser.user_metadata?.full_name ?? null,
-                }
-              : null,
-          )
+        if (mounted && supabaseUser) {
+          const name = supabaseUser.user_metadata?.name ?? supabaseUser.user_metadata?.full_name ?? null
+
+          setUser({
+            id: supabaseUser.id,
+            email: supabaseUser.email ?? null,
+            name,
+          })
+          setIsLoading(false)
+        } else if (mounted) {
+          setUser(null)
           setIsLoading(false)
         }
       } catch (error) {
@@ -64,15 +65,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const supabaseUser = session?.user
 
-      setUser(
-        supabaseUser
-          ? {
-              id: supabaseUser.id,
-              email: supabaseUser.email ?? null,
-              name: supabaseUser.user_metadata?.name ?? supabaseUser.user_metadata?.full_name ?? null,
-            }
-          : null,
-      )
+      if (supabaseUser) {
+        const name = supabaseUser.user_metadata?.name ?? supabaseUser.user_metadata?.full_name ?? null
+
+        setUser({
+          id: supabaseUser.id,
+          email: supabaseUser.email ?? null,
+          name,
+        })
+      } else {
+        setUser(null)
+      }
+
       setIsLoading(false)
     })
 

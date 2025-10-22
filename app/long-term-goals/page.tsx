@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Plus, Target, Trash2, MoreHorizontal, Edit } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card"
@@ -26,6 +26,7 @@ import Image from "next/image"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAuth } from "@/components/auth/auth-provider"
 import { SignOutButton } from "@/components/auth/sign-out-button"
+import { useSearchParams } from "next/navigation"
 
 const initialLongTermGoals = {
   "1-year": {
@@ -208,6 +209,9 @@ interface LongTermGoalsData {
 
 export default function LongTermGoalsPage() {
   const { user } = useAuth()
+  const searchParams = useSearchParams()
+  const agentId = searchParams.get("agentId")
+  const selectedAgentId = agentId || user?.id
 
   const getInitials = (name: string | null | undefined) => {
     if (!name || typeof name !== "string") return "U"
@@ -218,7 +222,10 @@ export default function LongTermGoalsPage() {
       .toUpperCase()
   }
 
-  const [longTermGoals, setLongTermGoals] = useState<LongTermGoalsData>(initialLongTermGoals)
+  const [longTermGoals, setLongTermGoals] = useState<LongTermGoalsData>({
+    "1-year": {},
+    "5-year": {},
+  })
   const [showAddLongTermGoal, setShowAddLongTermGoal] = useState(false)
   const [selectedTimeframe, setSelectedTimeframe] = useState<"1-year" | "5-year">("1-year")
   const [selectedCategory, setSelectedCategory] = useState("")
@@ -247,6 +254,62 @@ export default function LongTermGoalsPage() {
     title: string
   } | null>(null)
   const [showProfile, setShowProfile] = useState(false)
+
+  useEffect(() => {
+    const loadLongTermGoalsFromDB = async () => {
+      if (!selectedAgentId) return
+
+      try {
+        const { createClient } = await import("@/lib/supabase/client")
+        const supabase = createClient()
+
+        const { data: longTermGoalsData, error } = await supabase
+          .from("long_term_goals")
+          .select("*")
+          .eq("user_id", selectedAgentId)
+
+        if (error) throw error
+
+        if (longTermGoalsData && longTermGoalsData.length > 0) {
+          const groupedGoals: LongTermGoalsData = {
+            "1-year": {},
+            "5-year": {},
+          }
+
+          longTermGoalsData.forEach((goal) => {
+            const timeframe = goal.goal_type === "1_year" ? "1-year" : "5-year"
+            const category = goal.category || "Business"
+
+            if (!groupedGoals[timeframe][category]) {
+              groupedGoals[timeframe][category] = []
+            }
+
+            groupedGoals[timeframe][category].push({
+              id: goal.id,
+              title: goal.title,
+              description: goal.description || "",
+              targetDate: goal.target_date || "",
+              category: category,
+              status: goal.completed ? "completed" : "in-progress",
+              notes: goal.notes || "",
+              milestones: [],
+            })
+          })
+
+          setLongTermGoals(groupedGoals)
+        } else {
+          setLongTermGoals({
+            "1-year": {},
+            "5-year": {},
+          })
+        }
+      } catch (error) {
+        console.error("Error loading long-term goals:", error)
+      }
+    }
+
+    loadLongTermGoalsFromDB()
+  }, [selectedAgentId])
 
   const startEditingLongTermGoal = (timeframe: "1-year" | "5-year", category: string, goal: LongTermGoal) => {
     setEditingLongTermGoal({ timeframe, category, goal })

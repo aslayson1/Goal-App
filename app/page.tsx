@@ -988,6 +988,8 @@ function GoalTrackerApp() {
   const [agents, setAgents] = React.useState<Array<{ id: string; name: string }>>([])
   const [selectedAgentName, setSelectedAgentName] = React.useState<string>("")
 
+  const [isLoadingAgentData, setIsLoadingAgentData] = React.useState(false)
+
   const [goalsData, setGoalsData] = useState<GoalsData>(initialGoalsData)
   console.log("[v0] GoalTrackerApp render - goalsData keys:", Object.keys(goalsData))
   // The lint error was here: longTermGoals was used before it was declared.
@@ -1248,7 +1250,7 @@ function GoalTrackerApp() {
         // Add incomplete tasks to today with updated IDs
         const updatedTasksForToday = tasksToMove.map((task) => ({
           ...task,
-          id: `${currentDayName.toLowerCase()}_moved_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          id: `${currentDayName}_moved_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         }))
 
         updated[currentDayName] = [...(prev[currentDayName] || []), ...updatedTasksForToday]
@@ -1300,6 +1302,7 @@ function GoalTrackerApp() {
   useEffect(() => {
     const checkDatabaseAndLoadData = async () => {
       if (user?.id && selectedAgentId) {
+        setIsLoadingAgentData(true)
         console.log("User authenticated, checking database connection...")
         console.log("[v0] Loading data for agent:", selectedAgentId)
 
@@ -1309,6 +1312,7 @@ function GoalTrackerApp() {
 
           if (error) {
             console.error("Database connection failed:", error)
+            setIsLoadingAgentData(false)
           } else {
             console.log("Database connection successful!")
 
@@ -1330,6 +1334,7 @@ function GoalTrackerApp() {
 
             const dbData = await loadCategoriesAndGoalsFromDB(selectedAgentId)
             const taskData = await loadTasksFromDB(selectedAgentId)
+            await loadLongTermGoalsFromDB()
 
             console.log("=== COMPREHENSIVE TASK LOADING DEBUG ===")
             console.log("Raw task data from database:", JSON.stringify(taskData, null, 2))
@@ -1352,6 +1357,8 @@ function GoalTrackerApp() {
               return { ...taskData.weeklyTasks }
             })
 
+            setIsLoadingAgentData(false)
+
             setTimeout(() => {
               console.log("=== POST-UPDATE VERIFICATION ===")
               console.log("Daily tasks count:", Object.keys(taskData.dailyTasks).length)
@@ -1361,6 +1368,7 @@ function GoalTrackerApp() {
           }
         } catch (error) {
           console.error("Error loading data:", error)
+          setIsLoadingAgentData(false)
         }
       }
     }
@@ -1373,6 +1381,8 @@ function GoalTrackerApp() {
       if (!user?.id) return
 
       try {
+        // Set loading state when starting to load agents
+        setIsLoadingAgentData(true)
         const { data: agentsData, error } = await supabase.from("agents").select("id, name").eq("user_id", user.id)
 
         if (error) throw error
@@ -1386,6 +1396,9 @@ function GoalTrackerApp() {
       } catch (error) {
         console.error("[v0] Error loading agents:", error)
         setSelectedAgentName(user?.name || "")
+      } finally {
+        // Clear loading state after loading agents (success or failure)
+        setIsLoadingAgentData(false)
       }
     }
 
@@ -1620,17 +1633,30 @@ function GoalTrackerApp() {
         return
       }
 
-      // Find the category ID from the database
-      const { data: categories } = await supabase
+      let { data: categories } = await supabase
         .from("categories")
         .select("id")
         .eq("name", selectedCategory)
         .eq("user_id", user.id)
         .single()
 
+      // If category doesn't exist, create it
       if (!categories) {
-        console.error("Category not found in database")
-        return
+        const categoryId = crypto.randomUUID()
+        const { error: categoryError } = await supabase.from("categories").insert({
+          id: categoryId,
+          user_id: user.id,
+          name: selectedCategory,
+        })
+
+        if (categoryError) {
+          console.error("Error creating category in database:", categoryError)
+          return
+        }
+
+        // Set the category data for the goal insert
+        categories = { id: categoryId }
+        console.log("Category created in database successfully")
       }
 
       const { error } = await supabase.from("goals").insert({
@@ -3012,11 +3038,12 @@ function GoalTrackerApp() {
     }
   }
 
-  useEffect(() => {
-    if (user?.id && selectedAgentId) {
-      loadLongTermGoalsFromDB()
-    }
-  }, [user?.id, selectedAgentId])
+  // Removed the redundant useEffect for loadLongTermGoalsFromDB as it's now called within checkDatabaseAndLoadData
+  // useEffect(() => {
+  //   if (user?.id && selectedAgentId) {
+  //     loadLongTermGoalsFromDB()
+  //   }
+  // }, [user?.id, selectedAgentId])
 
   // const dashboardMode = user?.preferences?.dashboardMode || "12-week" // OLD CODE
 
@@ -3193,358 +3220,390 @@ function GoalTrackerApp() {
                   </div>
 
                   {/* 12-Week Goals View */}
-                  <TabsContent value="1-week" className="mt-8 w-full">
-                    <div className="w-full px-4 md:px-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
-                      {Object.entries(goalsData).map(([category, goals]) => (
-                        <Card
-                          key={category}
-                          className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200"
-                        >
-                          <CardHeader className="pb-4">
-                            <div className="flex items-center justify-between">
-                              <Badge
-                                className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}
-                              >
-                                {category}
-                              </Badge>
-                              <div className="flex items-center space-x-2">
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                      <Plus className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem
-                                      onClick={() => {
-                                        setSelectedCategory(category)
-                                        setShowAddGoal(true)
-                                      }}
-                                    >
-                                      <Target className="h-4 w-4 mr-2" />
-                                      Add Goal
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      onClick={() => {
-                                        setNewWeeklyTask((prev) => ({ ...prev, category }))
-                                        setShowAddWeeklyTask(true)
-                                      }}
-                                    >
-                                      <Calendar className="h-4 w-4 mr-2" />
-                                      Add Weekly Task
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      onClick={() => {
-                                        setNewDailyTask((prev) => ({ ...prev, category }))
-                                        setShowAddDailyTask(true)
-                                      }}
-                                    >
-                                      <Clock className="h-4 w-4 mr-2" />
-                                      Add Daily Task
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                      <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem
-                                      onClick={() => {
-                                        setSelectedCategory(category)
-                                        setShowAddGoal(true)
-                                      }}
-                                    >
-                                      <Plus className="h-4 w-4 mr-2" />
-                                      Add Goal
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => startEditingCategory(category)}>
-                                      <Edit className="h-4 w-4 mr-2" />
-                                      Edit Category
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      onClick={() => {
-                                        if (goals.length === 0) {
-                                          deleteCategory(category)
-                                        }
-                                      }}
-                                      className={goals.length > 0 ? "text-gray-400 cursor-not-allowed" : "text-red-600"}
-                                      disabled={goals.length > 0}
-                                    >
-                                      <Trash2 className="h-4 w-4 mr-2" />
-                                      {goals.length > 0 ? "Delete Category (remove goals first)" : "Delete Category"}
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </div>
+                  <TabsContent value="1-week" className="mt-8 w-full" data-page="twelve-week">
+                    {Object.keys(goalsData).length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-16 px-4">
+                        <div className="text-center space-y-4">
+                          <div className="flex justify-center">
+                            <div className="rounded-full bg-muted p-4">
+                              <Target className="h-8 w-8 text-muted-foreground" />
                             </div>
-                            <CardDescription className="mt-2">
-                              {goals.length} goal{goals.length !== 1 ? "s" : ""} • Week {currentWeek}/12
-                            </CardDescription>
-                          </CardHeader>
-                          <CardContent className="space-y-4">
-                            {goals.length === 0 ? (
-                              <div className="text-center py-8">
-                                <p className="text-gray-500 mb-4">No goals in this category yet</p>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" size="sm" className="text-sm bg-transparent">
-                                      <Plus className="h-4 w-4 mr-2" />
-                                      Add First Item
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="center">
-                                    <DropdownMenuItem
-                                      onClick={() => {
-                                        setSelectedCategory(category)
-                                        setShowAddGoal(true)
-                                      }}
-                                    >
-                                      <Target className="h-4 w-4 mr-2" />
-                                      Add Goal
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      onClick={() => {
-                                        setNewWeeklyTask((prev) => ({ ...prev, category }))
-                                        setShowAddWeeklyTask(true)
-                                      }}
-                                    >
-                                      <Calendar className="h-4 w-4 mr-2" />
-                                      Add Weekly Task
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      onClick={() => {
-                                        setNewDailyTask((prev) => ({ ...prev, category }))
-                                        setShowAddDailyTask(true)
-                                      }}
-                                    >
-                                      <Clock className="h-4 w-4 mr-2" />
-                                      Add Daily Task
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </div>
-                            ) : (
-                              goals.map((goal) => {
-                                const progressPercentage = getProgressPercentage(goal.currentCount, goal.targetCount)
-                                const weeklyProgress = getWeeklyProgress(goal)
-                                const isCompleted = goal.currentCount >= goal.targetCount
-                                const goalType = getGoalType(goal.targetCount)
-                                const quickIncrements = getQuickIncrements(goal.targetCount)
-
-                                return (
-                                  <div
-                                    key={goal.id}
-                                    className="p-3 rounded-lg bg-gray-50 border border-border space-y-3"
-                                  >
-                                    {/* All goals now have checkbox + title layout */}
-                                    <div className="flex items-start space-x-3">
-                                      <Checkbox
-                                        checked={isCompleted}
-                                        onCheckedChange={() => toggleGoalCompletion(goal.id, category)}
-                                        className={`h-5 w-5 mt-0.5 flex-shrink-0 ${checkboxStyles}`}
-                                      />
-                                      <div className="flex-1 min-w-0">
-                                        <div className="flex items-start justify-between gap-3">
-                                          <div className="flex-1 min-w-0">
-                                            <h4
-                                              className={`font-medium ${isCompleted ? "line-through text-gray-500" : "text-gray-900"} break-words`}
-                                            >
-                                              {goal.title}
-                                            </h4>
-                                            <p
-                                              className={`text-sm mt-1 ${isCompleted ? "text-gray-400" : "text-gray-600"} break-words`}
-                                            >
-                                              {goal.description}
-                                            </p>
-                                          </div>
-                                          <div className="flex items-center space-x-2 flex-shrink-0">
-                                            {isCompleted && (
-                                              <Badge
-                                                variant="secondary"
-                                                className="bg-green-100 text-green-800 whitespace-nowrap"
-                                              >
-                                                Complete
-                                              </Badge>
-                                            )}
-                                            {!isCompleted && weeklyProgress.onTrack && (
-                                              <Badge
-                                                variant="secondary"
-                                                className="bg-blue-100 text-blue-800 whitespace-nowrap"
-                                              >
-                                                On Track
-                                              </Badge>
-                                            )}
-                                            {!isCompleted && !weeklyProgress.onTrack && (
-                                              <Badge
-                                                variant="secondary"
-                                                className="bg-yellow-100 text-yellow-800 whitespace-nowrap"
-                                              >
-                                                Behind
-                                              </Badge>
-                                            )}
-                                            <DropdownMenu>
-                                              <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0">
-                                                  <MoreHorizontal className="h-4 w-4" />
-                                                </Button>
-                                              </DropdownMenuTrigger>
-                                              <DropdownMenuContent align="end">
-                                                <DropdownMenuItem onClick={() => startEditingGoal(category, goal)}>
-                                                  <Edit className="h-4 w-4 mr-2" />
-                                                  Edit Goal
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem
-                                                  onClick={() =>
-                                                    setShowDeleteGoal({ category, goalId: goal.id, title: goal.title })
-                                                  }
-                                                  className="text-red-600"
-                                                >
-                                                  <Trash2 className="h-4 w-4 mr-2" />
-                                                  Delete Goal
-                                                </DropdownMenuItem>
-                                              </DropdownMenuContent>
-                                            </DropdownMenu>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-
-                                    {/* Progress bar and controls for number-based goals only */}
-                                    {goalType !== "binary" && (
-                                      <div className="space-y-3">
-                                        <div className="space-y-2">
-                                          <div className="flex justify-between text-sm">
-                                            <span className="text-gray-600">
-                                              {goal.targetCount >= 1000 &&
-                                              (goal.title.toLowerCase().includes("$") ||
-                                                goal.title.toLowerCase().includes("dollar") ||
-                                                goal.title.toLowerCase().includes("funding") ||
-                                                goal.title.toLowerCase().includes("revenue") ||
-                                                goal.title.toLowerCase().includes("money"))
-                                                ? `$${goal.currentCount.toLocaleString()} / $${goal.targetCount.toLocaleString()}`
-                                                : `${goal.currentCount} / ${goal.targetCount}`}
-                                            </span>
-                                            <span className="font-medium text-gray-900">
-                                              {Math.round(progressPercentage)}%
-                                            </span>
-                                          </div>
-                                          <Progress value={progressPercentage} className="h-2 [&>div]:bg-[#05a7b0]" />
-                                        </div>
-
-                                        {/* Progress Update Controls */}
-                                        <div className="flex items-center justify-between">
-                                          <div className="flex items-center space-x-1">
-                                            {goalType === "small" ? (
-                                              // Small numbers - single + button
-                                              <Button
-                                                size="sm"
-                                                variant="outline"
-                                                onClick={() => incrementGoal(category, goal.id, 1)}
-                                                className="h-7 px-2"
-                                              >
-                                                <Plus className="h-3 w-3 mr-1" />
-                                                +1
-                                              </Button>
-                                            ) : (
-                                              // Medium/Large numbers - multiple increment buttons
-                                              <>
-                                                {quickIncrements.map((increment) => (
-                                                  <Button
-                                                    key={increment}
-                                                    size="sm"
-                                                    variant="outline"
-                                                    onClick={() => incrementGoal(category, goal.id, increment)}
-                                                    className="h-7 px-2 text-xs"
-                                                  >
-                                                    +{increment >= 1000 ? `${increment / 1000}k` : increment}
-                                                  </Button>
-                                                ))}
-                                              </>
-                                            )}
-                                          </div>
-
-                                          {/* Direct input for medium/large goals */}
-                                          {goalType !== "small" && (
-                                            <div className="flex items-center space-x-2">
-                                              <Input
-                                                type="number"
-                                                value={goal.currentCount}
-                                                onChange={(e) =>
-                                                  updateGoalProgress(
-                                                    category,
-                                                    goal.id,
-                                                    Number.parseInt(e.target.value) || 0,
-                                                  )
-                                                }
-                                                className="w-20 h-7 text-xs text-center"
-                                                min="0"
-                                                max={goal.targetCount}
-                                              />
-                                            </div>
-                                          )}
-                                        </div>
-                                      </div>
-                                    )}
-
-                                    {/* Notes Section */}
-                                    <div className="space-y-2">
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => toggleNotes(goal.id)}
-                                        className="text-xs text-gray-500 hover:text-gray-700 p-0 h-auto"
-                                      >
-                                        {expandedNotes.has(goal.id) ? (
-                                          <>
-                                            <ChevronUp className="h-3 w-3 mr-1" />
-                                            Hide notes
-                                          </>
-                                        ) : (
-                                          <>
-                                            <ChevronDown className="h-3 w-3 mr-1" />
-                                            {goal.notes ? "Show notes" : "Add notes"}
-                                          </>
-                                        )}
+                          </div>
+                          <div className="space-y-2">
+                            <h3 className="text-lg font-semibold">No goals yet</h3>
+                            <p className="text-sm text-muted-foreground max-w-sm">
+                              Get started by adding your first category to track your progress over the next 12 weeks.
+                            </p>
+                          </div>
+                          <Button onClick={() => setShowAddCategory(true)} className="mt-4">
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add your first category
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {Object.entries(goalsData).map(([category, goals]) => (
+                          <Card
+                            key={category}
+                            className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200"
+                          >
+                            <CardHeader className="pb-4">
+                              <div className="flex items-center justify-between">
+                                <Badge
+                                  className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}
+                                >
+                                  {category}
+                                </Badge>
+                                <div className="flex items-center space-x-2">
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                        <Plus className="h-4 w-4" />
                                       </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem
+                                        onClick={() => {
+                                          setSelectedCategory(category)
+                                          setShowAddGoal(true)
+                                        }}
+                                      >
+                                        <Target className="h-4 w-4 mr-2" />
+                                        Add Goal
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        onClick={() => {
+                                          setNewWeeklyTask((prev) => ({ ...prev, category }))
+                                          setShowAddWeeklyTask(true)
+                                        }}
+                                      >
+                                        <Calendar className="h-4 w-4 mr-2" />
+                                        Add Weekly Task
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        onClick={() => {
+                                          setNewDailyTask((prev) => ({ ...prev, category }))
+                                          setShowAddDailyTask(true)
+                                        }}
+                                      >
+                                        <Clock className="h-4 w-4 mr-2" />
+                                        Add Daily Task
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                        <MoreHorizontal className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem
+                                        onClick={() => {
+                                          setSelectedCategory(category)
+                                          setShowAddGoal(true)
+                                        }}
+                                      >
+                                        <Plus className="h-4 w-4 mr-2" />
+                                        Add Goal
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => startEditingCategory(category)}>
+                                        <Edit className="h-4 w-4 mr-2" />
+                                        Edit Category
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        onClick={() => {
+                                          if (goals.length === 0) {
+                                            deleteCategory(category)
+                                          }
+                                        }}
+                                        className={
+                                          goals.length > 0 ? "text-gray-400 cursor-not-allowed" : "text-red-600"
+                                        }
+                                        disabled={goals.length > 0}
+                                      >
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        {goals.length > 0 ? "Delete Category (remove goals first)" : "Delete Category"}
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
+                              </div>
+                              <CardDescription className="mt-2">
+                                {goals.length} goal{goals.length !== 1 ? "s" : ""} • Week {currentWeek}/12
+                              </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                              {goals.length === 0 ? (
+                                <div className="text-center py-8">
+                                  <p className="text-gray-500 mb-4">No goals in this category yet</p>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="outline" size="sm" className="text-sm bg-transparent">
+                                        <Plus className="h-4 w-4 mr-2" />
+                                        Add first goal
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="center">
+                                      <DropdownMenuItem
+                                        onClick={() => {
+                                          setSelectedCategory(category)
+                                          setShowAddGoal(true)
+                                        }}
+                                      >
+                                        <Target className="h-4 w-4 mr-2" />
+                                        Add Goal
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        onClick={() => {
+                                          setNewWeeklyTask((prev) => ({ ...prev, category }))
+                                          setShowAddWeeklyTask(true)
+                                        }}
+                                      >
+                                        <Calendar className="h-4 w-4 mr-2" />
+                                        Add Weekly Task
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        onClick={() => {
+                                          setNewDailyTask((prev) => ({ ...prev, category }))
+                                          setShowAddDailyTask(true)
+                                        }}
+                                      >
+                                        <Clock className="h-4 w-4 mr-2" />
+                                        Add Daily Task
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
+                              ) : (
+                                goals.map((goal) => {
+                                  const progressPercentage = getProgressPercentage(goal.currentCount, goal.targetCount)
+                                  const weeklyProgress = getWeeklyProgress(goal)
+                                  const isCompleted = goal.currentCount >= goal.targetCount
+                                  const goalType = getGoalType(goal.targetCount)
+                                  const quickIncrements = getQuickIncrements(goal.targetCount)
 
-                                      {expandedNotes.has(goal.id) && (
-                                        <div className="animate-in slide-in-from-top-2 duration-200">
-                                          <Textarea
-                                            placeholder="Add notes about your progress..."
-                                            value={goal.notes}
-                                            onChange={(e) => updateNotes(category, goal.id, e.target.value)}
-                                            onKeyDown={(e) => {
-                                              if (e.key === "Enter" && !e.shiftKey) {
-                                                e.preventDefault()
-                                                toggleNotes(goal.id)
-                                              }
-                                            }}
-                                            className="min-h-[80px] text-sm"
-                                          />
+                                  return (
+                                    <div
+                                      key={goal.id}
+                                      className="p-3 rounded-lg bg-gray-50 border border-border space-y-3"
+                                    >
+                                      {/* All goals now have checkbox + title layout */}
+                                      <div className="flex items-start space-x-3">
+                                        <Checkbox
+                                          checked={isCompleted}
+                                          onCheckedChange={() => toggleGoalCompletion(goal.id, category)}
+                                          className={`h-5 w-5 mt-0.5 flex-shrink-0 ${checkboxStyles}`}
+                                        />
+                                        <div className="flex-1 min-w-0">
+                                          <div className="flex items-start justify-between gap-3">
+                                            <div className="flex-1 min-w-0">
+                                              <h4
+                                                className={`font-medium ${isCompleted ? "line-through text-gray-500" : "text-gray-900"} break-words`}
+                                              >
+                                                {goal.title}
+                                              </h4>
+                                              <p
+                                                className={`text-sm mt-1 ${isCompleted ? "text-gray-400" : "text-gray-600"} break-words`}
+                                              >
+                                                {goal.description}
+                                              </p>
+                                            </div>
+                                            <div className="flex items-center space-x-2 flex-shrink-0">
+                                              {isCompleted && (
+                                                <Badge
+                                                  variant="secondary"
+                                                  className="bg-green-100 text-green-800 whitespace-nowrap"
+                                                >
+                                                  Complete
+                                                </Badge>
+                                              )}
+                                              {!isCompleted && weeklyProgress.onTrack && (
+                                                <Badge
+                                                  variant="secondary"
+                                                  className="bg-blue-100 text-blue-800 whitespace-nowrap"
+                                                >
+                                                  On Track
+                                                </Badge>
+                                              )}
+                                              {!isCompleted && !weeklyProgress.onTrack && (
+                                                <Badge
+                                                  variant="secondary"
+                                                  className="bg-yellow-100 text-yellow-800 whitespace-nowrap"
+                                                >
+                                                  Behind
+                                                </Badge>
+                                              )}
+                                              <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                  <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-8 w-8 p-0 flex-shrink-0"
+                                                  >
+                                                    <MoreHorizontal className="h-4 w-4" />
+                                                  </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                  <DropdownMenuItem onClick={() => startEditingGoal(category, goal)}>
+                                                    <Edit className="h-4 w-4 mr-2" />
+                                                    Edit Goal
+                                                  </DropdownMenuItem>
+                                                  <DropdownMenuItem
+                                                    onClick={() =>
+                                                      setShowDeleteGoal({
+                                                        category,
+                                                        goalId: goal.id,
+                                                        title: goal.title,
+                                                      })
+                                                    }
+                                                    className="text-red-600"
+                                                  >
+                                                    <Trash2 className="h-4 w-4 mr-2" />
+                                                    Delete Goal
+                                                  </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                              </DropdownMenu>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      {/* Progress bar and controls for number-based goals only */}
+                                      {goalType !== "binary" && (
+                                        <div className="space-y-3">
+                                          <div className="space-y-2">
+                                            <div className="flex justify-between text-sm">
+                                              <span className="text-gray-600">
+                                                {goal.targetCount >= 1000 &&
+                                                (goal.title.toLowerCase().includes("$") ||
+                                                  goal.title.toLowerCase().includes("dollar") ||
+                                                  goal.title.toLowerCase().includes("funding") ||
+                                                  goal.title.toLowerCase().includes("revenue") ||
+                                                  goal.title.toLowerCase().includes("money"))
+                                                  ? `$${goal.currentCount.toLocaleString()} / $${goal.targetCount.toLocaleString()}`
+                                                  : `${goal.currentCount} / ${goal.targetCount}`}
+                                              </span>
+                                              <span className="font-medium text-gray-900">
+                                                {Math.round(progressPercentage)}%
+                                              </span>
+                                            </div>
+                                            <Progress value={progressPercentage} className="h-2 [&>div]:bg-[#05a7b0]" />
+                                          </div>
+
+                                          {/* Progress Update Controls */}
+                                          <div className="flex items-center justify-between">
+                                            <div className="flex items-center space-x-1">
+                                              {goalType === "small" ? (
+                                                // Small numbers - single + button
+                                                <Button
+                                                  size="sm"
+                                                  variant="outline"
+                                                  onClick={() => incrementGoal(category, goal.id, 1)}
+                                                  className="h-7 px-2"
+                                                >
+                                                  <Plus className="h-3 w-3 mr-1" />
+                                                  +1
+                                                </Button>
+                                              ) : (
+                                                // Medium/Large numbers - multiple increment buttons
+                                                <>
+                                                  {quickIncrements.map((increment) => (
+                                                    <Button
+                                                      key={increment}
+                                                      size="sm"
+                                                      variant="outline"
+                                                      onClick={() => incrementGoal(category, goal.id, increment)}
+                                                      className="h-7 px-2 text-xs"
+                                                    >
+                                                      +{increment >= 1000 ? `${increment / 1000}k` : increment}
+                                                    </Button>
+                                                  ))}
+                                                </>
+                                              )}
+                                            </div>
+
+                                            {/* Direct input for medium/large goals */}
+                                            {goalType !== "small" && (
+                                              <div className="flex items-center space-x-2">
+                                                <Input
+                                                  type="number"
+                                                  value={goal.currentCount}
+                                                  onChange={(e) =>
+                                                    updateGoalProgress(
+                                                      category,
+                                                      goal.id,
+                                                      Number.parseInt(e.target.value) || 0,
+                                                    )
+                                                  }
+                                                  className="w-20 h-7 text-xs text-center"
+                                                  min="0"
+                                                  max={goal.targetCount}
+                                                />
+                                              </div>
+                                            )}
+                                          </div>
                                         </div>
                                       )}
+
+                                      {/* Notes Section */}
+                                      <div className="space-y-2">
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => toggleNotes(goal.id)}
+                                          className="text-xs text-gray-500 hover:text-gray-700 p-0 h-auto"
+                                        >
+                                          {expandedNotes.has(goal.id) ? (
+                                            <>
+                                              <ChevronUp className="h-3 w-3 mr-1" />
+                                              Hide notes
+                                            </>
+                                          ) : (
+                                            <>
+                                              <ChevronDown className="h-3 w-3 mr-1" />
+                                              {goal.notes ? "Show notes" : "Add notes"}
+                                            </>
+                                          )}
+                                        </Button>
+
+                                        {expandedNotes.has(goal.id) && (
+                                          <div className="animate-in slide-in-from-top-2 duration-200">
+                                            <Textarea
+                                              placeholder="Add notes about your progress..."
+                                              value={goal.notes}
+                                              onChange={(e) => updateNotes(category, goal.id, e.target.value)}
+                                              onKeyDown={(e) => {
+                                                if (e.key === "Enter" && !e.shiftKey) {
+                                                  e.preventDefault()
+                                                  toggleNotes(goal.id)
+                                                }
+                                              }}
+                                              className="min-h-[80px] text-sm"
+                                            />
+                                          </div>
+                                        )}
+                                      </div>
                                     </div>
-                                  </div>
-                                )
-                              })
-                            )}
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
+                                  )
+                                })
+                              )}
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
                   </TabsContent>
 
                   {/* Weekly Tasks View */}
                   <TabsContent value="weekly" className="mt-8 w-full">
-                    <div className="w-full px-4 md:px-6 flex items-center justify-between mb-6">
+                    <div className="w-full flex items-center justify-between mb-6">
                       <h2 className="text-2xl font-bold text-gray-900">Week {currentWeek} Tasks</h2>
                     </div>
 
                     {/* Group weekly tasks by category */}
-                    <div className="w-full px-4 md:px-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-8">
                       {Object.keys(goalsData).map((category) => {
                         const categoryTasks = (weeklyTasks[`Week ${currentWeek}`] || []).filter(
                           (task) => task.category === category,
@@ -3692,59 +3751,8 @@ function GoalTrackerApp() {
                         )
                       })()}
 
-                      {/* Show category cards even if empty, with plus buttons */}
-                      {Object.keys(goalsData).map((category) => {
-                        const categoryTasks = (weeklyTasks[`Week ${currentWeek}`] || []).filter(
-                          (task) => task.category === category,
-                        )
-
-                        if (categoryTasks.length > 0) return null // Already rendered above
-
-                        return (
-                          <Card key={`empty-${category}`} className="border-0 shadow-sm">
-                            <CardHeader className="pb-4">
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-2">
-                                    <Badge
-                                      className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}
-                                    >
-                                      {category}
-                                    </Badge>
-                                  </CardTitle>
-                                </div>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => {
-                                    setNewWeeklyTask((prev) => ({ ...prev, category }))
-                                    setShowAddWeeklyTask(true)
-                                  }}
-                                  className="h-8 w-8 p-0"
-                                >
-                                  <Plus className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </CardHeader>
-                            <CardContent className="py-8">
-                              <div className="text-center text-gray-500">
-                                <button
-                                  onClick={() => {
-                                    setNewWeeklyTask((prev) => ({ ...prev, category }))
-                                    setShowAddWeeklyTask(true)
-                                  }}
-                                  className="text-sm hover:text-gray-700 cursor-pointer"
-                                >
-                                  Click + to add your first task
-                                </button>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        )
-                      })}
-
-                      {/* Show message if no tasks exist */}
-                      {(!weeklyTasks[`Week ${currentWeek}`] || weeklyTasks[`Week ${currentWeek}`].length === 0) && (
+                      {/* If no tasks exist at all */}
+                      {Object.keys(weeklyTasks).length === 0 && (
                         <div className="col-span-2 text-center py-12">
                           <p className="text-gray-500 mb-4">No weekly tasks yet</p>
                           <p className="text-sm text-gray-400">Use the + buttons in each category to add tasks</p>
@@ -3754,41 +3762,42 @@ function GoalTrackerApp() {
                   </TabsContent>
 
                   {/* Daily Tasks View */}
-                  <TabsContent value="daily" className="mt-8 w-full">
-                    <div className="w-full px-4 md:px-6 flex items-center justify-between mb-6">
-                      <div className="flex items-center space-x-4">
-                        <h2 className="text-2xl font-bold text-gray-900">Daily Tasks</h2>
-                        <Select value={selectedDay} onValueChange={setSelectedDay}>
-                          <SelectTrigger className="w-40">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map(
-                              (day) => (
-                                <SelectItem key={day} value={day}>
-                                  {day}
-                                </SelectItem>
-                              ),
-                            )}
-                          </SelectContent>
-                        </Select>
+                  <TabsContent value="daily" className="mt-8 w-full" data-page="daily">
+                    <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-8">
+                      {/* Moving Daily Tasks header outside the grid to match 12-Week Goals structure */}
+                      <div className="lg:col-span-2 flex items-center justify-between mb-6">
+                        <div className="flex items-center space-x-4">
+                          <h2 className="text-2xl font-bold text-gray-900">Daily Tasks</h2>
+                          <Select value={selectedDay} onValueChange={setSelectedDay}>
+                            <SelectTrigger className="w-40">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map(
+                                (day) => (
+                                  <SelectItem key={day} value={day}>
+                                    {day}
+                                  </SelectItem>
+                                ),
+                              )}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
-                    </div>
 
-                    {(() => {
-                      const allTasksForDay = dailyTasks[selectedDay] || []
-                      console.log(`[v0] Daily tasks for ${selectedDay}:`, allTasksForDay.length)
-                      console.log(`[v0] Task details:`, JSON.stringify(allTasksForDay, null, 2))
-                      allTasksForDay.forEach((task) => {
-                        console.log(
-                          `[v0] Task "${task.title}" - category: "${task.category}", completed: ${task.completed}`,
-                        )
-                      })
-                      return null
-                    })()}
+                      {(() => {
+                        const allTasksForDay = dailyTasks[selectedDay] || []
+                        console.log(`[v0] Daily tasks for ${selectedDay}:`, allTasksForDay.length)
+                        console.log(`[v0] Task details:`, JSON.stringify(allTasksForDay, null, 2))
+                        allTasksForDay.forEach((task) => {
+                          console.log(
+                            `[v0] Task "${task.title}" - category: "${task.category}", completed: ${task.completed}`,
+                          )
+                        })
+                        return null
+                      })()}
 
-                    {/* Group daily tasks by category */}
-                    <div className="w-full px-4 md:px-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
+                      {/* Group daily tasks by category */}
                       {Object.keys(goalsData).map((category) => {
                         const categoryTasks = (dailyTasks[selectedDay] || []).filter(
                           (task) => task.category === category,
@@ -3905,62 +3914,19 @@ function GoalTrackerApp() {
                         )
                       })()}
 
-                      {/* Show category cards even if empty, with plus buttons */}
-                      {Object.keys(goalsData).map((category) => {
-                        const categoryTasks = (dailyTasks[selectedDay] || []).filter(
-                          (task) => task.category === category,
-                        )
-
-                        if (categoryTasks.length > 0) return null // Already rendered above
-
-                        return (
-                          <Card key={`empty-${category}`} className="border-0 shadow-sm">
-                            <CardHeader className="pb-4">
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-2">
-                                    <Badge
-                                      className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}
-                                    >
-                                      {category}
-                                    </Badge>
-                                  </CardTitle>
-                                </div>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => {
-                                    setNewDailyTask((prev) => ({ ...prev, category }))
-                                    setShowAddDailyTask(true)
-                                  }}
-                                  className="h-8 w-8 p-0"
-                                >
-                                  <Plus className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </CardHeader>
-                            <CardContent className="py-8">
-                              <div className="text-center text-gray-500">
-                                <button
-                                  onClick={() => {
-                                    setNewDailyTask((prev) => ({ ...prev, category }))
-                                    setShowAddDailyTask(true)
-                                  }}
-                                  className="text-sm hover:text-gray-700 cursor-pointer"
-                                >
-                                  Click + to add your first task
-                                </button>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        )
-                      })}
+                      {/* If no tasks exist at all for the selected day */}
+                      {Object.keys(dailyTasks).every((day) => !dailyTasks[day] || dailyTasks[day].length === 0) && (
+                        <div className="col-span-2 text-center py-12">
+                          <p className="text-gray-500 mb-4">No daily tasks for {selectedDay} yet</p>
+                          <p className="text-sm text-gray-400">Use the + buttons in each category to add tasks</p>
+                        </div>
+                      )}
                     </div>
                   </TabsContent>
 
                   {/* 1-Year Goals View */}
                   <TabsContent value="1-year" className="mt-8 w-full">
-                    <div className="w-full px-4 md:px-6 space-y-8">
+                    <div className="w-full space-y-8">
                       {/* Timeframe selector */}
                       <div className="flex items-center justify-between">
                         <h2 className="text-2xl font-bold text-gray-900">Long-Term Goals</h2>

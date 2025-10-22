@@ -65,6 +65,30 @@ export function AppSidebar() {
       hasLoadedAgents.current = true
 
       try {
+        const { data: userAsAgent, error: userAgentError } = await supabase
+          .from("agents")
+          .select("id, name, role, user_id")
+          .eq("name", user.name)
+          .maybeSingle()
+
+        if (userAgentError && userAgentError.code !== "PGRST116") {
+          console.error("[v0] Error checking if user is agent:", userAgentError)
+        }
+
+        // If the user is an agent (not an owner), show only their profile
+        if (userAsAgent && userAsAgent.role !== "Owner") {
+          const agentProfile: Agent = {
+            id: userAsAgent.id,
+            name: userAsAgent.name,
+            role: userAsAgent.role,
+            avatar: user.avatar,
+          }
+          setAgents([agentProfile])
+          setSelectedAgent(agentProfile)
+          setIsOwner(false)
+          return
+        }
+
         const { data: allTeamAgents, error: agentsError } = await supabase
           .from("agents")
           .select("id, name, role, user_id")
@@ -168,6 +192,14 @@ export function AppSidebar() {
     role: "User",
   }
 
+  const buildHrefWithAgent = (basePath: string) => {
+    const agentId = searchParams.get("agentId")
+    if (agentId) {
+      return `${basePath}?agentId=${agentId}`
+    }
+    return basePath
+  }
+
   return (
     <Sidebar className="border-r" collapsible="icon">
       <SidebarContent className="pt-4">
@@ -246,16 +278,18 @@ export function AppSidebar() {
 
         {/* Navigation Menu */}
         <SidebarMenu className="px-2">
-          {menuItems.map((item) => (
-            <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={item.title}>
-                <Link href={item.href}>
-                  <item.icon className="size-4" />
-                  <span>{item.title}</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
+          {menuItems
+            .filter((item) => item.title !== "Agents" || isOwner)
+            .map((item) => (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={item.title}>
+                  <Link href={buildHrefWithAgent(item.href)}>
+                    <item.icon className="size-4" />
+                    <span>{item.title}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
         </SidebarMenu>
       </SidebarContent>
 

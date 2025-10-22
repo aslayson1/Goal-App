@@ -126,3 +126,9 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Ensure Daily page cannot be width-capped by any ancestor */
+[data-page="daily"] {
+  max-width: none !important;
+  width: 100% !important;
+}

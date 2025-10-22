@@ -15,6 +15,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AppSidebar } from "@/components/app-sidebar"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
@@ -23,6 +24,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAuth } from "@/components/auth/auth-provider"
 import { SignOutButton } from "@/components/auth/sign-out-button"
 import { supabase } from "@/lib/supabase/client"
+import { updateAgentAuthUser, createAgentWithAuth, syncAgentName } from "./actions" // Import server action
 
 interface Agent {
   id: string
@@ -32,6 +34,8 @@ interface Agent {
   description: string
   created_at: string
   updated_at: string
+  email: string
+  auth_user_id: string
 }
 
 export default function AgentsPage() {
@@ -44,6 +48,8 @@ export default function AgentsPage() {
     name: "",
     role: "",
     description: "",
+    email: "",
+    password: "",
   })
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -59,15 +65,11 @@ export default function AgentsPage() {
 
   // Fetch agents from Supabase
   useEffect(() => {
-    const fetchAgentsData = async () => {
-      if (!authLoading && user?.id) {
-        fetchAgents()
-      } else if (!authLoading && !user) {
-        setIsLoading(false)
-      }
+    if (!authLoading && user?.id) {
+      fetchAgents()
+    } else if (!authLoading && !user) {
+      setIsLoading(false)
     }
-
-    fetchAgentsData()
   }, [user, authLoading])
 
   const fetchAgents = async () => {
@@ -94,28 +96,32 @@ export default function AgentsPage() {
   }
 
   const addAgent = async () => {
-    if (!newAgent.name || !newAgent.role || !user?.id) return
+    if (!newAgent.name || !newAgent.role || !newAgent.email || !newAgent.password || !user?.id) return
 
     try {
       setIsSaving(true)
-      const { data, error } = await supabase
-        .from("agents")
-        .insert({
-          user_id: user.id,
-          name: newAgent.name,
-          role: newAgent.role,
-          description: newAgent.description,
-        })
-        .select()
-        .single()
 
-      if (error) throw error
+      const result = await createAgentWithAuth(
+        user.id,
+        newAgent.name,
+        newAgent.role,
+        newAgent.description,
+        newAgent.email,
+        newAgent.password,
+      )
 
-      setAgents((prev) => [data, ...prev])
-      setNewAgent({ name: "", role: "", description: "" })
+      if (!result.success) {
+        throw new Error(result.error || "Failed to create agent")
+      }
+
+      setAgents((prev) => [result.agent, ...prev])
+      setNewAgent({ name: "", role: "", description: "", email: "", password: "" })
       setShowAddAgent(false)
-    } catch (error) {
+
+      alert("Agent created successfully! They can now log in with their email and password.")
+    } catch (error: any) {
       console.error("Error adding agent:", error)
+      alert(`Failed to create agent: ${error.message}`)
     } finally {
       setIsSaving(false)
     }
@@ -127,6 +133,8 @@ export default function AgentsPage() {
       name: agent.name,
       role: agent.role,
       description: agent.description,
+      email: agent.email || "",
+      password: "", // Don't pre-fill password for security
     })
     setShowAddAgent(true)
   }
@@ -136,26 +144,71 @@ export default function AgentsPage() {
 
     try {
       setIsSaving(true)
-      const { data, error } = await supabase
+
+      console.log("[v0] Saving agent:", {
+        id: editingAgent.id,
+        name: newAgent.name,
+        email: newAgent.email,
+        hasPassword: !!newAgent.password,
+        hasAuthUserId: !!editingAgent.auth_user_id,
+      })
+
+      if (editingAgent.auth_user_id) {
+        const syncResult = await syncAgentName(editingAgent.auth_user_id, newAgent.name)
+        if (!syncResult.success) {
+          console.error("[v0] Failed to sync name:", syncResult.error)
+        } else {
+          console.log("[v0] Agent name synced to auth metadata")
+        }
+      }
+
+      if (newAgent.email && (newAgent.password || !editingAgent.auth_user_id)) {
+        const result = await updateAgentAuthUser(
+          editingAgent.id,
+          newAgent.name,
+          editingAgent.auth_user_id || null,
+          newAgent.email,
+          newAgent.password || undefined,
+        )
+
+        if (!result.success) {
+          throw new Error(result.error || "Failed to update auth user")
+        }
+
+        console.log("[v0] Auth user updated successfully")
+      }
+
+      console.log("[v0] Updating agent record (without email field due to schema cache)")
+      const updatePayload: any = {
+        name: newAgent.name,
+        role: newAgent.role,
+        description: newAgent.description,
+        updated_at: new Date().toISOString(),
+      }
+
+      const { data: updatedAgent, error: updateError } = await supabase
         .from("agents")
-        .update({
-          name: newAgent.name,
-          role: newAgent.role,
-          description: newAgent.description,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updatePayload)
         .eq("id", editingAgent.id)
         .select()
         .single()
 
-      if (error) throw error
+      if (updateError) {
+        console.error("[v0] Database update error:", updateError.message)
+        throw updateError
+      }
 
-      setAgents((prev) => prev.map((a) => (a.id === editingAgent.id ? data : a)))
-      setNewAgent({ name: "", role: "", description: "" })
+      console.log("[v0] Agent updated successfully:", updatedAgent)
+      setAgents((prev) => prev.map((a) => (a.id === editingAgent.id ? updatedAgent : a)))
+
+      setNewAgent({ name: "", role: "", description: "", email: "", password: "" })
       setEditingAgent(null)
       setShowAddAgent(false)
-    } catch (error) {
-      console.error("Error updating agent:", error)
+
+      alert("Agent updated successfully! They can now log in with their email and password.")
+    } catch (error: any) {
+      console.error("[v0] Error updating agent:", error)
+      alert(`Failed to update agent: ${error.message}`)
     } finally {
       setIsSaving(false)
     }
@@ -177,7 +230,7 @@ export default function AgentsPage() {
   const handleDialogClose = () => {
     setShowAddAgent(false)
     setEditingAgent(null)
-    setNewAgent({ name: "", role: "", description: "" })
+    setNewAgent({ name: "", role: "", description: "", email: "", password: "" })
   }
 
   return (
@@ -273,6 +326,7 @@ export default function AgentsPage() {
                             <div>
                               <CardTitle className="text-lg">{agent.name}</CardTitle>
                               <CardDescription className="text-sm">{agent.role}</CardDescription>
+                              {agent.email && <p className="text-xs text-gray-500 mt-1">{agent.email}</p>}
                             </div>
                           </div>
                           <DropdownMenu>
@@ -317,7 +371,9 @@ export default function AgentsPage() {
           <DialogHeader>
             <DialogTitle>{editingAgent ? "Edit Agent" : "Add New Agent"}</DialogTitle>
             <DialogDescription>
-              {editingAgent ? "Update the agent's information" : "Add a new team member to your organization"}
+              {editingAgent
+                ? "Update the agent's information and login credentials"
+                : "Add a new team member with login credentials"}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -332,11 +388,38 @@ export default function AgentsPage() {
             </div>
             <div>
               <Label htmlFor="agent-role">Role</Label>
-              <Input
-                id="agent-role"
-                placeholder="e.g., Sales Agent, Team Lead"
+              <Select
                 value={newAgent.role}
-                onChange={(e) => setNewAgent((prev) => ({ ...prev, role: e.target.value }))}
+                onValueChange={(value) => setNewAgent((prev) => ({ ...prev, role: value }))}
+              >
+                <SelectTrigger id="agent-role">
+                  <SelectValue placeholder="Select a role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Agent">Agent</SelectItem>
+                  <SelectItem value="Admin">Admin</SelectItem>
+                  <SelectItem value="Owner">Owner</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="agent-email">Email (Login Username)</Label>
+              <Input
+                id="agent-email"
+                type="email"
+                placeholder="agent@example.com"
+                value={newAgent.email}
+                onChange={(e) => setNewAgent((prev) => ({ ...prev, email: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="agent-password">Password {editingAgent && "(Leave blank to keep current)"}</Label>
+              <Input
+                id="agent-password"
+                type="password"
+                placeholder={editingAgent ? "Enter new password to change" : "Create a secure password"}
+                value={newAgent.password}
+                onChange={(e) => setNewAgent((prev) => ({ ...prev, password: e.target.value }))}
               />
             </div>
             <div>
@@ -356,7 +439,9 @@ export default function AgentsPage() {
             </Button>
             <Button
               onClick={editingAgent ? saveEditedAgent : addAgent}
-              disabled={!newAgent.name || !newAgent.role || isSaving}
+              disabled={
+                !newAgent.name || !newAgent.role || !newAgent.email || (!editingAgent && !newAgent.password) || isSaving
+              }
               className="bg-black hover:bg-gray-800 text-white"
             >
               {isSaving ? "Saving..." : editingAgent ? "Save Changes" : "Add Agent"}
