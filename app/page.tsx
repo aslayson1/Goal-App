@@ -3117,9 +3117,9 @@ function GoalTrackerApp() {
           <AppSidebar />
           <SidebarInset className="flex-1 w-full min-w-0">
             <main className="flex-1 min-w-0 overflow-auto p-6">
-              <div className="mx-auto space-y-6">
+              <div className="w-full space-y-6">
                 {/* Header */}
-                <div className="max-w-7xl mx-auto flex items-center justify-between mb-8">
+                <div className="w-full flex items-center justify-between mb-8">
                   <div>
                     <h1 className="text-4xl font-bold text-gray-900 mb-2">
                       Hi {selectedAgentName?.split(" ")[0] || user?.name?.split(" ")[0] || "there"},
@@ -3144,7 +3144,7 @@ function GoalTrackerApp() {
                 </div>
 
                 {/* Stats Overview */}
-                <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   <Card className="border-0 shadow-sm">
                     <CardContent className="p-6">
                       <div className="flex flex-col items-center justify-center text-center h-full space-y-3">
@@ -3220,15 +3220,13 @@ function GoalTrackerApp() {
                 </div>
 
                 <Tabs value={activeView} onValueChange={setActiveView} className="mb-8">
-                  <div className="mx-auto">
-                    <TabsList className="grid w-full max-w-4xl grid-cols-3">
-                      <TabsTrigger value="daily">Daily Tasks</TabsTrigger>
-                      <TabsTrigger value="weekly">Weekly Tasks</TabsTrigger>
-                      <TabsTrigger value={dashboardMode === "12-week" ? "1-week" : "1-year"}>
-                        {dashboardMode === "12-week" ? "12-Week Goals" : "1-Year Goals"}
-                      </TabsTrigger>
-                    </TabsList>
-                  </div>
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="daily">Daily Tasks</TabsTrigger>
+                    <TabsTrigger value="weekly">Weekly Tasks</TabsTrigger>
+                    <TabsTrigger value={dashboardMode === "12-week" ? "1-week" : "1-year"}>
+                      {dashboardMode === "12-week" ? "12-Week Goals" : "1-Year Goals"}
+                    </TabsTrigger>
+                  </TabsList>
 
                   {/* 12-Week Goals View */}
                   <TabsContent value="1-week" className="mt-8 w-full" data-page="twelve-week">
@@ -3774,53 +3772,41 @@ function GoalTrackerApp() {
 
                   {/* Daily Tasks View */}
                   <TabsContent value="daily" className="mt-8 w-full" data-page="daily">
-                    {/* CHANGE: Moving Daily Tasks header outside the grid to match 12-Week Goals structure */}
-                    <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-8">
-                      <div className="lg:col-span-2 flex items-center justify-between mb-6">
-                        <div className="flex items-center space-x-4">
-                          <h2 className="text-2xl font-bold text-gray-900">Daily Tasks</h2>
-                          <Select value={selectedDay} onValueChange={setSelectedDay}>
-                            <SelectTrigger className="w-40">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map(
-                                (day) => (
-                                  <SelectItem key={day} value={day}>
-                                    {day}
-                                  </SelectItem>
-                                ),
-                              )}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setNewDailyTask((prev) => ({ ...prev, category: "" }))
-                            setShowAddDailyTask(true)
-                          }}
-                          className="text-sm"
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Add Daily Task
-                        </Button>
+                    {/* CHANGE: Moving header outside the grid to match 12-Week Goals structure */}
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center space-x-4">
+                        <h2 className="text-2xl font-bold text-gray-900">Daily Tasks</h2>
+                        <Select value={selectedDay} onValueChange={setSelectedDay}>
+                          <SelectTrigger className="w-40">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map(
+                              (day) => (
+                                <SelectItem key={day} value={day}>
+                                  {day}
+                                </SelectItem>
+                              ),
+                            )}
+                          </SelectContent>
+                        </Select>
                       </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setNewDailyTask((prev) => ({ ...prev, category: "" }))
+                          setShowAddDailyTask(true)
+                        }}
+                        className="text-sm"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Task
+                      </Button>
+                    </div>
 
-                      {(() => {
-                        const allTasksForDay = dailyTasks[selectedDay] || []
-                        console.log(`[v0] Daily tasks for ${selectedDay}:`, allTasksForDay.length)
-                        console.log(`[v0] Task details:`, JSON.stringify(allTasksForDay, null, 2))
-                        allTasksForDay.forEach((task) => {
-                          console.log(
-                            `[v0] Task "${task.title}" - category: "${task.category}", completed: ${task.completed}`,
-                          )
-                        })
-                        return null
-                      })()}
-
-                      {/* Group daily tasks by category */}
+                    {/* CHANGE: Grid now starts here without header inside */}
+                    <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-8">
                       {Object.keys(goalsData).map((category) => {
                         const categoryTasks = (dailyTasks[selectedDay] || []).filter(
                           (task) => task.category === category,
