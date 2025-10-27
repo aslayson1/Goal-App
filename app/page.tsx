@@ -1037,10 +1037,9 @@ function GoalTrackerApp() {
         startDate = existingStartDate
       }
     } else {
-      // No start date exists, set to 4 weeks ago (for initial setup)
-      const fourWeeksAgo = new Date()
-      fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28)
-      startDate = fourWeeksAgo.toISOString()
+      const threeWeeksAgo = new Date()
+      threeWeeksAgo.setDate(threeWeeksAgo.getDate() - 21)
+      startDate = threeWeeksAgo.toISOString()
       localStorage.setItem(startDateKey, startDate)
     }
 
@@ -2447,7 +2446,7 @@ function GoalTrackerApp() {
 
   const getWeeklyProgress = (goal: Goal) => {
     const weeklyTarget = goal.weeklyTarget || Math.ceil(goal.targetCount / 12)
-    const expectedProgress = weeklyTarget * currentWeek
+    const expectedProgress = weeklyTarget * (currentWeek - 1)
     const onTrack = goal.currentCount >= expectedProgress
     return { weeklyTarget, expectedProgress, onTrack }
   }
