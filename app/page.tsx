@@ -1017,21 +1017,45 @@ function GoalTrackerApp() {
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set())
   const [activeView, setActiveView] = useState("daily")
   const [currentWeek, setCurrentWeek] = useState(() => {
-    // Get or set the 12-week start date
     const startDateKey = `goalTracker_startDate_${user?.id || "default"}`
-    let startDate = localStorage.getItem(startDateKey)
 
-    if (!startDate) {
-      // First time user - set start date to today
-      startDate = new Date().toISOString()
+    const existingStartDate = localStorage.getItem(startDateKey)
+    let startDate: string
+
+    if (existingStartDate) {
+      const start = new Date(existingStartDate)
+      const today = new Date()
+      const daysDiff = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+      const weekNumber = Math.floor(daysDiff / 7) + 1
+
+      // If we've completed 12 weeks (week 13 or beyond), start a new cycle
+      if (weekNumber > 12) {
+        console.log("[v0] 12-week cycle completed! Starting new cycle...")
+        startDate = today.toISOString()
+        localStorage.setItem(startDateKey, startDate)
+      } else {
+        startDate = existingStartDate
+      }
+    } else {
+      // No start date exists, set to 4 weeks ago (for initial setup)
+      const fourWeeksAgo = new Date()
+      fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28)
+      startDate = fourWeeksAgo.toISOString()
       localStorage.setItem(startDateKey, startDate)
     }
+
+    console.log("[v0] Start date from localStorage:", startDate)
+    console.log("[v0] Start date parsed:", new Date(startDate).toLocaleDateString())
 
     // Calculate current week based on start date
     const start = new Date(startDate)
     const today = new Date()
     const daysDiff = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
     const weekNumber = Math.floor(daysDiff / 7) + 1
+
+    console.log("[v0] Days since start:", daysDiff)
+    console.log("[v0] Calculated week number:", weekNumber)
+    console.log("[v0] Weeks left (13 - weekNumber):", 13 - weekNumber)
 
     // Ensure week is between 1 and 12
     return Math.min(Math.max(weekNumber, 1), 12)
@@ -3203,16 +3227,13 @@ function GoalTrackerApp() {
                   <Card className="border-0 shadow-sm">
                     <CardContent className="p-6">
                       <div className="flex flex-col items-center justify-center text-center h-full space-y-3">
-                        <p className="text-4xl font-bold text-gray-900">{12 - currentWeek}</p>
+                        <p className="text-4xl font-bold text-gray-900">{13 - currentWeek}</p>
                         <div className="flex items-center">
                           <Calendar className="h-4 w-4 mr-2 text-[#05a7b0]" />
                           <p className="text-sm font-medium text-gray-600">Weeks Left</p>
                         </div>
                         <div className="w-full">
-                          <Progress
-                            value={((12 - (12 - currentWeek)) / 12) * 100}
-                            className="h-2 [&>div]:bg-[#05a7b0]"
-                          />
+                          <Progress value={((currentWeek - 1) / 12) * 100} className="h-2 [&>div]:bg-[#05a7b0]" />
                         </div>
                       </div>
                     </CardContent>
