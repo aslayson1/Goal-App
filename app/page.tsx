@@ -3627,7 +3627,7 @@ function GoalTrackerApp() {
 
                   {/* Weekly Tasks View */}
                   <TabsContent value="weekly" className="mt-8 w-full">
-                    <div className="flex items-center justify-between mb-6">
+                    <div className="w-full flex items-center justify-between mb-6">
                       <h2 className="text-2xl font-bold text-gray-900">Week {currentWeek} Tasks</h2>
                     </div>
 
