@@ -3136,7 +3136,7 @@ function GoalTrackerApp() {
           </DropdownMenu>
         </header>
 
-        <div className="flex flex-1 overflow-hidden overflow-x-hidden">
+        <div className="flex flex-1 overflow-hidden">
           <AppSidebar />
           <SidebarInset className="flex-1 w-full min-w-0">
             <main className="flex-1 min-w-0 overflow-auto p-6">
@@ -3167,7 +3167,7 @@ function GoalTrackerApp() {
                 </div>
 
                 {/* Stats Overview */}
-                <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   <Card className="border-0 shadow-sm">
                     <CardContent className="p-6">
                       <div className="flex flex-col items-center justify-center text-center h-full space-y-3">
@@ -3239,7 +3239,7 @@ function GoalTrackerApp() {
                   </Card>
                 </div>
 
-                <Tabs value={activeView} onValueChange={setActiveView} className="w-full mb-8">
+                <Tabs value={activeView} onValueChange={setActiveView} className="mb-8">
                   <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="daily">Daily Tasks</TabsTrigger>
                     <TabsTrigger value="weekly">Weekly Tasks</TabsTrigger>
@@ -3793,7 +3793,7 @@ function GoalTrackerApp() {
                   {/* Daily Tasks View */}
                   <TabsContent value="daily" className="mt-8 w-full" data-page="daily">
                     {/* CHANGE: Moving header outside the grid to match 12-Week Goals structure */}
-                    <div className="w-full flex items-center justify-between mb-6">
+                    <div className="flex items-center justify-between mb-6">
                       <div className="flex items-center space-x-4">
                         <h2 className="text-2xl font-bold text-gray-900">Daily Tasks</h2>
                         <Select value={selectedDay} onValueChange={setSelectedDay}>
