@@ -3139,7 +3139,7 @@ function GoalTrackerApp() {
         <div className="flex flex-1 overflow-hidden">
           <AppSidebar />
           <SidebarInset className="flex-1 w-full min-w-0">
-            <main className="flex-1 min-w-0 overflow-auto p-6">
+            <div className="w-full flex-1 min-w-0 overflow-auto p-6">
               <div className="w-full space-y-6">
                 {/* Header */}
                 <div className="w-full flex items-center justify-between mb-8">
@@ -4585,7 +4585,7 @@ function GoalTrackerApp() {
                   </DialogContent>
                 </Dialog>
               </div>
-            </main>
+            </div>
           </SidebarInset>
         </div>
 
