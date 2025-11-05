@@ -1038,7 +1038,7 @@ function GoalTrackerApp() {
       }
     } else {
       const threeWeeksAgo = new Date()
-      threeWeeksAgo.setDate(threeWeeksAgo.getDate() - 21)
+      threeWeeksAgo.setDate(threeWeeksAgo.getDate() - 28)
       startDate = threeWeeksAgo.toISOString()
       localStorage.setItem(startDateKey, startDate)
     }
@@ -3136,10 +3136,10 @@ function GoalTrackerApp() {
           </DropdownMenu>
         </header>
 
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-1 overflow-hidden overflow-x-hidden">
           <AppSidebar />
           <SidebarInset className="flex-1 w-full min-w-0">
-            <div className="w-full flex-1 min-w-0 overflow-auto p-6">
+            <main className="flex-1 min-w-0 overflow-auto p-6">
               <div className="w-full space-y-6">
                 {/* Header */}
                 <div className="w-full flex items-center justify-between mb-8">
@@ -4585,7 +4585,7 @@ function GoalTrackerApp() {
                   </DialogContent>
                 </Dialog>
               </div>
-            </div>
+            </main>
           </SidebarInset>
         </div>
 
