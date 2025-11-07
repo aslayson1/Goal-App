@@ -3627,11 +3627,44 @@ function GoalTrackerApp() {
 
                   {/* Weekly Tasks View */}
                   <TabsContent value="weekly" className="mt-8 w-full">
-                    <div className="w-full flex items-center justify-between mb-6">
-                      <h2 className="text-2xl font-bold text-gray-900">Week {currentWeek} Tasks</h2>
+                    {/* CHANGE: Moving header outside the grid to match 12-Week Goals structure */}
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center space-x-4">
+                        <h2 className="text-2xl font-bold text-gray-900">Weekly Tasks</h2>
+                        <Select
+                          value={`Week ${currentWeek}`}
+                          onValueChange={(value) => {
+                            const weekNum = Number.parseInt(value.replace("Week ", ""))
+                            // Note: currentWeek is calculated from start date, so we can't directly change it
+                            // This selector is for display consistency with Daily Tasks
+                          }}
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Array.from({ length: 12 }, (_, i) => i + 1).map((week) => (
+                              <SelectItem key={week} value={`Week ${week}`}>
+                                Week {week}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setNewWeeklyTask((prev) => ({ ...prev, category: "" }))
+                          setShowAddWeeklyTask(true)
+                        }}
+                        className="text-sm"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Task
+                      </Button>
                     </div>
 
-                    {/* Group weekly tasks by category */}
                     <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-8">
                       {Object.keys(goalsData).map((category) => {
                         const categoryTasks = (weeklyTasks[`Week ${currentWeek}`] || []).filter(
@@ -3642,13 +3675,15 @@ function GoalTrackerApp() {
                           <Card key={category} className="border-0 shadow-sm">
                             <CardHeader className="pb-4">
                               <div className="flex items-center justify-between">
-                                <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                                  <Badge
-                                    className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}
-                                  >
-                                    {category}
-                                  </Badge>
-                                </CardTitle>
+                                <div>
+                                  <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-2">
+                                    <Badge
+                                      className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}
+                                    >
+                                      {category}
+                                    </Badge>
+                                  </CardTitle>
+                                </div>
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -3661,9 +3696,6 @@ function GoalTrackerApp() {
                                   <Plus className="h-4 w-4" />
                                 </Button>
                               </div>
-                              <CardDescription>
-                                {categoryTasks.length} task{categoryTasks.length !== 1 ? "s" : ""} this week
-                              </CardDescription>
                             </CardHeader>
                             {categoryTasks.length > 0 && (
                               <CardContent className="space-y-4">
@@ -3783,7 +3815,7 @@ function GoalTrackerApp() {
                       {/* If no tasks exist at all */}
                       {Object.keys(weeklyTasks).length === 0 && (
                         <div className="col-span-2 text-center py-12">
-                          <p className="text-gray-500 mb-4">No weekly tasks yet</p>
+                          <p className="text-gray-500 mb-4">No weekly tasks for Week {currentWeek} yet</p>
                           <p className="text-sm text-gray-400">Use the + buttons in each category to add tasks</p>
                         </div>
                       )}
