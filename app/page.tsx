@@ -29,6 +29,7 @@ import {
   Clock,
   GripVertical,
   ClipboardCheck,
+  Pencil,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -44,6 +45,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import Image from "next/image"
 import { useSearchParams } from "next/navigation"
 import React from "react" // Ensure React is imported
+import { toast } from "@/components/ui/use-toast" // Added for toast notifications
 
 // Auth components
 import { useAuth } from "@/components/auth/auth-provider"
@@ -790,7 +792,7 @@ interface LongTermGoalsData {
   }
 }
 
-// Add this helper function after the interfaces and before the main component
+// Add after the existing interfaces and before the main component
 const extractNumberFromTitle = (title: string): number => {
   if (!title.trim()) return 0
 
@@ -1038,7 +1040,7 @@ function GoalTrackerApp() {
       }
     } else {
       const threeWeeksAgo = new Date()
-      threeWeeksAgo.setDate(threeWeeksAgo.getDate() - 28)
+      threeWeeksAgo.setDate(threeWeeksAgo.getDate() - 21)
       startDate = threeWeeksAgo.toISOString()
       localStorage.setItem(startDateKey, startDate)
     }
@@ -1129,6 +1131,9 @@ function GoalTrackerApp() {
   const [showEditCategory, setShowEditCategory] = useState<string | null>(null)
   const [editCategoryName, setEditCategoryName] = useState("")
   const [editCategoryColor, setEditCategoryColor] = useState("")
+
+  const [notesData, setNotesData] = useState<{ [categoryName: string]: string }>({})
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
 
   // Add these state variables after the existing state declarations (around line 680):
   const [editingLongTermGoal, setEditingLongTermGoal] = useState<{
@@ -3240,12 +3245,13 @@ function GoalTrackerApp() {
                 </div>
 
                 <Tabs value={activeView} onValueChange={setActiveView} className="mb-8">
-                  <TabsList className="grid w-full grid-cols-3">
+                  <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="daily">Daily Tasks</TabsTrigger>
                     <TabsTrigger value="weekly">Weekly Tasks</TabsTrigger>
                     <TabsTrigger value={dashboardMode === "12-week" ? "1-week" : "1-year"}>
                       {dashboardMode === "12-week" ? "12-Week Goals" : "1-Year Goals"}
                     </TabsTrigger>
+                    <TabsTrigger value="notes">Notes</TabsTrigger>
                   </TabsList>
 
                   {/* 12-Week Goals View */}
@@ -3627,44 +3633,11 @@ function GoalTrackerApp() {
 
                   {/* Weekly Tasks View */}
                   <TabsContent value="weekly" className="mt-8 w-full">
-                    {/* CHANGE: Moving header outside the grid to match 12-Week Goals structure */}
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="flex items-center space-x-4">
-                        <h2 className="text-2xl font-bold text-gray-900">Weekly Tasks</h2>
-                        <Select
-                          value={`Week ${currentWeek}`}
-                          onValueChange={(value) => {
-                            const weekNum = Number.parseInt(value.replace("Week ", ""))
-                            // Note: currentWeek is calculated from start date, so we can't directly change it
-                            // This selector is for display consistency with Daily Tasks
-                          }}
-                        >
-                          <SelectTrigger className="w-32">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Array.from({ length: 12 }, (_, i) => i + 1).map((week) => (
-                              <SelectItem key={week} value={`Week ${week}`}>
-                                Week {week}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setNewWeeklyTask((prev) => ({ ...prev, category: "" }))
-                          setShowAddWeeklyTask(true)
-                        }}
-                        className="text-sm"
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Task
-                      </Button>
+                    <div className="w-full flex items-center justify-between mb-6">
+                      <h2 className="text-2xl font-bold text-gray-900">Week {currentWeek} Tasks</h2>
                     </div>
 
+                    {/* Group weekly tasks by category */}
                     <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-8">
                       {Object.keys(goalsData).map((category) => {
                         const categoryTasks = (weeklyTasks[`Week ${currentWeek}`] || []).filter(
@@ -3675,15 +3648,13 @@ function GoalTrackerApp() {
                           <Card key={category} className="border-0 shadow-sm">
                             <CardHeader className="pb-4">
                               <div className="flex items-center justify-between">
-                                <div>
-                                  <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-2">
-                                    <Badge
-                                      className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}
-                                    >
-                                      {category}
-                                    </Badge>
-                                  </CardTitle>
-                                </div>
+                                <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                                  <Badge
+                                    className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}
+                                  >
+                                    {category}
+                                  </Badge>
+                                </CardTitle>
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -3696,6 +3667,9 @@ function GoalTrackerApp() {
                                   <Plus className="h-4 w-4" />
                                 </Button>
                               </div>
+                              <CardDescription>
+                                {categoryTasks.length} task{categoryTasks.length !== 1 ? "s" : ""} this week
+                              </CardDescription>
                             </CardHeader>
                             {categoryTasks.length > 0 && (
                               <CardContent className="space-y-4">
@@ -3815,7 +3789,7 @@ function GoalTrackerApp() {
                       {/* If no tasks exist at all */}
                       {Object.keys(weeklyTasks).length === 0 && (
                         <div className="col-span-2 text-center py-12">
-                          <p className="text-gray-500 mb-4">No weekly tasks for Week {currentWeek} yet</p>
+                          <p className="text-gray-500 mb-4">No weekly tasks yet</p>
                           <p className="text-sm text-gray-400">Use the + buttons in each category to add tasks</p>
                         </div>
                       )}
@@ -4169,6 +4143,90 @@ function GoalTrackerApp() {
                                   <Plus className="h-4 w-4 mr-2" /> Add Milestone Goal
                                 </Button>
                               </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="notes" className="mt-8 w-full">
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between">
+                        <h2 className="text-2xl font-bold">Category Notes</h2>
+                      </div>
+                      <div className="grid gap-6 md:grid-cols-2">
+                        {Object.keys(goalsData).map((categoryName) => (
+                          <Card key={categoryName}>
+                            <CardHeader>
+                              <CardTitle className="flex items-center justify-between">
+                                <span>{categoryName}</span>
+                                {editingNoteId !== categoryName && (
+                                  <Button variant="ghost" size="sm" onClick={() => setEditingNoteId(categoryName)}>
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              {editingNoteId === categoryName ? (
+                                <div className="space-y-4">
+                                  <textarea
+                                    className="w-full min-h-[120px] p-3 border rounded-md resize-none"
+                                    value={notesData[categoryName] || ""}
+                                    onChange={(e) =>
+                                      setNotesData((prev) => ({
+                                        ...prev,
+                                        [categoryName]: e.target.value,
+                                      }))
+                                    }
+                                    placeholder="Add notes for this category..."
+                                  />
+                                  <div className="flex gap-2">
+                                    <Button
+                                      size="sm"
+                                      onClick={async () => {
+                                        try {
+                                          const { error } = await supabase.from("notes").upsert(
+                                            {
+                                              user_id: user?.id,
+                                              category_name: categoryName,
+                                              content: notesData[categoryName] || "",
+                                              updated_at: new Date().toISOString(),
+                                            },
+                                            {
+                                              onConflict: "user_id,category_name",
+                                            },
+                                          )
+
+                                          if (error) throw error
+                                          setEditingNoteId(null)
+                                          toast({
+                                            title: "Success",
+                                            description: "Note saved successfully",
+                                          })
+                                        } catch (error) {
+                                          console.error("Error saving note:", error)
+                                          toast({
+                                            title: "Error",
+                                            description: "Failed to save note",
+                                            variant: "destructive",
+                                          })
+                                        }
+                                      }}
+                                    >
+                                      Save
+                                    </Button>
+                                    <Button size="sm" variant="outline" onClick={() => setEditingNoteId(null)}>
+                                      Cancel
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="min-h-[120px] text-sm text-muted-foreground whitespace-pre-wrap">
+                                  {notesData[categoryName] || "No notes yet. Click edit to add notes."}
+                                </div>
+                              )}
                             </CardContent>
                           </Card>
                         ))}
