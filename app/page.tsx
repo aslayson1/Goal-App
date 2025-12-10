@@ -1021,38 +1021,21 @@ function GoalTrackerApp() {
   const [currentWeek, setCurrentWeek] = useState(() => {
     const startDateKey = `goalTracker_startDate_${user?.id || "default"}`
 
-    const existingStartDate = localStorage.getItem(startDateKey)
-    let startDate: string
+    let startDate = localStorage.getItem(startDateKey)
 
-    if (existingStartDate) {
-      const start = new Date(existingStartDate)
-      const today = new Date()
-      const daysDiff = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
-      const weekNumber = Math.floor(daysDiff / 7) + 1
-
-      // If we've completed 12 weeks (week 13 or beyond), start a new cycle
-      if (weekNumber > 12) {
-        console.log("[v0] 12-week cycle completed! Starting new cycle...")
-        startDate = today.toISOString()
-        localStorage.setItem(startDateKey, startDate)
-      } else {
-        startDate = existingStartDate
-      }
-    } else {
-      const threeWeeksAgo = new Date()
-      threeWeeksAgo.setDate(threeWeeksAgo.getDate() - 21)
-      startDate = threeWeeksAgo.toISOString()
+    const correctStartDate = "2025-10-08T00:00:00.000Z"
+    if (startDate !== correctStartDate) {
+      startDate = correctStartDate
       localStorage.setItem(startDateKey, startDate)
     }
 
-    console.log("[v0] Start date from localStorage:", startDate)
-    console.log("[v0] Start date parsed:", new Date(startDate).toLocaleDateString())
-
-    // Calculate current week based on start date
     const start = new Date(startDate)
     const today = new Date()
     const daysDiff = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
     const weekNumber = Math.floor(daysDiff / 7) + 1
+
+    console.log("[v0] Start date from localStorage:", startDate)
+    console.log("[v0] Start date parsed:", new Date(startDate).toLocaleDateString())
 
     console.log("[v0] Days since start:", daysDiff)
     console.log("[v0] Calculated week number:", weekNumber)
@@ -1347,8 +1330,9 @@ function GoalTrackerApp() {
             const startDateKey = `goalTracker_startDate_${selectedAgentId}`
             let startDate = localStorage.getItem(startDateKey)
 
-            if (!startDate) {
-              startDate = new Date().toISOString()
+            const correctStartDate = "2025-10-08T00:00:00.000Z"
+            if (startDate !== correctStartDate) {
+              startDate = correctStartDate
               localStorage.setItem(startDateKey, startDate)
             }
 
