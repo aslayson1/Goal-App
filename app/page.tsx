@@ -1364,6 +1364,23 @@ function GoalTrackerApp() {
             const taskData = await loadTasksFromDB(selectedAgentId)
             await loadLongTermGoalsFromDB()
 
+            try {
+              const { data: notesFromDB } = await supabase
+                .from("notes")
+                .select("category_name, content")
+                .eq("user_id", selectedAgentId)
+
+              if (notesFromDB && notesFromDB.length > 0) {
+                const notesMap: { [key: string]: string } = {}
+                notesFromDB.forEach((note: { category_name: string; content: string }) => {
+                  notesMap[note.category_name] = note.content
+                })
+                setNotesData(notesMap)
+              }
+            } catch (notesError) {
+              console.error("Error loading notes:", notesError)
+            }
+
             console.log("=== COMPREHENSIVE TASK LOADING DEBUG ===")
             console.log("Raw task data from database:", JSON.stringify(taskData, null, 2))
             console.log("Daily tasks structure:", JSON.stringify(taskData.dailyTasks, null, 2))
