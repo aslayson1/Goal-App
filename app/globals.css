@@ -130,7 +130,15 @@
 }
 
 /* Ensure Daily page cannot be width-capped by any ancestor */
-[data-page="daily"] {
+[data-page="daily"],
+[data-page="daily"] > * {
+  max-width: none !important;
+  width: 100% !important;
+}
+
+/* Applied same full-width rule to Weekly page and its children */
+[data-page="weekly"],
+[data-page="weekly"] > * {
   max-width: none !important;
   width: 100% !important;
 }

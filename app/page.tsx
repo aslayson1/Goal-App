@@ -3144,7 +3144,7 @@ function GoalTrackerApp() {
 
         <div className="flex flex-1 overflow-hidden overflow-x-hidden">
           <AppSidebar />
-          <SidebarInset className="flex-1 w-full min-w-0">
+          <SidebarInset className="flex-1 min-w-0">
             <main className="flex-1 min-w-0 overflow-auto p-6">
               <div className="w-full space-y-6">
                 {/* Header */}
@@ -3633,7 +3633,7 @@ function GoalTrackerApp() {
                   </TabsContent>
 
                   {/* Weekly Tasks View */}
-                  <TabsContent value="weekly" className="mt-8 w-full">
+                  <TabsContent value="weekly" className="mt-8 w-full" data-page="weekly">
                     <div className="w-full flex items-center justify-between mb-6">
                       <h2 className="text-2xl font-bold text-gray-900">Week {currentWeek} Tasks</h2>
                     </div>
@@ -4158,7 +4158,7 @@ function GoalTrackerApp() {
                       </div>
                       <div className="grid gap-6 md:grid-cols-2">
                         {Object.keys(goalsData).map((categoryName) => (
-                          <Card key={categoryName}>
+                          <Card key={categoryName} className="border-0 shadow-sm">
                             <CardHeader>
                               <CardTitle className="flex items-center justify-between">
                                 <span>{categoryName}</span>
