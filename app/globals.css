@@ -142,3 +142,10 @@
   max-width: none !important;
   width: 100% !important;
 }
+
+/* Applied same full-width rule to 12-Week Goals page */
+[data-page="twelve-week"],
+[data-page="twelve-week"] > * {
+  max-width: none !important;
+  width: 100% !important;
+}

@@ -270,9 +270,9 @@ export default function AgentsPage() {
           </DropdownMenu>
         </header>
 
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-1 min-w-0 overflow-hidden">
           <AppSidebar />
-          <SidebarInset className="flex-1 overflow-auto">
+          <SidebarInset className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden">
             <div className="flex flex-1 flex-col gap-4 py-4 md:py-6 px-4 md:px-6">
               <div className="flex items-center justify-between mb-6">
                 <div>
