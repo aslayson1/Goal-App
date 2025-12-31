@@ -491,9 +491,9 @@ export default function LongTermGoalsPage() {
           </DropdownMenu>
         </header>
 
-        <div className="flex flex-1 min-w-0 overflow-hidden">
+        <div className="flex flex-1 overflow-hidden">
           <AppSidebar />
-          <SidebarInset className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden">
+          <SidebarInset className="flex-1 overflow-auto">
             <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
               <Tabs defaultValue="1-year" className="w-full">
                 <TabsList className="grid w-full max-w-md grid-cols-2">

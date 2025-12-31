@@ -1271,6 +1271,36 @@ function GoalTrackerApp() {
     }
   }
 
+  const startNewCycle = async () => {
+    const today = new Date()
+    const newStartDate = today.toISOString()
+    const startDateKey = `goalTracker_startDate_${selectedAgentId}`
+
+    localStorage.setItem(startDateKey, newStartDate)
+
+    // Reset all goals to 0 progress
+    setGoalsData((prev) => {
+      const updated = { ...prev }
+      Object.keys(updated).forEach((category) => {
+        updated[category] = updated[category].map((goal) => ({
+          ...goal,
+          currentCount: 0,
+        }))
+      })
+      return updated
+    })
+
+    // Update current week back to 1
+    setCurrentWeek(1)
+
+    await supabase.from("tasks").update({ completed: false }).eq("user_id", selectedAgentId).eq("completed", true)
+
+    toast({
+      title: "New Cycle Started",
+      description: "Your 12-week goal cycle has been reset. Good luck!",
+    })
+  }
+
   // Replace the existing useEffect for moveIncompleteTasks with this enhanced version
   useEffect(() => {
     // Move incomplete tasks on component mount
@@ -3156,6 +3186,12 @@ function GoalTrackerApp() {
                     <p className="text-gray-600">Here are your tasks for week {currentWeek} of 12.</p>
                   </div>
                   <div className="flex items-center space-x-2">
+                    {currentWeek === 12 && (
+                      <Button onClick={startNewCycle} className="text-sm bg-green-600 hover:bg-green-700 text-white">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Start New Goal Cycle
+                      </Button>
+                    )}
                     <Button
                       variant="default"
                       size="sm"
