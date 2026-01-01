@@ -667,7 +667,7 @@ const initialDailyTasks = {
       goalId: "up1",
       completed: false,
       timeBlock: "9:00 AM",
-      estimatedHours: 120,
+      estimatedHours: 120, // This seems like an error, should be minutes for daily tasks
     },
   ],
   Tuesday: [
@@ -1017,15 +1017,15 @@ function GoalTrackerApp() {
   }, [user])
 
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set())
-  const [activeView, setActiveView] = useState("daily")
+  const [activeView, setActiveView] = useState("daily") // <-- UPDATE: Set default activeView to "daily"
   const [currentWeek, setCurrentWeek] = useState(() => {
     const startDateKey = `goalTracker_startDate_${user?.id || "default"}`
 
     let startDate = localStorage.getItem(startDateKey)
 
-    const correctStartDate = "2025-10-08T00:00:00.000Z"
-    if (startDate !== correctStartDate) {
-      startDate = correctStartDate
+    // <-- CHANGE: Remove hardcoded fallback date - use localStorage or initialize with today -->
+    if (!startDate) {
+      startDate = new Date().toISOString()
       localStorage.setItem(startDateKey, startDate)
     }
 
