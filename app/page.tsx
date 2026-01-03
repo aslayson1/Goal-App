@@ -1023,9 +1023,8 @@ function GoalTrackerApp() {
 
     let startDate = localStorage.getItem(startDateKey)
 
-    const correctStartDate = "2025-10-08T00:00:00.000Z"
-    if (startDate !== correctStartDate) {
-      startDate = correctStartDate
+    if (!startDate) {
+      startDate = new Date().toISOString()
       localStorage.setItem(startDateKey, startDate)
     }
 
@@ -1044,6 +1043,30 @@ function GoalTrackerApp() {
     // Ensure week is between 1 and 12
     return Math.min(Math.max(weekNumber, 1), 12)
   })
+
+  useEffect(() => {
+    const calculateWeek = () => {
+      const startDateKey = `goalTracker_startDate_${user?.id || "default"}`
+      const startDate = localStorage.getItem(startDateKey)
+
+      if (startDate) {
+        const start = new Date(startDate)
+        const today = new Date()
+        const daysDiff = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+        const weekNumber = Math.floor(daysDiff / 7) + 1
+        setCurrentWeek(Math.min(Math.max(weekNumber, 1), 12))
+      }
+    }
+
+    // Listen for storage changes (when another tab updates localStorage)
+    window.addEventListener("storage", calculateWeek)
+
+    // Also recalculate when user changes
+    calculateWeek()
+
+    return () => window.removeEventListener("storage", calculateWeek)
+  }, [user?.id])
+
   const [selectedDay, setSelectedDay] = useState(() => {
     const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
     const today = new Date().getDay()
