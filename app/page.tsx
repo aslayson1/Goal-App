@@ -667,7 +667,7 @@ const initialDailyTasks = {
       goalId: "up1",
       completed: false,
       timeBlock: "9:00 AM",
-      estimatedHours: 120, // This seems like an error, should be minutes for daily tasks
+      estimatedHours: 120,
     },
   ],
   Tuesday: [
@@ -1017,15 +1017,15 @@ function GoalTrackerApp() {
   }, [user])
 
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set())
-  const [activeView, setActiveView] = useState("daily") // <-- UPDATE: Set default activeView to "daily"
+  const [activeView, setActiveView] = useState("daily")
   const [currentWeek, setCurrentWeek] = useState(() => {
     const startDateKey = `goalTracker_startDate_${user?.id || "default"}`
 
     let startDate = localStorage.getItem(startDateKey)
 
-    // <-- CHANGE: Remove hardcoded fallback date - use localStorage or initialize with today -->
-    if (!startDate) {
-      startDate = new Date().toISOString()
+    const correctStartDate = "2025-10-08T00:00:00.000Z"
+    if (startDate !== correctStartDate) {
+      startDate = correctStartDate
       localStorage.setItem(startDateKey, startDate)
     }
 
@@ -2977,8 +2977,20 @@ function GoalTrackerApp() {
         const categoryName = task.categories?.name || "Uncategorized"
 
         if (task.task_type === "weekly") {
-          const taskDate = new Date(task.target_date)
-          const weekKey = `Week ${currentWeek}` // For now, only load current week's tasks
+          const startDateKey = `goalTracker_startDate_${selectedAgentId}`
+          const startDate = new Date(localStorage.getItem(startDateKey) || new Date().toISOString())
+          const daysDiff = Math.floor(
+            (new Date(task.target_date).getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
+          )
+          const taskWeek = Math.floor(daysDiff / 7) + 1
+
+          // Skip tasks outside the 12-week cycle
+          if (taskWeek < 1 || taskWeek > 12) {
+            console.log(`[v0] Skipping task outside 12-week cycle: week ${taskWeek}`)
+            return
+          }
+
+          const weekKey = `Week ${Math.min(Math.max(taskWeek, 1), 12)}`
 
           console.log(`Adding weekly task to ${weekKey}`)
           console.log(
