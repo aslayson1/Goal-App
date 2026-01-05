@@ -134,9 +134,9 @@ export function UserProfile({ onClose }: UserProfileProps) {
     setMessage(null)
 
     try {
-      // Reset cycle start date to today
       const today = new Date().toISOString()
-      localStorage.setItem(`cycle_start_date_${user.id}`, today)
+      const startDateKey = `goalTracker_startDate_${user.id}`
+      localStorage.setItem(startDateKey, today)
 
       // Reset goals progress to 0/initial state
       const goalsKey = `goals_data_${user.id}`
