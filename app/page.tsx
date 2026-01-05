@@ -1018,51 +1018,39 @@ function GoalTrackerApp() {
 
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set())
   const [activeView, setActiveView] = useState("daily")
-  const [currentWeek, setCurrentWeek] = useState(() => {
-    const startDateKey = `goalTracker_startDate_${user?.id || "default"}`
-
-    let startDate = localStorage.getItem(startDateKey)
-
-    if (!startDate) {
-      startDate = new Date().toISOString()
-      localStorage.setItem(startDateKey, startDate)
-    }
-
-    const start = new Date(startDate)
-    const today = new Date()
-    const daysDiff = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
-    const weekNumber = Math.floor(daysDiff / 7) + 1
-
-    console.log("[v0] Start date from localStorage:", startDate)
-    console.log("[v0] Start date parsed:", new Date(startDate).toLocaleDateString())
-
-    console.log("[v0] Days since start:", daysDiff)
-    console.log("[v0] Calculated week number:", weekNumber)
-    console.log("[v0] Weeks left (13 - weekNumber):", 13 - weekNumber)
-
-    // Ensure week is between 1 and 12
-    return Math.min(Math.max(weekNumber, 1), 12)
-  })
+  const [currentWeek, setCurrentWeek] = useState(1)
 
   useEffect(() => {
     const calculateWeek = () => {
       const startDateKey = `goalTracker_startDate_${user?.id || "default"}`
-      const startDate = localStorage.getItem(startDateKey)
+      let startDate = localStorage.getItem(startDateKey)
 
-      if (startDate) {
-        const start = new Date(startDate)
-        const today = new Date()
-        const daysDiff = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
-        const weekNumber = Math.floor(daysDiff / 7) + 1
-        setCurrentWeek(Math.min(Math.max(weekNumber, 1), 12))
+      // If no start date exists, use today's date
+      if (!startDate) {
+        startDate = new Date().toISOString()
+        localStorage.setItem(startDateKey, startDate)
       }
+
+      const start = new Date(startDate)
+      const today = new Date()
+      const daysDiff = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+      const weekNumber = Math.floor(daysDiff / 7) + 1
+
+      console.log("[v0] Start date from localStorage:", startDate)
+      console.log("[v0] Start date parsed:", new Date(startDate).toLocaleDateString())
+      console.log("[v0] Days since start:", daysDiff)
+      console.log("[v0] Calculated week number:", weekNumber)
+      console.log("[v0] Weeks left (13 - weekNumber):", 13 - weekNumber)
+
+      setCurrentWeek(Math.min(Math.max(weekNumber, 1), 12))
+    }
+
+    if (user?.id) {
+      calculateWeek()
     }
 
     // Listen for storage changes (when another tab updates localStorage)
     window.addEventListener("storage", calculateWeek)
-
-    // Also recalculate when user changes
-    calculateWeek()
 
     return () => window.removeEventListener("storage", calculateWeek)
   }, [user?.id])
@@ -1213,7 +1201,6 @@ function GoalTrackerApp() {
     return additionalColors[newCategoryIndex % additionalColors.length]
   }
 
-  // Enhance the moveIncompleteTasks function to be more robust
   const moveIncompleteTasks = () => {
     // Get current date information
     const today = new Date()
@@ -1297,7 +1284,14 @@ function GoalTrackerApp() {
   const startNewCycle = async () => {
     const today = new Date()
     const newStartDate = today.toISOString()
-    const startDateKey = `goalTracker_startDate_${selectedAgentId}`
+    const startDateKey = `goalTracker_startDate_${user?.id || "default"}`
+
+    // Get the old start date to calculate the shift
+    const oldStartDateStr = localStorage.getItem(startDateKey)
+    const oldStartDate = oldStartDateStr ? new Date(oldStartDateStr) : new Date()
+
+    // Calculate days to shift all weekly tasks
+    const daysDifference = Math.floor((today.getTime() - oldStartDate.getTime()) / (1000 * 60 * 60 * 24))
 
     localStorage.setItem(startDateKey, newStartDate)
 
@@ -1316,7 +1310,28 @@ function GoalTrackerApp() {
     // Update current week back to 1
     setCurrentWeek(1)
 
+    await supabase.from("goals").update({ current_progress: 0 }).eq("user_id", selectedAgentId)
+
+    // Reset all tasks to incomplete
     await supabase.from("tasks").update({ completed: false }).eq("user_id", selectedAgentId).eq("completed", true)
+
+    if (daysDifference !== 0) {
+      const { data: weeklyTasks } = await supabase
+        .from("tasks")
+        .select("id, target_date")
+        .eq("user_id", selectedAgentId)
+
+      if (weeklyTasks && weeklyTasks.length > 0) {
+        for (const task of weeklyTasks) {
+          const oldDate = new Date(task.target_date)
+          const newDate = new Date(oldDate.getTime() + daysDifference * 24 * 60 * 60 * 1000)
+          await supabase
+            .from("tasks")
+            .update({ target_date: newDate.toISOString().split("T")[0] }) // Only update the date part
+            .eq("id", task.id)
+        }
+      }
+    }
 
     toast({
       title: "New Cycle Started",
@@ -1383,9 +1398,9 @@ function GoalTrackerApp() {
             const startDateKey = `goalTracker_startDate_${selectedAgentId}`
             let startDate = localStorage.getItem(startDateKey)
 
-            const correctStartDate = "2025-10-08T00:00:00.000Z"
-            if (startDate !== correctStartDate) {
-              startDate = correctStartDate
+            // If no start date exists, use today's date
+            if (!startDate) {
+              startDate = new Date().toISOString()
               localStorage.setItem(startDateKey, startDate)
             }
 
@@ -2053,16 +2068,11 @@ function GoalTrackerApp() {
     const newCategoryName = editCategoryName.trim()
 
     try {
-      const { data: categories, error: fetchError } = await supabase
+      const { data: categories } = await supabase
         .from("categories")
         .select("id")
         .eq("name", oldCategoryName)
         .eq("user_id", (await supabase.auth.getUser()).data.user?.id)
-
-      if (fetchError) {
-        console.error("Error finding category:", fetchError)
-        return
-      }
 
       if (categories) {
         const { error: updateError } = await supabase
@@ -3210,7 +3220,7 @@ function GoalTrackerApp() {
         <div className="flex flex-1 overflow-hidden overflow-x-hidden">
           <AppSidebar />
           <SidebarInset className="flex-1 min-w-0">
-            <main className="flex-1 min-w-0 overflow-auto p-6">
+            <main className="flex-1 min-w-0 overflow-auto p-6 w-full max-w-none">
               <div className="w-full space-y-6">
                 {/* Header */}
                 <div className="w-full flex items-center justify-between mb-8">
@@ -3218,15 +3228,18 @@ function GoalTrackerApp() {
                     <h1 className="text-4xl font-bold text-gray-900 mb-2">
                       Hi {selectedAgentName?.split(" ")[0] || user?.name?.split(" ")[0] || "there"},
                     </h1>
-                    <p className="text-gray-600">Here are your tasks for week {currentWeek} of 12.</p>
+                    <p className="text-gray-600">
+                      Here are your tasks for week {currentWeek} of {dashboardMode === "standard" ? 52 : 12}.
+                    </p>
                   </div>
                   <div className="flex items-center space-x-2">
-                    {currentWeek === 12 && (
-                      <Button onClick={startNewCycle} className="text-sm bg-green-600 hover:bg-green-700 text-white">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Start New Goal Cycle
-                      </Button>
-                    )}
+                    {(currentWeek === 12 && dashboardMode === "12-week") ||
+                      (currentWeek === 52 && dashboardMode === "standard" && (
+                        <Button onClick={startNewCycle} className="text-sm bg-green-600 hover:bg-green-700 text-white">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Start New Goal Cycle
+                        </Button>
+                      ))}
                     <Button
                       variant="default"
                       size="sm"
@@ -3303,13 +3316,22 @@ function GoalTrackerApp() {
                   <Card className="border-0 shadow-sm">
                     <CardContent className="p-6">
                       <div className="flex flex-col items-center justify-center text-center h-full space-y-3">
-                        <p className="text-4xl font-bold text-gray-900">{13 - currentWeek}</p>
+                        <p className="text-4xl font-bold text-gray-900">
+                          {dashboardMode === "standard" ? 53 - currentWeek : 13 - currentWeek}
+                        </p>
                         <div className="flex items-center">
                           <Calendar className="h-4 w-4 mr-2 text-[#05a7b0]" />
                           <p className="text-sm font-medium text-gray-600">Weeks Left</p>
                         </div>
                         <div className="w-full">
-                          <Progress value={((currentWeek - 1) / 12) * 100} className="h-2 [&>div]:bg-[#05a7b0]" />
+                          <Progress
+                            value={
+                              dashboardMode === "standard"
+                                ? ((currentWeek - 1) / 52) * 100
+                                : ((currentWeek - 1) / 12) * 100
+                            }
+                            className="h-2 [&>div]:bg-[#05a7b0]"
+                          />
                         </div>
                       </div>
                     </CardContent>
