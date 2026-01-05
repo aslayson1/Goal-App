@@ -3341,7 +3341,7 @@ function GoalTrackerApp() {
                 <Tabs value={activeView} onValueChange={setActiveView} className="mb-8">
                   <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="daily">Daily Tasks</TabsTrigger>
-                    <TabsTrigger value="weekly">Weekly Tasks</TabsTrigger>
+                    <TabsTrigger value="weekly">Weekly Goals</TabsTrigger>
                     <TabsTrigger value={dashboardMode === "12-week" ? "1-week" : "1-year"}>
                       {dashboardMode === "12-week" ? "12-Week Goals" : "1-Year Goals"}
                     </TabsTrigger>
