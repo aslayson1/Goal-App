@@ -137,6 +137,7 @@ export function UserProfile({ onClose }: UserProfileProps) {
       const today = new Date().toISOString()
       const startDateKey = `goalTracker_startDate_${user.id}`
       localStorage.setItem(startDateKey, today)
+      console.log("[v0] Reset start date to:", today)
 
       // Reset goals progress to 0/initial state
       const goalsKey = `goals_data_${user.id}`
@@ -152,15 +153,16 @@ export function UserProfile({ onClose }: UserProfileProps) {
           }
         })
         localStorage.setItem(goalsKey, JSON.stringify(parsed))
+        console.log("[v0] Goals progress reset")
       }
 
-      setMessage({ type: "success", text: "Goal cycle has been reset successfully!" })
       setShowResetConfirm(false)
+      setMessage({ type: "success", text: "Goal cycle has been reset successfully!" })
 
-      // Trigger a page refresh
+      // Reload after a short delay to let the dialog close
       setTimeout(() => {
         window.location.reload()
-      }, 1000)
+      }, 500)
     } catch (error) {
       console.error("[v0] Error resetting cycle:", error)
       setMessage({ type: "error", text: "Failed to reset goal cycle" })
