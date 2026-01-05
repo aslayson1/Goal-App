@@ -51,6 +51,7 @@ export function UserProfile({ onClose }: UserProfileProps) {
   const [activeTab, setActiveTab] = useState("profile")
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
+  const [showResetConfirm, setShowResetConfirm] = useState(false)
 
   const [formData, setFormData] = useState(() => {
     if (!user)
@@ -123,6 +124,46 @@ export function UserProfile({ onClose }: UserProfileProps) {
     } catch (error) {
       console.error("[v0] Unexpected error:", error)
       setMessage({ type: "error", text: "An unexpected error occurred" })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleResetCycle = async () => {
+    setIsLoading(true)
+    setMessage(null)
+
+    try {
+      // Reset cycle start date to today
+      const today = new Date().toISOString()
+      localStorage.setItem(`cycle_start_date_${user.id}`, today)
+
+      // Reset goals progress to 0/initial state
+      const goalsKey = `goals_data_${user.id}`
+      const goalsData = localStorage.getItem(goalsKey)
+      if (goalsData) {
+        const parsed = JSON.parse(goalsData)
+        // Reset all goals to 0 progress
+        Object.keys(parsed).forEach((category) => {
+          if (parsed[category].goals) {
+            parsed[category].goals.forEach((goal: any) => {
+              goal.completed = 0
+            })
+          }
+        })
+        localStorage.setItem(goalsKey, JSON.stringify(parsed))
+      }
+
+      setMessage({ type: "success", text: "Goal cycle has been reset successfully!" })
+      setShowResetConfirm(false)
+
+      // Trigger a page refresh
+      setTimeout(() => {
+        window.location.reload()
+      }, 1000)
+    } catch (error) {
+      console.error("[v0] Error resetting cycle:", error)
+      setMessage({ type: "error", text: "Failed to reset goal cycle" })
     } finally {
       setIsLoading(false)
     }
@@ -344,6 +385,13 @@ export function UserProfile({ onClose }: UserProfileProps) {
                     Change Password
                   </Button>
                   <Button
+                    variant="outline"
+                    className="w-full justify-start bg-transparent"
+                    onClick={() => setShowResetConfirm(true)}
+                  >
+                    Reset Goal Cycle
+                  </Button>
+                  <Button
                     variant="destructive"
                     className="w-full justify-start"
                     onClick={() => {
@@ -376,6 +424,32 @@ export function UserProfile({ onClose }: UserProfileProps) {
           </DialogFooter>
         </form>
       </DialogContent>
+
+      <Dialog open={showResetConfirm} onOpenChange={setShowResetConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reset Goal Cycle?</DialogTitle>
+            <DialogDescription>
+              This will reset your goal cycle start date to today and clear all progress. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowResetConfirm(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleResetCycle} disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Resetting...
+                </>
+              ) : (
+                "Reset Cycle"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   )
 }
