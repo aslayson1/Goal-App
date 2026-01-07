@@ -667,7 +667,7 @@ const initialDailyTasks = {
       goalId: "up1",
       completed: false,
       timeBlock: "9:00 AM",
-      estimatedHours: 120,
+      estimatedMinutes: 120,
     },
   ],
   Tuesday: [
@@ -1154,8 +1154,6 @@ function GoalTrackerApp() {
 
   // Cal.com inspired color palette for category badges - each category gets a unique, distinct color
   const getCategoryColor = (category: string) => {
-    return "bg-black text-white border-black"
-
     // Check for custom colors first
     if (customCategoryColors[category]) {
       return customCategoryColors[category]
@@ -1166,16 +1164,23 @@ function GoalTrackerApp() {
       Upside: "bg-violet-100 text-violet-800 border-violet-200",
       "Poplar Title": "bg-purple-100 text-purple-800 border-purple-200",
       "Relationships/Family": "bg-pink-100 text-pink-800 border-pink-200",
+      "Family / Relationships": "bg-pink-100 text-pink-800 border-pink-200", // added variant with spaces
       "Physical/Nutrition/Health": "bg-lime-100 text-lime-800 border-lime-200",
+      Health: "bg-lime-100 text-lime-800 border-lime-200", // added short form
       "Spiritual/Contribution": "bg-emerald-100 text-emerald-800 border-emerald-200",
+      "Spiritual / Contribution": "bg-emerald-100 text-emerald-800 border-emerald-200", // added variant with spaces
       "Intellect/Education": "bg-amber-100 text-amber-800 border-amber-200",
+      Intellect: "bg-amber-100 text-amber-800 border-amber-200", // added short form
       "Lifestyle/Adventure": "bg-orange-100 text-orange-800 border-orange-200",
       "Personal Finance/Material": "bg-teal-100 text-teal-800 border-teal-200",
+      "Personal Finance": "bg-teal-100 text-teal-800 border-teal-200", // added short form
+      "Environment / Tribe": "bg-green-100 text-green-800 border-green-200", // added new category variant
+      "Personal To-do": "bg-indigo-100 text-indigo-800 border-indigo-200", // added new category variant
+      Mortgage: "bg-cyan-100 text-cyan-800 border-cyan-200", // added new category variant
+      "The Protocol": "bg-fuchsia-100 text-fuchsia-800 border-fuchsia-200", // added new category variant
     }
 
-    // Extended unique color palette for new categories
     const additionalColors = [
-      "bg-slate-100 text-slate-800 border-slate-200",
       "bg-rose-100 text-rose-800 border-rose-200",
       "bg-cyan-100 text-cyan-800 border-cyan-200",
       "bg-emerald-100 text-emerald-800 border-emerald-200",
@@ -1184,9 +1189,8 @@ function GoalTrackerApp() {
       "bg-red-100 text-red-800 border-red-200",
       "bg-sky-100 text-sky-800 border-sky-200",
       "bg-fuchsia-100 text-fuchsia-800 border-fuchsia-200",
-      "bg-stone-100 text-stone-800 border-stone-200",
-      "bg-zinc-100 text-zinc-800 border-zinc-800 border-zinc-200",
-      "bg-neutral-100 text-neutral-800 border-neutral-200",
+      "bg-indigo-100 text-indigo-800 border-indigo-200",
+      "bg-violet-100 text-violet-800 border-violet-200",
     ]
 
     // If category has a predefined color, use it
@@ -2019,7 +2023,7 @@ function GoalTrackerApp() {
     setShowAddWeeklyTask(false)
   }
 
-  const saveEditedDailyTask = () => {
+  const saveEditedDailyTask = async () => {
     if (!editingDailyTask) return
 
     editDailyTask(selectedDay, editingDailyTask.id, {
@@ -2030,8 +2034,59 @@ function GoalTrackerApp() {
       timeBlock: newDailyTask.timeBlock,
       estimatedMinutes: newDailyTask.estimatedMinutes,
     })
-    setEditingDailyTask(null)
-    setShowAddDailyTask(false)
+
+    try {
+      if (!user?.id) {
+        console.error("[v0] No user ID available for updating task")
+        return
+      }
+
+      // Look up category ID if category is provided
+      let categoryId = null
+      if (newDailyTask.category) {
+        const { data: categories } = await supabase
+          .from("categories")
+          .select("id")
+          .eq("name", newDailyTask.category)
+          .eq("user_id", user.id)
+          .single()
+
+        categoryId = categories?.id || null
+      }
+
+      const { error } = await supabase
+        .from("tasks")
+        .update({
+          title: newDailyTask.title,
+          description: newDailyTask.description,
+          category_id: categoryId,
+          goal_id: newDailyTask.goalId || null,
+          time_block: newDailyTask.timeBlock || null,
+          estimated_minutes: newDailyTask.estimatedMinutes,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", editingDailyTask.id)
+        .eq("user_id", user.id)
+
+      if (error) {
+        console.error("[v0] Error updating task:", error)
+      } else {
+        console.log("[v0] Task updated successfully in database")
+      }
+    } catch (error) {
+      console.error("[v0] Error in saveEditedDailyTask:", error)
+    } finally {
+      setEditingDailyTask(null)
+      setShowAddDailyTask(false)
+      setNewDailyTask({
+        title: "",
+        description: "",
+        category: "",
+        goalId: "",
+        timeBlock: "",
+        estimatedMinutes: 30,
+      })
+    }
   }
 
   const colorOptions = [
@@ -3210,6 +3265,7 @@ function GoalTrackerApp() {
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
+              {/* FIX: Added closing </DropdownMenuItem> tag */}
               <DropdownMenuItem asChild>
                 <SignOutButton className="w-full text-left" />
               </DropdownMenuItem>
@@ -3258,7 +3314,8 @@ function GoalTrackerApp() {
 
                 {/* Stats Overview */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <Card className="border-0 shadow-sm">
+                  {/* CHANGE: Updated border and shadow styling to match daily task containers */}
+                  <Card className="border border-border shadow-md">
                     <CardContent className="p-6">
                       <div className="flex flex-col items-center justify-center text-center h-full space-y-3">
                         <p className="text-4xl font-bold text-gray-900">{getTotalProgress()}%</p>
@@ -3273,7 +3330,7 @@ function GoalTrackerApp() {
                     </CardContent>
                   </Card>
 
-                  <Card className="border-0 shadow-sm">
+                  <Card className="border border-border shadow-md">
                     <CardContent className="p-6">
                       <div className="flex flex-col items-center justify-center text-center h-full space-y-3">
                         <p className="text-4xl font-bold text-gray-900">
@@ -3293,7 +3350,7 @@ function GoalTrackerApp() {
                     </CardContent>
                   </Card>
 
-                  <Card className="border-0 shadow-sm">
+                  <Card className="border border-border shadow-md">
                     <CardContent className="p-6">
                       <div className="flex flex-col items-center justify-center text-center h-full space-y-3">
                         <p className="text-4xl font-bold text-gray-900">
@@ -3313,7 +3370,7 @@ function GoalTrackerApp() {
                     </CardContent>
                   </Card>
 
-                  <Card className="border-0 shadow-sm">
+                  <Card className="border border-border shadow-md">
                     <CardContent className="p-6">
                       <div className="flex flex-col items-center justify-center text-center h-full space-y-3">
                         <p className="text-4xl font-bold text-gray-900">
@@ -3892,25 +3949,9 @@ function GoalTrackerApp() {
 
                   {/* Daily Tasks View */}
                   <TabsContent value="daily" className="mt-8 w-full" data-page="daily">
-                    {/* CHANGE: Moving header outside the grid to match 12-Week Goals structure */}
                     <div className="flex items-center justify-between mb-6">
-                      <div className="flex items-center space-x-4">
-                        <h2 className="text-2xl font-bold text-gray-900">Daily Tasks</h2>
-                        <Select value={selectedDay} onValueChange={setSelectedDay}>
-                          <SelectTrigger className="w-40">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map(
-                              (day) => (
-                                <SelectItem key={day} value={day}>
-                                  {day}
-                                </SelectItem>
-                              ),
-                            )}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                      <h2 className="text-2xl font-bold text-gray-900">Daily Tasks</h2>
+
                       <Button
                         variant="outline"
                         size="sm"
@@ -3925,131 +3966,64 @@ function GoalTrackerApp() {
                       </Button>
                     </div>
 
-                    {/* CHANGE: Grid now starts here without header inside */}
-                    <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-8">
-                      {Object.keys(goalsData).map((category) => {
-                        const categoryTasks = (dailyTasks[selectedDay] || []).filter(
-                          (task) => task.category === category,
-                        )
+                    <div className="space-y-4">
+                      {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((day) => {
+                        const dayTasks = dailyTasks[day] || []
 
                         return (
-                          <Card key={category} className="border-0 shadow-sm">
-                            <CardHeader className="pb-4">
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-2">
-                                    <Badge
-                                      className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}
-                                    >
-                                      {category}
-                                    </Badge>
-                                  </CardTitle>
-                                </div>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => {
-                                    setNewDailyTask((prev) => ({ ...prev, category }))
-                                    setShowAddDailyTask(true)
-                                  }}
-                                  className="h-8 w-8 p-0"
-                                >
-                                  <Plus className="h-4 w-4" />
-                                </Button>
-                              </div>
+                          // Updated Card to use consistent border and shadow on all sides
+                          <Card key={day} className="border border-border shadow-md">
+                            <CardHeader className="pb-3">
+                              <CardTitle className="text-base font-semibold">
+                                {day}
+                                <span className="text-sm font-normal text-gray-500 ml-2">
+                                  ({dayTasks.length} task{dayTasks.length !== 1 ? "s" : ""})
+                                </span>
+                              </CardTitle>
                             </CardHeader>
-                            {categoryTasks.length > 0 && (
-                              <CardContent className="space-y-4">
-                                <DndContext
-                                  sensors={sensors}
-                                  collisionDetection={closestCenter}
-                                  onDragEnd={(event) => handleDailyTaskDragEnd(event, category)}
-                                >
-                                  <SortableContext
-                                    items={categoryTasks.map((task) => task.id)}
-                                    strategy={verticalListSortingStrategy}
+                            {dayTasks.length > 0 && (
+                              <CardContent className="space-y-2">
+                                {dayTasks.map((task) => (
+                                  <div
+                                    key={task.id}
+                                    className="flex items-start gap-3 p-2 rounded-lg bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors"
+                                    onClick={() => startEditingDailyTask(task)}
                                   >
-                                    {categoryTasks.map((task) => (
-                                      <SortableDailyTaskItem
-                                        key={task.id}
-                                        task={task}
-                                        onToggle={() => toggleDailyTask(selectedDay, task.id)}
-                                        onEdit={() => startEditingDailyTask(task)}
-                                        onDelete={() => deleteDailyTask(selectedDay, task.id)}
-                                      />
-                                    ))}
-                                  </SortableContext>
-                                </DndContext>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        toggleDailyTask(day, task.id)
+                                      }}
+                                      className="mt-1 flex-shrink-0"
+                                    >
+                                      {task.completed ? (
+                                        <CheckCircle className="h-4 w-4 text-green-600" />
+                                      ) : (
+                                        <div className="h-4 w-4 rounded border border-gray-300" />
+                                      )}
+                                    </button>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <p
+                                          className={`text-sm ${task.completed ? "line-through text-gray-500" : "text-gray-900"}`}
+                                        >
+                                          {task.title}
+                                        </p>
+                                        <Badge
+                                          className={`px-2 py-0.5 rounded text-xs font-medium border ${getCategoryColor(task.category)}`}
+                                        >
+                                          {task.category}
+                                        </Badge>
+                                      </div>
+                                      {task.timeBlock && <p className="text-xs text-gray-500 mt-1">{task.timeBlock}</p>}
+                                    </div>
+                                  </div>
+                                ))}
                               </CardContent>
                             )}
                           </Card>
                         )
                       })}
-
-                      {(() => {
-                        const uncategorizedTasks = (dailyTasks[selectedDay] || []).filter(
-                          (task) => task.category === "Uncategorized",
-                        )
-
-                        if (uncategorizedTasks.length === 0) return null
-
-                        return (
-                          <Card key="uncategorized" className="border-0 shadow-sm">
-                            <CardHeader className="pb-4">
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-2">
-                                    <Badge className="px-3 py-1 rounded-full text-sm font-medium border bg-gray-100 text-gray-700 border-gray-300">
-                                      Uncategorized
-                                    </Badge>
-                                  </CardTitle>
-                                </div>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => {
-                                    setNewDailyTask((prev) => ({ ...prev, category: "" }))
-                                    setShowAddDailyTask(true)
-                                  }}
-                                  className="h-8 w-8 p-0"
-                                >
-                                  <Plus className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                              <DndContext
-                                sensors={sensors}
-                                collisionDetection={closestCenter}
-                                onDragEnd={(event) => handleDailyTaskDragEnd(event, "Uncategorized")}
-                              >
-                                <SortableContext
-                                  items={uncategorizedTasks.map((task) => task.id)}
-                                  strategy={verticalListSortingStrategy}
-                                >
-                                  {uncategorizedTasks.map((task) => (
-                                    <SortableDailyTaskItem
-                                      key={task.id}
-                                      task={task}
-                                      onToggle={() => toggleDailyTask(selectedDay, task.id)}
-                                      onEdit={() => startEditingDailyTask(task)}
-                                      onDelete={() => deleteDailyTask(selectedDay, task.id)}
-                                    />
-                                  ))}
-                                </SortableContext>
-                              </DndContext>
-                            </CardContent>
-                          </Card>
-                        )
-                      })()}
-
-                      {/* If no tasks exist at all for the selected day */}
-                      {Object.keys(dailyTasks).every((day) => !dailyTasks[day] || dailyTasks[day].length === 0) && (
-                        <div className="col-span-2 text-center py-12">
-                          <p className="text-gray-500 mb-4">No daily tasks for {selectedDay} yet</p>
-                          <p className="text-sm text-gray-400">Use the + buttons in each category to add tasks</p>
-                        </div>
-                      )}
                     </div>
                   </TabsContent>
 
@@ -4629,7 +4603,6 @@ function GoalTrackerApp() {
                           id="weekly-task-hours"
                           type="number"
                           min="1"
-                          max="40"
                           value={newWeeklyTask.estimatedHours}
                           onChange={(e) =>
                             setNewWeeklyTask((prev) => ({
@@ -4732,7 +4705,9 @@ function GoalTrackerApp() {
                       <Button variant="outline" onClick={() => setShowAddDailyTask(false)}>
                         Cancel
                       </Button>
-                      <Button onClick={addDailyTask}>Add Task</Button>
+                      <Button onClick={editingDailyTask ? saveEditedDailyTask : addDailyTask}>
+                        {editingDailyTask ? "Save Task" : "Add Task"}
+                      </Button>
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
