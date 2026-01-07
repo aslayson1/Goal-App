@@ -201,7 +201,7 @@ export function AppSidebar() {
   }
 
   return (
-    <Sidebar className="border-r" collapsible="icon">
+    <Sidebar className="border-r bg-white" collapsible="icon">
       <SidebarContent className="pt-4">
         <div className={state === "expanded" ? "px-3 pb-4" : "flex justify-center pb-4"}>
           {isOwner && agents.length > 1 ? (

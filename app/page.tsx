@@ -750,6 +750,7 @@ interface DailyTask {
   completed: boolean
   timeBlock: string
   estimatedMinutes: number
+  target_date?: string // Added for database fetching
 }
 
 interface GoalsData {
@@ -862,12 +863,6 @@ function SortableWeeklyTaskItem({
               {task.title}
             </h3>
             <div className="flex items-center space-x-2">
-              {task.timeBlock && (
-                <div className="flex items-center space-x-2">
-                  <Clock className="h-4 w-4 text-gray-400" />
-                  <span className="text-sm text-gray-500 font-mono">{task.timeBlock}</span>
-                </div>
-              )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -1056,7 +1051,7 @@ function GoalTrackerApp() {
   }, [user?.id])
 
   const [selectedDay, setSelectedDay] = useState(() => {
-    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+    const days = ["Sunday", "Monday", "Tuesday", " Wednesday", "Thursday", "Friday", "Saturday"]
     const today = new Date().getDay()
     return days[today]
   })
@@ -1249,7 +1244,7 @@ function GoalTrackerApp() {
     }
 
     // Handle daily tasks - move all incomplete tasks from previous days to today
-    const allDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    const allDays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 
     // Get all days before today
     const previousDays = []
@@ -2026,15 +2021,6 @@ function GoalTrackerApp() {
   const saveEditedDailyTask = async () => {
     if (!editingDailyTask) return
 
-    editDailyTask(selectedDay, editingDailyTask.id, {
-      title: newDailyTask.title,
-      description: newDailyTask.description,
-      category: newDailyTask.category,
-      goalId: newDailyTask.goalId,
-      timeBlock: newDailyTask.timeBlock,
-      estimatedMinutes: newDailyTask.estimatedMinutes,
-    })
-
     try {
       if (!user?.id) {
         console.error("[v0] No user ID available for updating task")
@@ -2072,6 +2058,19 @@ function GoalTrackerApp() {
         console.error("[v0] Error updating task:", error)
       } else {
         console.log("[v0] Task updated successfully in database")
+
+        const taskDate = new Date(editingDailyTask.target_date)
+        const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+        const dayName = daysOfWeek[taskDate.getDay()]
+
+        editDailyTask(dayName, editingDailyTask.id, {
+          title: newDailyTask.title,
+          description: newDailyTask.description,
+          category: newDailyTask.category,
+          goalId: newDailyTask.goalId,
+          timeBlock: newDailyTask.timeBlock,
+          estimatedMinutes: newDailyTask.estimatedMinutes,
+        })
       }
     } catch (error) {
       console.error("[v0] Error in saveEditedDailyTask:", error)
@@ -3125,6 +3124,7 @@ function GoalTrackerApp() {
             completed: !!task.completed,
             timeBlock: task.time_block || "9:00 AM", // Use stored time_block
             estimatedMinutes: task.estimated_minutes || 30, // Use stored estimated_minutes
+            target_date: task.target_date, // Add target_date to dailyTask interface for edit functionality
           }
 
           if (!dailyTasks[dayName]) {
@@ -3276,7 +3276,7 @@ function GoalTrackerApp() {
         <div className="flex flex-1 overflow-hidden overflow-x-hidden">
           <AppSidebar />
           <SidebarInset className="flex-1 min-w-0">
-            <main className="flex-1 min-w-0 overflow-auto p-6 w-full max-w-none">
+            <main className="flex-1 min-w-0 overflow-auto p-6 w-full max-w-none bg-slate-50">
               <div className="w-full space-y-6">
                 {/* Header */}
                 <div className="w-full flex items-center justify-between mb-8">
@@ -3986,7 +3986,7 @@ function GoalTrackerApp() {
                                 {dayTasks.map((task) => (
                                   <div
                                     key={task.id}
-                                    className="flex items-start gap-3 p-2 rounded-lg bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors"
+                                    className="flex items-start gap-3 p-2 rounded-lg bg-gray-50 border border-gray-200 hover:bg-gray-100 cursor-pointer transition-colors"
                                     onClick={() => startEditingDailyTask(task)}
                                   >
                                     <button
@@ -3999,7 +3999,7 @@ function GoalTrackerApp() {
                                       {task.completed ? (
                                         <CheckCircle className="h-4 w-4 text-green-600" />
                                       ) : (
-                                        <div className="h-4 w-4 rounded border border-gray-300" />
+                                        <div className="h-4 w-4 rounded border border-gray-300 bg-white" />
                                       )}
                                     </button>
                                     <div className="flex-1 min-w-0">
