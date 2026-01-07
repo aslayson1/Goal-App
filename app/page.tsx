@@ -1051,7 +1051,7 @@ function GoalTrackerApp() {
   }, [user?.id])
 
   const [selectedDay, setSelectedDay] = useState(() => {
-    const days = ["Sunday", "Monday", "Tuesday", " Wednesday", "Thursday", "Friday", "Saturday"]
+    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
     const today = new Date().getDay()
     return days[today]
   })
@@ -1338,7 +1338,7 @@ function GoalTrackerApp() {
     })
   }
 
-  // Replace the existing useEffect for moveIncompleteTasks with this enhanced version
+  // Enhanced useEffect for moving tasks and checking for day changes
   useEffect(() => {
     // Move incomplete tasks on component mount
     moveIncompleteTasks()
@@ -1375,7 +1375,7 @@ function GoalTrackerApp() {
     const intervalId = setInterval(checkForDayChange, 60 * 60 * 1000)
 
     return () => clearInterval(intervalId)
-  }, [])
+  }, []) // Dependency array is empty to run only on mount and unmount
 
   useEffect(() => {
     const checkDatabaseAndLoadData = async () => {
@@ -1508,6 +1508,68 @@ function GoalTrackerApp() {
       coordinateGetter: sortableKeyboardCoordinates,
     }),
   )
+
+  const handleTaskDragStart = (e: React.DragEvent, taskId: string, day: string) => {
+    e.dataTransfer.effectAllowed = "move"
+    e.dataTransfer.setData("taskId", taskId)
+    e.dataTransfer.setData("fromDay", day)
+  }
+
+  const handleDayDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = "move"
+  }
+
+  const handleDayDrop = async (e: React.DragEvent, toDay: string) => {
+    e.preventDefault()
+    const taskId = e.dataTransfer.getData("taskId")
+    const fromDay = e.dataTransfer.getData("fromDay")
+
+    if (fromDay === toDay || !taskId) return
+
+    // Find the task in the fromDay
+    const task = dailyTasks[fromDay]?.find((t) => t.id === taskId)
+    if (!task) return
+
+    // Calculate new target_date based on toDay
+    const daysMap: { [key: string]: number } = {
+      Monday: 1,
+      Tuesday: 2,
+      Wednesday: 3,
+      Thursday: 4,
+      Friday: 5,
+      Saturday: 6,
+      Sunday: 0,
+    }
+
+    const now = new Date()
+    const currentDay = now.getDay()
+    const targetDayNum = daysMap[toDay]
+    let daysToAdd = targetDayNum - currentDay
+
+    if (daysToAdd < 0) daysToAdd += 7
+
+    const newTargetDate = new Date(now)
+    newTargetDate.setDate(now.getDate() + daysToAdd)
+    const newTargetDateStr = newTargetDate.toISOString().split("T")[0]
+
+    // Update database
+    const { error } = await supabase.from("tasks").update({ target_date: newTargetDateStr }).eq("id", taskId)
+
+    if (error) {
+      console.error("[v0] Error updating task:", error)
+      return
+    }
+
+    // Update local state
+    setDailyTasks((prev) => {
+      const updated = { ...prev }
+      updated[fromDay] = updated[fromDay]?.filter((t) => t.id !== taskId) || []
+      if (!updated[toDay]) updated[toDay] = []
+      updated[toDay] = [...updated[toDay], { ...task, target_date: newTargetDateStr }]
+      return updated
+    })
+  }
 
   const incrementGoal = async (category: string, goalId: string, amount = 1) => {
     const goal = goalsData[category]?.find((g) => g.id === goalId)
@@ -3971,8 +4033,12 @@ function GoalTrackerApp() {
                         const dayTasks = dailyTasks[day] || []
 
                         return (
-                          // Updated Card to use consistent border and shadow on all sides
-                          <Card key={day} className="border border-border shadow-md">
+                          <Card
+                            key={day}
+                            className="border border-border shadow-md"
+                            onDragOver={handleDayDragOver}
+                            onDrop={(e) => handleDayDrop(e, day)}
+                          >
                             <CardHeader className="pb-3">
                               <CardTitle className="text-base font-semibold">
                                 {day}
@@ -3986,7 +4052,9 @@ function GoalTrackerApp() {
                                 {dayTasks.map((task) => (
                                   <div
                                     key={task.id}
-                                    className="flex items-start gap-3 p-2 rounded-lg bg-gray-50 border border-gray-200 hover:bg-gray-100 cursor-pointer transition-colors"
+                                    draggable
+                                    onDragStart={(e) => handleTaskDragStart(e, task.id, day)}
+                                    className="flex items-start gap-3 px-3 py-3 rounded-lg bg-gray-50 border border-gray-200 hover:bg-gray-100 cursor-pointer transition-colors"
                                     onClick={() => startEditingDailyTask(task)}
                                   >
                                     <button
@@ -4015,7 +4083,6 @@ function GoalTrackerApp() {
                                           {task.category}
                                         </Badge>
                                       </div>
-                                      {task.timeBlock && <p className="text-xs text-gray-500 mt-1">{task.timeBlock}</p>}
                                     </div>
                                   </div>
                                 ))}
