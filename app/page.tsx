@@ -916,63 +916,89 @@ function SortableDailyTaskItem({
     opacity: isDragging ? 0.5 : 1,
   }
 
+  const getCategoryColor = (category: string) => {
+    const colors = {
+      "Layson Group": "bg-sky-100 text-sky-800 border-sky-200",
+      Upside: "bg-violet-100 text-violet-800 border-violet-200",
+      "Poplar Title": "bg-purple-100 text-purple-800 border-purple-200",
+      "Relationships/Family": "bg-pink-100 text-pink-800 border-pink-200",
+      "Family / Relationships": "bg-pink-100 text-pink-800 border-pink-200",
+      "Physical/Nutrition/Health": "bg-lime-100 text-lime-800 border-lime-200",
+      Health: "bg-lime-100 text-lime-800 border-lime-200",
+      "Spiritual/Contribution": "bg-emerald-100 text-emerald-800 border-emerald-200",
+      "Spiritual / Contribution": "bg-emerald-100 text-emerald-800 border-emerald-200",
+      "Intellect/Education": "bg-amber-100 text-amber-800 border-amber-200",
+      Intellect: "bg-amber-100 text-amber-800 border-amber-200",
+      "Lifestyle/Adventure": "bg-orange-100 text-orange-800 border-orange-200",
+      "Personal Finance/Material": "bg-teal-100 text-teal-800 border-teal-200",
+      "Personal Finance": "bg-teal-100 text-teal-800 border-teal-200",
+      "Environment / Tribe": "bg-green-100 text-green-800 border-green-200",
+      "Personal To-do": "bg-indigo-100 text-indigo-800 border-indigo-200",
+      Mortgage: "bg-cyan-100 text-cyan-800 border-cyan-200",
+      "The Protocol": "bg-fuchsia-100 text-fuchsia-800 border-fuchsia-200",
+    }
+    return colors[category as keyof typeof colors] || "bg-gray-100 text-gray-800 border-gray-200"
+  }
+
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`p-3 rounded-lg bg-gray-50 border border-border ${isDragging ? "shadow-lg" : ""}`}
+      className={`flex items-center gap-3 px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors ${isDragging ? "bg-gray-100 shadow-md" : "bg-gray-50"}`}
     >
-      <div className="flex items-center space-x-3 mb-2">
-        <div
-          {...attributes}
-          {...listeners}
-          className="cursor-grab active:cursor-grabbing p-1 hover:bg-gray-200 rounded"
-        >
-          <GripVertical className="h-4 w-4 text-gray-400" />
-        </div>
-        <Checkbox checked={task.completed} onCheckedChange={onToggle} className={`${checkboxStyles}`} />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between">
-            <h3 className={`font-medium ${task.completed ? "line-through text-gray-500" : "text-gray-900"}`}>
-              {task.title}
-            </h3>
-            <div className="flex items-center space-x-2">
-              {task.timeBlock && (
-                <div className="flex items-center space-x-2">
-                  <Clock className="h-4 w-4 text-gray-400" />
-                  <span className="text-sm text-gray-500 font-mono">{task.timeBlock}</span>
-                </div>
-              )}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={onEdit}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit Task
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={onDelete} className="text-red-600">
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete Task
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
+      <div
+        {...attributes}
+        {...listeners}
+        className="cursor-grab active:cursor-grabbing hover:bg-gray-100 rounded p-1 flex-shrink-0"
+      >
+        <GripVertical className="h-4 w-4 text-gray-400" />
+      </div>
+      <button
+        onClick={(e) => {
+          e.stopPropagation()
+          onToggle()
+        }}
+        className="flex-shrink-0 focus:outline-none"
+      >
+        {task.completed ? (
+          <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+        ) : (
+          <div className="h-5 w-5 border-2 border-gray-300 rounded bg-white flex-shrink-0" />
+        )}
+      </button>
+      <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
+        {/* CHANGE: Changed from justify-between to flex-wrap so category badge appears right after title */}
+        <h3 className={`text-sm py-1 ${task.completed ? "line-through text-gray-500" : "text-gray-900"}`}>
+          {task.title}
+        </h3>
+        {task.category && (
+          <span
+            className={`text-xs px-2 py-0.5 rounded border font-medium flex-shrink-0 ${getCategoryColor(task.category)}`}
+          >
+            {task.category}
+          </span>
+        )}
+        <div className="flex-1"></div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={onEdit}>
+                <Edit className="h-4 w-4 mr-2" />
+                Edit Task
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onDelete} className="text-red-600">
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete Task
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
-      <p className="text-sm text-gray-600 mb-2">{task.description}</p>
-      {task.completed && (
-        <div className="flex justify-end text-xs">
-          <span className="flex items-center text-green-600">
-            <CheckCircle className="h-3 w-3 mr-1" />
-            Completed
-          </span>
-        </div>
-      )}
     </div>
   )
 }
@@ -1338,7 +1364,7 @@ function GoalTrackerApp() {
     })
   }
 
-  // Enhanced useEffect for moving tasks and checking for day changes
+  // Replace the existing useEffect for moveIncompleteTasks with this enhanced version
   useEffect(() => {
     // Move incomplete tasks on component mount
     moveIncompleteTasks()
@@ -1375,7 +1401,7 @@ function GoalTrackerApp() {
     const intervalId = setInterval(checkForDayChange, 60 * 60 * 1000)
 
     return () => clearInterval(intervalId)
-  }, []) // Dependency array is empty to run only on mount and unmount
+  }, [])
 
   useEffect(() => {
     const checkDatabaseAndLoadData = async () => {
@@ -1508,68 +1534,6 @@ function GoalTrackerApp() {
       coordinateGetter: sortableKeyboardCoordinates,
     }),
   )
-
-  const handleTaskDragStart = (e: React.DragEvent, taskId: string, day: string) => {
-    e.dataTransfer.effectAllowed = "move"
-    e.dataTransfer.setData("taskId", taskId)
-    e.dataTransfer.setData("fromDay", day)
-  }
-
-  const handleDayDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = "move"
-  }
-
-  const handleDayDrop = async (e: React.DragEvent, toDay: string) => {
-    e.preventDefault()
-    const taskId = e.dataTransfer.getData("taskId")
-    const fromDay = e.dataTransfer.getData("fromDay")
-
-    if (fromDay === toDay || !taskId) return
-
-    // Find the task in the fromDay
-    const task = dailyTasks[fromDay]?.find((t) => t.id === taskId)
-    if (!task) return
-
-    // Calculate new target_date based on toDay
-    const daysMap: { [key: string]: number } = {
-      Monday: 1,
-      Tuesday: 2,
-      Wednesday: 3,
-      Thursday: 4,
-      Friday: 5,
-      Saturday: 6,
-      Sunday: 0,
-    }
-
-    const now = new Date()
-    const currentDay = now.getDay()
-    const targetDayNum = daysMap[toDay]
-    let daysToAdd = targetDayNum - currentDay
-
-    if (daysToAdd < 0) daysToAdd += 7
-
-    const newTargetDate = new Date(now)
-    newTargetDate.setDate(now.getDate() + daysToAdd)
-    const newTargetDateStr = newTargetDate.toISOString().split("T")[0]
-
-    // Update database
-    const { error } = await supabase.from("tasks").update({ target_date: newTargetDateStr }).eq("id", taskId)
-
-    if (error) {
-      console.error("[v0] Error updating task:", error)
-      return
-    }
-
-    // Update local state
-    setDailyTasks((prev) => {
-      const updated = { ...prev }
-      updated[fromDay] = updated[fromDay]?.filter((t) => t.id !== taskId) || []
-      if (!updated[toDay]) updated[toDay] = []
-      updated[toDay] = [...updated[toDay], { ...task, target_date: newTargetDateStr }]
-      return updated
-    })
-  }
 
   const incrementGoal = async (category: string, goalId: string, amount = 1) => {
     const goal = goalsData[category]?.find((g) => g.id === goalId)
@@ -1746,8 +1710,8 @@ function GoalTrackerApp() {
 
   const getGoalType = (targetCount: number) => {
     if (targetCount === 1) return "binary"
-    if (targetCount <= 20) return "small"
-    if (targetCount <= 100) return "medium"
+    if (targetCount <= 100) return "small"
+    if (targetCount <= 1000) return "medium"
     return "large"
   }
 
@@ -2710,19 +2674,19 @@ function GoalTrackerApp() {
     }
   }
 
-  const handleDailyTaskDragEnd = async (event: DragEndEvent, category: string) => {
+  const handleDailyTaskDragEnd = async (event: DragEndEvent, day: string) => {
     const { active, over } = event
 
     if (!over) return
 
     if (active.id !== over.id) {
       setDailyTasks((prev) => {
-        const oldIndex = prev[selectedDay]?.findIndex((task) => task.id === active.id) || -1
-        const newIndex = prev[selectedDay]?.findIndex((task) => task.id === over.id) || -1
+        const oldIndex = prev[day]?.findIndex((task) => task.id === active.id) || -1
+        const newIndex = prev[day]?.findIndex((task) => task.id === over.id) || -1
 
         if (oldIndex === -1 || newIndex === -1) return prev
 
-        const newItems = arrayMove(prev[selectedDay], oldIndex, newIndex)
+        const newItems = arrayMove(prev[day], oldIndex, newIndex)
 
         const updates = newItems.map((task, index) => ({
           id: task.id,
@@ -2738,7 +2702,7 @@ function GoalTrackerApp() {
 
         return {
           ...prev,
-          [selectedDay]: newItems,
+          [day]: newItems,
         }
       })
     }
@@ -3847,7 +3811,7 @@ function GoalTrackerApp() {
                   {/* Weekly Tasks View */}
                   <TabsContent value="weekly" className="mt-8 w-full" data-page="weekly">
                     <div className="w-full flex items-center justify-between mb-6">
-                      <h2 className="text-2xl font-bold text-gray-900">Week {currentWeek} Tasks</h2>
+                      <h2 className="text-2xl font-bold text-gray-900">Week {currentWeek} Goals</h2>
                     </div>
 
                     {/* Group weekly tasks by category */}
@@ -4033,12 +3997,8 @@ function GoalTrackerApp() {
                         const dayTasks = dailyTasks[day] || []
 
                         return (
-                          <Card
-                            key={day}
-                            className="border border-border shadow-md"
-                            onDragOver={handleDayDragOver}
-                            onDrop={(e) => handleDayDrop(e, day)}
-                          >
+                          // Updated Card to use consistent border and shadow on all sides
+                          <Card key={day} className="border border-border shadow-md">
                             <CardHeader className="pb-3">
                               <CardTitle className="text-base font-semibold">
                                 {day}
@@ -4049,43 +4009,39 @@ function GoalTrackerApp() {
                             </CardHeader>
                             {dayTasks.length > 0 && (
                               <CardContent className="space-y-2">
-                                {dayTasks.map((task) => (
-                                  <div
-                                    key={task.id}
-                                    draggable
-                                    onDragStart={(e) => handleTaskDragStart(e, task.id, day)}
-                                    className="flex items-start gap-3 px-3 py-3 rounded-lg bg-gray-50 border border-gray-200 hover:bg-gray-100 cursor-pointer transition-colors"
-                                    onClick={() => startEditingDailyTask(task)}
+                                <DndContext
+                                  sensors={sensors}
+                                  collisionDetection={closestCenter}
+                                  onDragEnd={(event) => handleDailyTaskDragEnd(event, day)}
+                                >
+                                  <SortableContext
+                                    items={dayTasks.map((task) => task.id)}
+                                    strategy={verticalListSortingStrategy}
                                   >
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        toggleDailyTask(day, task.id)
-                                      }}
-                                      className="mt-1 flex-shrink-0"
-                                    >
-                                      {task.completed ? (
-                                        <CheckCircle className="h-4 w-4 text-green-600" />
-                                      ) : (
-                                        <div className="h-4 w-4 rounded border border-gray-300 bg-white" />
-                                      )}
-                                    </button>
-                                    <div className="flex-1 min-w-0">
-                                      <div className="flex items-center gap-2 flex-wrap">
-                                        <p
-                                          className={`text-sm ${task.completed ? "line-through text-gray-500" : "text-gray-900"}`}
-                                        >
-                                          {task.title}
-                                        </p>
-                                        <Badge
-                                          className={`px-2 py-0.5 rounded text-xs font-medium border ${getCategoryColor(task.category)}`}
-                                        >
-                                          {task.category}
-                                        </Badge>
-                                      </div>
-                                    </div>
-                                  </div>
-                                ))}
+                                    {dayTasks.map((task) => (
+                                      <SortableDailyTaskItem
+                                        key={task.id}
+                                        task={task}
+                                        onToggle={() => toggleDailyTask(day, task.id)}
+                                        onEdit={() => startEditingDailyTask(task)}
+                                        onDelete={() => {
+                                          const deleteDailyTask = async (taskId: string) => {
+                                            try {
+                                              await supabase.from("tasks").delete().eq("id", taskId)
+                                              setDailyTasks((prev) => ({
+                                                ...prev,
+                                                [day]: prev[day]?.filter((task) => task.id !== taskId) || [],
+                                              }))
+                                            } catch (error) {
+                                              console.error("Error deleting daily task:", error)
+                                            }
+                                          }
+                                          deleteDailyTask(task.id)
+                                        }}
+                                      />
+                                    ))}
+                                  </SortableContext>
+                                </DndContext>
                               </CardContent>
                             )}
                           </Card>
