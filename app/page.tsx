@@ -4069,7 +4069,7 @@ function GoalTrackerApp() {
                                 </CardTitle>
                               </CardHeader>
                               {dayTasks.length > 0 && (
-                                <CardContent className="space-y-2">
+                                <CardContent className="space-y-3">
                                   <SortableContext
                                     items={dayTasks.map((task) => `${day}-${task.id}`)} // Prefix ID with day
                                     strategy={verticalListSortingStrategy}

@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase/client"
 export interface LongTermGoal {
   id: string
   user_id: string
+  agent_id?: string // Added agent_id to interface
   title: string
   description: string | null
   goal_type: "1_year" | "5_year"
@@ -10,6 +11,10 @@ export interface LongTermGoal {
   completed_at: string | null
   created_at: string
   updated_at: string
+  target_count?: number
+  daily_target?: number
+  weekly_target?: number
+  current_progress?: number
 }
 
 export async function getLongTermGoals(goalType?: "1_year" | "5_year"): Promise<LongTermGoal[]> {
@@ -33,18 +38,37 @@ export async function getLongTermGoals(goalType?: "1_year" | "5_year"): Promise<
 }
 
 export async function createLongTermGoal(
-  goal: Omit<LongTermGoal, "id" | "user_id" | "created_at" | "updated_at">,
+  goal: Omit<LongTermGoal, "id" | "created_at" | "updated_at">,
 ): Promise<LongTermGoal | null> {
   try {
-    const { data, error } = await supabase.from("long_term_goals").insert(goal).select().single()
-    if (error) throw error
-    return data
-  } catch (error: any) {
-    if (error?.message?.includes("does not exist") || error?.message?.includes("schema cache")) {
-      console.warn("Long term goals table not found, skipping database operation")
+    const { data, error } = await supabase
+      .from("long_term_goals")
+      .insert({
+        title: goal.title,
+        description: goal.description,
+        goal_type: goal.goal_type,
+        completed: goal.completed,
+        completed_at: goal.completed_at,
+        target_count: goal.target_count,
+        daily_target: goal.daily_target,
+        weekly_target: goal.weekly_target,
+        current_progress: goal.current_progress,
+        agent_id: goal.agent_id,
+        // Note: user_id is automatically set by Supabase RLS policy to auth.uid()
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error("[v0] Supabase error creating goal:", error.message, error.details)
       return null
     }
-    throw error
+
+    console.log("[v0] Goal created successfully:", data?.id)
+    return data
+  } catch (error: any) {
+    console.error("[v0] Exception creating goal:", error.message)
+    return null
   }
 }
 
