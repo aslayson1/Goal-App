@@ -902,13 +902,15 @@ function SortableDailyTaskItem({
   onToggle,
   onEdit,
   onDelete,
+  taskId, // taskId will now include the day prefix
 }: {
   task: DailyTask
   onToggle: () => void
   onEdit: () => void
   onDelete: () => void
+  taskId: string // Changed to string to accommodate the prefixed ID
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id })
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: taskId }) // Use taskId here
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -2674,19 +2676,45 @@ function GoalTrackerApp() {
     }
   }
 
-  const handleDailyTaskDragEnd = async (event: DragEndEvent, day: string) => {
+  const getDateForDay = (dayName: string): string => {
+    const today = new Date()
+    const currentDay = today.getDay()
+    const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+    const targetDayIndex = daysOfWeek.indexOf(dayName)
+
+    const daysToAdd = (targetDayIndex - currentDay + 7) % 7
+    const targetDate = new Date(today)
+    targetDate.setDate(targetDate.getDate() + daysToAdd)
+
+    return targetDate.toISOString().split("T")[0]
+  }
+
+  const handleDailyTaskDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event
 
-    if (!over) return
+    if (!over || active.id === over.id) return
 
-    if (active.id !== over.id) {
+    const activeTaskId = String(active.id)
+    const overTaskId = String(over.id)
+
+    const activeDay = activeTaskId.split("-")[0]
+    const overDay = overTaskId.split("-")[0]
+    const activeId = activeTaskId.substring(activeDay.length + 1)
+    const overId = overTaskId.substring(overDay.length + 1)
+
+    // Find the task
+    const taskToMove = dailyTasks[activeDay]?.find((t) => t.id === activeId)
+    if (!taskToMove) return
+
+    // If dragging within the same day, just reorder
+    if (activeDay === overDay) {
       setDailyTasks((prev) => {
-        const oldIndex = prev[day]?.findIndex((task) => task.id === active.id) || -1
-        const newIndex = prev[day]?.findIndex((task) => task.id === over.id) || -1
+        const oldIndex = prev[activeDay]?.findIndex((task) => task.id === activeId) || -1
+        const newIndex = prev[activeDay]?.findIndex((task) => task.id === overId) || -1
 
         if (oldIndex === -1 || newIndex === -1) return prev
 
-        const newItems = arrayMove(prev[day], oldIndex, newIndex)
+        const newItems = arrayMove(prev[activeDay], oldIndex, newIndex)
 
         const updates = newItems.map((task, index) => ({
           id: task.id,
@@ -2702,9 +2730,37 @@ function GoalTrackerApp() {
 
         return {
           ...prev,
-          [day]: newItems,
+          [activeDay]: newItems,
         }
       })
+    } else {
+      const targetDate = getDateForDay(overDay)
+
+      setDailyTasks((prev) => {
+        // Remove from source day
+        const sourceDay = prev[activeDay]?.filter((task) => task.id !== activeId) || []
+
+        // Add to target day
+        const targetDayTasks = prev[overDay] || []
+        const overIndex = targetDayTasks.findIndex((task) => task.id === overId)
+        const insertIndex = overIndex >= 0 ? overIndex : targetDayTasks.length
+
+        const movedTask = { ...taskToMove, target_date: targetDate }
+        targetDayTasks.splice(insertIndex, 0, movedTask)
+
+        return {
+          ...prev,
+          [activeDay]: sourceDay,
+          [overDay]: targetDayTasks,
+        }
+      })
+
+      // Update database
+      try {
+        await supabase.from("tasks").update({ target_date: targetDate }).eq("id", activeId)
+      } catch (error) {
+        console.error("[v0] Error moving task to different day:", error)
+      }
     }
   }
 
@@ -3993,35 +4049,36 @@ function GoalTrackerApp() {
                     </div>
 
                     <div className="space-y-4">
-                      {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((day) => {
-                        const dayTasks = dailyTasks[day] || []
+                      <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDailyTaskDragEnd}
+                      >
+                        {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((day) => {
+                          const dayTasks = dailyTasks[day] || []
 
-                        return (
-                          // Updated Card to use consistent border and shadow on all sides
-                          <Card key={day} className="border border-border shadow-md">
-                            <CardHeader className="pb-3">
-                              <CardTitle className="text-base font-semibold">
-                                {day}
-                                <span className="text-sm font-normal text-gray-500 ml-2">
-                                  ({dayTasks.length} task{dayTasks.length !== 1 ? "s" : ""})
-                                </span>
-                              </CardTitle>
-                            </CardHeader>
-                            {dayTasks.length > 0 && (
-                              <CardContent className="space-y-2">
-                                <DndContext
-                                  sensors={sensors}
-                                  collisionDetection={closestCenter}
-                                  onDragEnd={(event) => handleDailyTaskDragEnd(event, day)}
-                                >
+                          return (
+                            // Updated Card to use consistent border and shadow on all sides
+                            <Card key={day} className="border border-border shadow-md">
+                              <CardHeader className="pb-3">
+                                <CardTitle className="text-base font-semibold">
+                                  {day}
+                                  <span className="text-sm font-normal text-gray-500 ml-2">
+                                    ({dayTasks.length} task{dayTasks.length !== 1 ? "s" : ""})
+                                  </span>
+                                </CardTitle>
+                              </CardHeader>
+                              {dayTasks.length > 0 && (
+                                <CardContent className="space-y-2">
                                   <SortableContext
-                                    items={dayTasks.map((task) => task.id)}
+                                    items={dayTasks.map((task) => `${day}-${task.id}`)} // Prefix ID with day
                                     strategy={verticalListSortingStrategy}
                                   >
                                     {dayTasks.map((task) => (
                                       <SortableDailyTaskItem
                                         key={task.id}
                                         task={task}
+                                        taskId={`${day}-${task.id}`} // Pass prefixed ID to SortableDailyTaskItem
                                         onToggle={() => toggleDailyTask(day, task.id)}
                                         onEdit={() => startEditingDailyTask(task)}
                                         onDelete={() => {
@@ -4041,12 +4098,12 @@ function GoalTrackerApp() {
                                       />
                                     ))}
                                   </SortableContext>
-                                </DndContext>
-                              </CardContent>
-                            )}
-                          </Card>
-                        )
-                      })}
+                                </CardContent>
+                              )}
+                            </Card>
+                          )
+                        })}
+                      </DndContext>
                     </div>
                   </TabsContent>
 
