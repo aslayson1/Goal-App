@@ -46,6 +46,7 @@ import Image from "next/image"
 import { useSearchParams } from "next/navigation"
 import React from "react" // Ensure React is imported
 import { toast } from "@/components/ui/use-toast" // Added for toast notifications
+import { Switch } from "@/components/ui/switch" // Import Switch component
 
 // Auth components
 import { useAuth } from "@/components/auth/auth-provider"
@@ -86,6 +87,8 @@ const initialGoalsData = {
       notes: "Focus on experienced agents with local market knowledge",
       weeklyTarget: 0.6,
       category: "Business",
+      distributeDaily: false, // Added distribution flags
+      distributeWeekly: false,
     },
     {
       id: "lg2",
@@ -96,6 +99,8 @@ const initialGoalsData = {
       notes: "Need to set up email templates and automation workflows",
       weeklyTarget: 0.08,
       category: "Business",
+      distributeDaily: false,
+      distributeWeekly: false,
     },
     {
       id: "lg3",
@@ -106,6 +111,8 @@ const initialGoalsData = {
       notes: "Research CRM integrations and analytics tools",
       weeklyTarget: 0.08,
       category: "Business",
+      distributeDaily: false,
+      distributeWeekly: false,
     },
     {
       id: "lg4",
@@ -116,6 +123,8 @@ const initialGoalsData = {
       notes: "Coordinate with development team on requirements",
       weeklyTarget: 0.08,
       category: "Business",
+      distributeDaily: false,
+      distributeWeekly: false,
     },
   ],
   Upside: [
@@ -128,6 +137,8 @@ const initialGoalsData = {
       notes: "Current conversion rate is 8%, need to improve onboarding",
       weeklyTarget: 8.3,
       category: "Business",
+      distributeDaily: false,
+      distributeWeekly: false,
     },
     {
       id: "up2",
@@ -138,6 +149,8 @@ const initialGoalsData = {
       notes: "Preparing pitch deck and financial projections",
       weeklyTarget: 62500,
       category: "Business",
+      distributeDaily: false,
+      distributeWeekly: false,
     },
     {
       id: "up3",
@@ -148,6 +161,8 @@ const initialGoalsData = {
       notes: "Initial conversations with 3 funds, 1 signed LOI",
       weeklyTarget: 0.4,
       category: "Business",
+      distributeDaily: false,
+      distributeWeekly: false,
     },
     {
       id: "up4",
@@ -158,6 +173,8 @@ const initialGoalsData = {
       notes: "Current rate is 8%, need better onboarding flow",
       weeklyTarget: 0.8,
       category: "Business",
+      distributeDaily: false,
+      distributeWeekly: false,
     },
     {
       id: "up5",
@@ -168,6 +185,8 @@ const initialGoalsData = {
       notes: "Evaluating potential partners in real estate tech space",
       weeklyTarget: 0.08,
       category: "Business",
+      distributeDaily: false,
+      distributeWeekly: false,
     },
   ],
   "Poplar Title": [
@@ -180,6 +199,8 @@ const initialGoalsData = {
       notes: "Currently ranking #7, need more local reviews and citations",
       weeklyTarget: 0.25,
       category: "Business",
+      distributeDaily: false,
+      distributeWeekly: false,
     },
     {
       id: "pt2",
@@ -190,6 +211,8 @@ const initialGoalsData = {
       notes: "First deal closed last month, pipeline building",
       weeklyTarget: 0.4,
       category: "Business",
+      distributeDaily: false,
+      distributeWeekly: false,
     },
   ],
   "Relationships/Family": [
@@ -202,6 +225,8 @@ const initialGoalsData = {
       notes: "Planned dinner and movie night, need to schedule more",
       weeklyTarget: 0.5,
       category: "Relationships",
+      distributeDaily: false,
+      distributeWeekly: false,
     },
     {
       id: "rf2",
@@ -212,6 +237,8 @@ const initialGoalsData = {
       notes: "First session went well, scheduled monthly check-ins",
       weeklyTarget: 0.25,
       category: "Relationships",
+      distributeDaily: false,
+      distributeWeekly: false,
     },
     {
       id: "rf3",
@@ -222,6 +249,8 @@ const initialGoalsData = {
       notes: "Kids love pickleball nights, great family bonding",
       weeklyTarget: 0.5,
       category: "Relationships",
+      distributeDaily: false,
+      distributeWeekly: false,
     },
     {
       id: "rf4",
@@ -232,6 +261,8 @@ const initialGoalsData = {
       notes: "First session was productive, kids are engaged",
       weeklyTarget: 0.25,
       category: "Relationships",
+      distributeDaily: false,
+      distributeWeekly: false,
     },
     {
       id: "rf5",
@@ -242,6 +273,8 @@ const initialGoalsData = {
       notes: "Zoo trip was amazing, planning museum visit next",
       weeklyTarget: 0.25,
       category: "Relationships",
+      distributeDaily: false,
+      distributeWeekly: false,
     },
     {
       id: "rf6",
@@ -252,6 +285,8 @@ const initialGoalsData = {
       notes: "Basketball game was great, planning fishing trip",
       weeklyTarget: 0.25,
       category: "Relationships",
+      distributeDaily: false,
+      distributeWeekly: false,
     },
     {
       id: "rf7",
@@ -262,6 +297,8 @@ const initialGoalsData = {
       notes: "Weekly Sunday calls established as routine",
       weeklyTarget: 1,
       category: "Relationships",
+      distributeDaily: false,
+      distributeWeekly: false,
     },
     {
       id: "rf8",
@@ -272,6 +309,8 @@ const initialGoalsData = {
       notes: "Group chat helps, but need more voice calls",
       weeklyTarget: 1,
       category: "Relationships",
+      distributeDaily: false,
+      distributeWeekly: false,
     },
   ],
   "Physical/Nutrition/Health": [
@@ -284,6 +323,8 @@ const initialGoalsData = {
       notes: "Averaging 8 miles per week, on track",
       weeklyTarget: 10,
       category: "Health",
+      distributeDaily: false,
+      distributeWeekly: false,
     },
     {
       id: "pnh2",
@@ -294,6 +335,8 @@ const initialGoalsData = {
       notes: "5 workouts per week schedule working well",
       weeklyTarget: 5,
       category: "Health",
+      distributeDaily: false,
+      distributeWeekly: false,
     },
     {
       id: "pnh3",
@@ -304,6 +347,8 @@ const initialGoalsData = {
       notes: "Morning stretches becoming habit",
       weeklyTarget: 5,
       category: "Health",
+      distributeDaily: false,
+      distributeWeekly: false,
     },
     {
       id: "pnh4",
@@ -314,6 +359,8 @@ const initialGoalsData = {
       notes: "Weekdays are easier, weekends more challenging",
       weeklyTarget: 4,
       category: "Health",
+      distributeDaily: false,
+      distributeWeekly: false,
     },
     {
       id: "pnh5",
@@ -324,6 +371,8 @@ const initialGoalsData = {
       notes: "Set phone reminders, consistency improving",
       weeklyTarget: 5,
       category: "Health",
+      distributeDaily: false,
+      distributeWeekly: false,
     },
   ],
   "Spiritual/Contribution": [
@@ -336,6 +385,8 @@ const initialGoalsData = {
       notes: "Sunday services, family enjoys the community",
       weeklyTarget: 0.8,
       category: "Spiritual",
+      distributeDaily: false,
+      distributeWeekly: false,
     },
     {
       id: "sc2",
@@ -346,6 +397,8 @@ const initialGoalsData = {
       notes: "10-minute morning sessions, very centering",
       weeklyTarget: 5,
       category: "Spiritual",
+      distributeDaily: false,
+      distributeWeekly: false,
     },
     {
       id: "sc3",
@@ -356,6 +409,8 @@ const initialGoalsData = {
       notes: "Using audio bible during commute",
       weeklyTarget: 5,
       category: "Spiritual",
+      distributeDaily: false,
+      distributeWeekly: false,
     },
   ],
   "Intellect/Education": [
@@ -368,6 +423,8 @@ const initialGoalsData = {
       notes: "Morning review routine established",
       weeklyTarget: 5,
       category: "Education",
+      distributeDaily: false,
+      distributeWeekly: false,
     },
     {
       id: "ie2",
@@ -378,6 +435,8 @@ const initialGoalsData = {
       notes: "Finished 'Atomic Habits', starting 'Deep Work'",
       weeklyTarget: 0.17,
       category: "Education",
+      distributeDaily: false,
+      distributeWeekly: false,
     },
     {
       id: "ie3",
@@ -388,6 +447,8 @@ const initialGoalsData = {
       notes: "Business and personal development focused",
       weeklyTarget: 1.25,
       category: "Education",
+      distributeDaily: false,
+      distributeWeekly: false,
     },
   ],
   "Lifestyle/Adventure": [
@@ -400,6 +461,8 @@ const initialGoalsData = {
       notes: "Looking at Nashville or Gatlinburg options",
       weeklyTarget: 0.08,
       category: "Lifestyle",
+      distributeDaily: false,
+      distributeWeekly: false,
     },
     {
       id: "la2",
@@ -410,6 +473,8 @@ const initialGoalsData = {
       notes: "Played with clients, great for relationship building",
       weeklyTarget: 0.25,
       category: "Lifestyle",
+      distributeDaily: false,
+      distributeWeekly: false,
     },
     {
       id: "la3",
@@ -420,6 +485,8 @@ const initialGoalsData = {
       notes: "Tried rock climbing, was challenging but fun",
       weeklyTarget: 0.25,
       category: "Lifestyle",
+      distributeDaily: false,
+      distributeWeekly: false,
     },
   ],
   "Personal Finance/Material": [
@@ -432,6 +499,8 @@ const initialGoalsData = {
       notes: "Researching properties and auction process",
       weeklyTarget: 0.08,
       category: "Financial",
+      distributeDaily: false,
+      distributeWeekly: false,
     },
     {
       id: "pfm2",
@@ -442,6 +511,8 @@ const initialGoalsData = {
       notes: "Comparing high-yield business account options",
       weeklyTarget: 0.08,
       category: "Financial",
+      distributeDaily: false,
+      distributeWeekly: false,
     },
   ],
 }
@@ -472,7 +543,6 @@ const initialLongTermGoals = {
         targetDate: "2025-10-31",
         category: "Business",
         status: "in-progress",
-        notes: "Research market conditions and local partnerships",
         milestones: [
           { id: "m1", title: "Market research complete", completed: true, targetDate: "2025-01-31" },
           { id: "m2", title: "Atlanta office opened", completed: false, targetDate: "2025-05-31" },
@@ -739,6 +809,11 @@ interface WeeklyTask {
   completed: boolean
   priority: "low" | "medium" | "high"
   estimatedHours: number
+  // Added for database mapping
+  linked_goal_id?: string | null
+  counter?: number
+  target_count?: number | null
+  weekly_target?: number | null
 }
 
 interface DailyTask {
@@ -750,7 +825,11 @@ interface DailyTask {
   completed: boolean
   timeBlock: string
   estimatedMinutes: number
-  target_date?: string // Added for database fetching
+  target_date?: string // Added for edit functionality and moving tasks
+  linked_goal_id?: string | null
+  counter?: number // Added for numeric tasks
+  target_count?: number | null // Added for numeric tasks
+  daily_target?: number | null
 }
 
 interface GoalsData {
@@ -766,6 +845,9 @@ interface Goal {
   notes: string
   weeklyTarget: number
   category: string
+  // Added distribution toggle fields to Goal interface
+  distributeDaily: boolean
+  distributeWeekly: boolean
 }
 
 interface LongTermGoal {
@@ -827,12 +909,14 @@ function SortableWeeklyTaskItem({
   onEdit,
   onDelete,
   getPriorityColor,
+  onUpdateCounter,
 }: {
   task: WeeklyTask
   onToggle: () => void
   onEdit: () => void
   onDelete: () => void
   getPriorityColor: (priority: string) => string
+  onUpdateCounter?: (newCount: number) => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id })
 
@@ -840,6 +924,130 @@ function SortableWeeklyTaskItem({
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
+  }
+
+  const getCategoryColor = (category: string) => {
+    const colors: { [key: string]: string } = {
+      "Layson Group": "bg-blue-100 text-blue-800",
+      Upside: "bg-purple-100 text-purple-800",
+      "Family / Relationships": "bg-pink-100 text-pink-800",
+      Mortgage: "bg-green-100 text-green-800",
+      "Poplar Title": "bg-orange-100 text-orange-800",
+      "The Protocol": "bg-yellow-100 text-yellow-800",
+    }
+    return colors[category] || "bg-gray-100 text-gray-800"
+  }
+
+  // Check if this is a numeric task
+  const isNumericTask = task.target_count !== null && task.target_count !== undefined && task.target_count > 0
+  const currentCount = task.counter || 0
+  const targetCount = task.target_count || 0
+  const weeklyTarget = task.weekly_target || targetCount
+  const progressPercent = targetCount > 0 ? Math.round((currentCount / targetCount) * 100) : 0
+
+  // Calculate increment buttons based on target size
+  const getIncrementButtons = () => {
+    if (targetCount <= 100) return [1, 5, 10, 25]
+    if (targetCount <= 1000) return [1, 10, 50, 100]
+    if (targetCount <= 10000) return [1, 100, 1000, 5000]
+    return [1, 100, 1000, 5000]
+  }
+
+  if (isNumericTask) {
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        className={`p-3 rounded-lg bg-gray-50 border border-border ${isDragging ? "shadow-lg" : ""}`}
+      >
+        <div className="flex items-center space-x-3">
+          <div
+            {...attributes}
+            {...listeners}
+            className="cursor-grab active:cursor-grabbing p-1 hover:bg-gray-200 rounded"
+          >
+            <GripVertical className="h-4 w-4 text-gray-400" />
+          </div>
+          {task.completed ? (
+            <CheckCircle className="h-4 w-4 text-green-500 cursor-pointer" onClick={onToggle} />
+          ) : (
+            <Checkbox checked={task.completed} onCheckedChange={onToggle} className={`${checkboxStyles}`} />
+          )}
+          <div className="flex-1 min-w-0 flex items-center gap-2">
+            <h3 className={`text-sm ${task.completed ? "line-through text-gray-500" : "text-gray-900"}`}>
+              {task.title}
+            </h3>
+            {task.category && (
+              <Badge variant="secondary" className={`text-xs ${getCategoryColor(task.category)}`}>
+                {task.category}
+              </Badge>
+            )}
+          </div>
+          <Badge variant="outline" className="text-blue-600 border-blue-200">
+            On Track
+          </Badge>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={onEdit}>
+                <Edit className="h-4 w-4 mr-2" />
+                Edit Task
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onDelete} className="text-red-600">
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete Task
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* Progress counter */}
+        <div className="mt-3 flex justify-between items-center text-sm">
+          <span className="text-gray-600">
+            {currentCount} / {targetCount}
+          </span>
+          <span className="text-gray-600">{progressPercent}%</span>
+        </div>
+
+        {/* Progress bar */}
+        <div className="mt-1 w-full bg-gray-200 rounded-full h-2">
+          <div
+            className="bg-teal-500 h-2 rounded-full transition-all duration-300"
+            style={{ width: `${Math.min(progressPercent, 100)}%` }}
+          />
+        </div>
+
+        {/* Increment buttons and input */}
+        <div className="mt-3 flex items-center justify-between">
+          <div className="flex gap-2">
+            {getIncrementButtons().map((increment) => (
+              <Button
+                key={increment}
+                variant="outline"
+                size="sm"
+                className="h-8 px-3 bg-transparent"
+                onClick={() => onUpdateCounter?.(currentCount + increment)}
+              >
+                +{increment >= 1000 ? `${increment / 1000}k` : increment}
+              </Button>
+            ))}
+          </div>
+          <Input
+            type="number"
+            value={currentCount}
+            onChange={(e) => onUpdateCounter?.(Number(e.target.value) || 0)}
+            className="w-20 h-8 text-center"
+          />
+        </div>
+
+        {/* Weekly target */}
+        <p className="mt-2 text-sm text-gray-500">Weekly target: {weeklyTarget}</p>
+      </div>
+    )
   }
 
   return (
@@ -902,12 +1110,14 @@ function SortableDailyTaskItem({
   onToggle,
   onEdit,
   onDelete,
+  onUpdateCounter,
   taskId, // taskId will now include the day prefix
 }: {
   task: DailyTask
   onToggle: () => void
   onEdit: () => void
   onDelete: () => void
+  onUpdateCounter?: (newCount: number) => void
   taskId: string // Changed to string to accommodate the prefixed ID
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: taskId }) // Use taskId here
@@ -924,22 +1134,146 @@ function SortableDailyTaskItem({
       Upside: "bg-violet-100 text-violet-800 border-violet-200",
       "Poplar Title": "bg-purple-100 text-purple-800 border-purple-200",
       "Relationships/Family": "bg-pink-100 text-pink-800 border-pink-200",
-      "Family / Relationships": "bg-pink-100 text-pink-800 border-pink-200",
+      "Family / Relationships": "bg-pink-100 text-pink-800 border-pink-200", // added variant with spaces
       "Physical/Nutrition/Health": "bg-lime-100 text-lime-800 border-lime-200",
-      Health: "bg-lime-100 text-lime-800 border-lime-200",
+      Health: "bg-lime-100 text-lime-800 border-lime-200", // added short form
       "Spiritual/Contribution": "bg-emerald-100 text-emerald-800 border-emerald-200",
-      "Spiritual / Contribution": "bg-emerald-100 text-emerald-800 border-emerald-200",
+      "Spiritual / Contribution": "bg-emerald-100 text-emerald-800 border-emerald-200", // added variant with spaces
       "Intellect/Education": "bg-amber-100 text-amber-800 border-amber-200",
-      Intellect: "bg-amber-100 text-amber-800 border-amber-200",
+      Intellect: "bg-amber-100 text-amber-800 border-amber-200", // added short form
       "Lifestyle/Adventure": "bg-orange-100 text-orange-800 border-orange-200",
       "Personal Finance/Material": "bg-teal-100 text-teal-800 border-teal-200",
-      "Personal Finance": "bg-teal-100 text-teal-800 border-teal-200",
+      "Personal Finance": "bg-teal-100 text-teal-800 border-teal-200", // added short form
       "Environment / Tribe": "bg-green-100 text-green-800 border-green-200",
       "Personal To-do": "bg-indigo-100 text-indigo-800 border-indigo-200",
       Mortgage: "bg-cyan-100 text-cyan-800 border-cyan-200",
       "The Protocol": "bg-fuchsia-100 text-fuchsia-800 border-fuchsia-200",
     }
     return colors[category as keyof typeof colors] || "bg-gray-100 text-gray-800 border-gray-200"
+  }
+
+  const isNumericTask = task.target_count !== null && task.target_count !== undefined && task.target_count > 0
+  const currentCount = task.counter || 0
+  const targetCount = task.target_count || 0
+  const progressPercentage = targetCount > 0 ? Math.min((currentCount / targetCount) * 100, 100) : 0
+
+  // Calculate quick increment values based on target size
+  const getQuickIncrements = (target: number) => {
+    if (target <= 10) return [1]
+    if (target <= 100) return [1, 5, 10]
+    if (target <= 1000) return [1, 10, 50, 100]
+    return [1, 100, 1000, 5000]
+  }
+
+  const quickIncrements = getQuickIncrements(targetCount)
+
+  if (isNumericTask) {
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        className={`p-4 rounded-lg border border-gray-200 bg-gray-50 ${isDragging ? "shadow-md" : ""}`}
+      >
+        {/* Header row with drag handle, checkbox, title, badge, and menu */}
+        <div className="flex items-center gap-3 mb-3">
+          <div
+            {...attributes}
+            {...listeners}
+            className="cursor-grab active:cursor-grabbing hover:bg-gray-100 rounded p-1 flex-shrink-0"
+          >
+            <GripVertical className="h-4 w-4 text-gray-400" />
+          </div>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onToggle()
+            }}
+            className="flex-shrink-0 focus:outline-none"
+          >
+            {task.completed ? (
+              <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+            ) : (
+              <div className="h-5 w-5 border-2 border-gray-300 rounded bg-white flex-shrink-0" />
+            )}
+          </button>
+          {/* CHANGE: Move category badge inside title container so it appears next to title */}
+          <div className="flex-1 min-w-0 flex items-center gap-2">
+            <h3 className={`text-sm ${task.completed ? "line-through text-gray-500" : "text-gray-900"}`}>
+              {task.title}
+            </h3>
+            {task.category && (
+              <span
+                className={`text-xs px-2 py-0.5 rounded border font-medium flex-shrink-0 ${getCategoryColor(task.category)}`}
+              >
+                {task.category}
+              </span>
+            )}
+          </div>
+          {/* CHANGE: On Track badge stays on the right */}
+          <Badge variant="secondary" className="bg-blue-100 text-blue-800 whitespace-nowrap flex-shrink-0">
+            On Track
+          </Badge>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={onEdit}>
+                <Edit className="h-4 w-4 mr-2" />
+                Edit Task
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onDelete} className="text-red-600">
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete Task
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* Progress section */}
+        <div className="space-y-3">
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">
+                {currentCount} / {targetCount}
+              </span>
+              <span className="font-medium text-gray-900">{Math.round(progressPercentage)}%</span>
+            </div>
+            <Progress value={progressPercentage} className="h-2 [&>div]:bg-[#05a7b0]" />
+          </div>
+
+          {/* Increment buttons and input */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-1">
+              {quickIncrements.map((increment) => (
+                <Button
+                  key={increment}
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onUpdateCounter?.(currentCount + increment)}
+                  className="h-7 px-2 text-xs"
+                >
+                  +{increment >= 1000 ? `${increment / 1000}k` : increment}
+                </Button>
+              ))}
+            </div>
+            <Input
+              type="number"
+              value={currentCount}
+              onChange={(e) => onUpdateCounter?.(Number.parseInt(e.target.value) || 0)}
+              className="w-20 h-7 text-xs text-center"
+              min="0"
+              max={targetCount}
+            />
+          </div>
+        </div>
+
+        {/* Description if exists */}
+        {task.description && <p className="text-xs text-gray-500 mt-2">{task.description}</p>}
+      </div>
+    )
   }
 
   return (
@@ -968,11 +1302,9 @@ function SortableDailyTaskItem({
           <div className="h-5 w-5 border-2 border-gray-300 rounded bg-white flex-shrink-0" />
         )}
       </button>
-      <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
-        {/* CHANGE: Changed from justify-between to flex-wrap so category badge appears right after title */}
-        <h3 className={`text-sm py-1 ${task.completed ? "line-through text-gray-500" : "text-gray-900"}`}>
-          {task.title}
-        </h3>
+      <div className="flex-1 min-w-0 flex items-center gap-2">
+        {/* CHANGE: Match text style of regular tasks (text-sm instead of font-medium) */}
+        <h3 className={`text-sm ${task.completed ? "line-through text-gray-500" : "text-gray-900"}`}>{task.title}</h3>
         {task.category && (
           <span
             className={`text-xs px-2 py-0.5 rounded border font-medium flex-shrink-0 ${getCategoryColor(task.category)}`}
@@ -1001,6 +1333,29 @@ function SortableDailyTaskItem({
           </DropdownMenu>
         </div>
       </div>
+    </div>
+  )
+}
+
+function DroppableDayPlaceholder({ day }: { day: string }) {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
+    id: day, // Use the day name as the ID for sorting/dropping
+  })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className="flex items-center justify-center h-full text-sm text-muted-foreground py-4 border-2 border-dashed border-gray-200 rounded-lg"
+    >
+      Drop tasks here for {day}
     </div>
   )
 }
@@ -1111,6 +1466,8 @@ function GoalTrackerApp() {
     description: "",
     targetCount: 0,
     weeklyTarget: 0,
+    distributeDaily: false,
+    distributeWeekly: false,
   })
 
   const [newWeeklyTask, setNewWeeklyTask] = useState({
@@ -1443,6 +1800,9 @@ function GoalTrackerApp() {
             const taskData = await loadTasksFromDB(selectedAgentId)
             await loadLongTermGoalsFromDB()
 
+            // ADDED: Call autoGenerateDailyTasks here
+            await autoGenerateDailyTasks(selectedAgentId, dbData, taskData.dailyTasks)
+
             try {
               const { data: notesFromDB } = await supabase
                 .from("notes")
@@ -1572,16 +1932,30 @@ function GoalTrackerApp() {
     }
   }
 
-  const updateGoalProgress = async (category: string, goalId: string, newValue: number) => {
-    const goal = goalsData[category]?.find((g) => g.id === goalId)
-    if (!goal) return
+  const updateGoalProgress = async (goalId: string, newValue: number) => {
+    // Find the category of the goal first
+    let goalCategory = ""
+    let goalToUpdate: Goal | undefined
 
-    const clampedValue = Math.min(Math.max(newValue, 0), goal.targetCount)
+    for (const [category, goals] of Object.entries(goalsData)) {
+      const foundGoal = goals.find((g) => g.id === goalId)
+      if (foundGoal) {
+        goalCategory = category
+        goalToUpdate = foundGoal
+        break
+      }
+    }
+
+    if (!goalToUpdate || !goalCategory) return
+
+    const clampedValue = Math.min(Math.max(newValue, 0), goalToUpdate.targetCount)
 
     // Update local state immediately for UI feedback
     setGoalsData((prev) => ({
       ...prev,
-      [category]: prev[category].map((goal) => (goal.id === goalId ? { ...goal, currentCount: clampedValue } : goal)),
+      [goalCategory]: prev[goalCategory].map((goal) =>
+        goal.id === goalId ? { ...goal, currentCount: clampedValue } : goal,
+      ),
     }))
 
     // Check if this is a database goal (has UUID format) vs local goal
@@ -1596,8 +1970,8 @@ function GoalTrackerApp() {
           // Revert local state on error
           setGoalsData((prev) => ({
             ...prev,
-            [category]: prev[category].map((goal) =>
-              goal.id === goalId ? { ...goal, currentCount: goal.currentCount } : goal,
+            [goalCategory]: prev[goalCategory].map((goal) =>
+              goal.id === goalId ? { ...goal, currentCount: goalToUpdate.currentCount } : goal,
             ),
           }))
         }
@@ -1747,6 +2121,9 @@ function GoalTrackerApp() {
           notes: "",
           weeklyTarget: weeklyTargetValue,
           category: selectedCategory,
+          // Set distribution flags from newGoal state
+          distributeDaily: newGoal.distributeDaily,
+          distributeWeekly: newGoal.distributeWeekly,
         },
       ],
     }))
@@ -1792,18 +2169,133 @@ function GoalTrackerApp() {
         target_count: targetCount,
         current_progress: 0,
         weekly_target: weeklyTargetValue,
+        distribute_daily: newGoal.distributeDaily,
+        distribute_weekly: newGoal.distributeWeekly,
+        daily_target: Math.ceil(targetCount / 84), // Calculate daily target (12 weeks * 7 days)
       })
 
       if (error) {
         console.error("Error saving goal to database:", error)
       } else {
         console.log("Goal saved to database successfully")
+
+        if (targetCount > 0 && (newGoal.distributeDaily || newGoal.distributeWeekly)) {
+          const dailyTarget = Math.ceil(targetCount / 84) // 12 weeks * 7 days
+          const weeklyTarget = Math.ceil(targetCount / 12)
+
+          // Create daily task if daily distribution is enabled
+          if (newGoal.distributeDaily) {
+            const today = new Date()
+            const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`
+            const dailyTaskId = crypto.randomUUID()
+
+            const dailyTask: DailyTask = {
+              id: dailyTaskId,
+              title: newGoal.title,
+              description: `Daily target: ${dailyTarget}`,
+              category: selectedCategory,
+              goalId: goalId,
+              completed: false,
+              timeBlock: "",
+              estimatedMinutes: 0,
+              target_date: todayStr,
+              linked_goal_id: goalId,
+              counter: 0,
+              target_count: targetCount,
+              daily_target: dailyTarget,
+            }
+
+            // Add to local state
+            const dayName = today.toLocaleDateString("en-US", { weekday: "long" })
+            setDailyTasks((prev) => ({
+              ...prev,
+              [dayName]: [...(prev[dayName] || []), dailyTask],
+            }))
+
+            // Save to database
+            const { error: dailyTaskError } = await supabase.from("tasks").insert({
+              id: dailyTaskId,
+              user_id: user.id,
+              title: newGoal.title,
+              description: `Daily target: ${dailyTarget}`,
+              category_id: categories.id,
+              task_type: "daily",
+              target_date: todayStr,
+              linked_goal_id: goalId,
+              counter: 0,
+              target_count: targetCount,
+              daily_target: dailyTarget, // Note: This likely intended to be weekly_target or similar if DB schema differs, but following prompt exactly.
+              completed: false,
+            })
+
+            if (dailyTaskError) {
+              console.error("Error creating daily task:", dailyTaskError)
+            } else {
+              console.log("Daily task created successfully")
+            }
+          }
+
+          // Create weekly task if weekly distribution is enabled
+          if (newGoal.distributeWeekly) {
+            const today = new Date()
+            const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`
+            const weeklyTaskId = crypto.randomUUID()
+
+            // Add to weekly tasks local state
+            const newWeeklyTask = {
+              id: weeklyTaskId,
+              title: newGoal.title,
+              description: `Weekly target: ${weeklyTarget}`,
+              category: selectedCategory,
+              completed: false,
+              linked_goal_id: goalId,
+              counter: 0,
+              target_count: targetCount,
+              weekly_target: weeklyTarget,
+            }
+
+            const weekKey = `Week ${currentWeek}`
+            setWeeklyTasks((prev) => ({
+              ...prev,
+              [weekKey]: [...(prev[weekKey] || []), newWeeklyTask],
+            }))
+
+            // Save to database
+            const { error: weeklyTaskError } = await supabase.from("tasks").insert({
+              id: weeklyTaskId,
+              user_id: user.id,
+              title: newGoal.title,
+              description: `Weekly target: ${weeklyTarget}`,
+              category_id: categories.id,
+              task_type: "weekly",
+              target_date: todayStr,
+              linked_goal_id: goalId,
+              counter: 0,
+              target_count: targetCount,
+              weekly_target: weeklyTarget,
+              completed: false,
+            })
+
+            if (weeklyTaskError) {
+              console.error("Error creating weekly task:", weeklyTaskError)
+            } else {
+              console.log("[v0] Weekly task created successfully for", weekKey)
+            }
+          }
+        }
       }
     } catch (error) {
       console.error("Error saving goal:", error)
     }
 
-    setNewGoal({ title: "", description: "", targetCount: 0, weeklyTarget: 0 })
+    setNewGoal({
+      title: "",
+      description: "",
+      targetCount: 0,
+      weeklyTarget: 0,
+      distributeDaily: false,
+      distributeWeekly: false,
+    })
     setSelectedCategory("")
     setShowAddGoal(false)
   }
@@ -1892,6 +2384,9 @@ function GoalTrackerApp() {
             description: newGoal.description,
             target_count: newGoal.targetCount,
             weekly_target: weeklyTargetValue,
+            // Update distribution flags on edit
+            distribute_daily: newGoal.distributeDaily,
+            distribute_weekly: newGoal.distributeWeekly,
             updated_at: new Date().toISOString(),
           })
           .eq("id", editingGoal.goal.id)
@@ -1908,9 +2403,19 @@ function GoalTrackerApp() {
       description: newGoal.description,
       targetCount: newGoal.targetCount,
       weeklyTarget: weeklyTargetValue,
+      // Update distribution flags in local state
+      distributeDaily: newGoal.distributeDaily,
+      distributeWeekly: newGoal.distributeWeekly,
     })
 
-    setNewGoal({ title: "", description: "", targetCount: 0, weeklyTarget: 0 })
+    setNewGoal({
+      title: "",
+      description: "",
+      targetCount: 0,
+      weeklyTarget: 0,
+      distributeDaily: false,
+      distributeWeekly: false,
+    })
     setEditingGoal(null)
   }
 
@@ -2004,6 +2509,9 @@ function GoalTrackerApp() {
       description: goal.description,
       targetCount: goal.targetCount,
       weeklyTarget: goal.weeklyTarget,
+      // Populate distribution flags for editing
+      distributeDaily: goal.distributeDaily,
+      distributeWeekly: goal.distributeWeekly,
     })
     setShowAddGoal(true)
   }
@@ -2110,8 +2618,8 @@ function GoalTrackerApp() {
         description: "",
         category: "",
         goalId: "",
-        timeBlock: "",
-        estimatedMinutes: 30,
+        timeBlock: "", // Resetting as it's removed
+        estimatedMinutes: 30, // Resetting as it's removed
       })
     }
   }
@@ -2320,6 +2828,9 @@ function GoalTrackerApp() {
           notes: goal.notes || "",
           weeklyTarget: goal.weekly_target || 1,
           category: categoryName,
+          // Load distribution flags from database
+          distributeDaily: goal.distribute_daily || false,
+          distributeWeekly: goal.distribute_weekly || false,
         })
       })
 
@@ -2398,7 +2909,6 @@ function GoalTrackerApp() {
       ],
     })
     setEditingLongTermGoal(null)
-    setShowAddLongTermGoal(false)
   }
 
   const addLongTermGoal = async () => {
@@ -2697,20 +3207,49 @@ function GoalTrackerApp() {
     const activeTaskId = String(active.id)
     const overTaskId = String(over.id)
 
-    const activeDay = activeTaskId.split("-")[0]
-    const overDay = overTaskId.split("-")[0]
-    const activeId = activeTaskId.substring(activeDay.length + 1)
-    const overId = overTaskId.substring(overDay.length + 1)
+    // Day names for reference
+    const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+
+    // Check if over.id is just a day name (empty day drop target)
+    const isOverDayOnly = daysOfWeek.includes(overTaskId)
+
+    let activeDay: string
+    let overDay: string
+    let activeId: string
+
+    // Parse active task info (always prefixed with day name)
+    const activeDayMatch = daysOfWeek.find((d) => activeTaskId.startsWith(d + "-"))
+    if (activeDayMatch) {
+      activeDay = activeDayMatch
+      activeId = activeTaskId.substring(activeDay.length + 1)
+    } else {
+      return // Invalid active ID
+    }
+
+    // Parse over target info
+    if (isOverDayOnly) {
+      // Dropping onto an empty day placeholder
+      overDay = overTaskId
+    } else {
+      // Dropping onto another task
+      const overDayMatch = daysOfWeek.find((d) => overTaskId.startsWith(d + "-"))
+      if (overDayMatch) {
+        overDay = overDayMatch
+      } else {
+        return // Invalid over ID
+      }
+    }
 
     // Find the task
     const taskToMove = dailyTasks[activeDay]?.find((t) => t.id === activeId)
     if (!taskToMove) return
 
     // If dragging within the same day, just reorder
-    if (activeDay === overDay) {
+    if (activeDay === overDay && !isOverDayOnly) {
+      const overId = overTaskId.substring(overDay.length + 1)
       setDailyTasks((prev) => {
-        const oldIndex = prev[activeDay]?.findIndex((task) => task.id === activeId) || -1
-        const newIndex = prev[activeDay]?.findIndex((task) => task.id === overId) || -1
+        const oldIndex = prev[activeDay]?.findIndex((task) => task.id === activeId) ?? -1
+        const newIndex = prev[activeDay]?.findIndex((task) => task.id === overId) ?? -1
 
         if (oldIndex === -1 || newIndex === -1) return prev
 
@@ -2734,19 +3273,28 @@ function GoalTrackerApp() {
         }
       })
     } else {
+      // Moving to a different day
       const targetDate = getDateForDay(overDay)
 
       setDailyTasks((prev) => {
         // Remove from source day
         const sourceDay = prev[activeDay]?.filter((task) => task.id !== activeId) || []
 
-        // Add to target day
-        const targetDayTasks = prev[overDay] || []
-        const overIndex = targetDayTasks.findIndex((task) => task.id === overId)
-        const insertIndex = overIndex >= 0 ? overIndex : targetDayTasks.length
+        // Add to target day (at the end for empty days, or at the position of the target task)
+        const targetDayTasks = [...(prev[overDay] || [])]
 
-        const movedTask = { ...taskToMove, target_date: targetDate }
-        targetDayTasks.splice(insertIndex, 0, movedTask)
+        if (isOverDayOnly) {
+          // Dropping onto empty day - add at the end
+          const movedTask = { ...taskToMove, target_date: targetDate }
+          targetDayTasks.push(movedTask)
+        } else {
+          // Dropping onto another task - insert at that position
+          const overId = overTaskId.substring(overDay.length + 1)
+          const overIndex = targetDayTasks.findIndex((task) => task.id === overId)
+          const insertIndex = overIndex >= 0 ? overIndex : targetDayTasks.length
+          const movedTask = { ...taskToMove, target_date: targetDate }
+          targetDayTasks.splice(insertIndex, 0, movedTask)
+        }
 
         return {
           ...prev,
@@ -2818,8 +3366,7 @@ function GoalTrackerApp() {
       description: newDailyTask.description,
       category: newDailyTask.category,
       goalId: newDailyTask.goalId,
-      timeBlock: newDailyTask.timeBlock,
-      estimatedMinutes: newDailyTask.estimatedMinutes,
+      // Removed timeBlock and estimatedMinutes as per the update
     }
 
     console.log("[v0] Task data prepared:", taskData)
@@ -2835,8 +3382,7 @@ function GoalTrackerApp() {
           category: taskData.category,
           goalId: taskData.goalId,
           completed: false,
-          timeBlock: taskData.timeBlock,
-          estimatedMinutes: taskData.estimatedMinutes,
+          // Removed timeBlock and estimatedMinutes from local state update
         },
       ],
     }))
@@ -2848,8 +3394,8 @@ function GoalTrackerApp() {
       description: "",
       category: "",
       goalId: "",
-      timeBlock: "",
-      estimatedMinutes: 30,
+      timeBlock: "", // Resetting as it's removed
+      estimatedMinutes: 30, // Resetting as it's removed
     })
     setShowAddDailyTask(false)
 
@@ -2917,8 +3463,7 @@ function GoalTrackerApp() {
         task_type: "daily",
         target_date: targetDate.toISOString().split("T")[0],
         completed: false,
-        time_block: taskData.timeBlock || null,
-        estimated_minutes: taskData.estimatedMinutes || null,
+        // Removed time_block and estimated_minutes from database insert
       }
 
       console.log("[v0] Inserting into database:", JSON.stringify(insertData, null, 2))
@@ -3140,8 +3685,13 @@ function GoalTrackerApp() {
       const weeklyTasks: Record<string, WeeklyTask[]> = {}
       const dailyTasks: Record<string, DailyTask[]> = {}
 
-      tasks.forEach((task, index) => {
-        console.log(`Processing task ${index + 1}:`, JSON.stringify(task, null, 2))
+      const allDays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+      allDays.forEach((day) => {
+        dailyTasks[day] = []
+      })
+
+      tasks.forEach((task: any) => {
+        console.log(`Processing task:`, JSON.stringify(task, null, 2))
 
         const categoryName = task.categories?.name || "Uncategorized"
 
@@ -3171,10 +3721,14 @@ function GoalTrackerApp() {
             title: task.title || "",
             description: task.description || "",
             category: categoryName,
-            goalId: task.goal_id || "",
+            goalId: task.goalId || "",
             completed: !!task.completed,
             priority: "medium", // Default priority, not stored in DB
             estimatedHours: 1, // Default hours, not stored in DB
+            linked_goal_id: task.linked_goal_id || null,
+            counter: task.counter || 0,
+            target_count: task.target_count || null,
+            weekly_target: task.weekly_target || null,
           }
 
           if (!weeklyTasks[weekKey]) {
@@ -3194,7 +3748,7 @@ function GoalTrackerApp() {
           if (task.title?.includes("Buy Car1")) {
             console.log("[v0] PROCESSING 'Buy Car1' as daily task:")
             console.log("[v0]   - Will be added to day:", dayName)
-            console.log("[v0]   - Completed value:", !!task.completed)
+            console.log("[v0]   - Completed:", !!task.completed)
           }
 
           const dailyTask: DailyTask = {
@@ -3202,13 +3756,18 @@ function GoalTrackerApp() {
             title: task.title || "",
             description: task.description || "",
             category: categoryName,
-            goalId: task.goal_id || "",
+            goalId: task.goalId || "",
             completed: !!task.completed,
             timeBlock: task.time_block || "9:00 AM", // Use stored time_block
             estimatedMinutes: task.estimated_minutes || 30, // Use stored estimated_minutes
             target_date: task.target_date, // Add target_date to dailyTask interface for edit functionality
+            linked_goal_id: task.linked_goal_id || undefined,
+            counter: task.counter || 0,
+            target_count: task.target_count || undefined,
+            daily_target: task.daily_target ? Number(task.daily_target) : undefined,
           }
 
+          // Ensure the day exists in the dailyTasks object before pushing
           if (!dailyTasks[dayName]) {
             dailyTasks[dayName] = []
           }
@@ -3298,6 +3857,119 @@ function GoalTrackerApp() {
   // }, [user?.id, selectedAgentId])
 
   // const dashboardMode = user?.preferences?.dashboardMode || "12-week" // OLD CODE
+
+  // Function to auto-generate daily tasks
+  const autoGenerateDailyTasks = async (
+    userId: string,
+    goalsData: GoalsData,
+    existingDailyTasks: Record<string, DailyTask[]>,
+  ) => {
+    const today = new Date()
+    // Use local date components instead of toISOString which uses UTC
+    const year = today.getFullYear()
+    const month = String(today.getMonth() + 1).padStart(2, "0")
+    const day = String(today.getDate()).padStart(2, "0")
+    const todayStr = `${year}-${month}-${day}`
+    const dayName = today.toLocaleDateString("en-US", { weekday: "long" })
+
+    console.log(`[v0] Auto-generate checking for date: ${todayStr} (${dayName})`)
+
+    // Fetch all goals with distribute_daily enabled from database
+    const { data: distributedGoals, error } = await supabase
+      .from("goals")
+      .select(
+        `
+        id,
+        title,
+        target_count,
+        daily_target,
+        distribute_daily,
+        category_id,
+        categories (name)
+      `,
+      )
+      .eq("user_id", userId)
+      .eq("distribute_daily", true)
+
+    if (error) {
+      console.error("[v0] Error fetching distributed goals:", error)
+      return
+    }
+
+    if (!distributedGoals || distributedGoals.length === 0) {
+      console.log("[v0] No goals with distribute_daily enabled")
+      return
+    }
+
+    console.log(`[v0] Found ${distributedGoals.length} goals with distribute_daily enabled`)
+
+    // Flatten existing daily tasks to check for duplicates
+    const allExistingTasks = Object.values(existingDailyTasks).flat()
+
+    for (const goal of distributedGoals) {
+      // Check if a task already exists for this goal today
+      const existingTaskForGoal = allExistingTasks.find(
+        (task) => task.linked_goal_id === goal.id && task.target_date === todayStr,
+      )
+
+      if (existingTaskForGoal) {
+        console.log(`[v0] Task already exists for goal "${goal.title}" today, skipping`)
+        continue
+      }
+
+      // Create a new daily task for this goal
+      const dailyTaskId = crypto.randomUUID()
+      const dailyTarget = goal.daily_target || Math.ceil((goal.target_count || 0) / 84)
+      const categoryName = goal.categories?.name || "Uncategorized"
+
+      console.log(`[v0] Auto-generating daily task for goal "${goal.title}" (daily target: ${dailyTarget})`)
+
+      // Insert into database
+      const { error: insertError } = await supabase.from("tasks").insert({
+        id: dailyTaskId,
+        user_id: userId,
+        title: goal.title,
+        description: `Daily target: ${dailyTarget}`,
+        category_id: goal.category_id,
+        task_type: "daily",
+        target_date: todayStr,
+        linked_goal_id: goal.id,
+        counter: 0,
+        target_count: goal.target_count,
+        daily_target: dailyTarget,
+        completed: false,
+      })
+
+      if (insertError) {
+        console.error(`[v0] Error creating daily task for goal "${goal.title}":`, insertError)
+        continue
+      }
+
+      // Add to local state
+      const newTask: DailyTask = {
+        id: dailyTaskId,
+        title: goal.title,
+        description: `Daily target: ${dailyTarget}`,
+        category: categoryName,
+        goalId: goal.id,
+        completed: false,
+        timeBlock: "",
+        estimatedMinutes: 0,
+        target_date: todayStr,
+        linked_goal_id: goal.id,
+        counter: 0,
+        target_count: goal.target_count,
+        daily_target: dailyTarget,
+      }
+
+      setDailyTasks((prev) => ({
+        ...prev,
+        [dayName]: [...(prev[dayName] || []), newTask],
+      }))
+
+      console.log(`[v0] Successfully auto-generated daily task for goal "${goal.title}"`)
+    }
+  }
 
   return (
     <SidebarProvider defaultOpen={true}>
@@ -3865,7 +4537,7 @@ function GoalTrackerApp() {
                   </TabsContent>
 
                   {/* Weekly Tasks View */}
-                  <TabsContent value="weekly" className="mt-8 w-full" data-page="weekly">
+                  <TabsContent value="weekly" className="mt-8 w-full">
                     <div className="w-full flex items-center justify-between mb-6">
                       <h2 className="text-2xl font-bold text-gray-900">Week {currentWeek} Goals</h2>
                     </div>
@@ -3931,12 +4603,56 @@ function GoalTrackerApp() {
                                               }))
                                             } catch (error) {
                                               console.error("Error deleting weekly task:", error)
-                                              // Keep the task in UI if database deletion fails
                                             }
                                           }
                                           deleteWeeklyTask(`Week ${currentWeek}`, task.id)
                                         }}
                                         getPriorityColor={getPriorityColor}
+                                        onUpdateCounter={(newCount) => {
+                                          const weeklyTarget = task.weekly_target || task.target_count || 0
+                                          const isCompleted = newCount >= weeklyTarget
+
+                                          // Update task counter and completion status
+                                          setWeeklyTasks((prev) => ({
+                                            ...prev,
+                                            [`Week ${currentWeek}`]:
+                                              prev[`Week ${currentWeek}`]?.map((t) =>
+                                                t.id === task.id
+                                                  ? { ...t, counter: newCount, completed: isCompleted }
+                                                  : t,
+                                              ) || [],
+                                          }))
+
+                                          // Sync to linked 12-week goal if exists
+                                          if (task.linked_goal_id) {
+                                            // Calculate total progress from all linked tasks
+                                            let totalProgress = newCount
+                                            Object.values(weeklyTasks).forEach((weekTasks) => {
+                                              weekTasks.forEach((t) => {
+                                                if (t.linked_goal_id === task.linked_goal_id && t.id !== task.id) {
+                                                  totalProgress += t.counter || 0
+                                                }
+                                              })
+                                            })
+                                            Object.values(dailyTasks).forEach((dayTasks) => {
+                                              dayTasks.forEach((t) => {
+                                                if (t.linked_goal_id === task.linked_goal_id) {
+                                                  totalProgress += t.counter || 0
+                                                }
+                                              })
+                                            })
+                                            updateGoalProgress(task.linked_goal_id, totalProgress)
+                                          }
+
+                                          // Update database
+                                          supabase
+                                            .from("tasks")
+                                            .update({ counter: newCount, completed: isCompleted })
+                                            .eq("id", task.id)
+                                            .then(({ error }) => {
+                                              if (error) console.error("Error updating weekly task counter:", error)
+                                            })
+                                        }}
                                       />
                                     ))}
                                   </SortableContext>
@@ -3947,6 +4663,7 @@ function GoalTrackerApp() {
                         )
                       })}
 
+                      {/* Uncategorized Tasks */}
                       {(() => {
                         const uncategorizedTasks = (weeklyTasks[`Week ${currentWeek}`] || []).filter(
                           (task) => task.category === "Uncategorized",
@@ -4004,12 +4721,55 @@ function GoalTrackerApp() {
                                             }))
                                           } catch (error) {
                                             console.error("Error deleting weekly task:", error)
-                                            // Keep the task in UI if database deletion fails
                                           }
                                         }
                                         deleteWeeklyTask(`Week ${currentWeek}`, task.id)
                                       }}
                                       getPriorityColor={getPriorityColor}
+                                      onUpdateCounter={(newCount) => {
+                                        const weeklyTarget = task.weekly_target || task.target_count || 0
+                                        const isCompleted = newCount >= weeklyTarget
+
+                                        // Update task counter and completion status
+                                        setWeeklyTasks((prev) => ({
+                                          ...prev,
+                                          [`Week ${currentWeek}`]:
+                                            prev[`Week ${currentWeek}`]?.map((t) =>
+                                              t.id === task.id
+                                                ? { ...t, counter: newCount, completed: isCompleted }
+                                                : t,
+                                            ) || [],
+                                        }))
+
+                                        // Sync to linked 12-week goal if exists
+                                        if (task.linked_goal_id) {
+                                          let totalProgress = newCount
+                                          Object.values(weeklyTasks).forEach((weekTasks) => {
+                                            weekTasks.forEach((t) => {
+                                              if (t.linked_goal_id === task.linked_goal_id && t.id !== task.id) {
+                                                totalProgress += t.counter || 0
+                                              }
+                                            })
+                                          })
+                                          Object.values(dailyTasks).forEach((dayTasks) => {
+                                            dayTasks.forEach((t) => {
+                                              if (t.linked_goal_id === task.linked_goal_id) {
+                                                totalProgress += t.counter || 0
+                                              }
+                                            })
+                                          })
+                                          updateGoalProgress(task.linked_goal_id, totalProgress)
+                                        }
+
+                                        // Update database
+                                        supabase
+                                          .from("tasks")
+                                          .update({ counter: newCount, completed: isCompleted })
+                                          .eq("id", task.id)
+                                          .then(({ error }) => {
+                                            if (error) console.error("Error updating weekly task counter:", error)
+                                          })
+                                      }}
                                     />
                                   ))}
                                 </SortableContext>
@@ -4030,7 +4790,7 @@ function GoalTrackerApp() {
                   </TabsContent>
 
                   {/* Daily Tasks View */}
-                  <TabsContent value="daily" className="mt-8 w-full" data-page="daily">
+                  <TabsContent value="daily" className="mt-8 w-full">
                     <div className="flex items-center justify-between mb-6">
                       <h2 className="text-2xl font-bold text-gray-900">Daily Tasks</h2>
 
@@ -4061,20 +4821,35 @@ function GoalTrackerApp() {
                             // Updated Card to use consistent border and shadow on all sides
                             <Card key={day} className="border border-border shadow-md">
                               <CardHeader className="pb-3">
-                                <CardTitle className="text-base font-semibold">
-                                  {day}
-                                  <span className="text-sm font-normal text-gray-500 ml-2">
-                                    ({dayTasks.length} task{dayTasks.length !== 1 ? "s" : ""})
-                                  </span>
-                                </CardTitle>
-                              </CardHeader>
-                              {dayTasks.length > 0 && (
-                                <CardContent className="space-y-3">
-                                  <SortableContext
-                                    items={dayTasks.map((task) => `${day}-${task.id}`)} // Prefix ID with day
-                                    strategy={verticalListSortingStrategy}
+                                <div className="flex items-center justify-between">
+                                  <CardTitle className="text-base font-semibold">
+                                    {day}
+                                    <span className="text-sm font-normal text-gray-500 ml-2">
+                                      ({dayTasks.length} task{dayTasks.length !== 1 ? "s" : ""})
+                                    </span>
+                                  </CardTitle>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7"
+                                    onClick={() => {
+                                      setSelectedDay(day)
+                                      setShowAddDailyTask(true)
+                                    }}
                                   >
-                                    {dayTasks.map((task) => (
+                                    <Plus className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </CardHeader>
+                              <CardContent className="space-y-3 min-h-[60px]">
+                                <SortableContext
+                                  items={[day, ...dayTasks.map((task) => `${day}-${task.id}`)]} // Include day name as droppable target
+                                  strategy={verticalListSortingStrategy}
+                                >
+                                  {dayTasks.length === 0 ? (
+                                    <DroppableDayPlaceholder day={day} />
+                                  ) : (
+                                    dayTasks.map((task) => (
                                       <SortableDailyTaskItem
                                         key={task.id}
                                         task={task}
@@ -4095,11 +4870,50 @@ function GoalTrackerApp() {
                                           }
                                           deleteDailyTask(task.id)
                                         }}
+                                        onUpdateCounter={(newCount) => {
+                                          const dailyTarget = task.daily_target || task.target_count || 0
+                                          const isCompleted = newCount >= dailyTarget
+
+                                          // Update task counter and completion status
+                                          setDailyTasks((prev) => ({
+                                            ...prev,
+                                            [day]:
+                                              prev[day]?.map((t) =>
+                                                t.id === task.id
+                                                  ? { ...t, counter: newCount, completed: isCompleted }
+                                                  : t,
+                                              ) || [],
+                                          }))
+
+                                          // Sync to linked 12-week goal if exists
+                                          if (task.linked_goal_id) {
+                                            // Calculate new goal progress by summing all linked tasks
+                                            let totalProgress = newCount
+                                            // Add progress from other days' tasks linked to same goal
+                                            Object.values(dailyTasks).forEach((dayTasks) => {
+                                              dayTasks.forEach((t) => {
+                                                if (t.linked_goal_id === task.linked_goal_id && t.id !== task.id) {
+                                                  totalProgress += t.counter || 0
+                                                }
+                                              })
+                                            })
+                                            updateGoalProgress(task.linked_goal_id, totalProgress)
+                                          }
+
+                                          // Update database
+                                          supabase
+                                            .from("tasks")
+                                            .update({ counter: newCount, completed: isCompleted })
+                                            .eq("id", task.id)
+                                            .then(({ error }) => {
+                                              if (error) console.error("Error updating task counter:", error)
+                                            })
+                                        }}
                                       />
-                                    ))}
-                                  </SortableContext>
-                                </CardContent>
-                              )}
+                                    ))
+                                  )}
+                                </SortableContext>
+                              </CardContent>
                             </Card>
                           )
                         })}
@@ -4464,6 +5278,33 @@ function GoalTrackerApp() {
                           </Select>
                         </div>
                       )}
+                      {newGoal.targetCount > 0 && (
+                        <div>
+                          <Label className="mb-2 block">Add to Daily and Weekly Tasks</Label>
+                          <div className="space-y-3">
+                            {/* CHANGE: Moved Switch to left of label */}
+                            <div className="flex items-center gap-2">
+                              <Switch
+                                checked={newGoal.distributeDaily}
+                                onCheckedChange={(checked) =>
+                                  setNewGoal((prev) => ({ ...prev, distributeDaily: checked }))
+                                }
+                              />
+                              <span className="text-sm text-muted-foreground">Daily Tasks</span>
+                            </div>
+                            {/* CHANGE: Moved Switch to left of label */}
+                            <div className="flex items-center gap-2">
+                              <Switch
+                                checked={newGoal.distributeWeekly}
+                                onCheckedChange={(checked) =>
+                                  setNewGoal((prev) => ({ ...prev, distributeWeekly: checked }))
+                                }
+                              />
+                              <span className="text-sm text-muted-foreground">Weekly Tasks</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <DialogFooter>
                       <Button variant="outline" onClick={() => setShowAddGoal(false)}>
@@ -4747,38 +5588,6 @@ function GoalTrackerApp() {
                             <SelectItem value="Uncategorized">Uncategorized</SelectItem>
                           </SelectContent>
                         </Select>
-                      </div>
-                      <div>
-                        <Label htmlFor="daily-task-timeblock">Time Block</Label>
-                        <Select
-                          value={newDailyTask.timeBlock}
-                          onValueChange={(value) => setNewDailyTask((prev) => ({ ...prev, timeBlock: value }))}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select time block" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="morning">Morning</SelectItem>
-                            <SelectItem value="afternoon">Afternoon</SelectItem>
-                            <SelectItem value="evening">Evening</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label htmlFor="daily-task-minutes">Estimated Minutes</Label>
-                        <Input
-                          id="daily-task-minutes"
-                          type="number"
-                          min="5"
-                          max="480"
-                          value={newDailyTask.estimatedMinutes}
-                          onChange={(e) =>
-                            setNewDailyTask((prev) => ({
-                              ...prev,
-                              estimatedMinutes: Number.parseInt(e.target.value) || 30,
-                            }))
-                          }
-                        />
                       </div>
                     </div>
                     <DialogFooter>
