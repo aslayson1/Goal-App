@@ -30,6 +30,7 @@ import {
   GripVertical,
   ClipboardCheck,
   Pencil,
+  X,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -1506,7 +1507,8 @@ function GoalTrackerApp() {
   const [editCategoryName, setEditCategoryName] = useState("")
   const [editCategoryColor, setEditCategoryColor] = useState("")
 
-  const [notesData, setNotesData] = useState<{ [categoryName: string]: string }>({})
+  const [notesData, setNotesData] = useState<{ [categoryName: string]: Array<{ id: string; content: string; created_at: string }> }>({})
+  const [newNoteText, setNewNoteText] = useState<{ [categoryName: string]: string }>({})
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
 
   // Add these state variables after the existing state declarations (around line 680):
@@ -1806,13 +1808,21 @@ function GoalTrackerApp() {
             try {
               const { data: notesFromDB } = await supabase
                 .from("notes")
-                .select("category_name, content")
+                .select("id, category_name, content, created_at")
                 .eq("user_id", selectedAgentId)
+                .order("created_at", { ascending: false })
 
               if (notesFromDB && notesFromDB.length > 0) {
-                const notesMap: { [key: string]: string } = {}
-                notesFromDB.forEach((note: { category_name: string; content: string }) => {
-                  notesMap[note.category_name] = note.content
+                const notesMap: { [key: string]: Array<{ id: string; content: string; created_at: string }> } = {}
+                notesFromDB.forEach((note: { id: string; category_name: string; content: string; created_at: string }) => {
+                  if (!notesMap[note.category_name]) {
+                    notesMap[note.category_name] = []
+                  }
+                  notesMap[note.category_name].push({
+                    id: note.id,
+                    content: note.content,
+                    created_at: note.created_at,
+                  })
                 })
                 setNotesData(notesMap)
               }
@@ -3618,6 +3628,7 @@ function GoalTrackerApp() {
 
       if (tasks && tasks.length > 0) {
         const tasksToUpdate: string[] = []
+        const completedRecurringTasks: any[] = []
 
         for (const task of tasks) {
           if (task.task_type === "daily") {
@@ -3651,7 +3662,57 @@ function GoalTrackerApp() {
                   task.target_date = todayString
                 }
               }
+            } else {
+              // Check if completed task is from yesterday and should be duplicated for today
+              const taskDateStr = task.target_date.split("T")[0] // Get just the date part (YYYY-MM-DD)
+              const yesterdayStr = new Date(today)
+              yesterdayStr.setDate(yesterdayStr.getDate() - 1)
+              const yesterdayDateStr = yesterdayStr.toISOString().split("T")[0]
+
+              console.log(
+                `[v0] Completed task "${task.title}" - date: ${taskDateStr}, yesterday: ${yesterdayDateStr}, is from yesterday: ${taskDateStr === yesterdayDateStr}`,
+              )
+
+              if (taskDateStr === yesterdayDateStr && task.target_count) {
+                console.log(
+                  `[v0] Duplicating completed recurring task "${task.title}" to today with counter: ${task.counter || 0}`,
+                )
+                completedRecurringTasks.push({
+                  user_id: task.user_id,
+                  goal_id: task.goal_id,
+                  category_id: task.category_id,
+                  title: task.title,
+                  task_type: task.task_type,
+                  target_date: todayString,
+                  completed: false,
+                  completed_at: null,
+                  created_at: task.created_at,
+                  updated_at: new Date().toISOString(),
+                  description: task.description,
+                  time_block: task.time_block,
+                  estimated_minutes: task.estimated_minutes,
+                  agent_id: task.agent_id,
+                  sort_order: task.sort_order,
+                  linked_goal_id: task.linked_goal_id,
+                  counter: task.counter || 0, // Preserve the counter from yesterday
+                  target_count: task.target_count,
+                  daily_target: task.daily_target,
+                })
+              }
             }
+          }
+        }
+
+        // Insert duplicated completed recurring tasks for today
+        if (completedRecurringTasks.length > 0) {
+          const { error: insertError } = await supabase.from("tasks").insert(completedRecurringTasks)
+
+          if (insertError) {
+            console.error("[v0] Error inserting duplicated tasks:", insertError)
+          } else {
+            console.log(`[v0] Successfully duplicated ${completedRecurringTasks.length} recurring task(s) to today`)
+            // Add the duplicated tasks to the tasks array
+            tasks.push(...completedRecurringTasks)
           }
         }
 
@@ -5121,74 +5182,159 @@ function GoalTrackerApp() {
                         {Object.keys(goalsData).map((categoryName) => (
                           <Card key={categoryName} className="border-0 shadow-sm">
                             <CardHeader>
-                              <CardTitle className="flex items-center justify-between">
-                                <span>{categoryName}</span>
-                                {editingNoteId !== categoryName && (
-                                  <Button variant="ghost" size="sm" onClick={() => setEditingNoteId(categoryName)}>
-                                    <Pencil className="h-4 w-4" />
-                                  </Button>
-                                )}
+                              <CardTitle>
+                                {categoryName}
                               </CardTitle>
                             </CardHeader>
                             <CardContent>
-                              {editingNoteId === categoryName ? (
-                                <div className="space-y-4">
-                                  <textarea
-                                    className="w-full min-h-[120px] p-3 border rounded-md resize-none"
-                                    value={notesData[categoryName] || ""}
+                              <div className="space-y-4">
+                                {/* Add new note input */}
+                                <div className="flex gap-2">
+                                  <Input
+                                    className="flex-1"
+                                    value={newNoteText[categoryName] || ""}
                                     onChange={(e) =>
-                                      setNotesData((prev) => ({
+                                      setNewNoteText((prev) => ({
                                         ...prev,
                                         [categoryName]: e.target.value,
                                       }))
                                     }
-                                    placeholder="Add notes for this category..."
-                                  />
-                                  <div className="flex gap-2">
-                                    <Button
-                                      size="sm"
-                                      onClick={async () => {
+                                    placeholder="Add a new note..."
+                                    onKeyDown={async (e) => {
+                                      if (e.key === "Enter" && newNoteText[categoryName]?.trim()) {
                                         try {
-                                          const { error } = await supabase.from("notes").upsert(
-                                            {
+                                          const { data, error } = await supabase
+                                            .from("notes")
+                                            .insert({
                                               user_id: user?.id,
                                               category_name: categoryName,
-                                              content: notesData[categoryName] || "",
-                                              updated_at: new Date().toISOString(),
-                                            },
-                                            {
-                                              onConflict: "user_id,category_name",
-                                            },
-                                          )
+                                              content: newNoteText[categoryName].trim(),
+                                            })
+                                            .select("id, content, created_at")
+                                            .single()
 
                                           if (error) throw error
-                                          setEditingNoteId(null)
+                                          setNotesData((prev) => ({
+                                            ...prev,
+                                            [categoryName]: [
+                                              { id: data.id, content: data.content, created_at: data.created_at },
+                                              ...(prev[categoryName] || []),
+                                            ],
+                                          }))
+                                          setNewNoteText((prev) => ({ ...prev, [categoryName]: "" }))
                                           toast({
                                             title: "Success",
-                                            description: "Note saved successfully",
+                                            description: "Note added successfully",
                                           })
                                         } catch (error) {
-                                          console.error("Error saving note:", error)
+                                          console.error("Error adding note:", error)
                                           toast({
                                             title: "Error",
-                                            description: "Failed to save note",
+                                            description: "Failed to add note",
                                             variant: "destructive",
                                           })
                                         }
-                                      }}
-                                    >
-                                      Save
-                                    </Button>
-                                    <Button size="sm" variant="outline" onClick={() => setEditingNoteId(null)}>
-                                      Cancel
-                                    </Button>
-                                  </div>
+                                      }
+                                    }}
+                                  />
+                                  <Button
+                                    size="sm"
+                                    onClick={async () => {
+                                      if (!newNoteText[categoryName]?.trim()) return
+                                      try {
+                                        const { data, error } = await supabase
+                                          .from("notes")
+                                          .insert({
+                                            user_id: user?.id,
+                                            category_name: categoryName,
+                                            content: newNoteText[categoryName].trim(),
+                                          })
+                                          .select("id, content, created_at")
+                                          .single()
+
+                                        if (error) throw error
+                                        setNotesData((prev) => ({
+                                          ...prev,
+                                          [categoryName]: [
+                                            { id: data.id, content: data.content, created_at: data.created_at },
+                                            ...(prev[categoryName] || []),
+                                          ],
+                                        }))
+                                        setNewNoteText((prev) => ({ ...prev, [categoryName]: "" }))
+                                        toast({
+                                          title: "Success",
+                                          description: "Note added successfully",
+                                        })
+                                      } catch (error) {
+                                        console.error("Error adding note:", error)
+                                        toast({
+                                          title: "Error",
+                                          description: "Failed to add note",
+                                          variant: "destructive",
+                                        })
+                                      }
+                                    }}
+                                  >
+                                    <Plus className="h-4 w-4" />
+                                  </Button>
                                 </div>
-                              ) : (
-                                <div className="min-h-[120px] text-sm text-muted-foreground whitespace-pre-wrap">
-                                  {notesData[categoryName] || "No notes yet. Click edit to add notes."}
+
+                                {/* List of notes */}
+                                <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                                  {notesData[categoryName] && notesData[categoryName].length > 0 ? (
+                                    notesData[categoryName].map((note) => (
+                                      <div
+                                        key={note.id}
+                                        className="group flex items-start justify-between p-2 rounded-md bg-muted/50 hover:bg-muted"
+                                      >
+                                        <div className="flex-1">
+                                          <p className="text-sm">{note.content}</p>
+                                          <p className="text-xs text-muted-foreground mt-1">
+                                            {new Date(note.created_at).toLocaleDateString()} at{" "}
+                                            {new Date(note.created_at).toLocaleTimeString([], {
+                                              hour: "2-digit",
+                                              minute: "2-digit",
+                                            })}
+                                          </p>
+                                        </div>
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          className="opacity-0 group-hover:opacity-100 h-6 w-6 p-0 text-destructive hover:text-destructive"
+                                          onClick={async () => {
+                                            try {
+                                              const { error } = await supabase.from("notes").delete().eq("id", note.id)
+
+                                              if (error) throw error
+                                              setNotesData((prev) => ({
+                                                ...prev,
+                                                [categoryName]: prev[categoryName].filter((n) => n.id !== note.id),
+                                              }))
+                                              toast({
+                                                title: "Success",
+                                                description: "Note deleted",
+                                              })
+                                            } catch (error) {
+                                              console.error("Error deleting note:", error)
+                                              toast({
+                                                title: "Error",
+                                                description: "Failed to delete note",
+                                                variant: "destructive",
+                                              })
+                                            }
+                                          }}
+                                        >
+                                          <X className="h-3 w-3" />
+                                        </Button>
+                                      </div>
+                                    ))
+                                  ) : (
+                                    <p className="text-sm text-muted-foreground text-center py-4">
+                                      No notes yet. Add your first note above.
+                                    </p>
+                                  )}
                                 </div>
-                              )}
+                              </div>
                             </CardContent>
                           </Card>
                         ))}

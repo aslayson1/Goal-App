@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { LayoutDashboard, Target, Users, ChevronDown } from "lucide-react"
+import { LayoutDashboard, Target, Users, ChevronDown, Activity } from "lucide-react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import {
@@ -35,6 +35,11 @@ const menuItems = [
     title: "Agents",
     icon: Users,
     href: "/agents",
+  },
+  {
+    title: "Fitness",
+    icon: Activity,
+    href: "/fitness",
   },
 ]
 
