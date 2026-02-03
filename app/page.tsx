@@ -1,7 +1,6 @@
 "use client"
-import { supabase } from "@/lib/supabase/client"
-import { SidebarProvider } from "@/components/ui/sidebar"
 
+import { supabase } from "@/lib/supabase/client"
 import { DialogTrigger } from "@/components/ui/dialog"
 
 import {
@@ -57,6 +56,7 @@ import { UserProfile } from "@/components/profile/user-profile"
 
 import { AppSidebar } from "@/components/app-sidebar"
 import { SidebarInset } from "@/components/ui/sidebar"
+import { AppHeader } from "@/components/app-header"
 
 // Drag and Drop imports
 import {
@@ -5744,5 +5744,17 @@ export default function Page() {
     return <AuthScreen />
   }
 
-  return <GoalTrackerApp />
+  return (
+    <div className="flex flex-col h-screen overflow-hidden">
+      <AppHeader />
+      <div className="flex flex-1 overflow-hidden">
+        <AppSidebar />
+        <SidebarInset className="flex-1 min-w-0">
+          <main className="h-full overflow-auto bg-slate-50">
+            <GoalTrackerApp />
+          </main>
+        </SidebarInset>
+      </div>
+    </div>
+  )
 }

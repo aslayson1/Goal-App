@@ -5,9 +5,7 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from "@/components/auth/auth-provider"
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
-import { AppSidebar } from "@/components/app-sidebar"
-import { AppHeader } from "@/components/app-header"
+import { SidebarProvider } from "@/components/ui/sidebar"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -28,17 +26,7 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <AuthProvider>
             <SidebarProvider>
-              <div className="flex flex-col h-screen overflow-hidden">
-                <AppHeader />
-                <div className="flex flex-1 overflow-hidden">
-                  <AppSidebar />
-                  <SidebarInset className="flex-1 min-w-0">
-                    <main className="h-full overflow-auto bg-slate-50">
-                      {children}
-                    </main>
-                  </SidebarInset>
-                </div>
-              </div>
+              {children}
             </SidebarProvider>
             <Toaster />
           </AuthProvider>
