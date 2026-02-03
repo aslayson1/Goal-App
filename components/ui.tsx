@@ -134,7 +134,7 @@ export {
 export { Popover, PopoverTrigger, PopoverContent } from "./ui/popover"
 export { Progress } from "./ui/progress"
 export { RadioGroup, RadioGroupItem } from "./ui/radio-group"
-export { Resizable, ResizablePanel, ResizableHandle } from "./ui/resizable"
+export { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "./ui/resizable"
 export { ScrollArea, ScrollBar } from "./ui/scroll-area"
 export {
   Select,
