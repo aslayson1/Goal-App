@@ -4034,63 +4034,9 @@ function GoalTrackerApp() {
 
   return (
     <SidebarProvider defaultOpen={true}>
-      <div className="flex h-screen flex-col">
-        <header className="sticky top-0 z-50 flex h-16 shrink-0 items-center justify-between gap-4 border-b bg-white px-6">
-          <div className="flex items-center gap-3">
-            <Image
-              src="/layson-group-logo.png"
-              alt="Layson Group"
-              width={180}
-              height={40}
-              className="h-10 w-auto object-contain"
-              priority
-            />
-          </div>
-
-          {/* User Profile Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="flex items-center space-x-2">
-                <Avatar className="h-8 w-8 border-2 border-black">
-                  {user?.avatar && (
-                    <AvatarImage src={user.avatar || "/placeholder.svg?height=40&width=40&text=U"} alt={user?.name} />
-                  )}
-                  <AvatarFallback className="bg-white text-black text-xs font-semibold">
-                    {getInitials(user?.name)}
-                  </AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {/* NEW: Profile Settings Dialog */}
-              <Dialog open={showProfile} onOpenChange={setShowProfile}>
-                <DialogTrigger asChild>
-                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>Profile Settings</DropdownMenuItem>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[450px]">
-                  <DialogHeader>
-                    <DialogTitle>Profile Settings</DialogTitle>
-                    <DialogDescription>Manage your user profile information.</DialogDescription>
-                  </DialogHeader>
-                  <UserProfile userId={user.id} />
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setShowProfile(false)}>
-                      Close
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-              {/* FIX: Added closing </DropdownMenuItem> tag */}
-              <DropdownMenuItem asChild>
-                <SignOutButton className="w-full text-left" />
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </header>
-
-        <div className="flex flex-1 overflow-hidden overflow-x-hidden">
-          <AppSidebar />
-          <SidebarInset className="flex-1 min-w-0">
+      <div className="flex h-screen overflow-hidden">
+        <AppSidebar />
+        <SidebarInset className="flex-1 min-w-0">
             <main className="flex-1 min-w-0 overflow-auto p-6 w-full max-w-none bg-slate-50">
               <div className="w-full space-y-6">
                 {/* Header */}
@@ -5781,11 +5727,10 @@ function GoalTrackerApp() {
               </div>
             </main>
           </SidebarInset>
-        </div>
 
-        {/* UserProfile component */}
-        {showProfile && <UserProfile userId={user?.id} onClose={() => setShowProfile(false)} />}
-      </div>
+          {/* UserProfile component */}
+          {showProfile && <UserProfile userId={user?.id} onClose={() => setShowProfile(false)} />}
+        </div>
     </SidebarProvider>
   )
 }
