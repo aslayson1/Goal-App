@@ -5781,7 +5781,6 @@ function GoalTrackerApp() {
             </main>
           </SidebarInset>
         </div>
-      </div>
     </div>
   )
 }
