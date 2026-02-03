@@ -9,19 +9,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
 import { SignOutButton } from "@/components/auth/sign-out-button"
-import { UserProfile } from "@/components/profile/user-profile"
 import { useAuth } from "@/components/auth/auth-provider"
-import { useState } from "react"
 
 function getInitials(name?: string | null): string {
   if (!name) return "U"
@@ -35,7 +24,6 @@ function getInitials(name?: string | null): string {
 
 export function AppHeader() {
   const { user } = useAuth()
-  const [showProfile, setShowProfile] = useState(false)
 
   return (
     <header className="sticky top-0 z-50 flex h-14 shrink-0 items-center justify-between gap-4 border-b bg-white px-6">
@@ -65,23 +53,6 @@ export function AppHeader() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <Dialog open={showProfile} onOpenChange={setShowProfile}>
-            <DialogTrigger asChild>
-              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>Profile Settings</DropdownMenuItem>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[450px]">
-              <DialogHeader>
-                <DialogTitle>Profile Settings</DialogTitle>
-                <DialogDescription>Manage your user profile information.</DialogDescription>
-              </DialogHeader>
-              <UserProfile userId={user?.id} />
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setShowProfile(false)}>
-                  Close
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
           <DropdownMenuItem asChild>
             <SignOutButton className="w-full text-left" />
           </DropdownMenuItem>
