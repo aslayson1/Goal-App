@@ -4033,11 +4033,10 @@ function GoalTrackerApp() {
   }
 
   return (
-    <SidebarProvider defaultOpen={true}>
-      <div className="flex h-screen overflow-hidden">
-        <AppSidebar />
-        <SidebarInset className="flex-1 min-w-0">
-            <main className="flex-1 min-w-0 overflow-auto p-6 w-full max-w-none bg-slate-50">
+    <div className="flex flex-1 overflow-hidden">
+      <AppSidebar />
+      <SidebarInset className="flex-1 min-w-0">
+        <main className="flex-1 min-w-0 overflow-auto p-6 w-full max-w-none bg-slate-50">
               <div className="w-full space-y-6">
                 {/* Header */}
                 <div className="w-full flex items-center justify-between mb-8">
@@ -5727,11 +5726,10 @@ function GoalTrackerApp() {
               </div>
             </main>
           </SidebarInset>
-
+          
           {/* UserProfile component */}
           {showProfile && <UserProfile userId={user?.id} onClose={() => setShowProfile(false)} />}
         </div>
-    </SidebarProvider>
   )
 }
 
