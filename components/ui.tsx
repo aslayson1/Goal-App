@@ -181,7 +181,6 @@ export {
 } from "./ui/sidebar"
 export { Skeleton } from "./ui/skeleton"
 export { Slider } from "./ui/slider"
-export { Toaster as Sonner } from "./ui/sonner"
 export { Switch } from "./ui/switch"
 export { Table, TableHeader, TableBody, TableFooter, TableHead, TableRow, TableCell, TableCaption } from "./ui/table"
 export { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs"
