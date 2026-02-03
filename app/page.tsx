@@ -1,5 +1,5 @@
 "use client"
-
+// Main dashboard page
 import { supabase } from "@/lib/supabase/client"
 import { DialogTrigger } from "@/components/ui/dialog"
 
