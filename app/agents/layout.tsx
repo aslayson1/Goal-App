@@ -36,7 +36,7 @@ function getInitials(name?: string | null): string {
     .slice(0, 2)
 }
 
-export default function FitnessLayout({
+export default function AgentsLayout({
   children,
 }: {
   children: React.ReactNode
