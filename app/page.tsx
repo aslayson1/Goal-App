@@ -4087,10 +4087,10 @@ function GoalTrackerApp() {
       </header>
 
       {/* Sidebar and Content Area */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden w-full">
         <AppSidebar />
-        <SidebarInset className="flex-1 min-w-0">
-          <main className="flex-1 min-w-0 overflow-auto p-6 w-full max-w-none bg-slate-50">
+        <SidebarInset className="flex-1 min-w-0 w-full">
+          <main className="h-full overflow-auto p-6 bg-slate-50">
               <div className="w-full space-y-6">
                 {/* Header */}
                 <div className="w-full flex items-center justify-between mb-8">
