@@ -4065,25 +4065,25 @@ function GoalTrackerApp() {
             <Dialog open={showProfile} onOpenChange={setShowProfile}>
               <DialogTrigger asChild>
                 <DropdownMenuItem onSelect={(e) => e.preventDefault()}>Profile Settings</DropdownMenuItem>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[450px]">
-                  <DialogHeader>
-                    <DialogTitle>Profile Settings</DialogTitle>
-                    <DialogDescription>Manage your user profile information.</DialogDescription>
-                  </DialogHeader>
-                  <UserProfile userId={user.id} />
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setShowProfile(false)}>
-                      Close
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-              <DropdownMenuItem asChild>
-                <SignOutButton className="w-full text-left" />
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[450px]">
+                <DialogHeader>
+                  <DialogTitle>Profile Settings</DialogTitle>
+                  <DialogDescription>Manage your user profile information.</DialogDescription>
+                </DialogHeader>
+                <UserProfile userId={user.id} />
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setShowProfile(false)}>
+                    Close
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            <DropdownMenuItem asChild>
+              <SignOutButton className="w-full text-left" />
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </header>
 
       {/* Sidebar and Content Area */}
@@ -5780,8 +5780,6 @@ function GoalTrackerApp() {
               </div>
             </main>
           </SidebarInset>
-          {/* UserProfile component */}
-          {showProfile && <UserProfile userId={user?.id} onClose={() => setShowProfile(false)} />}
         </div>
       </div>
     </div>
