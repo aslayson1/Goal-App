@@ -108,7 +108,7 @@ export default function LongTermGoalsPage() {
       const goalData = {
         title: newGoal.title,
         description: `${newGoal.category || "General"}|${newGoal.description}`,
-        goal_type: activeTab as "1_year" | "5_year",
+        goal_type: activeTab as "3_year" | "5_year",
         completed: false,
         completed_at: null,
         user_id: user.id,
