@@ -3,10 +3,10 @@ import { supabase } from "@/lib/supabase/client"
 export interface LongTermGoal {
   id: string
   user_id: string
-  agent_id?: string // Added agent_id to interface
+  agent_id?: string
   title: string
   description: string | null
-  goal_type: "1_year" | "5_year"
+  goal_type: "1_year" | "3_year" | "5_year"
   completed: boolean
   completed_at: string | null
   created_at: string
