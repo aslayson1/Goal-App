@@ -1,7 +1,8 @@
 'use client'
 
-import React from "react"
+import React, { useState } from "react"
 import Image from "next/image"
+
 import { AppSidebar } from '@/components/app-sidebar'
 import { SidebarInset } from '@/components/ui/sidebar'
 import { useAuth } from "@/components/auth/auth-provider"
@@ -16,15 +17,14 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogFooter,
-  DialogTitle,
   DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { SignOutButton } from "@/components/auth/sign-out-button"
 import { UserProfile } from "@/components/profile/user-profile"
-import { useState } from "react"
 
 function getInitials(name?: string | null): string {
   if (!name) return "U"
