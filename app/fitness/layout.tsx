@@ -45,9 +45,9 @@ export default function FitnessLayout({
   const [showProfile, setShowProfile] = useState(false)
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
+    <div className="fixed inset-0 flex flex-col h-screen overflow-hidden">
       {/* Full-width Top Header Bar */}
-      <header className="sticky top-0 z-50 flex h-14 shrink-0 items-center justify-between gap-4 border-b bg-white px-6">
+      <header className="sticky top-0 z-50 flex h-14 shrink-0 items-center justify-between gap-4 border-b bg-white px-6 w-full">
         <div className="flex items-center gap-3">
           <Image
             src="/layson-group-logo.png"
