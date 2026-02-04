@@ -5805,5 +5805,9 @@ export default function Page() {
     return <AuthScreen />
   }
 
-  return <GoalTrackerApp />
+  return (
+    <SidebarProvider>
+      <GoalTrackerApp />
+    </SidebarProvider>
+  )
 }
