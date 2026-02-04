@@ -12,6 +12,7 @@ export default function FitnessPage() {
   const { user, isLoading: authLoading } = useAuth()
   const [logs, setLogs] = useState<any[]>([])
   const [streak, setStreak] = useState(0)
+  const [ranking, setRanking] = useState<number | null>(null)
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [loading, setLoading] = useState(true)
 
@@ -52,10 +53,53 @@ export default function FitnessPage() {
       } else {
         setStreak(0)
       }
+
+      // Load ranking from leaderboard
+      await loadUserRanking()
     } catch (error) {
       console.error('Error loading fitness data:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadUserRanking = async () => {
+    try {
+      // Get all agents to build leaderboard
+      const { data: agents } = await supabase.from('agents').select('id, name, email, auth_user_id')
+      
+      if (!agents) return
+
+      // Calculate this month's workouts for each agent
+      const now = new Date()
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+      const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+
+      const leaderboardData = await Promise.all(
+        agents.map(async (agent) => {
+          const { count } = await supabase
+            .from('fitness_logs')
+            .select('*', { count: 'exact' })
+            .eq('user_id', agent.auth_user_id)
+            .gte('logged_date', monthStart.toISOString().split('T')[0])
+            .lte('logged_date', monthEnd.toISOString().split('T')[0])
+
+          return {
+            id: agent.id,
+            workouts: count || 0,
+            isCurrentUser: agent.auth_user_id === user?.id,
+          }
+        })
+      )
+
+      // Sort by workouts descending
+      leaderboardData.sort((a, b) => b.workouts - a.workouts)
+
+      // Find current user's ranking
+      const userRank = leaderboardData.findIndex((entry) => entry.isCurrentUser)
+      setRanking(userRank >= 0 ? userRank + 1 : null)
+    } catch (error) {
+      console.error('Error loading user ranking:', error)
     }
   }
 
@@ -174,7 +218,7 @@ export default function FitnessPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2">
@@ -198,6 +242,19 @@ export default function FitnessPage() {
           <CardContent>
             <div className="text-4xl font-bold">{logs.length}</div>
             <p className="text-sm text-muted-foreground">days logged</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2">
+              <Trophy className="h-5 w-5 text-amber-500" />
+              Current Ranking
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-4xl font-bold">{ranking ? `#${ranking}` : '-'}</div>
+            <p className="text-sm text-muted-foreground">on leaderboard</p>
           </CardContent>
         </Card>
       </div>
