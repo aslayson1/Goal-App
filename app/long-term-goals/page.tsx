@@ -1,348 +1,487 @@
 "use client"
 
-import { useState } from "react"
-import { Label, Textarea, Input } from "@/components/ui" // Assuming these components are imported
+import { useState, useEffect } from "react"
+import { Plus, Target, MoreHorizontal, Edit, Trash2, CheckCircle2, Circle } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Progress } from "@/components/ui/progress"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { useAuth } from "@/components/auth/auth-provider"
+import {
+  getLongTermGoals,
+  createLongTermGoal,
+  updateLongTermGoal,
+  deleteLongTermGoal,
+  toggleLongTermGoalCompletion,
+  type LongTermGoal,
+} from "@/lib/data/long-term-goals"
 
-import type { LongTermGoal } from "@/types" // Assuming LongTermGoal is imported from a types file
-import { createClient } from "@/lib/supabase/client" // Import supabase client
-import { createLongTermGoal } from "@/lib/data/long-term-goals"
+type GoalTimeframe = "3_year" | "5_year"
 
-const Page = () => {
-  const [editingLongTermGoal, setEditingLongTermGoal] = useState<{
-    timeframe: "1-year" | "5-year"
-    category: string
-    goal: LongTermGoal
-  } | null>(null)
-  const [selectedTimeframe, setSelectedTimeframe] = useState<"1-year" | "5-year">("1-year")
-  const [newLongTermGoal, setNewLongTermGoal] = useState({
+interface GoalsByCategory {
+  [category: string]: LongTermGoal[]
+}
+
+export default function LongTermGoalsPage() {
+  const { user } = useAuth()
+  const [activeTab, setActiveTab] = useState<GoalTimeframe>("3_year")
+  const [goals, setGoals] = useState<LongTermGoal[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showAddGoal, setShowAddGoal] = useState(false)
+  const [editingGoal, setEditingGoal] = useState<LongTermGoal | null>(null)
+  const [newGoal, setNewGoal] = useState({
     title: "",
     description: "",
-    targetDate: "",
     category: "",
-    notes: "",
-    targetNumber: "",
-    dailyTarget: 0,
-    weeklyTarget: 0,
-    milestones: [
-      { title: "", targetDate: "" },
-      { title: "", targetDate: "" },
-      { title: "", targetDate: "" },
-      { title: "", targetDate: "" },
-    ],
   })
-  const [showAddLongTermGoal, setShowAddLongTermGoal] = useState(false)
-  const [longTermGoals, setLongTermGoals] = useState<{
-    "1-year": { [key: string]: LongTermGoal[] }
-    "5-year": { [key: string]: LongTermGoal[] }
-  }>({
-    "1-year": {},
-    "5-year": {},
-  })
-  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null) // Assuming selectedAgentId is imported or set elsewhere
 
-  const startEditingLongTermGoal = (timeframe: "1-year" | "5-year", category: string, goal: LongTermGoal) => {
-    setEditingLongTermGoal({ timeframe, category, goal })
-    setSelectedTimeframe(timeframe)
-    setNewLongTermGoal({
+  // Category colors matching the dashboard
+  const categoryColors: { [key: string]: string } = {
+    "Career": "bg-blue-100 text-blue-800 border-blue-200",
+    "Health": "bg-green-100 text-green-800 border-green-200",
+    "Finance": "bg-yellow-100 text-yellow-800 border-yellow-200",
+    "Personal": "bg-purple-100 text-purple-800 border-purple-200",
+    "Education": "bg-indigo-100 text-indigo-800 border-indigo-200",
+    "Relationships": "bg-pink-100 text-pink-800 border-pink-200",
+    "default": "bg-gray-100 text-gray-800 border-gray-200",
+  }
+
+  const getCategoryColor = (category: string) => {
+    return categoryColors[category] || categoryColors["default"]
+  }
+
+  // Load goals from database
+  useEffect(() => {
+    const loadGoals = async () => {
+      if (!user?.id) return
+      setLoading(true)
+      try {
+        const data = await getLongTermGoals()
+        setGoals(data)
+      } catch (error) {
+        console.error("Error loading long-term goals:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadGoals()
+  }, [user?.id])
+
+  // Filter goals by timeframe and group by category
+  const getGoalsByCategory = (timeframe: GoalTimeframe): GoalsByCategory => {
+    const filtered = goals.filter((g) => g.goal_type === timeframe)
+    const grouped: GoalsByCategory = {}
+    
+    filtered.forEach((goal) => {
+      const category = goal.description?.split("|")[0]?.trim() || "General"
+      if (!grouped[category]) {
+        grouped[category] = []
+      }
+      grouped[category].push(goal)
+    })
+    
+    return grouped
+  }
+
+  const handleAddGoal = async () => {
+    if (!newGoal.title || !user?.id) return
+
+    try {
+      const goalData = {
+        title: newGoal.title,
+        description: `${newGoal.category || "General"}|${newGoal.description}`,
+        goal_type: activeTab as "3_year" | "5_year",
+        completed: false,
+        completed_at: null,
+        user_id: user.id,
+      }
+
+      const created = await createLongTermGoal(goalData)
+      if (created) {
+        setGoals((prev) => [...prev, created])
+        setNewGoal({ title: "", description: "", category: "" })
+        setShowAddGoal(false)
+      }
+    } catch (error) {
+      console.error("Error creating goal:", error)
+    }
+  }
+
+  const handleUpdateGoal = async () => {
+    if (!editingGoal) return
+
+    try {
+      await updateLongTermGoal(editingGoal.id, {
+        title: newGoal.title,
+        description: `${newGoal.category || "General"}|${newGoal.description}`,
+      })
+      
+      setGoals((prev) =>
+        prev.map((g) =>
+          g.id === editingGoal.id
+            ? { ...g, title: newGoal.title, description: `${newGoal.category || "General"}|${newGoal.description}` }
+            : g
+        )
+      )
+      
+      setEditingGoal(null)
+      setNewGoal({ title: "", description: "", category: "" })
+      setShowAddGoal(false)
+    } catch (error) {
+      console.error("Error updating goal:", error)
+    }
+  }
+
+  const handleDeleteGoal = async (goalId: string) => {
+    try {
+      await deleteLongTermGoal(goalId)
+      setGoals((prev) => prev.filter((g) => g.id !== goalId))
+    } catch (error) {
+      console.error("Error deleting goal:", error)
+    }
+  }
+
+  const handleToggleComplete = async (goal: LongTermGoal) => {
+    try {
+      await toggleLongTermGoalCompletion(goal.id, !goal.completed)
+      setGoals((prev) =>
+        prev.map((g) =>
+          g.id === goal.id ? { ...g, completed: !g.completed } : g
+        )
+      )
+    } catch (error) {
+      console.error("Error toggling goal completion:", error)
+    }
+  }
+
+  const startEditing = (goal: LongTermGoal) => {
+    const parts = goal.description?.split("|") || []
+    setEditingGoal(goal)
+    setNewGoal({
       title: goal.title,
-      description: goal.description,
-      targetDate: goal.targetDate,
-      category: goal.category,
-      notes: goal.notes,
-      targetNumber: "",
-      dailyTarget: 0,
-      weeklyTarget: 0,
-      milestones: goal.milestones.map((m) => ({
-        title: m.title,
-        targetDate: m.targetDate,
-      })),
+      category: parts[0] || "General",
+      description: parts[1] || "",
     })
-    setShowAddLongTermGoal(true)
+    setShowAddGoal(true)
   }
 
-  const saveEditedLongTermGoal = () => {
-    if (!editingLongTermGoal) return
-
-    const { timeframe, category, goal } = editingLongTermGoal
-
-    setLongTermGoals((prev) => ({
-      ...prev,
-      [timeframe]: {
-        ...prev[timeframe],
-        [category]: prev[timeframe][category].map((g) =>
-          g.id === goal.id
-            ? {
-                ...g,
-                title: newLongTermGoal.title,
-                description: newLongTermGoal.description,
-                targetDate: newLongTermGoal.targetDate,
-                category: newLongTermGoal.category,
-                notes: newLongTermGoal.notes,
-                milestones: newLongTermGoal.milestones
-                  .filter((m) => m.title && m.targetDate)
-                  .map((m, index) => ({
-                    id: `${g.id}_m${index + 1}`,
-                    title: m.title,
-                    completed: g.milestones[index]?.completed || false,
-                    targetDate: m.targetDate,
-                  })),
-              }
-            : g,
-        ),
-      },
-    }))
-
-    setNewLongTermGoal({
-      title: "",
-      description: "",
-      targetDate: "",
-      category: "",
-      notes: "",
-      targetNumber: "",
-      dailyTarget: 0,
-      weeklyTarget: 0,
-      milestones: [
-        { title: "", targetDate: "" },
-        { title: "", targetDate: "" },
-        { title: "", targetDate: "" },
-        { title: "", targetDate: "" },
-      ],
-    })
-    setEditingLongTermGoal(null)
-    setShowAddLongTermGoal(false)
+  const getCompletionStats = (timeframe: GoalTimeframe) => {
+    const filtered = goals.filter((g) => g.goal_type === timeframe)
+    const completed = filtered.filter((g) => g.completed).length
+    const total = filtered.length
+    const percentage = total > 0 ? Math.round((completed / total) * 100) : 0
+    return { completed, total, percentage }
   }
 
-  const calculateDistribution = (targetNumber: number) => {
-    if (!targetNumber) return { daily: 0, weekly: 0 }
-    const dailyTarget = Math.round((targetNumber / 84) * 100) / 100 // 84 days in 12 weeks
-    const weeklyTarget = Math.round((targetNumber / 12) * 100) / 100 // 12 weeks
-    return { daily: dailyTarget, weekly: weeklyTarget }
-  }
+  const threeYearStats = getCompletionStats("3_year")
+  const fiveYearStats = getCompletionStats("5_year")
 
-  const handleTargetNumberChange = (value: string) => {
-    const numValue = value ? Number.parseInt(value) : 0
-    const distribution = calculateDistribution(numValue)
-    setNewLongTermGoal((prev) => ({
-      ...prev,
-      targetNumber: value,
-      dailyTarget: distribution.daily,
-      weeklyTarget: distribution.weekly,
-    }))
-  }
-
-  const addLongTermGoal = async () => {
-    if (!newLongTermGoal.title || !newLongTermGoal.category) return
-
-    const goalToCreate: Omit<LongTermGoal, "id" | "created_at" | "updated_at"> = {
-      title: newLongTermGoal.title,
-      description: newLongTermGoal.description || null,
-      goal_type: selectedTimeframe as "1_year" | "5_year",
-      completed: false,
-      completed_at: null,
-      target_count: newLongTermGoal.targetNumber ? Number.parseInt(newLongTermGoal.targetNumber) : undefined,
-      daily_target: newLongTermGoal.dailyTarget || undefined,
-      weekly_target: newLongTermGoal.weeklyTarget || undefined,
-      current_progress: 0,
-      agent_id: selectedAgentId,
-      user_id: "", // Adding user_id field that Supabase RLS will populate - required for insert
-    }
-
-    try {
-      console.log("[v0] Creating numeric goal:", {
-        title: goalToCreate.title,
-        targetNumber: newLongTermGoal.targetNumber,
-        dailyTarget: newLongTermGoal.dailyTarget,
-        weeklyTarget: newLongTermGoal.weeklyTarget,
-      })
-
-      const createdGoal = await createLongTermGoal(goalToCreate)
-
-      if (!createdGoal) {
-        console.error("[v0] Failed to create long-term goal - null returned")
-        return
-      }
-
-      console.log("[v0] Goal created successfully:", createdGoal.id)
-
-      setLongTermGoals((prev) => ({
-        ...prev,
-        [selectedTimeframe]: {
-          ...prev[selectedTimeframe],
-          [newLongTermGoal.category]: [...(prev[selectedTimeframe][newLongTermGoal.category] || []), createdGoal],
-        },
-      }))
-
-      if (newLongTermGoal.targetNumber && createdGoal.id) {
-        console.log("[v0] Starting task creation for numeric goal")
-        await createTasksFromNumericGoal(createdGoal.id)
-      }
-
-      // Reset form
-      setNewLongTermGoal({
-        title: "",
-        description: "",
-        targetDate: "",
-        category: "",
-        notes: "",
-        targetNumber: "",
-        dailyTarget: 0,
-        weeklyTarget: 0,
-        milestones: [
-          { title: "", targetDate: "" },
-          { title: "", targetDate: "" },
-          { title: "", targetDate: "" },
-          { title: "", targetDate: "" },
-        ],
-      })
-      setShowAddLongTermGoal(false)
-    } catch (error) {
-      console.error("[v0] Error adding long-term goal:", error)
-    }
-  }
-
-  const createTasksFromNumericGoal = async (goalId: string) => {
-    if (!newLongTermGoal.targetNumber || !selectedAgentId) return
-
-    try {
-      const supabase = createClient()
-      const startDate = new Date()
-
-      // Get the category_id from the selected category
-      const { data: categoryData } = await supabase
-        .from("categories")
-        .select("id")
-        .eq("name", newLongTermGoal.category)
-        .eq("agent_id", selectedAgentId)
-        .single()
-
-      if (!categoryData?.id) {
-        console.error("[v0] Category not found for numeric goal task creation")
-        return
-      }
-
-      const dailyTasks = Array.from({ length: 84 }, (_, i) => {
-        const taskDate = new Date(startDate)
-        taskDate.setDate(taskDate.getDate() + i)
-        return {
-          title: `${newLongTermGoal.title} - Daily`,
-          task_type: "daily",
-          target_date: taskDate.toISOString().split("T")[0],
-          linked_goal_id: goalId,
-          counter: 0,
-          completed: false,
-          category_id: categoryData.id,
-          agent_id: selectedAgentId,
-          description: `Daily target: ${newLongTermGoal.dailyTarget}`,
-        }
-      })
-
-      const weeklyTasks = Array.from({ length: 12 }, (_, i) => {
-        const weekStart = new Date(startDate)
-        weekStart.setDate(weekStart.getDate() + i * 7)
-        return {
-          title: `${newLongTermGoal.title} - Week ${i + 1}`,
-          task_type: "weekly",
-          target_date: weekStart.toISOString().split("T")[0],
-          linked_goal_id: goalId,
-          counter: 0,
-          completed: false,
-          category_id: categoryData.id,
-          agent_id: selectedAgentId,
-          description: `Weekly target: ${newLongTermGoal.weeklyTarget}`,
-        }
-      })
-
-      // Insert all tasks
-      const allTasks = [...dailyTasks, ...weeklyTasks]
-      if (allTasks.length > 0) {
-        const { error } = await supabase.from("tasks").insert(allTasks)
-        if (error) {
-          console.error("[v0] Error creating tasks:", error)
-        } else {
-          console.log(`[v0] Created ${allTasks.length} tasks for numeric goal ${goalId}`)
-        }
-      }
-    } catch (error) {
-      console.error("[v0] Error creating tasks from numeric goal:", error)
-    }
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
+      </div>
+    )
   }
 
   return (
-    <div>
-      {/* Page content */}
-      <div>
-        <Label htmlFor="lt-notes">Notes</Label>
-        <Textarea
-          id="lt-notes"
-          placeholder="Additional notes or strategy..."
-          value={newLongTermGoal.notes}
-          onChange={(e) => setNewLongTermGoal((prev) => ({ ...prev, notes: e.target.value }))}
-        />
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Long-term Goals</h1>
+          <p className="text-muted-foreground">Plan and track your 3-year and 5-year goals</p>
+        </div>
+        <Button onClick={() => { setEditingGoal(null); setNewGoal({ title: "", description: "", category: "" }); setShowAddGoal(true); }}>
+          <Plus className="h-4 w-4 mr-2" />
+          Add Goal
+        </Button>
       </div>
-      <div>
-        <Label htmlFor="lt-target-number">Target Number (Optional)</Label>
-        <Input
-          id="lt-target-number"
-          type="number"
-          placeholder="e.g., 100 (for 100 push-ups, 100 miles, etc.)"
-          value={newLongTermGoal.targetNumber}
-          onChange={(e) => handleTargetNumberChange(e.target.value)}
-        />
-      </div>
-      {newLongTermGoal.targetNumber && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
-          <h4 className="font-medium text-blue-900">Prorated Distribution</h4>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-blue-700 mb-1">Daily Target</p>
-              <p className="text-lg font-semibold text-blue-900">{newLongTermGoal.dailyTarget}</p>
-              <p className="text-xs text-blue-600">per day (÷ 84 days)</p>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card className="border-0 shadow-sm">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-muted-foreground">3-Year Goals</span>
+              <span className="text-2xl font-bold">{threeYearStats.completed}/{threeYearStats.total}</span>
             </div>
-            <div>
-              <p className="text-sm text-blue-700 mb-1">Weekly Target</p>
-              <p className="text-lg font-semibold text-blue-900">{newLongTermGoal.weeklyTarget}</p>
-              <p className="text-xs text-blue-600">per week (÷ 12 weeks)</p>
+            <Progress value={threeYearStats.percentage} className="h-2" />
+            <p className="text-xs text-muted-foreground mt-2">{threeYearStats.percentage}% complete</p>
+          </CardContent>
+        </Card>
+        <Card className="border-0 shadow-sm">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-muted-foreground">5-Year Goals</span>
+              <span className="text-2xl font-bold">{fiveYearStats.completed}/{fiveYearStats.total}</span>
+            </div>
+            <Progress value={fiveYearStats.percentage} className="h-2" />
+            <p className="text-xs text-muted-foreground mt-2">{fiveYearStats.percentage}% complete</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Tabs for 3-Year and 5-Year Goals */}
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as GoalTimeframe)} className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="3_year">3-Year Goals</TabsTrigger>
+          <TabsTrigger value="5_year">5-Year Goals</TabsTrigger>
+        </TabsList>
+
+        {/* 3-Year Goals */}
+        <TabsContent value="3_year" className="mt-6">
+          {Object.keys(getGoalsByCategory("3_year")).length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 px-4">
+              <div className="text-center space-y-4">
+                <div className="flex justify-center">
+                  <div className="rounded-full bg-muted p-4">
+                    <Target className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold">No 3-year goals yet</h3>
+                  <p className="text-sm text-muted-foreground max-w-sm">
+                    Start planning your future by adding your first 3-year goal.
+                  </p>
+                </div>
+                <Button onClick={() => { setEditingGoal(null); setNewGoal({ title: "", description: "", category: "" }); setShowAddGoal(true); }} className="mt-4">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add your first goal
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {Object.entries(getGoalsByCategory("3_year")).map(([category, categoryGoals]) => (
+                <Card key={category} className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200">
+                  <CardHeader className="pb-4">
+                    <div className="flex items-center justify-between">
+                      <Badge className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}>
+                        {category}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {categoryGoals.map((goal) => (
+                      <div
+                        key={goal.id}
+                        className={`flex items-start justify-between p-3 rounded-lg border ${
+                          goal.completed ? "bg-green-50 border-green-200" : "bg-white border-gray-200"
+                        }`}
+                      >
+                        <div className="flex items-start gap-3 flex-1">
+                          <button
+                            onClick={() => handleToggleComplete(goal)}
+                            className="mt-0.5 flex-shrink-0"
+                          >
+                            {goal.completed ? (
+                              <CheckCircle2 className="h-5 w-5 text-green-600" />
+                            ) : (
+                              <Circle className="h-5 w-5 text-gray-400" />
+                            )}
+                          </button>
+                          <div className="flex-1 min-w-0">
+                            <p className={`font-medium ${goal.completed ? "line-through text-gray-500" : ""}`}>
+                              {goal.title}
+                            </p>
+                            {goal.description?.split("|")[1] && (
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {goal.description.split("|")[1]}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => startEditing(goal)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleDeleteGoal(goal.id)}
+                              className="text-red-600"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* 5-Year Goals */}
+        <TabsContent value="5_year" className="mt-6">
+          {Object.keys(getGoalsByCategory("5_year")).length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 px-4">
+              <div className="text-center space-y-4">
+                <div className="flex justify-center">
+                  <div className="rounded-full bg-muted p-4">
+                    <Target className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold">No 5-year goals yet</h3>
+                  <p className="text-sm text-muted-foreground max-w-sm">
+                    Think big and add your first 5-year goal to start planning ahead.
+                  </p>
+                </div>
+                <Button onClick={() => { setEditingGoal(null); setNewGoal({ title: "", description: "", category: "" }); setShowAddGoal(true); }} className="mt-4">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add your first goal
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {Object.entries(getGoalsByCategory("5_year")).map(([category, categoryGoals]) => (
+                <Card key={category} className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200">
+                  <CardHeader className="pb-4">
+                    <div className="flex items-center justify-between">
+                      <Badge className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}>
+                        {category}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {categoryGoals.map((goal) => (
+                      <div
+                        key={goal.id}
+                        className={`flex items-start justify-between p-3 rounded-lg border ${
+                          goal.completed ? "bg-green-50 border-green-200" : "bg-white border-gray-200"
+                        }`}
+                      >
+                        <div className="flex items-start gap-3 flex-1">
+                          <button
+                            onClick={() => handleToggleComplete(goal)}
+                            className="mt-0.5 flex-shrink-0"
+                          >
+                            {goal.completed ? (
+                              <CheckCircle2 className="h-5 w-5 text-green-600" />
+                            ) : (
+                              <Circle className="h-5 w-5 text-gray-400" />
+                            )}
+                          </button>
+                          <div className="flex-1 min-w-0">
+                            <p className={`font-medium ${goal.completed ? "line-through text-gray-500" : ""}`}>
+                              {goal.title}
+                            </p>
+                            {goal.description?.split("|")[1] && (
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {goal.description.split("|")[1]}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => startEditing(goal)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleDeleteGoal(goal.id)}
+                              className="text-red-600"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+
+      {/* Add/Edit Goal Dialog */}
+      <Dialog open={showAddGoal} onOpenChange={setShowAddGoal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>{editingGoal ? "Edit Goal" : "Add New Goal"}</DialogTitle>
+            <DialogDescription>
+              {editingGoal
+                ? "Update your long-term goal details."
+                : `Add a new ${activeTab === "3_year" ? "3-year" : "5-year"} goal to track your progress.`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Goal Title</Label>
+              <Input
+                id="title"
+                placeholder="e.g., Become a senior developer"
+                value={newGoal.title}
+                onChange={(e) => setNewGoal((prev) => ({ ...prev, title: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="category">Category</Label>
+              <Input
+                id="category"
+                placeholder="e.g., Career, Health, Finance"
+                value={newGoal.category}
+                onChange={(e) => setNewGoal((prev) => ({ ...prev, category: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Description (Optional)</Label>
+              <Textarea
+                id="description"
+                placeholder="Add more details about this goal..."
+                value={newGoal.description}
+                onChange={(e) => setNewGoal((prev) => ({ ...prev, description: e.target.value }))}
+              />
             </div>
           </div>
-          <p className="text-xs text-blue-600 italic">
-            Daily and weekly tasks will be created automatically with these targets
-          </p>
-        </div>
-      )}
-      <div>
-        <Label>Milestones (Optional)</Label>
-        <div className="space-y-3 mt-2">
-          {newLongTermGoal.milestones.map((milestone, index) => (
-            <div key={index}>
-              <Label htmlFor={`milestone-title-${index}`}>Milestone {index + 1} Title</Label>
-              <Input
-                id={`milestone-title-${index}`}
-                value={milestone.title}
-                onChange={(e) =>
-                  setNewLongTermGoal((prev) => ({
-                    ...prev,
-                    milestones: prev.milestones.map((m, i) => (i === index ? { ...m, title: e.target.value } : m)),
-                  }))
-                }
-              />
-              <Label htmlFor={`milestone-date-${index}`}>Milestone {index + 1} Target Date</Label>
-              <Input
-                id={`milestone-date-${index}`}
-                type="date"
-                value={milestone.targetDate}
-                onChange={(e) =>
-                  setNewLongTermGoal((prev) => ({
-                    ...prev,
-                    milestones: prev.milestones.map((m, i) => (i === index ? { ...m, targetDate: e.target.value } : m)),
-                  }))
-                }
-              />
-            </div>
-          ))}
-        </div>
-      </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddGoal(false)}>
+              Cancel
+            </Button>
+            <Button onClick={editingGoal ? handleUpdateGoal : handleAddGoal}>
+              {editingGoal ? "Save Changes" : "Add Goal"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
-
-export default Page

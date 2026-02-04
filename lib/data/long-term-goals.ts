@@ -3,10 +3,10 @@ import { supabase } from "@/lib/supabase/client"
 export interface LongTermGoal {
   id: string
   user_id: string
-  agent_id?: string // Added agent_id to interface
+  agent_id?: string
   title: string
   description: string | null
-  goal_type: "1_year" | "5_year"
+  goal_type: "1_year" | "3_year" | "5_year"
   completed: boolean
   completed_at: string | null
   created_at: string
@@ -44,6 +44,7 @@ export async function createLongTermGoal(
     const { data, error } = await supabase
       .from("long_term_goals")
       .insert({
+        user_id: goal.user_id,
         title: goal.title,
         description: goal.description,
         goal_type: goal.goal_type,
@@ -54,7 +55,6 @@ export async function createLongTermGoal(
         weekly_target: goal.weekly_target,
         current_progress: goal.current_progress,
         agent_id: goal.agent_id,
-        // Note: user_id is automatically set by Supabase RLS policy to auth.uid()
       })
       .select()
       .single()
@@ -64,7 +64,6 @@ export async function createLongTermGoal(
       return null
     }
 
-    console.log("[v0] Goal created successfully:", data?.id)
     return data
   } catch (error: any) {
     console.error("[v0] Exception creating goal:", error.message)

@@ -235,8 +235,8 @@ export default function AgentsPage() {
 
   return (
     <SidebarProvider defaultOpen={true}>
-      <div className="flex h-screen flex-col">
-        <header className="sticky top-0 z-50 flex h-16 shrink-0 items-center justify-between gap-4 border-b bg-white px-6">
+      <div className="flex h-screen w-screen flex-col overflow-hidden">
+        <header className="sticky top-0 z-50 flex h-16 shrink-0 items-center justify-between gap-4 border-b bg-white px-6 w-full">
           <div className="flex items-center gap-3">
             <Image
               src="/layson-group-logo.png"
