@@ -1,5 +1,9 @@
 "use client"
 import { supabase } from "@/lib/supabase/client"
+import { useSearchParams } from "next/navigation"
+
+import Link from "next/link"
+
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 
 import { DialogTrigger } from "@/components/ui/dialog"
@@ -14,6 +18,7 @@ import {
 } from "@/components/ui/dialog"
 
 import { Label } from "@/components/ui/label"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 
 import { useState, useEffect } from "react"
 import {
@@ -32,6 +37,9 @@ import {
   Pencil,
   X,
   Menu,
+  LayoutDashboard,
+  Users,
+  Activity,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -45,7 +53,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Checkbox } from "@/components/ui/checkbox"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import Image from "next/image"
-import { useSearchParams } from "next/navigation"
 import React from "react" // Ensure React is imported
 import { toast } from "@/components/ui/use-toast" // Added for toast notifications
 import { Switch } from "@/components/ui/switch" // Import Switch component
@@ -4088,43 +4095,71 @@ function GoalTrackerApp() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Mobile Hamburger Menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+          {/* Mobile Menu - Sheet with Navigation + Settings */}
+          <Sheet>
+            <SheetTrigger asChild>
               <Button variant="ghost" size="sm" className="lg:hidden">
                 <Menu className="h-5 w-5" />
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <Dialog open={showProfile} onOpenChange={setShowProfile}>
-                <DialogTrigger asChild>
-                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                    Settings
-                  </DropdownMenuItem>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[450px]">
-                  <DialogHeader>
-                    <DialogTitle>Profile Settings</DialogTitle>
-                    <DialogDescription>Manage your user profile information.</DialogDescription>
-                  </DialogHeader>
-                  <UserProfile userId={user.id} />
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setShowProfile(false)}>
-                      Close
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-              <DropdownMenuItem asChild>
-                <SidebarTrigger className="w-full justify-start">
-                  Menu
-                </SidebarTrigger>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <SignOutButton className="w-full text-left" />
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-64 p-0">
+              <nav className="flex flex-col h-full">
+                {/* Navigation Items */}
+                <div className="flex-1 overflow-auto py-4">
+                  <div className="space-y-2 px-4">
+                    <Link href="/" className="block">
+                      <Button variant="ghost" className="w-full justify-start text-base">
+                        <LayoutDashboard className="mr-3 h-4 w-4" />
+                        Dashboard
+                      </Button>
+                    </Link>
+                    <Link href="/long-term-goals" className="block">
+                      <Button variant="ghost" className="w-full justify-start text-base">
+                        <Target className="mr-3 h-4 w-4" />
+                        Long-term Goals
+                      </Button>
+                    </Link>
+                    <Link href="/agents" className="block">
+                      <Button variant="ghost" className="w-full justify-start text-base">
+                        <Users className="mr-3 h-4 w-4" />
+                        Agents
+                      </Button>
+                    </Link>
+                    <Link href="/fitness" className="block">
+                      <Button variant="ghost" className="w-full justify-start text-base">
+                        <Activity className="mr-3 h-4 w-4" />
+                        Fitness
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+
+                {/* Settings and Sign Out at Bottom */}
+                <div className="border-t space-y-2 p-4">
+                  <Dialog open={showProfile} onOpenChange={setShowProfile}>
+                    <DialogTrigger asChild>
+                      <Button variant="ghost" className="w-full justify-start text-base">
+                        Settings
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[450px]">
+                      <DialogHeader>
+                        <DialogTitle>Profile Settings</DialogTitle>
+                        <DialogDescription>Manage your user profile information.</DialogDescription>
+                      </DialogHeader>
+                      <UserProfile userId={user.id} />
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowProfile(false)}>
+                          Close
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                  <SignOutButton className="w-full justify-start" />
+                </div>
+              </nav>
+            </SheetContent>
+          </Sheet>
 
           {/* Mobile Avatar Display Only */}
           <Avatar className="h-8 w-8 border-2 border-black lg:hidden">
