@@ -25,42 +25,60 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/components/auth/auth-provider"
-import {
-  getLongTermGoals,
-  createLongTermGoal,
-  updateLongTermGoal,
-  deleteLongTermGoal,
-  toggleLongTermGoalCompletion,
-  type LongTermGoal,
-} from "@/lib/data/long-term-goals"
+import { createClient } from "@/lib/supabase/client"
+import { createLongTermGoal, updateLongTermGoal, deleteLongTermGoal, toggleLongTermGoalCompletion } from "@/lib/goals"
 
-type GoalTimeframe = "1_year" | "3_year" | "5_year"
-
-interface GoalsByCategory {
-  [category: string]: LongTermGoal[]
+interface Goal {
+  id: string
+  title: string
+  description: string
+  current_progress: number
+  target_count: number
+  completed: boolean
+  category_id: string
+  user_id: string
+  categories?: {
+    id: string
+    name: string
+  }
 }
 
-export default function LongTermGoalsPage() {
+interface GoalsByCategory {
+  [category: string]: Goal[]
+}
+
+interface LongTermGoal {
+  id: string
+  title: string
+  description: string
+  goal_type: "3_year" | "5_year"
+  completed: boolean
+  user_id: string
+}
+
+type GoalTimeframe = "3_year" | "5_year"
+
+export default function OneYearGoalsPage() {
   const { user } = useAuth()
-  const [activeTab, setActiveTab] = useState<GoalTimeframe>("1_year")
+  const supabase = createClient()
   const [goals, setGoals] = useState<LongTermGoal[]>([])
   const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<GoalTimeframe>("3_year")
   const [showAddGoal, setShowAddGoal] = useState(false)
   const [editingGoal, setEditingGoal] = useState<LongTermGoal | null>(null)
-  const [newGoal, setNewGoal] = useState({
-    title: "",
-    description: "",
-    category: "",
-  })
+  const [newGoal, setNewGoal] = useState({ title: "", description: "", category: "" })
 
   // Category colors matching the dashboard
   const categoryColors: { [key: string]: string } = {
     "Career": "bg-blue-100 text-blue-800 border-blue-200",
     "Health": "bg-green-100 text-green-800 border-green-200",
+    "Fitness": "bg-green-100 text-green-800 border-green-200",
     "Finance": "bg-yellow-100 text-yellow-800 border-yellow-200",
     "Personal": "bg-purple-100 text-purple-800 border-purple-200",
     "Education": "bg-indigo-100 text-indigo-800 border-indigo-200",
     "Relationships": "bg-pink-100 text-pink-800 border-pink-200",
+    "Business": "bg-blue-500 text-white border-blue-600",
+    "Intellect": "bg-amber-100 text-amber-800 border-amber-200",
     "default": "bg-gray-100 text-gray-800 border-gray-200",
   }
 
@@ -68,38 +86,49 @@ export default function LongTermGoalsPage() {
     return categoryColors[category] || categoryColors["default"]
   }
 
-  // Load goals from database
+  // Load 1-year goals from the goals table
   useEffect(() => {
     const loadGoals = async () => {
       if (!user?.id) return
       setLoading(true)
       try {
-        const data = await getLongTermGoals()
-        setGoals(data)
+        const { data, error } = await supabase
+          .from("goals")
+          .select("*, categories(id, name)")
+          .eq("user_id", user.id)
+          .eq("completed", false)
+
+        if (error) {
+          console.error("Error loading goals:", error)
+          return
+        }
+
+        setGoals(data || [])
       } catch (error) {
-        console.error("Error loading long-term goals:", error)
+        console.error("Error loading goals:", error)
       } finally {
         setLoading(false)
       }
     }
     loadGoals()
-  }, [user?.id])
+  }, [user?.id, supabase])
 
-  // Filter goals by timeframe and group by category
+  // Group goals by category
   const getGoalsByCategory = (timeframe: GoalTimeframe): GoalsByCategory => {
-    const filtered = goals.filter((g) => g.goal_type === timeframe)
     const grouped: GoalsByCategory = {}
     
-    filtered.forEach((goal) => {
-      const category = goal.description?.split("|")[0]?.trim() || "General"
-      if (!grouped[category]) {
-        grouped[category] = []
+    goals.filter(goal => goal.goal_type === timeframe).forEach((goal) => {
+      const categoryName = goal.categories?.name || "General"
+      if (!grouped[categoryName]) {
+        grouped[categoryName] = []
       }
-      grouped[category].push(goal)
+      grouped[categoryName].push(goal)
     })
     
     return grouped
   }
+
+  const goalsByCategory = getGoalsByCategory(activeTab)
 
   const handleAddGoal = async () => {
     if (!newGoal.title || !user?.id) return
@@ -207,8 +236,8 @@ export default function LongTermGoalsPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">1-Year Goals</h1>
-          <p className="text-muted-foreground">Plan and track your 1-year, 3-year, and 5-year goals</p>
+          <h1 className="text-3xl font-bold tracking-tight">Long-term Goals</h1>
+          <p className="text-muted-foreground">Plan and track your 3-year and 5-year goals</p>
         </div>
         <Button onClick={() => { setEditingGoal(null); setNewGoal({ title: "", description: "", category: "" }); setShowAddGoal(true); }}>
           <Plus className="h-4 w-4 mr-2" />
@@ -240,104 +269,16 @@ export default function LongTermGoalsPage() {
         </Card>
       </div>
 
-      {/* Tabs for 1-Year, 3-Year and 5-Year Goals */}
+      {/* Tabs for 3-Year and 5-Year Goals */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as GoalTimeframe)} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="1_year">1-Year Goals</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="3_year">3-Year Goals</TabsTrigger>
           <TabsTrigger value="5_year">5-Year Goals</TabsTrigger>
         </TabsList>
 
-        {/* 1-Year Goals */}
-        <TabsContent value="1_year" className="mt-6">
-          {Object.keys(getGoalsByCategory("1_year")).length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 px-4">
-              <div className="text-center space-y-4">
-                <div className="flex justify-center">
-                  <div className="rounded-full bg-muted p-4">
-                    <Target className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-lg">No 1-Year Goals Yet</h3>
-                  <p className="text-sm text-muted-foreground mt-1">Create your first 1-year goal to get started</p>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {Object.entries(getGoalsByCategory("1_year")).map(([category, categoryGoals]) => (
-                <div key={category}>
-                  <h3 className="text-lg font-semibold mb-4">{category}</h3>
-                  <div className="grid gap-4">
-                    {categoryGoals.map((goal) => (
-                      <Card key={goal.id} className="border-l-4 border-l-[#05a7b0]">
-                        <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3">
-                              <button
-                                onClick={() => toggleLongTermGoalCompletion(goal.id, goal.completed)}
-                                className="flex-shrink-0"
-                              >
-                                {goal.completed ? (
-                                  <CheckCircle2 className="h-5 w-5 text-green-600" />
-                                ) : (
-                                  <Circle className="h-5 w-5 text-muted-foreground" />
-                                )}
-                              </button>
-                              <div>
-                                <h4 className={`font-semibold ${goal.completed ? "line-through text-muted-foreground" : ""}`}>
-                                  {goal.title}
-                                </h4>
-                              </div>
-                            </div>
-                          </div>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  setEditingGoal(goal)
-                                  const [goalCategory, ...descParts] = (goal.description || "").split("|")
-                                  setNewGoal({
-                                    title: goal.title,
-                                    category: goalCategory.trim(),
-                                    description: descParts.join("|").trim(),
-                                  })
-                                  setShowAddGoal(true)
-                                }}
-                              >
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => deleteLongTermGoal(goal.id).then(() => setGoals(goals.filter((g) => g.id !== goal.id)))}
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </CardHeader>
-                        <CardContent>
-                          {goal.description && <p className="text-sm text-muted-foreground">{goal.description.split("|")[1]?.trim()}</p>}
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-
         {/* 3-Year Goals */}
         <TabsContent value="3_year" className="mt-6">
-          {Object.keys(getGoalsByCategory("3_year")).length === 0 ? (
+          {Object.keys(goalsByCategory).length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 px-4">
               <div className="text-center space-y-4">
                 <div className="flex justify-center">
@@ -359,7 +300,7 @@ export default function LongTermGoalsPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {Object.entries(getGoalsByCategory("3_year")).map(([category, categoryGoals]) => (
+              {Object.entries(goalsByCategory).map(([category, categoryGoals]) => (
                 <Card key={category} className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200">
                   <CardHeader className="pb-4">
                     <div className="flex items-center justify-between">
@@ -429,7 +370,7 @@ export default function LongTermGoalsPage() {
 
         {/* 5-Year Goals */}
         <TabsContent value="5_year" className="mt-6">
-          {Object.keys(getGoalsByCategory("5_year")).length === 0 ? (
+          {Object.keys(goalsByCategory).length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 px-4">
               <div className="text-center space-y-4">
                 <div className="flex justify-center">
@@ -451,7 +392,7 @@ export default function LongTermGoalsPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {Object.entries(getGoalsByCategory("5_year")).map(([category, categoryGoals]) => (
+              {Object.entries(goalsByCategory).map(([category, categoryGoals]) => (
                 <Card key={category} className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200">
                   <CardHeader className="pb-4">
                     <div className="flex items-center justify-between">
