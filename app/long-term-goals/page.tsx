@@ -1,67 +1,42 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Plus, Target, MoreHorizontal, Edit, Trash2, CheckCircle2, Circle } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Progress } from "@/components/ui/progress"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import { DialogFooter } from "@/components/ui/dialog"
+import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { DialogDescription } from "@/components/ui/dialog"
+import { DialogTitle } from "@/components/ui/dialog"
+import { DialogHeader } from "@/components/ui/dialog"
+import { DialogContent } from "@/components/ui/dialog"
+import { Dialog } from "@/components/ui/dialog"
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
+import { DropdownMenuContent } from "@/components/ui/dropdown-menu"
+import { DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { DropdownMenu } from "@/components/ui/dropdown-menu"
+import { CardHeader } from "@/components/ui/card"
+import { TabsContent } from "@/components/ui/tabs"
+import { TabsTrigger } from "@/components/ui/tabs"
+import { TabsList } from "@/components/ui/tabs"
+import { Tabs } from "@/components/ui/tabs"
+import { Button } from "@/components/ui/button"
+import { useState, useEffect } from "react"
+import { Target, CheckCircle2, Circle, Plus, MoreHorizontal, Edit, Trash2 } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Progress } from "@/components/ui/progress"
 import { useAuth } from "@/components/auth/auth-provider"
 import { createClient } from "@/lib/supabase/client"
 import { createLongTermGoal, updateLongTermGoal, deleteLongTermGoal, toggleLongTermGoalCompletion } from "@/lib/goals"
-
-interface Goal {
-  id: string
-  title: string
-  description: string
-  current_progress: number
-  target_count: number
-  completed: boolean
-  category_id: string
-  user_id: string
-  categories?: {
-    id: string
-    name: string
-  }
-}
+import { Goal, GoalTimeframe, LongTermGoal } from "@/types/goals"
 
 interface GoalsByCategory {
   [category: string]: Goal[]
 }
 
-interface LongTermGoal {
-  id: string
-  title: string
-  description: string
-  goal_type: "3_year" | "5_year"
-  completed: boolean
-  user_id: string
-}
-
-type GoalTimeframe = "3_year" | "5_year"
-
 export default function OneYearGoalsPage() {
   const { user } = useAuth()
   const supabase = createClient()
-  const [goals, setGoals] = useState<LongTermGoal[]>([])
+  const [goals, setGoals] = useState<Goal[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<GoalTimeframe>("3_year")
   const [showAddGoal, setShowAddGoal] = useState(false)
@@ -87,36 +62,70 @@ export default function OneYearGoalsPage() {
   }
 
   // Load 1-year goals from the goals table
-  useEffect(() => {
-    const loadGoals = async () => {
-      if (!user?.id) return
-      setLoading(true)
-      try {
-        const { data, error } = await supabase
-          .from("goals")
-          .select("*, categories(id, name)")
-          .eq("user_id", user.id)
-          .eq("completed", false)
+  const loadGoals = async () => {
+    if (!user?.id) return
+    setLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from("goals")
+        .select("*, categories(id, name)")
+        .eq("user_id", user.id)
+        .eq("completed", false)
 
-        if (error) {
-          console.error("Error loading goals:", error)
-          return
-        }
-
-        setGoals(data || [])
-      } catch (error) {
+      if (error) {
         console.error("Error loading goals:", error)
-      } finally {
-        setLoading(false)
+        return
       }
+
+      setGoals(data || [])
+    } catch (error) {
+      console.error("Error loading goals:", error)
+    } finally {
+      setLoading(false)
     }
+  }
+
+  useEffect(() => {
     loadGoals()
+  }, [user?.id, supabase])
+
+  // Set up real-time subscription and periodic refresh
+  useEffect(() => {
+    if (!user?.id) return
+
+    // Subscribe to changes
+    const channel = supabase
+      .channel("goals-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "goals",
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          // Refresh goals when changes occur
+          loadGoals()
+        }
+      )
+      .subscribe()
+
+    // Also refresh every 5 seconds to catch new categories
+    const interval = setInterval(() => {
+      loadGoals()
+    }, 5000)
+
+    return () => {
+      channel.unsubscribe()
+      clearInterval(interval)
+    }
   }, [user?.id, supabase])
 
   // Group goals by category
   const getGoalsByCategory = (timeframe: GoalTimeframe): GoalsByCategory => {
     const grouped: GoalsByCategory = {}
-    
+
     goals.filter(goal => goal.goal_type === timeframe).forEach((goal) => {
       const categoryName = goal.categories?.name || "General"
       if (!grouped[categoryName]) {
@@ -124,7 +133,7 @@ export default function OneYearGoalsPage() {
       }
       grouped[categoryName].push(goal)
     })
-    
+
     return grouped
   }
 
@@ -162,7 +171,7 @@ export default function OneYearGoalsPage() {
         title: newGoal.title,
         description: `${newGoal.category || "General"}|${newGoal.description}`,
       })
-      
+
       setGoals((prev) =>
         prev.map((g) =>
           g.id === editingGoal.id
@@ -170,7 +179,7 @@ export default function OneYearGoalsPage() {
             : g
         )
       )
-      
+
       setEditingGoal(null)
       setNewGoal({ title: "", description: "", category: "" })
       setShowAddGoal(false)
@@ -222,14 +231,6 @@ export default function OneYearGoalsPage() {
 
   const threeYearStats = getCompletionStats("3_year")
   const fiveYearStats = getCompletionStats("5_year")
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
-      </div>
-    )
-  }
 
   return (
     <div className="space-y-6">
