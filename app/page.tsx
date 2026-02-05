@@ -4299,9 +4299,12 @@ function GoalTrackerApp() {
                 </div>
 
                 <Tabs value={activeView} onValueChange={setActiveView} className="mb-8">
-                  <TabsList className="grid w-full grid-cols-3">
+                  <TabsList className={`grid w-full ${dashboardMode === "12-week" ? "grid-cols-4" : "grid-cols-3"}`}>
                     <TabsTrigger value="daily">Daily Tasks</TabsTrigger>
                     <TabsTrigger value="weekly">Weekly Goals</TabsTrigger>
+                    {dashboardMode === "12-week" && (
+                      <TabsTrigger value="1-week">12-Week Goals</TabsTrigger>
+                    )}
                     <TabsTrigger value="notes">Notes</TabsTrigger>
                   </TabsList>
 
@@ -5067,7 +5070,6 @@ function GoalTrackerApp() {
                     </div>
                   </TabsContent>
 
-                  {/* 1-Year Goals View */}
                   <TabsContent value="notes" className="mt-8 w-full">
                     <div className="space-y-6">
                       <div className="flex items-center justify-between">
