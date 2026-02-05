@@ -1,6 +1,6 @@
 "use client"
 import { supabase } from "@/lib/supabase/client"
-import { SidebarProvider } from "@/components/ui/sidebar"
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 
 import { DialogTrigger } from "@/components/ui/dialog"
 
@@ -4037,6 +4037,7 @@ function GoalTrackerApp() {
       {/* Full-width Top Header Bar */}
       <header className="sticky top-0 z-50 flex h-14 shrink-0 items-center justify-between gap-4 border-b bg-white px-6 w-full">
         <div className="flex items-center gap-3">
+          <SidebarTrigger className="lg:hidden" />
           <Image
             src="/layson-group-logo.png"
             alt="Layson Group"
