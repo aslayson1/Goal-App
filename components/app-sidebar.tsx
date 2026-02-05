@@ -27,7 +27,7 @@ const menuItems = [
     href: "/",
   },
   {
-    title: "1-Year Goals",
+    title: "Long-term Goals",
     icon: Target,
     href: "/long-term-goals",
   },
