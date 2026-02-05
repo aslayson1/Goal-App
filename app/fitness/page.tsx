@@ -111,16 +111,38 @@ export default function FitnessPage() {
     if (!user?.id) return
     try {
       // Load long-term fitness goals that are 12-week or 1-year goals
-      const { data: goals } = await supabase
+      const { data: longTermGoals } = await supabase
         .from('long_term_goals')
         .select('*')
         .eq('user_id', user.id)
         .in('goal_type', ['12-week', '1-year'])
         .eq('completed', false)
 
-      if (goals) {
-        setFitnessGoals(goals)
+      // Also load regular goals from Health or Fitness categories
+      const { data: categoryGoals } = await supabase
+        .from('goals')
+        .select('goals(id, title, description, target_count, user_id), categories(name)')
+        .eq('user_id', user.id)
+        .eq('completed', false)
+
+      // Combine and filter goals
+      let combinedGoals: any[] = longTermGoals || []
+
+      // Add category goals that are from Health or Fitness categories
+      if (categoryGoals) {
+        const filteredCategoryGoals = categoryGoals
+          .filter((goal: any) => {
+            const category = goal.categories?.name?.toLowerCase() || ''
+            return category.includes('health') || category.includes('fitness')
+          })
+          .map((goal: any) => ({
+            ...goal,
+            source: 'category'
+          }))
+        combinedGoals = [...combinedGoals, ...filteredCategoryGoals]
       }
+
+      setFitnessGoals(combinedGoals)
     } catch (error) {
       console.error('Error loading fitness goals:', error)
     }
