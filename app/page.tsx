@@ -4856,7 +4856,7 @@ function GoalTrackerApp() {
 
                     {/* Group weekly tasks by category */}
                     <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-8">
-                      {Object.keys(dashboardMode === "standard" ? standardDailyTasks : goalsData).map((category) => {
+                      {Object.keys(dashboardMode === "standard" ? oneYearGoalsData : goalsData).map((category) => {
                         const targetWeeklyTasks = dashboardMode === "standard" ? standardWeeklyTasks : weeklyTasks
                         const categoryTasks = (targetWeeklyTasks[`Week ${currentWeek}`] || []).filter(
                           (task) => task.category === category,
