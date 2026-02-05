@@ -1810,6 +1810,7 @@ function GoalTrackerApp() {
             setCurrentWeek(calculatedWeek)
 
             const dbData = await loadCategoriesAndGoalsFromDB(selectedAgentId)
+            const oneYearDbData = await loadCategoriesAndOneYearGoalsFromDB(selectedAgentId)
             const taskData = await loadTasksFromDB(selectedAgentId)
             await loadLongTermGoalsFromDB()
 
@@ -1847,6 +1848,7 @@ function GoalTrackerApp() {
             console.log("Weekly tasks structure:", JSON.stringify(taskData.weeklyTasks, null, 2))
 
             setGoalsData(dbData)
+            setOneYearGoalsData(oneYearDbData)
 
             console.log("=== FORCING STATE UPDATES ===")
 
@@ -2936,9 +2938,9 @@ function GoalTrackerApp() {
           notes: goal.notes || "",
           weeklyTarget: goal.weekly_target || 1,
           category: categoryName,
-          // Load distribution flags from database
-          distributeDaily: goal.distribute_daily || false,
-          distributeWeekly: goal.distribute_weekly || false,
+          // 1-year goals don't have distribution flags
+          distributeDaily: false,
+          distributeWeekly: false,
         })
       })
 
