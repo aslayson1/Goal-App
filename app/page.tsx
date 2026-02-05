@@ -5344,110 +5344,192 @@ function GoalTrackerApp() {
                                       : 0
                                   const goalType = getGoalType(goal.targetCount)
                                   const quickIncrements = getQuickIncrements(goal.targetCount)
+                                  const isCompleted = goal.currentCount >= goal.targetCount
 
                                   return (
                                     <div
                                       key={goal.id}
-                                      className="p-4 rounded-lg bg-muted/50 space-y-3 hover:bg-muted transition-colors"
+                                      className="p-3 rounded-lg bg-gray-50 border border-border space-y-3"
                                     >
-                                      <div className="flex items-start justify-between gap-3">
+                                      {/* All goals now have checkbox + title layout */}
+                                      <div className="flex items-start space-x-3">
+                                        <Checkbox
+                                          checked={isCompleted}
+                                          onCheckedChange={() => toggleGoalCompletion(goal.id, category)}
+                                          className={`h-5 w-5 mt-0.5 flex-shrink-0 ${checkboxStyles}`}
+                                        />
                                         <div className="flex-1 min-w-0">
-                                          <h4 className="font-medium break-words">{goal.title}</h4>
-                                          {goal.description && (
-                                            <p className="text-sm text-muted-foreground mt-1 break-words">
-                                              {goal.description}
-                                            </p>
-                                          )}
+                                          <div className="flex items-start justify-between gap-3">
+                                            <div className="flex-1 min-w-0">
+                                              <h4
+                                                className={`font-medium ${isCompleted ? "line-through text-gray-500" : "text-gray-900"} break-words`}
+                                              >
+                                                {goal.title}
+                                              </h4>
+                                              <p
+                                                className={`text-sm mt-1 ${isCompleted ? "text-gray-400" : "text-gray-600"} break-words`}
+                                              >
+                                                {goal.description}
+                                              </p>
+                                            </div>
+                                            <div className="flex items-center space-x-2 flex-shrink-0">
+                                              {isCompleted && (
+                                                <Badge
+                                                  variant="secondary"
+                                                  className="bg-green-100 text-green-800 whitespace-nowrap"
+                                                >
+                                                  Complete
+                                                </Badge>
+                                              )}
+                                              <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                  <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-8 w-8 p-0 flex-shrink-0"
+                                                  >
+                                                    <MoreHorizontal className="h-4 w-4" />
+                                                  </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                  <DropdownMenuItem onClick={() => startEditingGoal(category, goal)}>
+                                                    <Edit className="h-4 w-4 mr-2" />
+                                                    Edit Goal
+                                                  </DropdownMenuItem>
+                                                  <DropdownMenuItem
+                                                    onClick={() =>
+                                                      setShowDeleteGoal({
+                                                        category,
+                                                        goalId: goal.id,
+                                                        title: goal.title,
+                                                      })
+                                                    }
+                                                    className="text-red-600"
+                                                  >
+                                                    <Trash2 className="h-4 w-4 mr-2" />
+                                                    Delete Goal
+                                                  </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                              </DropdownMenu>
+                                            </div>
+                                          </div>
                                         </div>
-                                        <DropdownMenu>
-                                          <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0">
-                                              <MoreHorizontal className="h-4 w-4" />
-                                            </Button>
-                                          </DropdownMenuTrigger>
-                                          <DropdownMenuContent align="end">
-                                            <DropdownMenuItem onClick={() => startEditingGoal(category, goal)}>
-                                              <Edit className="h-4 w-4 mr-2" />
-                                              Edit Goal
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                              onClick={() =>
-                                                setShowDeleteGoal({
-                                                  category,
-                                                  goalId: goal.id,
-                                                  title: goal.title,
-                                                })
-                                              }
-                                              className="text-red-600"
-                                            >
-                                              <Trash2 className="h-4 w-4 mr-2" />
-                                              Delete Goal
-                                            </DropdownMenuItem>
-                                          </DropdownMenuContent>
-                                        </DropdownMenu>
                                       </div>
 
-                                      {/* Progress bar and controls */}
-                                      <div className="space-y-3">
-                                        <div className="space-y-2">
-                                          <div className="flex justify-between text-sm">
-                                            <span className="text-muted-foreground">
-                                              {goal.targetCount >= 1000 &&
-                                              (goal.title.toLowerCase().includes("$") ||
-                                                goal.title.toLowerCase().includes("dollar") ||
-                                                goal.title.toLowerCase().includes("funding") ||
-                                                goal.title.toLowerCase().includes("revenue") ||
-                                                goal.title.toLowerCase().includes("money"))
-                                                ? `$${goal.currentCount.toLocaleString()} / $${goal.targetCount.toLocaleString()}`
-                                                : `${goal.currentCount} / ${goal.targetCount}`}
-                                            </span>
-                                            <span className="font-medium">
-                                              {progressPercentage}%
-                                            </span>
+                                      {/* Progress bar and controls for number-based goals only */}
+                                      {goalType !== "binary" && (
+                                        <div className="space-y-3">
+                                          <div className="space-y-2">
+                                            <div className="flex justify-between text-sm">
+                                              <span className="text-gray-600">
+                                                {goal.targetCount >= 1000 &&
+                                                (goal.title.toLowerCase().includes("$") ||
+                                                  goal.title.toLowerCase().includes("dollar") ||
+                                                  goal.title.toLowerCase().includes("funding") ||
+                                                  goal.title.toLowerCase().includes("revenue") ||
+                                                  goal.title.toLowerCase().includes("money"))
+                                                  ? `$${goal.currentCount.toLocaleString()} / $${goal.targetCount.toLocaleString()}`
+                                                  : `${goal.currentCount} / ${goal.targetCount}`}
+                                              </span>
+                                              <span className="font-medium text-gray-900">
+                                                {Math.round(progressPercentage)}%
+                                              </span>
+                                            </div>
+                                            <Progress value={progressPercentage} className="h-2 [&>div]:bg-[#05a7b0]" />
                                           </div>
-                                          <Progress value={progressPercentage} className="h-2 [&>div]:bg-[#05a7b0]" />
-                                        </div>
 
-                                        {/* Progress Update Controls */}
-                                        <div className="flex items-center justify-between">
-                                          <div className="flex items-center space-x-1">
-                                            {goalType === "small" ? (
-                                              // Small numbers - single + button
-                                              <Button
-                                                size="sm"
-                                                variant="outline"
-                                                onClick={() => incrementGoal(category, goal.id, 1)}
-                                                className="h-7 px-2"
-                                              >
-                                                <Plus className="h-3 w-3 mr-1" />
-                                                +1
-                                              </Button>
-                                            ) : (
-                                              // Medium/Large numbers - multiple increment buttons
-                                              <>
-                                                {quickIncrements.map((increment) => (
-                                                  <Button
-                                                    key={increment}
-                                                    size="sm"
-                                                    variant="outline"
-                                                    onClick={() => incrementGoal(category, goal.id, increment)}
-                                                    className="h-7 px-2 text-xs"
-                                                  >
-                                                    +{increment >= 1000 ? `${increment / 1000}k` : increment}
-                                                  </Button>
-                                                ))}
-                                              </>
+                                          {/* Progress Update Controls */}
+                                          <div className="flex items-center justify-between">
+                                            <div className="flex items-center space-x-1">
+                                              {goalType === "small" ? (
+                                                // Small numbers - single + button
+                                                <Button
+                                                  size="sm"
+                                                  variant="outline"
+                                                  onClick={() => incrementGoal(category, goal.id, 1)}
+                                                  className="h-7 px-2"
+                                                >
+                                                  <Plus className="h-3 w-3 mr-1" />
+                                                  +1
+                                                </Button>
+                                              ) : (
+                                                // Medium/Large numbers - multiple increment buttons
+                                                <>
+                                                  {quickIncrements.map((increment) => (
+                                                    <Button
+                                                      key={increment}
+                                                      size="sm"
+                                                      variant="outline"
+                                                      onClick={() => incrementGoal(category, goal.id, increment)}
+                                                      className="h-7 px-2 text-xs"
+                                                    >
+                                                      +{increment >= 1000 ? `${increment / 1000}k` : increment}
+                                                    </Button>
+                                                  ))}
+                                                </>
+                                              )}
+                                            </div>
+
+                                            {/* Direct input for medium/large goals */}
+                                            {goalType !== "small" && (
+                                              <div className="flex items-center space-x-2">
+                                                <Input
+                                                  type="number"
+                                                  value={goal.currentCount}
+                                                  onChange={(e) =>
+                                                    updateGoalProgress(
+                                                      category,
+                                                      goal.id,
+                                                      Number.parseInt(e.target.value) || 0,
+                                                    )
+                                                  }
+                                                  className="w-20 h-7 text-xs text-center"
+                                                  min="0"
+                                                  max={goal.targetCount}
+                                                />
+                                              </div>
                                             )}
                                           </div>
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            onClick={() => incrementGoal(category, goal.id, -1)}
-                                            className="h-7 px-2 text-xs"
-                                          >
-                                            <Minus className="h-3 w-3" />
-                                          </Button>
                                         </div>
+                                      )}
+
+                                      {/* Notes Section */}
+                                      <div className="space-y-2">
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => toggleNotes(goal.id)}
+                                          className="text-xs text-gray-500 hover:text-gray-700 p-0 h-auto"
+                                        >
+                                          {expandedNotes.has(goal.id) ? (
+                                            <>
+                                              <ChevronUp className="h-3 w-3 mr-1" />
+                                              Hide notes
+                                            </>
+                                          ) : (
+                                            <>
+                                              <ChevronDown className="h-3 w-3 mr-1" />
+                                              {goal.notes ? "Show notes" : "Add notes"}
+                                            </>
+                                          )}
+                                        </Button>
+
+                                        {expandedNotes.has(goal.id) && (
+                                          <div className="animate-in slide-in-from-top-2 duration-200">
+                                            <Textarea
+                                              placeholder="Add notes about your progress..."
+                                              value={goal.notes}
+                                              onChange={(e) => updateNotes(category, goal.id, e.target.value)}
+                                              onKeyDown={(e) => {
+                                                if (e.key === "Enter" && !e.shiftKey) {
+                                                  e.preventDefault()
+                                                  toggleNotes(goal.id)
+                                                }
+                                              }}
+                                              className="min-h-[80px] text-sm"
+                                            />
+                                          </div>
+                                        )}
                                       </div>
                                     </div>
                                   )
