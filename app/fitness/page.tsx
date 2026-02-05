@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/components/auth/auth-provider'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import Link from 'next/link'
 import { ChevronLeft, ChevronRight, Flame, Calendar, Trophy } from 'lucide-react'
 
@@ -15,10 +16,14 @@ export default function FitnessPage() {
   const [ranking, setRanking] = useState<number | null>(null)
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [loading, setLoading] = useState(true)
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+  const [fitnessGoals, setFitnessGoals] = useState<any[]>([])
+  const [showGoalDialog, setShowGoalDialog] = useState(false)
 
   useEffect(() => {
     if (!user || authLoading) return
     loadFitnessData()
+    loadFitnessGoals()
   }, [user, authLoading, currentMonth])
 
   const loadFitnessData = async () => {
@@ -99,6 +104,49 @@ export default function FitnessPage() {
       setRanking(userRank >= 0 ? userRank + 1 : null)
     } catch (error) {
       console.error('[v0] Error loading user ranking:', error)
+    }
+  }
+
+  const loadFitnessGoals = async () => {
+    if (!user?.id) return
+    try {
+      // Load long-term fitness goals that are 12-week or 1-year goals
+      const { data: goals } = await supabase
+        .from('long_term_goals')
+        .select('*')
+        .eq('user_id', user.id)
+        .in('goal_type', ['12-week', '1-year'])
+        .eq('completed', false)
+
+      if (goals) {
+        setFitnessGoals(goals)
+      }
+    } catch (error) {
+      console.error('Error loading fitness goals:', error)
+    }
+  }
+
+  const handleGoalSelect = async (goalId: string) => {
+    if (!user || !selectedDate) return
+
+    const dateStr = selectedDate.toISOString().split('T')[0]
+
+    try {
+      // Create fitness log with linked goal
+      const { error } = await supabase.from('fitness_logs').insert({
+        user_id: user.id,
+        logged_date: dateStr,
+        linked_goal_id: goalId,
+      })
+
+      if (error) throw error
+
+      // Reload data
+      loadFitnessData()
+      setShowGoalDialog(false)
+      setSelectedDate(null)
+    } catch (error) {
+      console.error('Error saving fitness activity:', error)
     }
   }
 
@@ -186,11 +234,16 @@ export default function FitnessPage() {
         <button
           key={day}
           onClick={() => logWorkout(date)}
+          onDoubleClick={() => {
+            setSelectedDate(date)
+            setShowGoalDialog(true)
+          }}
           className={`aspect-square rounded-full transition-all ${
             logged
               ? 'bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-lg hover:shadow-xl hover:scale-110'
               : 'bg-muted text-muted-foreground hover:bg-muted hover:scale-105'
           }`}
+          title="Double-click to link to a fitness goal"
         >
           <span className="text-sm font-medium">{day}</span>
         </button>
@@ -332,6 +385,45 @@ export default function FitnessPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Goal Selection Dialog */}
+      <Dialog open={showGoalDialog} onOpenChange={setShowGoalDialog}>
+        <DialogContent className="sm:max-w-[450px]">
+          <DialogHeader>
+            <DialogTitle>Link Fitness Activity to Goal</DialogTitle>
+            <DialogDescription>
+              Select a fitness goal for {selectedDate?.toLocaleDateString()}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            {fitnessGoals.length > 0 ? (
+              fitnessGoals.map((goal) => (
+                <Button
+                  key={goal.id}
+                  onClick={() => handleGoalSelect(goal.id)}
+                  variant="outline"
+                  className="w-full justify-start text-left h-auto py-3"
+                >
+                  <div className="flex flex-col gap-1">
+                    <span className="font-semibold">{goal.title}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {goal.goal_type === '12-week' ? '12-Week Goal' : '1-Year Goal'}
+                      {goal.target_count && ` • Target: ${goal.target_count}`}
+                    </span>
+                  </div>
+                </Button>
+              ))
+            ) : (
+              <div className="text-center py-6 text-muted-foreground">
+                No active fitness goals. Create a 12-week or 1-year fitness goal to get started.
+              </div>
+            )}
+          </div>
+          <Button variant="outline" className="w-full bg-transparent" onClick={() => setShowGoalDialog(false)}>
+            Cancel
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
