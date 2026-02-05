@@ -65,53 +65,37 @@ export default function FitnessPage() {
 
   const loadUserRanking = async () => {
     try {
-      // Get all agents to build leaderboard
-      const { data: agents } = await supabase.from('agents').select('id, name, email, auth_user_id')
-      
-      console.log("[v0] Agents fetched:", agents)
-      console.log("[v0] Current user ID:", user?.id)
+      if (!user?.id) return
 
-      if (!agents || agents.length === 0) {
-        console.log("[v0] No agents found or user not in agents table")
-        return
-      }
-
-      // Calculate this month's workouts for each agent
+      // Calculate this month's workouts
       const now = new Date()
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
       const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0)
 
-      const leaderboardData = await Promise.all(
-        agents.map(async (agent) => {
-          const { count } = await supabase
-            .from('fitness_logs')
-            .select('*', { count: 'exact' })
-            .eq('user_id', agent.auth_user_id)
-            .gte('logged_date', monthStart.toISOString().split('T')[0])
-            .lte('logged_date', monthEnd.toISOString().split('T')[0])
+      // Get all fitness logs for all users this month to build leaderboard
+      const { data: allLogs } = await supabase
+        .from('fitness_logs')
+        .select('user_id, logged_date')
+        .gte('logged_date', monthStart.toISOString().split('T')[0])
+        .lte('logged_date', monthEnd.toISOString().split('T')[0])
 
-          console.log(`[v0] Agent ${agent.name} (${agent.auth_user_id}): ${count} workouts`)
+      if (!allLogs) return
 
-          return {
-            id: agent.id,
-            name: agent.name,
-            workouts: count || 0,
-            isCurrentUser: agent.auth_user_id === user?.id,
-          }
-        })
-      )
+      // Count workouts per user
+      const workoutsByUser: Record<string, number> = {}
+      allLogs.forEach((log) => {
+        if (log.user_id) {
+          workoutsByUser[log.user_id] = (workoutsByUser[log.user_id] || 0) + 1
+        }
+      })
 
-      console.log("[v0] Leaderboard data before sort:", leaderboardData)
-
-      // Sort by workouts descending
-      leaderboardData.sort((a, b) => b.workouts - a.workouts)
-
-      console.log("[v0] Leaderboard data after sort:", leaderboardData)
+      // Create leaderboard sorted by workouts
+      const leaderboard = Object.entries(workoutsByUser)
+        .map(([userId, count]) => ({ userId, workouts: count }))
+        .sort((a, b) => b.workouts - a.workouts)
 
       // Find current user's ranking
-      const userRank = leaderboardData.findIndex((entry) => entry.isCurrentUser)
-      console.log("[v0] User ranking found at index:", userRank, "Ranking:", userRank >= 0 ? userRank + 1 : null)
-      
+      const userRank = leaderboard.findIndex((entry) => entry.userId === user.id)
       setRanking(userRank >= 0 ? userRank + 1 : null)
     } catch (error) {
       console.error('[v0] Error loading user ranking:', error)
