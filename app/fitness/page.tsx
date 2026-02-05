@@ -1,10 +1,13 @@
 'use client'
 
+import { Progress } from "@/components/ui/progress"
+
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/components/auth/auth-provider'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import Link from 'next/link'
 import { ChevronLeft, ChevronRight, Flame, Calendar, Trophy } from 'lucide-react'
 
@@ -15,10 +18,16 @@ export default function FitnessPage() {
   const [ranking, setRanking] = useState<number | null>(null)
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [loading, setLoading] = useState(true)
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+  const [fitnessGoals, setFitnessGoals] = useState<any[]>([])
+  const [showGoalDialog, setShowGoalDialog] = useState(false)
+  const [goalProgress, setGoalProgress] = useState<Record<string, any>>({})
+  const [goalInputs, setGoalInputs] = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (!user || authLoading) return
     loadFitnessData()
+    loadFitnessGoals()
   }, [user, authLoading, currentMonth])
 
   const loadFitnessData = async () => {
@@ -65,41 +74,154 @@ export default function FitnessPage() {
 
   const loadUserRanking = async () => {
     try {
-      // Get all agents to build leaderboard
-      const { data: agents } = await supabase.from('agents').select('id, name, email, auth_user_id')
-      
-      if (!agents) return
+      if (!user?.id) return
 
-      // Calculate this month's workouts for each agent
+      // Calculate this month's workouts
       const now = new Date()
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
       const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0)
 
-      const leaderboardData = await Promise.all(
-        agents.map(async (agent) => {
-          const { count } = await supabase
-            .from('fitness_logs')
-            .select('*', { count: 'exact' })
-            .eq('user_id', agent.auth_user_id)
-            .gte('logged_date', monthStart.toISOString().split('T')[0])
-            .lte('logged_date', monthEnd.toISOString().split('T')[0])
+      // Get all fitness logs for all users this month to build leaderboard
+      const { data: allLogs } = await supabase
+        .from('fitness_logs')
+        .select('user_id, logged_date')
+        .gte('logged_date', monthStart.toISOString().split('T')[0])
+        .lte('logged_date', monthEnd.toISOString().split('T')[0])
 
-          return {
-            id: agent.id,
-            workouts: count || 0,
-            isCurrentUser: agent.auth_user_id === user?.id,
-          }
-        })
-      )
+      if (!allLogs) return
 
-      // Sort by workouts descending
-      leaderboardData.sort((a, b) => b.workouts - a.workouts)
+      // Count workouts per user
+      const workoutsByUser: Record<string, number> = {}
+      allLogs.forEach((log) => {
+        if (log.user_id) {
+          workoutsByUser[log.user_id] = (workoutsByUser[log.user_id] || 0) + 1
+        }
+      })
+
+      // Create leaderboard sorted by workouts
+      const leaderboard = Object.entries(workoutsByUser)
+        .map(([userId, count]) => ({ userId, workouts: count }))
+        .sort((a, b) => b.workouts - a.workouts)
 
       // Find current user's ranking
-      const userRank = leaderboardData.findIndex((entry) => entry.isCurrentUser)
+      const userRank = leaderboard.findIndex((entry) => entry.userId === user.id)
       setRanking(userRank >= 0 ? userRank + 1 : null)
     } catch (error) {
-      console.error('Error loading user ranking:', error)
+      console.error('[v0] Error loading user ranking:', error)
+    }
+  }
+
+  const loadFitnessGoals = async () => {
+    if (!user?.id) return
+    try {
+      // Load all goals for the user
+      const { data: goals, error: goalsError } = await supabase
+        .from('goals')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('completed', false)
+
+      if (goalsError) {
+        console.error('Error loading goals:', goalsError)
+        return
+      }
+
+      if (!goals || goals.length === 0) {
+        setFitnessGoals([])
+        return
+      }
+
+      // Get category IDs from goals, then fetch category names
+      const categoryIds = [...new Set(goals.map((g: any) => g.category_id).filter(Boolean))]
+      
+      let categories: Record<string, string> = {}
+      if (categoryIds.length > 0) {
+        const { data: categoryData } = await supabase
+          .from('categories')
+          .select('id, name')
+          .in('id', categoryIds)
+        
+        if (categoryData) {
+          categoryData.forEach((cat: any) => {
+            categories[cat.id] = cat.name?.toLowerCase() || ''
+          })
+        }
+      }
+
+      // Filter to only include goals from Health or Fitness categories
+      const fitnessGoals = goals.filter((goal: any) => {
+        const categoryName = categories[goal.category_id] || ''
+        return categoryName.includes('health') || categoryName.includes('fitness')
+      })
+
+      // Calculate progress for each goal
+      const progressMap: Record<string, any> = {}
+      for (const goal of fitnessGoals) {
+        const { data: goalLogs } = await supabase
+          .from('fitness_logs')
+          .select('amount')
+          .eq('user_id', user.id)
+          .eq('goal_id', goal.id)
+        
+        const totalCompleted = goalLogs?.reduce((sum, log) => sum + (log.amount || 0), 0) || 0
+        progressMap[goal.id] = {
+          completed: totalCompleted,
+          target: goal.target_count || 0,
+          percentage: goal.target_count ? Math.min((totalCompleted / goal.target_count) * 100, 100) : 0
+        }
+      }
+      
+      setGoalProgress(progressMap)
+      setFitnessGoals(fitnessGoals)
+    } catch (error) {
+      console.error('Error loading fitness goals:', error)
+    }
+  }
+
+  const handleGoalSelect = async (goalId: string, amount: string) => {
+    if (!user || !selectedDate || !amount) return
+
+    const dateStr = selectedDate.toISOString().split('T')[0]
+    const numAmount = parseInt(amount, 10)
+
+    if (isNaN(numAmount) || numAmount <= 0) return
+
+    try {
+      // Create fitness log with linked goal and amount
+      const { error: insertError } = await supabase.from('fitness_logs').insert({
+        user_id: user.id,
+        logged_date: dateStr,
+        goal_id: goalId,
+        amount: numAmount,
+      })
+
+      if (insertError) throw insertError
+
+      // Calculate total amount for this goal from all fitness logs
+      const { data: allLogsForGoal } = await supabase
+        .from('fitness_logs')
+        .select('amount')
+        .eq('user_id', user.id)
+        .eq('goal_id', goalId)
+
+      const totalAmount = (allLogsForGoal || []).reduce((sum, log) => sum + (log.amount || 0), 0)
+
+      // Update goal's current_progress
+      const { error: updateError } = await supabase
+        .from('goals')
+        .update({ current_progress: totalAmount })
+        .eq('id', goalId)
+
+      if (updateError) throw updateError
+
+      // Reload data and clear dialog
+      loadFitnessData()
+      loadFitnessGoals()
+      setShowGoalDialog(false)
+      setSelectedDate(null)
+      setGoalInputs({})
+    } catch (error) {
+      console.error('Error saving fitness activity:', error)
     }
   }
 
@@ -187,11 +309,16 @@ export default function FitnessPage() {
         <button
           key={day}
           onClick={() => logWorkout(date)}
+          onDoubleClick={() => {
+            setSelectedDate(date)
+            setShowGoalDialog(true)
+          }}
           className={`aspect-square rounded-full transition-all ${
             logged
               ? 'bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-lg hover:shadow-xl hover:scale-110'
               : 'bg-muted text-muted-foreground hover:bg-muted hover:scale-105'
           }`}
+          title="Double-click to link to a fitness goal"
         >
           <span className="text-sm font-medium">{day}</span>
         </button>
@@ -333,6 +460,66 @@ export default function FitnessPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Goal Selection Dialog */}
+      <Dialog open={showGoalDialog} onOpenChange={setShowGoalDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Link Fitness Activity to Goal</DialogTitle>
+            <DialogDescription>
+              Select a fitness goal for {selectedDate?.toLocaleDateString()}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+            {fitnessGoals.length > 0 ? (
+              fitnessGoals.map((goal) => {
+                const progress = goalProgress[goal.id] || { completed: 0, target: 0, percentage: 0 }
+                return (
+                  <Card key={goal.id}>
+                    <CardContent className="pt-4">
+                      <div className="space-y-3">
+                        <div>
+                          <h3 className="font-semibold text-base">{goal.title}</h3>
+                          <p className="text-xs text-muted-foreground">
+                            {progress.completed} / {progress.target}
+                          </p>
+                        </div>
+                        <Progress value={progress.percentage} className="h-2" />
+                        <div className="flex gap-2">
+                          <input
+                            type="number"
+                            placeholder="Amount (e.g., 100)"
+                            value={goalInputs[goal.id] || ''}
+                            onChange={(e) =>
+                              setGoalInputs({ ...goalInputs, [goal.id]: e.target.value })
+                            }
+                            className="flex-1 px-2 py-1 border rounded text-sm"
+                            min="1"
+                          />
+                          <Button
+                            size="sm"
+                            onClick={() => handleGoalSelect(goal.id, goalInputs[goal.id] || '0')}
+                            className="bg-emerald-600 hover:bg-emerald-700"
+                          >
+                            Log
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })
+            ) : (
+              <div className="text-center py-6 text-muted-foreground">
+                No active fitness goals. Create a Health or Fitness category goal to get started.
+              </div>
+            )}
+          </div>
+          <Button variant="outline" className="w-full bg-transparent" onClick={() => setShowGoalDialog(false)}>
+            Cancel
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
