@@ -1,29 +1,28 @@
 "use client"
 
-import { DialogFooter } from "@/components/ui/dialog"
-import { Textarea } from "@/components/ui/textarea"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { DialogDescription } from "@/components/ui/dialog"
-import { DialogTitle } from "@/components/ui/dialog"
-import { DialogHeader } from "@/components/ui/dialog"
-import { DialogContent } from "@/components/ui/dialog"
-import { Dialog } from "@/components/ui/dialog"
-import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
-import { DropdownMenuContent } from "@/components/ui/dropdown-menu"
-import { DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { DropdownMenu } from "@/components/ui/dropdown-menu"
-import { CardHeader } from "@/components/ui/card"
-import { TabsContent } from "@/components/ui/tabs"
-import { TabsTrigger } from "@/components/ui/tabs"
-import { TabsList } from "@/components/ui/tabs"
-import { Tabs } from "@/components/ui/tabs"
-import { Button } from "@/components/ui/button"
 import { useState, useEffect } from "react"
 import { Target, CheckCircle2, Circle, Plus, MoreHorizontal, Edit, Trash2 } from "lucide-react"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
+import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/components/auth/auth-provider"
 import { createClient } from "@/lib/supabase/client"
 import { createLongTermGoal, updateLongTermGoal, deleteLongTermGoal, toggleLongTermGoalCompletion } from "@/lib/goals"

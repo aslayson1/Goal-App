@@ -3870,72 +3870,49 @@ function GoalTrackerApp() {
     if (!selectedAgentId) return
 
     try {
-      // Load 1-year goals from the goals table with categories
-      const { data: oneYearGoalsData, error: oneYearError } = await supabase
-        .from("goals")
-        .select("id, title, description, current_progress, target_count, completed, categories(name)")
-        .eq("user_id", selectedAgentId)
-        .eq("completed", false)
-
-      // Load 5-year goals from the long_term_goals table
       const { data: longTermGoalsData, error } = await supabase
         .from("long_term_goals")
         .select("*")
         .eq("user_id", selectedAgentId)
-        .eq("goal_type", "5_year")
 
-      if (error && oneYearError) throw error
+      if (error) throw error
 
-      const groupedGoals: LongTermGoalsData = {
-        "1-year": {},
-        "5-year": {},
-      }
-
-      // Process 1-year goals from goals table
-      if (oneYearGoalsData && oneYearGoalsData.length > 0) {
-        oneYearGoalsData.forEach((goal: any) => {
-          const category = goal.categories?.name || "General"
-          
-          if (!groupedGoals["1-year"][category]) {
-            groupedGoals["1-year"][category] = []
-          }
-
-          groupedGoals["1-year"][category].push({
-            id: goal.id,
-            title: goal.title,
-            description: goal.description || "",
-            targetDate: "",
-            category: category,
-            status: goal.completed ? "completed" : "in-progress",
-            notes: "",
-            milestones: [],
-          })
-        })
-      }
-
-      // Process 5-year goals from long_term_goals table
       if (longTermGoalsData && longTermGoalsData.length > 0) {
-        longTermGoalsData.forEach((goal) => {
-          const category = "Business" // Default for 5-year goals
+        // Group goals by timeframe and category
+        const groupedGoals: LongTermGoalsData = {
+          "1-year": {},
+          "5-year": {},
+        }
 
-          if (!groupedGoals["5-year"][category]) {
-            groupedGoals["5-year"][category] = []
+        longTermGoalsData.forEach((goal) => {
+          // Convert database goal_type format to display format
+          const timeframe = goal.goal_type === "1_year" ? "1-year" : "5-year"
+          const category = "Business" // Default category since database doesn't store categories
+
+          if (!groupedGoals[timeframe][category]) {
+            groupedGoals[timeframe][category] = []
           }
 
-          groupedGoals["5-year"][category].push({
+          groupedGoals[timeframe][category].push({
             id: goal.id,
             title: goal.title,
             description: goal.description || "",
-            targetDate: "",
+            targetDate: "", // Database doesn't store target_date
             category: category,
             status: goal.completed ? "completed" : "in-progress",
-            notes: "",
-            milestones: [],
+            notes: "", // Database doesn't store notes
+            milestones: [], // Database doesn't store milestones
           })
         })
-      }
 
-      setLongTermGoals(groupedGoals)
+        // Merge with initial data for categories that don't exist in database
+        setLongTermGoals(groupedGoals)
+      } else {
+        setLongTermGoals({
+          "1-year": {},
+          "5-year": {},
+        })
+      }
     } catch (error) {
       console.error("Error loading long-term goals:", error)
     }
