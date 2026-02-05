@@ -115,44 +115,27 @@ export default function FitnessPage() {
     try {
       console.log('[v0] loadFitnessGoals - fetching goals for user:', user.id)
       
-      // Load all 12-week and 1-year goals (which include Health category goals)
-      const { data: allLongTermGoals, error } = await supabase
-        .from('long_term_goals')
-        .select('*')
+      // Load goals from Health or Fitness categories
+      const { data: goals, error } = await supabase
+        .from('goals')
+        .select('*, categories(name)')
         .eq('user_id', user.id)
-        .in('goal_type', ['12-week', '1-year'])
         .eq('completed', false)
 
-      console.log('[v0] loadFitnessGoals - query result:', { error, count: allLongTermGoals?.length })
-      console.log('[v0] loadFitnessGoals - raw goals:', allLongTermGoals)
+      console.log('[v0] loadFitnessGoals - query result:', { error, count: goals?.length })
+      console.log('[v0] loadFitnessGoals - raw goals:', goals)
 
       if (error) {
         console.error('Error loading fitness goals:', error)
         return
       }
 
-      // Filter to only include goals related to Health/Fitness
-      // This includes goals from Health category, goals with fitness-related titles, etc.
-      const fitnessGoals = (allLongTermGoals || []).filter((goal: any) => {
-        const titleLower = (goal.title || '').toLowerCase()
-        const descriptionLower = (goal.description || '').toLowerCase()
-        const categoryLower = (goal.category || '').toLowerCase()
+      // Filter to only include goals from Health or Fitness categories
+      const fitnessGoals = (goals || []).filter((goal: any) => {
+        const categoryName = (goal.categories?.name || '').toLowerCase()
+        const isRelevant = categoryName.includes('health') || categoryName.includes('fitness')
         
-        const isRelevant = (
-          categoryLower.includes('health') ||
-          categoryLower.includes('fitness') ||
-          titleLower.includes('walk') ||
-          titleLower.includes('run') ||
-          titleLower.includes('exercise') ||
-          titleLower.includes('workout') ||
-          titleLower.includes('fitness') ||
-          titleLower.includes('alcohol') ||
-          titleLower.includes('push') ||
-          descriptionLower.includes('health') ||
-          descriptionLower.includes('fitness')
-        )
-        
-        console.log('[v0] Goal check:', { title: goal.title, category: goal.category, isRelevant })
+        console.log('[v0] Goal check:', { title: goal.title, category: goal.categories?.name, isRelevant })
         return isRelevant
       })
 
