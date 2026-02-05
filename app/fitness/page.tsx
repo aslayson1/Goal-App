@@ -1,5 +1,7 @@
 'use client'
 
+import { Progress } from "@/components/ui/progress"
+
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/components/auth/auth-provider'
@@ -19,6 +21,8 @@ export default function FitnessPage() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [fitnessGoals, setFitnessGoals] = useState<any[]>([])
   const [showGoalDialog, setShowGoalDialog] = useState(false)
+  const [goalProgress, setGoalProgress] = useState<Record<string, any>>({})
+  const [goalInputs, setGoalInputs] = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (!user || authLoading) return
@@ -140,31 +144,56 @@ export default function FitnessPage() {
       })
 
       console.log('[v0] loadFitnessGoals - filtered goals count:', fitnessGoals.length)
+      
+      // Calculate progress for each goal
+      const progressMap: Record<string, any> = {}
+      for (const goal of fitnessGoals) {
+        const { data: goalLogs } = await supabase
+          .from('fitness_logs')
+          .select('amount')
+          .eq('user_id', user.id)
+          .eq('goal_id', goal.id)
+        
+        const totalCompleted = goalLogs?.reduce((sum, log) => sum + (log.amount || 0), 0) || 0
+        progressMap[goal.id] = {
+          completed: totalCompleted,
+          target: goal.target_count || 0,
+          percentage: goal.target_count ? Math.min((totalCompleted / goal.target_count) * 100, 100) : 0
+        }
+      }
+      
+      setGoalProgress(progressMap)
       setFitnessGoals(fitnessGoals)
     } catch (error) {
       console.error('Error loading fitness goals:', error)
     }
   }
 
-  const handleGoalSelect = async (goalId: string) => {
-    if (!user || !selectedDate) return
+  const handleGoalSelect = async (goalId: string, amount: string) => {
+    if (!user || !selectedDate || !amount) return
 
     const dateStr = selectedDate.toISOString().split('T')[0]
+    const numAmount = parseInt(amount, 10)
+
+    if (isNaN(numAmount) || numAmount <= 0) return
 
     try {
-      // Create fitness log with linked goal
+      // Create fitness log with linked goal and amount
       const { error } = await supabase.from('fitness_logs').insert({
         user_id: user.id,
         logged_date: dateStr,
-        linked_goal_id: goalId,
+        goal_id: goalId,
+        amount: numAmount,
       })
 
       if (error) throw error
 
-      // Reload data
+      // Reload data and clear dialog
       loadFitnessData()
+      loadFitnessGoals()
       setShowGoalDialog(false)
       setSelectedDate(null)
+      setGoalInputs({})
     } catch (error) {
       console.error('Error saving fitness activity:', error)
     }
@@ -408,34 +437,55 @@ export default function FitnessPage() {
 
       {/* Goal Selection Dialog */}
       <Dialog open={showGoalDialog} onOpenChange={setShowGoalDialog}>
-        <DialogContent className="sm:max-w-[450px]">
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Link Fitness Activity to Goal</DialogTitle>
             <DialogDescription>
               Select a fitness goal for {selectedDate?.toLocaleDateString()}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3">
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto">
             {fitnessGoals.length > 0 ? (
-              fitnessGoals.map((goal) => (
-                <Button
-                  key={goal.id}
-                  onClick={() => handleGoalSelect(goal.id)}
-                  variant="outline"
-                  className="w-full justify-start text-left h-auto py-3"
-                >
-                  <div className="flex flex-col gap-1">
-                    <span className="font-semibold">{goal.title}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {goal.goal_type === '12-week' ? '12-Week Goal' : '1-Year Goal'}
-                      {goal.target_count && ` • Target: ${goal.target_count}`}
-                    </span>
-                  </div>
-                </Button>
-              ))
+              fitnessGoals.map((goal) => {
+                const progress = goalProgress[goal.id] || { completed: 0, target: 0, percentage: 0 }
+                return (
+                  <Card key={goal.id}>
+                    <CardContent className="pt-4">
+                      <div className="space-y-3">
+                        <div>
+                          <h3 className="font-semibold text-base">{goal.title}</h3>
+                          <p className="text-xs text-muted-foreground">
+                            {progress.completed} / {progress.target}
+                          </p>
+                        </div>
+                        <Progress value={progress.percentage} className="h-2" />
+                        <div className="flex gap-2">
+                          <input
+                            type="number"
+                            placeholder="Amount (e.g., 100)"
+                            value={goalInputs[goal.id] || ''}
+                            onChange={(e) =>
+                              setGoalInputs({ ...goalInputs, [goal.id]: e.target.value })
+                            }
+                            className="flex-1 px-2 py-1 border rounded text-sm"
+                            min="1"
+                          />
+                          <Button
+                            size="sm"
+                            onClick={() => handleGoalSelect(goal.id, goalInputs[goal.id] || '0')}
+                            className="bg-emerald-600 hover:bg-emerald-700"
+                          >
+                            Log
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })
             ) : (
               <div className="text-center py-6 text-muted-foreground">
-                No active fitness goals. Create a 12-week or 1-year fitness goal to get started.
+                No active fitness goals. Create a Health or Fitness category goal to get started.
               </div>
             )}
           </div>
