@@ -3654,6 +3654,7 @@ function GoalTrackerApp() {
 
   const addWeeklyTask = async () => {
     console.log("[v0] addWeeklyTask called with:", newWeeklyTask)
+    console.log("[v0] Dashboard mode:", dashboardMode)
     console.log("[v0] User ID:", user?.id)
 
     if (!newWeeklyTask.title || !newWeeklyTask.category) {
@@ -3662,8 +3663,10 @@ function GoalTrackerApp() {
     }
 
     const taskId = crypto.randomUUID()
+    const targetWeeklyTasks = dashboardMode === "standard" ? standardWeeklyTasks : weeklyTasks
+    const setTargetWeeklyTasks = dashboardMode === "standard" ? setStandardWeeklyTasks : setWeeklyTasks
 
-    setWeeklyTasks((prev) => ({
+    setTargetWeeklyTasks((prev) => ({
       ...prev,
       [`Week ${currentWeek}`]: [
         ...(prev[`Week ${currentWeek}`] || []),
@@ -3674,8 +3677,8 @@ function GoalTrackerApp() {
           category: newWeeklyTask.category,
           goalId: newWeeklyTask.goalId,
           completed: false,
-          priority: newWeeklyTask.priority, // Added priority to local state
-          estimatedHours: newWeeklyTask.estimatedHours, // Added estimatedHours to local state
+          priority: newWeeklyTask.priority,
+          estimatedHours: newWeeklyTask.estimatedHours,
         },
       ],
     }))
@@ -3704,11 +3707,10 @@ function GoalTrackerApp() {
         category_id: categories?.id || null,
         goal_id: newWeeklyTask.goalId || null,
         title: newWeeklyTask.title,
-        description: newWeeklyTask.description,
+        description: `__MODE:${dashboardMode}__${newWeeklyTask.description}`,
         task_type: "weekly",
         target_date: new Date().toISOString().split("T")[0],
         completed: false,
-        // Note: priority and estimated_hours are not directly mapped to the 'tasks' table in Supabase
       })
 
       if (error) {
