@@ -166,14 +166,31 @@ export default function FitnessPage() {
 
     try {
       // Create fitness log with linked goal and amount
-      const { error } = await supabase.from('fitness_logs').insert({
+      const { error: insertError } = await supabase.from('fitness_logs').insert({
         user_id: user.id,
         logged_date: dateStr,
         goal_id: goalId,
         amount: numAmount,
       })
 
-      if (error) throw error
+      if (insertError) throw insertError
+
+      // Calculate total amount for this goal from all fitness logs
+      const { data: allLogsForGoal } = await supabase
+        .from('fitness_logs')
+        .select('amount')
+        .eq('user_id', user.id)
+        .eq('goal_id', goalId)
+
+      const totalAmount = (allLogsForGoal || []).reduce((sum, log) => sum + (log.amount || 0), 0)
+
+      // Update goal's current_progress
+      const { error: updateError } = await supabase
+        .from('goals')
+        .update({ current_progress: totalAmount })
+        .eq('id', goalId)
+
+      if (updateError) throw updateError
 
       // Reload data and clear dialog
       loadFitnessData()
