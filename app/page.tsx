@@ -1,5 +1,7 @@
 "use client"
 import { supabase } from "@/lib/supabase/client"
+import { DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
+
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 
 import { DialogTrigger } from "@/components/ui/dialog"
@@ -31,6 +33,7 @@ import {
   ClipboardCheck,
   Pencil,
   X,
+  Menu,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -4036,8 +4039,7 @@ function GoalTrackerApp() {
     <div className="flex flex-col h-screen w-screen overflow-hidden">
       {/* Full-width Top Header Bar */}
       <header className="sticky top-0 z-50 flex h-14 shrink-0 items-center justify-between gap-4 border-b bg-white px-6 w-full">
-        <div className="flex items-center gap-3">
-          <SidebarTrigger className="lg:hidden" />
+        <div>
           <Image
             src="/layson-group-logo.png"
             alt="Layson Group"
@@ -4048,44 +4050,84 @@ function GoalTrackerApp() {
           />
         </div>
 
-        {/* User Profile Dropdown */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="flex items-center space-x-2">
-              <Avatar className="h-8 w-8 border-2 border-black">
-                {user?.avatar && (
-                  <AvatarImage src={user.avatar || "/placeholder.svg?height=40&width=40&text=U"} alt={user?.name} />
-                )}
-                <AvatarFallback className="bg-white text-black text-xs font-semibold">
-                  {getInitials(user?.name)}
-                </AvatarFallback>
-              </Avatar>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <Dialog open={showProfile} onOpenChange={setShowProfile}>
-              <DialogTrigger asChild>
-                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>Profile Settings</DropdownMenuItem>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[450px]">
-                <DialogHeader>
-                  <DialogTitle>Profile Settings</DialogTitle>
-                  <DialogDescription>Manage your user profile information.</DialogDescription>
-                </DialogHeader>
-                <UserProfile userId={user.id} />
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setShowProfile(false)}>
-                    Close
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-            <DropdownMenuItem asChild>
-              <SignOutButton className="w-full text-left" />
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </header>
+        {/* Desktop Profile Dropdown + Mobile Menu */}
+        <div className="flex items-center gap-2">
+          {/* Mobile Menu (Settings + Hamburger) */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="lg:hidden">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <Dialog open={showProfile} onOpenChange={setShowProfile}>
+                <DialogTrigger asChild>
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>Profile Settings</DropdownMenuItem>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[450px]">
+                  <DialogHeader>
+                    <DialogTitle>Profile Settings</DialogTitle>
+                    <DialogDescription>Manage your user profile information.</DialogDescription>
+                  </DialogHeader>
+                  <UserProfile userId={user.id} />
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setShowProfile(false)}>
+                      Close
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+              <DropdownMenuItem asChild>
+                <SignOutButton className="w-full text-left" />
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="lg:hidden" />
+              <DropdownMenuItem asChild className="lg:hidden">
+                <SidebarTrigger className="w-full justify-start">
+                  <Menu className="h-4 w-4 mr-2" />
+                  Toggle Menu
+                </SidebarTrigger>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Desktop Profile Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="hidden lg:flex items-center space-x-2">
+                <Avatar className="h-8 w-8 border-2 border-black">
+                  {user?.avatar && (
+                    <AvatarImage src={user.avatar || "/placeholder.svg?height=40&width=40&text=U"} alt={user?.name} />
+                  )}
+                  <AvatarFallback className="bg-white text-black text-xs font-semibold">
+                    {getInitials(user?.name)}
+                  </AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <Dialog open={showProfile} onOpenChange={setShowProfile}>
+                <DialogTrigger asChild>
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>Profile Settings</DropdownMenuItem>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[450px]">
+                  <DialogHeader>
+                    <DialogTitle>Profile Settings</DialogTitle>
+                    <DialogDescription>Manage your user profile information.</DialogDescription>
+                  </DialogHeader>
+                  <UserProfile userId={user.id} />
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setShowProfile(false)}>
+                      Close
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+              <DropdownMenuItem asChild>
+                <SignOutButton className="w-full text-left" />
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
 
       {/* Sidebar and Content Area */}
       <div className="flex flex-1 overflow-hidden w-full">
@@ -5786,12 +5828,12 @@ function GoalTrackerApp() {
   )
 }
 
-export default function Page() {
+export default function Page() {\
   const { user, isLoading: authLoading } = useAuth()
 
   console.log("[v0] Page render - user:", user, "isLoading:", authLoading)
 
-  if (authLoading) {
+  if (authLoading) {\
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
@@ -5802,7 +5844,7 @@ export default function Page() {
     )
   }
 
-  if (!user) {
+  if (!user) {\
     return <AuthScreen />
   }
 
@@ -5811,4 +5853,4 @@ export default function Page() {
       <GoalTrackerApp />
     </SidebarProvider>
   )
-}
+}\
