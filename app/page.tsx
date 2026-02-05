@@ -1,5 +1,7 @@
 "use client"
 import { supabase } from "@/lib/supabase/client"
+import { DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
+
 import { useSearchParams } from "next/navigation"
 
 import Link from "next/link"
@@ -1381,6 +1383,7 @@ function GoalTrackerApp() {
 
   const [goalsData, setGoalsData] = useState<GoalsData>(initialGoalsData)
   console.log("[v0] GoalTrackerApp render - goalsData keys:", Object.keys(goalsData))
+  const [oneYearGoalsData, setOneYearGoalsData] = useState<GoalsData>(initialGoalsData)
   // The lint error was here: longTermGoals was used before it was declared.
   // It has been moved down to be declared before its first use.
   const [longTermGoals, setLongTermGoals] = useState<LongTermGoalsData>(initialLongTermGoals)
@@ -2864,6 +2867,78 @@ function GoalTrackerApp() {
     }
   }
 
+  const loadCategoriesAndOneYearGoalsFromDB = async (userId: string) => {
+    try {
+      const { data: categories, error: categoriesError } = await supabase
+        .from("categories")
+        .select("*")
+        .eq("user_id", userId)
+
+      if (categoriesError) {
+        console.error("Error fetching categories:", categoriesError)
+        return {}
+      }
+
+      const { data: goals, error: goalsError } = await supabase
+        .from("long_term_goals")
+        .select(
+          `
+        *,
+        categories (
+          name
+        )
+      `,
+        )
+        .eq("user_id", userId)
+        .eq("goal_type", "1_year")
+
+      if (goalsError) {
+        console.error("Error fetching 1-year goals:", goalsError)
+        return {}
+      }
+
+      // Group goals by category
+      const groupedGoals: GoalsData = {}
+
+      // Initialize with categories
+      categories.forEach((category) => {
+        groupedGoals[category.name] = []
+      })
+
+      // Add goals to their categories
+      goals.forEach((goal) => {
+        const categoryName = goal.categories?.name || "Uncategorized"
+        if (!groupedGoals[categoryName]) {
+          groupedGoals[categoryName] = []
+        }
+
+        groupedGoals[categoryName].push({
+          id: goal.id,
+          title: goal.title,
+          description: goal.description || "",
+          targetCount: goal.target_count || 1,
+          currentCount: goal.current_progress || 0,
+          notes: goal.notes || "",
+          weeklyTarget: goal.weekly_target || 1,
+          category: categoryName,
+          // Load distribution flags from database
+          distributeDaily: goal.distribute_daily || false,
+          distributeWeekly: goal.distribute_weekly || false,
+        })
+      })
+
+      if (Object.keys(groupedGoals).length === 0) {
+        console.log("[v0] No 1-year goals found in database")
+        return {}
+      }
+
+      return groupedGoals
+    } catch (error) {
+      console.error("Error loading 1-year goals from database:", error)
+      return {}
+    }
+  }
+
   // Add these functions after the existing helper functions (around line 1200):
   const startEditingLongTermGoal = (timeframe: "1-year" | "5-year", category: string, goal: LongTermGoal) => {
     setEditingLongTermGoal({ timeframe, category, goal })
@@ -4299,11 +4374,13 @@ function GoalTrackerApp() {
                 </div>
 
                 <Tabs value={activeView} onValueChange={setActiveView} className="mb-8">
-                  <TabsList className={`grid w-full ${dashboardMode === "12-week" ? "grid-cols-4" : "grid-cols-3"}`}>
+                  <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="daily">Daily Tasks</TabsTrigger>
                     <TabsTrigger value="weekly">Weekly Goals</TabsTrigger>
-                    {dashboardMode === "12-week" && (
+                    {dashboardMode === "12-week" ? (
                       <TabsTrigger value="1-week">12-Week Goals</TabsTrigger>
+                    ) : (
+                      <TabsTrigger value="1-year">1-Year Goals</TabsTrigger>
                     )}
                     <TabsTrigger value="notes">Notes</TabsTrigger>
                   </TabsList>
@@ -5068,6 +5145,223 @@ function GoalTrackerApp() {
                         })}
                       </DndContext>
                     </div>
+                  </TabsContent>
+
+                  {/* 1-Year Goals View */}
+                  <TabsContent value="1-year" className="mt-8 w-full" data-page="one-year">
+                    {Object.keys(goalsData).length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-16 px-4">
+                        <div className="text-center space-y-4">
+                          <div className="flex justify-center">
+                            <div className="rounded-full bg-muted p-4">
+                              <Target className="h-8 w-8 text-muted-foreground" />
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <h3 className="text-lg font-semibold">No goals yet</h3>
+                            <p className="text-sm text-muted-foreground max-w-sm">
+                              Get started by adding your first category to track your progress over the next year.
+                            </p>
+                          </div>
+                          <Button onClick={() => setShowAddCategory(true)} className="mt-4">
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add your first category
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {Object.entries(goalsData).map(([category, goals]) => (
+                          <Card
+                            key={category}
+                            className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200"
+                          >
+                            <CardHeader className="pb-4">
+                              <div className="flex items-center justify-between">
+                                <Badge
+                                  className={`px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(category)}`}
+                                >
+                                  {category}
+                                </Badge>
+                                <div className="flex items-center space-x-2">
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                        <Plus className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem
+                                        onClick={() => {
+                                          setSelectedCategory(category)
+                                          setShowAddGoal(true)
+                                        }}
+                                      >
+                                        <Target className="h-4 w-4 mr-2" />
+                                        Add Goal
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        onClick={() => {
+                                          setNewWeeklyTask((prev) => ({ ...prev, category }))
+                                          setShowAddWeeklyTask(true)
+                                        }}
+                                      >
+                                        <Calendar className="h-4 w-4 mr-2" />
+                                        Add Weekly Task
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        onClick={() => {
+                                          setNewDailyTask((prev) => ({ ...prev, category }))
+                                          setShowAddDailyTask(true)
+                                        }}
+                                      >
+                                        <Clock className="h-4 w-4 mr-2" />
+                                        Add Daily Task
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                        <MoreHorizontal className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem
+                                        onClick={() => {
+                                          setSelectedCategory(category)
+                                          setShowAddGoal(true)
+                                        }}
+                                      >
+                                        <Plus className="h-4 w-4 mr-2" />
+                                        Add Goal
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        onClick={() => {
+                                          setNewWeeklyTask((prev) => ({ ...prev, category }))
+                                          setShowAddWeeklyTask(true)
+                                        }}
+                                      >
+                                        <Calendar className="h-4 w-4 mr-2" />
+                                        Add Weekly Task
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        onClick={() => {
+                                          setNewDailyTask((prev) => ({ ...prev, category }))
+                                          setShowAddDailyTask(true)
+                                        }}
+                                      >
+                                        <Clock className="h-4 w-4 mr-2" />
+                                        Add Daily Task
+                                      </DropdownMenuItem>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem onClick={() => startEditingCategory(category)}>
+                                        <Edit className="h-4 w-4 mr-2" />
+                                        Edit Category
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        onClick={() => setShowDeleteCategory(category)}
+                                        className={
+                                          goals.length > 0 ? "text-gray-400 cursor-not-allowed" : "text-red-600"
+                                        }
+                                        disabled={goals.length > 0}
+                                      >
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        {goals.length > 0 ? "Delete Category (remove goals first)" : "Delete Category"}
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
+                              </div>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="space-y-4">
+                                {goals.map((goal) => {
+                                  const progressPercentage =
+                                    goal.target_count && goal.target_count > 0
+                                      ? Math.round((goal.counter || 0) / goal.target_count * 100)
+                                      : 0
+
+                                  return (
+                                    <div
+                                      key={goal.id}
+                                      className="p-4 rounded-lg bg-muted/50 space-y-3 hover:bg-muted transition-colors"
+                                    >
+                                      <div className="flex items-start justify-between gap-3">
+                                        <div className="flex-1 min-w-0">
+                                          <h4 className="font-medium break-words">{goal.title}</h4>
+                                          {goal.description && (
+                                            <p className="text-sm text-muted-foreground mt-1 break-words">
+                                              {goal.description}
+                                            </p>
+                                          )}
+                                        </div>
+                                        <DropdownMenu>
+                                          <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0">
+                                              <MoreHorizontal className="h-4 w-4" />
+                                            </Button>
+                                          </DropdownMenuTrigger>
+                                          <DropdownMenuContent align="end">
+                                            <DropdownMenuItem onClick={() => startEditingGoal(category, goal)}>
+                                              <Edit className="h-4 w-4 mr-2" />
+                                              Edit Goal
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                              onClick={() =>
+                                                setShowDeleteGoal({
+                                                  category,
+                                                  goalId: goal.id,
+                                                  title: goal.title,
+                                                })
+                                              }
+                                              className="text-red-600"
+                                            >
+                                              <Trash2 className="h-4 w-4 mr-2" />
+                                              Delete Goal
+                                            </DropdownMenuItem>
+                                          </DropdownMenuContent>
+                                        </DropdownMenu>
+                                      </div>
+
+                                      {/* Progress bar */}
+                                      <div className="space-y-2">
+                                        <div className="flex justify-between text-sm">
+                                          <span className="text-muted-foreground">
+                                            {goal.counter || 0} / {goal.target_count || 0}
+                                          </span>
+                                          <span className="font-medium">
+                                            {progressPercentage}%
+                                          </span>
+                                        </div>
+                                        <Progress value={progressPercentage} className="h-2" />
+                                      </div>
+                                    </div>
+                                  )
+                                })}
+
+                                {goals.length === 0 && (
+                                  <div className="text-center py-8">
+                                    <p className="text-sm text-muted-foreground mb-4">No goals in this category yet</p>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        setSelectedCategory(category)
+                                        setShowAddGoal(true)
+                                      }}
+                                    >
+                                      <Plus className="h-4 w-4 mr-2" />
+                                      Add Goal
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
                   </TabsContent>
 
                   <TabsContent value="notes" className="mt-8 w-full">
