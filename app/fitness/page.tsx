@@ -108,8 +108,13 @@ export default function FitnessPage() {
   }
 
   const loadFitnessGoals = async () => {
-    if (!user?.id) return
+    if (!user?.id) {
+      console.log('[v0] loadFitnessGoals - no user')
+      return
+    }
     try {
+      console.log('[v0] loadFitnessGoals - fetching goals for user:', user.id)
+      
       // Load all 12-week and 1-year goals (which include Health category goals)
       const { data: allLongTermGoals, error } = await supabase
         .from('long_term_goals')
@@ -117,6 +122,9 @@ export default function FitnessPage() {
         .eq('user_id', user.id)
         .in('goal_type', ['12-week', '1-year'])
         .eq('completed', false)
+
+      console.log('[v0] loadFitnessGoals - query result:', { error, count: allLongTermGoals?.length })
+      console.log('[v0] loadFitnessGoals - raw goals:', allLongTermGoals)
 
       if (error) {
         console.error('Error loading fitness goals:', error)
@@ -130,7 +138,7 @@ export default function FitnessPage() {
         const descriptionLower = (goal.description || '').toLowerCase()
         const categoryLower = (goal.category || '').toLowerCase()
         
-        return (
+        const isRelevant = (
           categoryLower.includes('health') ||
           categoryLower.includes('fitness') ||
           titleLower.includes('walk') ||
@@ -139,11 +147,16 @@ export default function FitnessPage() {
           titleLower.includes('workout') ||
           titleLower.includes('fitness') ||
           titleLower.includes('alcohol') ||
+          titleLower.includes('push') ||
           descriptionLower.includes('health') ||
           descriptionLower.includes('fitness')
         )
+        
+        console.log('[v0] Goal check:', { title: goal.title, category: goal.category, isRelevant })
+        return isRelevant
       })
 
+      console.log('[v0] loadFitnessGoals - filtered goals count:', fitnessGoals.length)
       setFitnessGoals(fitnessGoals)
     } catch (error) {
       console.error('Error loading fitness goals:', error)
