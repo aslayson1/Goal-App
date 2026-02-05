@@ -1923,33 +1923,58 @@ function GoalTrackerApp() {
   )
 
   const incrementGoal = async (category: string, goalId: string, amount = 1) => {
-    const goal = goalsData[category]?.find((g) => g.id === goalId)
+    // Check both goalsData and oneYearGoalsData
+    let goal = goalsData[category]?.find((g) => g.id === goalId)
+    let isOneYearGoal = false
+    
+    if (!goal) {
+      goal = oneYearGoalsData[category]?.find((g) => g.id === goalId)
+      isOneYearGoal = true
+    }
+    
     if (!goal) return
 
     const newCount = goal.currentCount + amount
 
     // Update local state immediately for UI feedback
-    setGoalsData((prev) => ({
-      ...prev,
-      [category]: prev[category].map((goal) => (goal.id === goalId ? { ...goal, currentCount: newCount } : goal)),
-    }))
+    if (isOneYearGoal) {
+      setOneYearGoalsData((prev) => ({
+        ...prev,
+        [category]: prev[category].map((g) => (g.id === goalId ? { ...g, currentCount: newCount } : g)),
+      }))
+    } else {
+      setGoalsData((prev) => ({
+        ...prev,
+        [category]: prev[category].map((g) => (g.id === goalId ? { ...g, currentCount: newCount } : g)),
+      }))
+    }
 
     // Check if this is a database goal (has UUID format) vs local goal
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(goalId)
 
     if (isUUID) {
       try {
-        const { error } = await supabase.from("goals").update({ current_progress: newCount }).eq("id", goalId)
+        const targetTable = isOneYearGoal ? "long_term_goals" : "goals"
+        const { error } = await supabase.from(targetTable).update({ current_progress: newCount }).eq("id", goalId)
 
         if (error) {
           console.error("Error updating goal progress:", error)
           // Revert local state on error
-          setGoalsData((prev) => ({
-            ...prev,
-            [category]: prev[category].map((goal) =>
-              goal.id === goalId ? { ...goal, currentCount: goal.currentCount } : goal,
-            ),
-          }))
+          if (isOneYearGoal) {
+            setOneYearGoalsData((prev) => ({
+              ...prev,
+              [category]: prev[category].map((g) =>
+                g.id === goalId ? { ...g, currentCount: goal!.currentCount } : g,
+              ),
+            }))
+          } else {
+            setGoalsData((prev) => ({
+              ...prev,
+              [category]: prev[category].map((g) =>
+                g.id === goalId ? { ...g, currentCount: goal!.currentCount } : g,
+              ),
+            }))
+          }
         }
       } catch (error) {
         console.error("Error updating goal progress:", error)
@@ -2203,7 +2228,7 @@ function GoalTrackerApp() {
         user_id: user.id,
         ...(dashboardMode === "12-week" && { category_id: categories.id }),
         title: newGoal.title,
-        description: newGoal.description,
+        description: dashboardMode === "standard" ? `__CATEGORY:${selectedCategory}__${newGoal.description}` : newGoal.description,
         target_count: targetCount,
         current_progress: 0,
         weekly_target: weeklyTargetValue,
@@ -2929,18 +2954,29 @@ function GoalTrackerApp() {
         groupedGoals[category.name] = []
       })
 
-      // Add 1-year goals to their categories - note: long_term_goals don't have category_id
-      // so all goals will stay in the main list for now
+      // Add 1-year goals to their categories
       goals.forEach((goal) => {
-        // Since long_term_goals don't have category relationships, put all in first category or uncategorized
-        const categoryName = categories.length > 0 ? categories[0].name : "Uncategorized"
+        // Extract category from description if it's stored with our delimiter
+        let categoryName = categories.length > 0 ? categories[0].name : "Uncategorized"
+        let displayDescription = goal.description || ""
+        
+        if (goal.description?.startsWith("__CATEGORY:")) {
+          const endIndex = goal.description.indexOf("__")
+          if (endIndex > 11) {
+            categoryName = goal.description.substring(11, endIndex)
+            displayDescription = goal.description.substring(endIndex + 2)
+          }
+        }
+        
+        // Ensure category exists in groupedGoals
         if (!groupedGoals[categoryName]) {
           groupedGoals[categoryName] = []
         }
+        
         groupedGoals[categoryName].push({
           id: goal.id,
           title: goal.title,
-          description: goal.description || "",
+          description: displayDescription,
           targetCount: goal.target_count || 1,
           currentCount: goal.current_progress || 0,
           notes: goal.notes || "",
