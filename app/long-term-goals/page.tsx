@@ -207,8 +207,8 @@ export default function LongTermGoalsPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Long-term Goals</h1>
-          <p className="text-muted-foreground">Plan and track your 3-year and 5-year goals</p>
+          <h1 className="text-3xl font-bold tracking-tight">1-Year Goals</h1>
+          <p className="text-muted-foreground">Plan and track your 1-year goals</p>
         </div>
         <Button onClick={() => { setEditingGoal(null); setNewGoal({ title: "", description: "", category: "" }); setShowAddGoal(true); }}>
           <Plus className="h-4 w-4 mr-2" />
