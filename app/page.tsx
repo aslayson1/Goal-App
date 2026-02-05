@@ -3163,9 +3163,12 @@ function GoalTrackerApp() {
 
   const getTotalProgress = () => {
     const goalPercentages: number[] = []
+    
+    // Select appropriate goals data based on dashboard mode
+    const targetGoalsData = dashboardMode === "standard" ? oneYearGoalsData : goalsData
 
-    // Calculate progress for 12-week goals (numerical goals)
-    Object.values(goalsData).forEach((goals) => {
+    // Calculate progress for goals
+    Object.values(targetGoalsData).forEach((goals) => {
       goals.forEach((goal) => {
         const percentage = goal.targetCount === 0 ? 0 : (goal.currentCount / goal.targetCount) * 100
         goalPercentages.push(percentage)
@@ -3198,10 +3201,14 @@ function GoalTrackerApp() {
 
   const getTotalTasks = () => {
     let totalTasks = 0
-    Object.values(weeklyTasks).forEach((tasks) => {
+    // Select appropriate tasks data based on dashboard mode
+    const targetWeeklyTasks = dashboardMode === "standard" ? standardWeeklyTasks : weeklyTasks
+    const targetDailyTasks = dashboardMode === "standard" ? standardDailyTasks : dailyTasks
+    
+    Object.values(targetWeeklyTasks).forEach((tasks) => {
       totalTasks += tasks.length
     })
-    Object.values(dailyTasks).forEach((tasks) => {
+    Object.values(targetDailyTasks).forEach((tasks) => {
       totalTasks += tasks.length
     })
     return totalTasks
@@ -3209,14 +3216,18 @@ function GoalTrackerApp() {
 
   const getCompletedTasks = () => {
     let completedTasks = 0
-    Object.values(weeklyTasks).forEach((tasks) => {
+    // Select appropriate tasks data based on dashboard mode
+    const targetWeeklyTasks = dashboardMode === "standard" ? standardWeeklyTasks : weeklyTasks
+    const targetDailyTasks = dashboardMode === "standard" ? standardDailyTasks : dailyTasks
+    
+    Object.values(targetWeeklyTasks).forEach((tasks) => {
       tasks.forEach((task) => {
         if (task.completed) {
           completedTasks++
         }
       })
     })
-    Object.values(dailyTasks).forEach((tasks) => {
+    Object.values(targetDailyTasks).forEach((tasks) => {
       tasks.forEach((task) => {
         if (task.completed) {
           completedTasks++
@@ -3228,7 +3239,10 @@ function GoalTrackerApp() {
 
   const getTotalGoals = () => {
     let totalGoals = 0
-    Object.values(goalsData).forEach((goals) => {
+    // Select appropriate goals data based on dashboard mode
+    const targetGoalsData = dashboardMode === "standard" ? oneYearGoalsData : goalsData
+    
+    Object.values(targetGoalsData).forEach((goals) => {
       totalGoals += goals.length
     })
 
@@ -3246,7 +3260,10 @@ function GoalTrackerApp() {
 
   const getCompletedGoals = () => {
     let completedGoals = 0
-    Object.values(goalsData).forEach((goals) => {
+    // Select appropriate goals data based on dashboard mode
+    const targetGoalsData = dashboardMode === "standard" ? oneYearGoalsData : goalsData
+    
+    Object.values(targetGoalsData).forEach((goals) => {
       goals.forEach((goal) => {
         if (goal.currentCount >= goal.targetCount) {
           completedGoals++
