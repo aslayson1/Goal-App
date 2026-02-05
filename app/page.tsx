@@ -1384,6 +1384,7 @@ function GoalTrackerApp() {
   const [goalsData, setGoalsData] = useState<GoalsData>(initialGoalsData)
   console.log("[v0] GoalTrackerApp render - goalsData keys:", Object.keys(goalsData))
   const [oneYearGoalsData, setOneYearGoalsData] = useState<GoalsData>(initialGoalsData)
+  console.log("[v0] GoalTrackerApp render - oneYearGoalsData keys:", Object.keys(oneYearGoalsData))
   // The lint error was here: longTermGoals was used before it was declared.
   // It has been moved down to be declared before its first use.
   const [longTermGoals, setLongTermGoals] = useState<LongTermGoalsData>(initialLongTermGoals)
@@ -5139,7 +5140,7 @@ function GoalTrackerApp() {
 
                   {/* 1-Year Goals View */}
                   <TabsContent value="1-year" className="mt-8 w-full" data-page="one-year">
-                    {Object.keys(goalsData).length === 0 ? (
+                    {Object.keys(oneYearGoalsData).length === 0 ? (
                       <div className="flex flex-col items-center justify-center py-16 px-4">
                         <div className="text-center space-y-4">
                           <div className="flex justify-center">
@@ -5161,7 +5162,7 @@ function GoalTrackerApp() {
                       </div>
                     ) : (
                       <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        {Object.entries(goalsData).map(([category, goals]) => (
+                        {Object.entries(oneYearGoalsData).map(([category, goals]) => (
                           <Card
                             key={category}
                             className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200"
