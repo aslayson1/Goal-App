@@ -1393,8 +1393,13 @@ function GoalTrackerApp() {
   console.log("[v0] GoalTrackerApp render - longTermGoals 5-year keys:", Object.keys(longTermGoals["5-year"]))
   const [weeklyTasks, setWeeklyTasks] = useState<Record<string, WeeklyTask[]>>({})
   const [dailyTasks, setDailyTasks] = useState<Record<string, DailyTask[]>>({})
+  // Separate states for Standard mode tasks (non-12-week)
+  const [standardWeeklyTasks, setStandardWeeklyTasks] = useState<Record<string, WeeklyTask[]>>({})
+  const [standardDailyTasks, setStandardDailyTasks] = useState<Record<string, DailyTask[]>>({})
   console.log("[v0] GoalTrackerApp render - weeklyTasks keys:", Object.keys(weeklyTasks))
   console.log("[v0] GoalTrackerApp render - dailyTasks keys:", Object.keys(dailyTasks))
+  console.log("[v0] GoalTrackerApp render - standardWeeklyTasks keys:", Object.keys(standardWeeklyTasks))
+  console.log("[v0] GoalTrackerApp render - standardDailyTasks keys:", Object.keys(standardDailyTasks))
 
   const [dashboardMode, setDashboardMode] = useState<"12-week" | "standard">("12-week")
 
@@ -1857,13 +1862,23 @@ function GoalTrackerApp() {
             // Update daily tasks with force re-render
             setDailyTasks(() => {
               console.log("Setting daily tasks to:", JSON.stringify(taskData.dailyTasks, null, 2))
+              console.log("Setting standard daily tasks to:", JSON.stringify(taskData.standardDailyTasks, null, 2))
               return { ...taskData.dailyTasks }
             })
 
             // Update weekly tasks with force re-render
             setWeeklyTasks(() => {
               console.log("Setting weekly tasks to:", JSON.stringify(taskData.weeklyTasks, null, 2))
+              console.log("Setting standard weekly tasks to:", JSON.stringify(taskData.standardWeeklyTasks, null, 2))
               return { ...taskData.weeklyTasks }
+            })
+
+            setStandardDailyTasks(() => {
+              return { ...taskData.standardDailyTasks }
+            })
+
+            setStandardWeeklyTasks(() => {
+              return { ...taskData.standardWeeklyTasks }
             })
 
             setIsLoadingAgentData(false)
@@ -2283,7 +2298,7 @@ function GoalTrackerApp() {
               id: dailyTaskId,
               user_id: user.id,
               title: newGoal.title,
-              description: `Daily target: ${dailyTarget}`,
+              description: `__MODE:${dashboardMode}__Daily target: ${dailyTarget}`,
               category_id: categories.id,
               task_type: "daily",
               target_date: todayStr,
@@ -2331,7 +2346,7 @@ function GoalTrackerApp() {
               id: weeklyTaskId,
               user_id: user.id,
               title: newGoal.title,
-              description: `Weekly target: ${weeklyTarget}`,
+              description: `__MODE:${dashboardMode}__Weekly target: ${weeklyTarget}`,
               category_id: categories.id,
               task_type: "weekly",
               target_date: todayStr,
@@ -3889,14 +3904,33 @@ function GoalTrackerApp() {
 
       const weeklyTasks: Record<string, WeeklyTask[]> = {}
       const dailyTasks: Record<string, DailyTask[]> = {}
+      const standardWeeklyTasks: Record<string, WeeklyTask[]> = {}
+      const standardDailyTasks: Record<string, DailyTask[]> = {}
 
       const allDays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
       allDays.forEach((day) => {
         dailyTasks[day] = []
+        standardDailyTasks[day] = []
       })
 
       tasks.forEach((task: any) => {
         console.log(`Processing task:`, JSON.stringify(task, null, 2))
+
+        // Extract mode from description if stored with delimiter
+        let taskMode = "12-week" // default
+        let displayDescription = task.description || ""
+        
+        if (task.description?.startsWith("__MODE:")) {
+          const endIndex = task.description.indexOf("__", 7)
+          if (endIndex > 7) {
+            taskMode = task.description.substring(7, endIndex)
+            displayDescription = task.description.substring(endIndex + 2)
+          }
+        }
+
+        // Select the appropriate task collections based on mode
+        const targetWeeklyTasks = taskMode === "standard" ? standardWeeklyTasks : weeklyTasks
+        const targetDailyTasks = taskMode === "standard" ? standardDailyTasks : dailyTasks
 
         const categoryName = task.categories?.name || "Uncategorized"
 
@@ -3908,15 +3942,15 @@ function GoalTrackerApp() {
           )
           const taskWeek = Math.floor(daysDiff / 7) + 1
 
-          // Skip tasks outside the 12-week cycle
-          if (taskWeek < 1 || taskWeek > 12) {
+          // Skip tasks outside the 12-week cycle for 12-week mode
+          if (taskMode === "12-week" && (taskWeek < 1 || taskWeek > 12)) {
             console.log(`[v0] Skipping task outside 12-week cycle: week ${taskWeek}`)
             return
           }
 
-          const weekKey = `Week ${Math.min(Math.max(taskWeek, 1), 12)}`
+          const weekKey = taskMode === "standard" ? `Week ${taskWeek}` : `Week ${Math.min(Math.max(taskWeek, 1), 12)}`
 
-          console.log(`Adding weekly task to ${weekKey}`)
+          console.log(`Adding ${taskMode} weekly task to ${weekKey}`)
           console.log(
             `[v0] Weekly task "${task.title}" - completed: ${task.completed}, target_date: ${task.target_date}, assigned to: ${weekKey}`,
           )
@@ -3924,7 +3958,7 @@ function GoalTrackerApp() {
           const weeklyTask: WeeklyTask = {
             id: task.id,
             title: task.title || "",
-            description: task.description || "",
+            description: displayDescription,
             category: categoryName,
             goalId: task.goalId || "",
             completed: !!task.completed,
@@ -3936,16 +3970,16 @@ function GoalTrackerApp() {
             weekly_target: task.weekly_target || null,
           }
 
-          if (!weeklyTasks[weekKey]) {
-            weeklyTasks[weekKey] = []
+          if (!targetWeeklyTasks[weekKey]) {
+            targetWeeklyTasks[weekKey] = []
           }
-          weeklyTasks[weekKey].push(weeklyTask)
+          targetWeeklyTasks[weekKey].push(weeklyTask)
         } else if (task.task_type === "daily") {
           const [year, month, day] = task.target_date.split("-").map(Number)
           const taskDate = new Date(year, month - 1, day) // month is 0-indexed
           const dayName = taskDate.toLocaleDateString("en-US", { weekday: "long" })
 
-          console.log(`Adding daily task to ${dayName} (target_date: ${task.target_date})`)
+          console.log(`Adding ${taskMode} daily task to ${dayName} (target_date: ${task.target_date})`)
           console.log(
             `[v0] Daily task "${task.title}" - completed: ${task.completed}, target_date: ${task.target_date}, assigned to: ${dayName}`,
           )
@@ -3959,7 +3993,7 @@ function GoalTrackerApp() {
           const dailyTask: DailyTask = {
             id: task.id,
             title: task.title || "",
-            description: task.description || "",
+            description: displayDescription,
             category: categoryName,
             goalId: task.goalId || "",
             completed: !!task.completed,
@@ -3972,30 +4006,21 @@ function GoalTrackerApp() {
             daily_target: task.daily_target ? Number(task.daily_target) : undefined,
           }
 
-          // Ensure the day exists in the dailyTasks object before pushing
-          if (!dailyTasks[dayName]) {
-            dailyTasks[dayName] = []
+          // Ensure the day exists in the appropriate dailyTasks object before pushing
+          if (!targetDailyTasks[dayName]) {
+            targetDailyTasks[dayName] = []
           }
-          dailyTasks[dayName].push(dailyTask)
+          targetDailyTasks[dayName].push(dailyTask)
         }
       })
 
       console.log("=== FINAL ORGANIZED TASKS ===")
-      console.log("Organized daily tasks:", JSON.stringify(dailyTasks, null, 2))
-      console.log("Organized weekly tasks:", JSON.stringify(weeklyTasks, null, 2))
-      console.log("[v0] Final weekly tasks count:", Object.values(weeklyTasks).flat().length)
-      console.log("[v0] Final daily tasks count:", Object.values(dailyTasks).flat().length)
+      console.log("Organized 12-week daily tasks:", JSON.stringify(dailyTasks, null, 2))
+      console.log("Organized 12-week weekly tasks:", JSON.stringify(weeklyTasks, null, 2))
+      console.log("Organized standard daily tasks:", JSON.stringify(standardDailyTasks, null, 2))
+      console.log("Organized standard weekly tasks:", JSON.stringify(standardWeeklyTasks, null, 2))
 
-      const allDailyTasksFlat = Object.values(dailyTasks).flat()
-      const buyCarInFinal = allDailyTasksFlat.find((t) => t.title?.includes("Buy Car1"))
-      if (buyCarInFinal) {
-        console.log("[v0] 'Buy Car1' IS in final dailyTasks object")
-        console.log("[v0]   - Completed:", buyCarInFinal.completed)
-      } else {
-        console.log("[v0] 'Buy Car1' is NOT in final dailyTasks object")
-      }
-
-      return { weeklyTasks, dailyTasks }
+      return { weeklyTasks, dailyTasks, standardWeeklyTasks, standardDailyTasks }
     } catch (error) {
       console.error("Error in loadTasksFromDB:", error)
       return { weeklyTasks: {}, dailyTasks: {} }
@@ -4831,8 +4856,9 @@ function GoalTrackerApp() {
 
                     {/* Group weekly tasks by category */}
                     <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-8">
-                      {Object.keys(goalsData).map((category) => {
-                        const categoryTasks = (weeklyTasks[`Week ${currentWeek}`] || []).filter(
+                      {Object.keys(dashboardMode === "standard" ? standardDailyTasks : goalsData).map((category) => {
+                        const targetWeeklyTasks = dashboardMode === "standard" ? standardWeeklyTasks : weeklyTasks
+                        const categoryTasks = (targetWeeklyTasks[`Week ${currentWeek}`] || []).filter(
                           (task) => task.category === category,
                         )
 
@@ -4884,7 +4910,9 @@ function GoalTrackerApp() {
                                           const deleteWeeklyTask = async (weekKey: string, taskId: string) => {
                                             try {
                                               await supabase.from("tasks").delete().eq("id", taskId)
-                                              setWeeklyTasks((prev) => ({
+                                              const targetWeeklyTasks = dashboardMode === "standard" ? standardWeeklyTasks : weeklyTasks
+                                              const setTargetWeeklyTasks = dashboardMode === "standard" ? setStandardWeeklyTasks : setWeeklyTasks
+                                              setTargetWeeklyTasks((prev) => ({
                                                 ...prev,
                                                 [weekKey]: prev[weekKey]?.filter((task) => task.id !== taskId) || [],
                                               }))
@@ -4898,9 +4926,12 @@ function GoalTrackerApp() {
                                         onUpdateCounter={(newCount) => {
                                           const weeklyTarget = task.weekly_target || task.target_count || 0
                                           const isCompleted = newCount >= weeklyTarget
+                                          const targetWeeklyTasks = dashboardMode === "standard" ? standardWeeklyTasks : weeklyTasks
+                                          const setTargetWeeklyTasks = dashboardMode === "standard" ? setStandardWeeklyTasks : setWeeklyTasks
+                                          const targetDailyTasks = dashboardMode === "standard" ? standardDailyTasks : dailyTasks
 
                                           // Update task counter and completion status
-                                          setWeeklyTasks((prev) => ({
+                                          setTargetWeeklyTasks((prev) => ({
                                             ...prev,
                                             [`Week ${currentWeek}`]:
                                               prev[`Week ${currentWeek}`]?.map((t) =>
@@ -4914,14 +4945,14 @@ function GoalTrackerApp() {
                                           if (task.linked_goal_id) {
                                             // Calculate total progress from all linked tasks
                                             let totalProgress = newCount
-                                            Object.values(weeklyTasks).forEach((weekTasks) => {
+                                            Object.values(targetWeeklyTasks).forEach((weekTasks) => {
                                               weekTasks.forEach((t) => {
                                                 if (t.linked_goal_id === task.linked_goal_id && t.id !== task.id) {
                                                   totalProgress += t.counter || 0
                                                 }
                                               })
                                             })
-                                            Object.values(dailyTasks).forEach((dayTasks) => {
+                                            Object.values(targetDailyTasks).forEach((dayTasks) => {
                                               dayTasks.forEach((t) => {
                                                 if (t.linked_goal_id === task.linked_goal_id) {
                                                   totalProgress += t.counter || 0
@@ -5102,7 +5133,8 @@ function GoalTrackerApp() {
                         onDragEnd={handleDailyTaskDragEnd}
                       >
                         {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((day) => {
-                          const dayTasks = dailyTasks[day] || []
+                          const targetDailyTasks = dashboardMode === "standard" ? standardDailyTasks : dailyTasks
+                          const dayTasks = targetDailyTasks[day] || []
 
                           return (
                             // Updated Card to use consistent border and shadow on all sides
