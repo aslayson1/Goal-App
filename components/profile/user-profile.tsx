@@ -420,7 +420,7 @@ export function UserProfile({ onClose }: UserProfileProps) {
             </TabsContent>
           </Tabs>
 
-          <DialogFooter>
+          <DialogFooter className="mt-8">
             <Button variant="outline" onClick={onClose}>
               Close
             </Button>
