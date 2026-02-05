@@ -2184,14 +2184,16 @@ function GoalTrackerApp() {
       const { error } = await supabase.from(dashboardMode === "12-week" ? "goals" : "long_term_goals").insert({
         id: goalId,
         user_id: user.id,
-        category_id: dashboardMode === "standard" ? undefined : categories.id,
+        ...(dashboardMode === "12-week" && { category_id: categories.id }),
         title: newGoal.title,
         description: newGoal.description,
         target_count: targetCount,
         current_progress: 0,
         weekly_target: weeklyTargetValue,
-        distribute_daily: newGoal.distributeDaily,
-        distribute_weekly: newGoal.distributeWeekly,
+        ...(dashboardMode === "12-week" && {
+          distribute_daily: newGoal.distributeDaily,
+          distribute_weekly: newGoal.distributeWeekly,
+        }),
         daily_target: Math.ceil(targetCount / 84), // Calculate daily target (12 weeks * 7 days)
         ...(dashboardMode === "standard" && { goal_type: "1_year" }), // Add goal_type for 1-year goals
       })
@@ -2409,19 +2411,21 @@ function GoalTrackerApp() {
     if (isUUID) {
       try {
         const targetTable = dashboardMode === "12-week" ? "goals" : "long_term_goals"
-        const { error } = await supabase
-          .from(targetTable)
-          .update({
-            title: newGoal.title,
-            description: newGoal.description,
-            target_count: newGoal.targetCount,
-            weekly_target: weeklyTargetValue,
-            // Update distribution flags on edit
-            distribute_daily: newGoal.distributeDaily,
-            distribute_weekly: newGoal.distributeWeekly,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", editingGoal.goal.id)
+        const updateData: Record<string, any> = {
+          title: newGoal.title,
+          description: newGoal.description,
+          target_count: newGoal.targetCount,
+          weekly_target: weeklyTargetValue,
+          updated_at: new Date().toISOString(),
+        }
+
+        // Only add distribution flags for 12-week goals
+        if (dashboardMode === "12-week") {
+          updateData.distribute_daily = newGoal.distributeDaily
+          updateData.distribute_weekly = newGoal.distributeWeekly
+        }
+
+        const { error } = await supabase.from(targetTable).update(updateData).eq("id", editingGoal.goal.id)
 
         if (error) throw error
       } catch (error) {
