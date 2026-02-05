@@ -2125,32 +2125,45 @@ function GoalTrackerApp() {
     const detectedNumber = extractNumberFromTitle(newGoal.title)
     const targetCount = detectedNumber > 0 ? newGoal.targetCount || detectedNumber : 1
 
-    if (!selectedCategory || !newGoal.title) return
+    if (!selectedCategory || !newGoal.title) {
+      console.log("[v0] addNewGoal validation failed - selectedCategory:", selectedCategory, "title:", newGoal.title)
+      return
+    }
+
+    console.log("[v0] addNewGoal starting - mode:", dashboardMode, "category:", selectedCategory, "title:", newGoal.title)
 
     const goalId = crypto.randomUUID()
 
     const weeklyTargetValue = newGoal.weeklyTarget || Math.ceil(targetCount / 12)
 
-    // Update local state first (preserve existing UI behavior)
-    setGoalsData((prev) => ({
-      ...prev,
-      [selectedCategory]: [
-        ...prev[selectedCategory],
-        {
-          id: goalId,
-          title: newGoal.title,
-          description: newGoal.description,
-          targetCount: targetCount,
-          currentCount: 0,
-          notes: "",
-          weeklyTarget: weeklyTargetValue,
-          category: selectedCategory,
-          // Set distribution flags from newGoal state
-          distributeDaily: newGoal.distributeDaily,
-          distributeWeekly: newGoal.distributeWeekly,
-        },
-      ],
-    }))
+    // Update local state based on dashboard mode
+    const goalObject = {
+      id: goalId,
+      title: newGoal.title,
+      description: newGoal.description,
+      targetCount: targetCount,
+      currentCount: 0,
+      notes: "",
+      weeklyTarget: weeklyTargetValue,
+      category: selectedCategory,
+      // Set distribution flags from newGoal state
+      distributeDaily: newGoal.distributeDaily,
+      distributeWeekly: newGoal.distributeWeekly,
+    }
+
+    if (dashboardMode === "12-week") {
+      setGoalsData((prev) => ({
+        ...prev,
+        [selectedCategory]: [...prev[selectedCategory], goalObject],
+      }))
+      console.log("[v0] Added goal to goalsData")
+    } else {
+      setOneYearGoalsData((prev) => ({
+        ...prev,
+        [selectedCategory]: [...prev[selectedCategory], goalObject],
+      }))
+      console.log("[v0] Added goal to oneYearGoalsData")
+    }
 
     try {
       if (!user?.id) {
@@ -5616,7 +5629,7 @@ function GoalTrackerApp() {
                               <SelectValue placeholder="Select a category" />
                             </SelectTrigger>
                             <SelectContent>
-                              {Object.keys(goalsData).map((category) => (
+                              {Object.keys(dashboardMode === "12-week" ? goalsData : oneYearGoalsData).map((category) => (
                                 <SelectItem key={category} value={category}>
                                   {category}
                                 </SelectItem>
