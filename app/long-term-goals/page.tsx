@@ -224,7 +224,7 @@ export default function LongTermGoalsPage() {
               <span className="text-sm font-medium text-muted-foreground">3-Year Goals</span>
               <span className="text-2xl font-bold">{threeYearStats.completed}/{threeYearStats.total}</span>
             </div>
-            <Progress value={threeYearStats.percentage} className="h-2" />
+            <Progress value={threeYearStats.percentage} className="h-2 [&>div]:bg-[#05a7b0]" />
             <p className="text-xs text-muted-foreground mt-2">{threeYearStats.percentage}% complete</p>
           </CardContent>
         </Card>
@@ -234,7 +234,7 @@ export default function LongTermGoalsPage() {
               <span className="text-sm font-medium text-muted-foreground">5-Year Goals</span>
               <span className="text-2xl font-bold">{fiveYearStats.completed}/{fiveYearStats.total}</span>
             </div>
-            <Progress value={fiveYearStats.percentage} className="h-2" />
+            <Progress value={fiveYearStats.percentage} className="h-2 [&>div]:bg-[#05a7b0]" />
             <p className="text-xs text-muted-foreground mt-2">{fiveYearStats.percentage}% complete</p>
           </CardContent>
         </Card>
