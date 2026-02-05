@@ -4081,7 +4081,7 @@ function GoalTrackerApp() {
                     <DialogTitle>Profile Settings</DialogTitle>
                     <DialogDescription>Manage your user profile information.</DialogDescription>
                   </DialogHeader>
-                  <UserProfile userId={user.id} />
+                  <UserProfile onClose={() => setShowProfile(false)} />
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setShowProfile(false)}>
                       Close
@@ -4147,7 +4147,7 @@ function GoalTrackerApp() {
                         <DialogTitle>Profile Settings</DialogTitle>
                         <DialogDescription>Manage your user profile information.</DialogDescription>
                       </DialogHeader>
-                      <UserProfile userId={user.id} />
+                      <UserProfile onClose={() => setShowProfile(false)} />
                       <DialogFooter>
                         <Button variant="outline" onClick={() => setShowProfile(false)}>
                           Close
