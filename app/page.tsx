@@ -2887,6 +2887,17 @@ function GoalTrackerApp() {
 
   const loadCategoriesAndOneYearGoalsFromDB = async (userId: string) => {
     try {
+      // Load all categories for this user
+      const { data: categories, error: categoriesError } = await supabase
+        .from("categories")
+        .select("*")
+        .eq("user_id", userId)
+
+      if (categoriesError) {
+        console.error("Error fetching categories:", categoriesError)
+        return {}
+      }
+
       const { data: goals, error: goalsError } = await supabase
         .from("long_term_goals")
         .select("*")
@@ -2898,13 +2909,21 @@ function GoalTrackerApp() {
         return {}
       }
 
-      // Group goals into a single "1-Year Goals" category since long_term_goals don't have categories
+      // Group goals by category - initialize with all categories
       const groupedGoals: GoalsData = {}
-      groupedGoals["1-Year Goals"] = []
+      categories.forEach((category) => {
+        groupedGoals[category.name] = []
+      })
 
-      // Add goals to the category
+      // Add 1-year goals to their categories - note: long_term_goals don't have category_id
+      // so all goals will stay in the main list for now
       goals.forEach((goal) => {
-        groupedGoals["1-Year Goals"].push({
+        // Since long_term_goals don't have category relationships, put all in first category or uncategorized
+        const categoryName = categories.length > 0 ? categories[0].name : "Uncategorized"
+        if (!groupedGoals[categoryName]) {
+          groupedGoals[categoryName] = []
+        }
+        groupedGoals[categoryName].push({
           id: goal.id,
           title: goal.title,
           description: goal.description || "",
@@ -2912,7 +2931,7 @@ function GoalTrackerApp() {
           currentCount: goal.current_progress || 0,
           notes: goal.notes || "",
           weeklyTarget: goal.weekly_target || 1,
-          category: "1-Year Goals",
+          category: categoryName,
           // 1-year goals don't have distribution flags
           distributeDaily: false,
           distributeWeekly: false,
