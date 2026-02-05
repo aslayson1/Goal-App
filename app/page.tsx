@@ -2961,10 +2961,11 @@ function GoalTrackerApp() {
         let displayDescription = goal.description || ""
         
         if (goal.description?.startsWith("__CATEGORY:")) {
-          const endIndex = goal.description.indexOf("__")
-          if (endIndex > 11) {
-            categoryName = goal.description.substring(11, endIndex)
-            displayDescription = goal.description.substring(endIndex + 2)
+          // Find the closing delimiter: __CATEGORY:CategoryName__Description
+          const secondDelimiterIndex = goal.description.indexOf("__", 11)
+          if (secondDelimiterIndex > 11) {
+            categoryName = goal.description.substring(11, secondDelimiterIndex)
+            displayDescription = goal.description.substring(secondDelimiterIndex + 2)
           }
         }
         
