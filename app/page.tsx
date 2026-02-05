@@ -5075,7 +5075,9 @@ function GoalTrackerApp() {
                     <div className="w-full space-y-8">
                       {/* Timeframe selector */}
                       <div className="flex items-center justify-between">
-                        <h2 className="text-2xl font-bold text-gray-900">Long-Term Goals</h2>
+                        <h2 className="text-2xl font-bold text-gray-900">
+                          {selectedTimeframe === "1-year" ? "1-Year Goals" : "5-Year Goals"}
+                        </h2>
                         <Select
                           value={selectedTimeframe}
                           onValueChange={(value: "1-year" | "5-year") => setSelectedTimeframe(value)}
