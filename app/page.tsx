@@ -4175,7 +4175,9 @@ function GoalTrackerApp() {
 
       {/* Sidebar and Content Area */}
       <div className="flex flex-1 overflow-hidden w-full">
-        <AppSidebar />
+        <div className="hidden lg:block">
+          <AppSidebar />
+        </div>
         <SidebarInset className="flex-1 min-w-0 w-full">
           <main className="h-full overflow-auto p-6 lg:px-20 bg-slate-50">
               <div className="w-full space-y-6">
