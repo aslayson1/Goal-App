@@ -114,21 +114,43 @@ export default function FitnessPage() {
   const loadFitnessGoals = async () => {
     if (!user?.id) return
     try {
-      // Load goals from Health or Fitness categories
-      const { data: goals, error } = await supabase
+      // Load all goals for the user
+      const { data: goals, error: goalsError } = await supabase
         .from('goals')
-        .select('*, categories(name)')
+        .select('*')
         .eq('user_id', user.id)
         .eq('completed', false)
 
-      if (error) {
-        console.error('Error loading fitness goals:', error)
+      if (goalsError) {
+        console.error('Error loading goals:', goalsError)
         return
       }
 
+      if (!goals || goals.length === 0) {
+        setFitnessGoals([])
+        return
+      }
+
+      // Get category IDs from goals, then fetch category names
+      const categoryIds = [...new Set(goals.map((g: any) => g.category_id).filter(Boolean))]
+      
+      let categories: Record<string, string> = {}
+      if (categoryIds.length > 0) {
+        const { data: categoryData } = await supabase
+          .from('categories')
+          .select('id, name')
+          .in('id', categoryIds)
+        
+        if (categoryData) {
+          categoryData.forEach((cat: any) => {
+            categories[cat.id] = cat.name?.toLowerCase() || ''
+          })
+        }
+      }
+
       // Filter to only include goals from Health or Fitness categories
-      const fitnessGoals = (goals || []).filter((goal: any) => {
-        const categoryName = (goal.categories?.name || '').toLowerCase()
+      const fitnessGoals = goals.filter((goal: any) => {
+        const categoryName = categories[goal.category_id] || ''
         return categoryName.includes('health') || categoryName.includes('fitness')
       })
 
