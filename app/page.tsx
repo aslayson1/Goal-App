@@ -2181,10 +2181,10 @@ function GoalTrackerApp() {
         console.log("Category created in database successfully")
       }
 
-      const { error } = await supabase.from("goals").insert({
+      const { error } = await supabase.from(dashboardMode === "12-week" ? "goals" : "long_term_goals").insert({
         id: goalId,
         user_id: user.id,
-        category_id: categories.id,
+        category_id: dashboardMode === "standard" ? undefined : categories.id,
         title: newGoal.title,
         description: newGoal.description,
         target_count: targetCount,
@@ -2193,6 +2193,7 @@ function GoalTrackerApp() {
         distribute_daily: newGoal.distributeDaily,
         distribute_weekly: newGoal.distributeWeekly,
         daily_target: Math.ceil(targetCount / 84), // Calculate daily target (12 weeks * 7 days)
+        ...(dashboardMode === "standard" && { goal_type: "1_year" }), // Add goal_type for 1-year goals
       })
 
       if (error) {
@@ -2377,11 +2378,20 @@ function GoalTrackerApp() {
 
   const deleteGoal = async (category: string, goalId: string) => {
     try {
-      await supabase.from("goals").delete().eq("id", goalId)
-      setGoalsData((prev) => ({
-        ...prev,
-        [category]: prev[category].filter((goal) => goal.id !== goalId),
-      }))
+      const targetTable = dashboardMode === "12-week" ? "goals" : "long_term_goals"
+      await supabase.from(targetTable).delete().eq("id", goalId)
+      
+      if (dashboardMode === "12-week") {
+        setGoalsData((prev) => ({
+          ...prev,
+          [category]: prev[category].filter((goal) => goal.id !== goalId),
+        }))
+      } else {
+        setOneYearGoalsData((prev) => ({
+          ...prev,
+          [category]: prev[category].filter((goal) => goal.id !== goalId),
+        }))
+      }
       setShowDeleteGoal(null)
     } catch (error) {
       console.error("Error deleting goal:", error)
@@ -2398,8 +2408,9 @@ function GoalTrackerApp() {
 
     if (isUUID) {
       try {
+        const targetTable = dashboardMode === "12-week" ? "goals" : "long_term_goals"
         const { error } = await supabase
-          .from("goals")
+          .from(targetTable)
           .update({
             title: newGoal.title,
             description: newGoal.description,
