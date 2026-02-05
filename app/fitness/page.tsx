@@ -68,7 +68,13 @@ export default function FitnessPage() {
       // Get all agents to build leaderboard
       const { data: agents } = await supabase.from('agents').select('id, name, email, auth_user_id')
       
-      if (!agents) return
+      console.log("[v0] Agents fetched:", agents)
+      console.log("[v0] Current user ID:", user?.id)
+
+      if (!agents || agents.length === 0) {
+        console.log("[v0] No agents found or user not in agents table")
+        return
+      }
 
       // Calculate this month's workouts for each agent
       const now = new Date()
@@ -84,22 +90,31 @@ export default function FitnessPage() {
             .gte('logged_date', monthStart.toISOString().split('T')[0])
             .lte('logged_date', monthEnd.toISOString().split('T')[0])
 
+          console.log(`[v0] Agent ${agent.name} (${agent.auth_user_id}): ${count} workouts`)
+
           return {
             id: agent.id,
+            name: agent.name,
             workouts: count || 0,
             isCurrentUser: agent.auth_user_id === user?.id,
           }
         })
       )
 
+      console.log("[v0] Leaderboard data before sort:", leaderboardData)
+
       // Sort by workouts descending
       leaderboardData.sort((a, b) => b.workouts - a.workouts)
 
+      console.log("[v0] Leaderboard data after sort:", leaderboardData)
+
       // Find current user's ranking
       const userRank = leaderboardData.findIndex((entry) => entry.isCurrentUser)
+      console.log("[v0] User ranking found at index:", userRank, "Ranking:", userRank >= 0 ? userRank + 1 : null)
+      
       setRanking(userRank >= 0 ? userRank + 1 : null)
     } catch (error) {
-      console.error('Error loading user ranking:', error)
+      console.error('[v0] Error loading user ranking:', error)
     }
   }
 
