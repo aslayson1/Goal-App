@@ -112,22 +112,14 @@ export default function FitnessPage() {
   }
 
   const loadFitnessGoals = async () => {
-    if (!user?.id) {
-      console.log('[v0] loadFitnessGoals - no user')
-      return
-    }
+    if (!user?.id) return
     try {
-      console.log('[v0] loadFitnessGoals - fetching goals for user:', user.id)
-      
       // Load goals from Health or Fitness categories
       const { data: goals, error } = await supabase
         .from('goals')
         .select('*, categories(name)')
         .eq('user_id', user.id)
         .eq('completed', false)
-
-      console.log('[v0] loadFitnessGoals - query result:', { error, count: goals?.length })
-      console.log('[v0] loadFitnessGoals - raw goals:', goals)
 
       if (error) {
         console.error('Error loading fitness goals:', error)
@@ -137,14 +129,9 @@ export default function FitnessPage() {
       // Filter to only include goals from Health or Fitness categories
       const fitnessGoals = (goals || []).filter((goal: any) => {
         const categoryName = (goal.categories?.name || '').toLowerCase()
-        const isRelevant = categoryName.includes('health') || categoryName.includes('fitness')
-        
-        console.log('[v0] Goal check:', { title: goal.title, category: goal.categories?.name, isRelevant })
-        return isRelevant
+        return categoryName.includes('health') || categoryName.includes('fitness')
       })
 
-      console.log('[v0] loadFitnessGoals - filtered goals count:', fitnessGoals.length)
-      
       // Calculate progress for each goal
       const progressMap: Record<string, any> = {}
       for (const goal of fitnessGoals) {
