@@ -42,6 +42,7 @@ import {
   LayoutDashboard,
   Users,
   Activity,
+  Minus,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -5301,9 +5302,11 @@ function GoalTrackerApp() {
                               <div className="space-y-4">
                                 {goals.map((goal) => {
                                   const progressPercentage =
-                                    goal.target_count && goal.target_count > 0
-                                      ? Math.round((goal.counter || 0) / goal.target_count * 100)
+                                    goal.targetCount && goal.targetCount > 0
+                                      ? Math.round((goal.currentCount || 0) / goal.targetCount * 100)
                                       : 0
+                                  const goalType = getGoalType(goal.targetCount)
+                                  const quickIncrements = getQuickIncrements(goal.targetCount)
 
                                   return (
                                     <div
@@ -5347,17 +5350,67 @@ function GoalTrackerApp() {
                                         </DropdownMenu>
                                       </div>
 
-                                      {/* Progress bar */}
-                                      <div className="space-y-2">
-                                        <div className="flex justify-between text-sm">
-                                          <span className="text-muted-foreground">
-                                            {goal.counter || 0} / {goal.target_count || 0}
-                                          </span>
-                                          <span className="font-medium">
-                                            {progressPercentage}%
-                                          </span>
+                                      {/* Progress bar and controls */}
+                                      <div className="space-y-3">
+                                        <div className="space-y-2">
+                                          <div className="flex justify-between text-sm">
+                                            <span className="text-muted-foreground">
+                                              {goal.targetCount >= 1000 &&
+                                              (goal.title.toLowerCase().includes("$") ||
+                                                goal.title.toLowerCase().includes("dollar") ||
+                                                goal.title.toLowerCase().includes("funding") ||
+                                                goal.title.toLowerCase().includes("revenue") ||
+                                                goal.title.toLowerCase().includes("money"))
+                                                ? `$${goal.currentCount.toLocaleString()} / $${goal.targetCount.toLocaleString()}`
+                                                : `${goal.currentCount} / ${goal.targetCount}`}
+                                            </span>
+                                            <span className="font-medium">
+                                              {progressPercentage}%
+                                            </span>
+                                          </div>
+                                          <Progress value={progressPercentage} className="h-2 [&>div]:bg-[#05a7b0]" />
                                         </div>
-                                        <Progress value={progressPercentage} className="h-2" />
+
+                                        {/* Progress Update Controls */}
+                                        <div className="flex items-center justify-between">
+                                          <div className="flex items-center space-x-1">
+                                            {goalType === "small" ? (
+                                              // Small numbers - single + button
+                                              <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => incrementGoal(category, goal.id, 1)}
+                                                className="h-7 px-2"
+                                              >
+                                                <Plus className="h-3 w-3 mr-1" />
+                                                +1
+                                              </Button>
+                                            ) : (
+                                              // Medium/Large numbers - multiple increment buttons
+                                              <>
+                                                {quickIncrements.map((increment) => (
+                                                  <Button
+                                                    key={increment}
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={() => incrementGoal(category, goal.id, increment)}
+                                                    className="h-7 px-2 text-xs"
+                                                  >
+                                                    +{increment >= 1000 ? `${increment / 1000}k` : increment}
+                                                  </Button>
+                                                ))}
+                                              </>
+                                            )}
+                                          </div>
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={() => incrementGoal(category, goal.id, -1)}
+                                            className="h-7 px-2 text-xs"
+                                          >
+                                            <Minus className="h-3 w-3" />
+                                          </Button>
+                                        </div>
                                       </div>
                                     </div>
                                   )
