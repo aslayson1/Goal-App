@@ -2886,26 +2886,9 @@ function GoalTrackerApp() {
 
   const loadCategoriesAndOneYearGoalsFromDB = async (userId: string) => {
     try {
-      const { data: categories, error: categoriesError } = await supabase
-        .from("categories")
-        .select("*")
-        .eq("user_id", userId)
-
-      if (categoriesError) {
-        console.error("Error fetching categories:", categoriesError)
-        return {}
-      }
-
       const { data: goals, error: goalsError } = await supabase
         .from("long_term_goals")
-        .select(
-          `
-        *,
-        categories (
-          name
-        )
-      `,
-        )
+        .select("*")
         .eq("user_id", userId)
         .eq("goal_type", "1_year")
 
@@ -2914,22 +2897,13 @@ function GoalTrackerApp() {
         return {}
       }
 
-      // Group goals by category
+      // Group goals into a single "1-Year Goals" category since long_term_goals don't have categories
       const groupedGoals: GoalsData = {}
+      groupedGoals["1-Year Goals"] = []
 
-      // Initialize with categories
-      categories.forEach((category) => {
-        groupedGoals[category.name] = []
-      })
-
-      // Add goals to their categories
+      // Add goals to the category
       goals.forEach((goal) => {
-        const categoryName = goal.categories?.name || "Uncategorized"
-        if (!groupedGoals[categoryName]) {
-          groupedGoals[categoryName] = []
-        }
-
-        groupedGoals[categoryName].push({
+        groupedGoals["1-Year Goals"].push({
           id: goal.id,
           title: goal.title,
           description: goal.description || "",
@@ -2937,16 +2911,15 @@ function GoalTrackerApp() {
           currentCount: goal.current_progress || 0,
           notes: goal.notes || "",
           weeklyTarget: goal.weekly_target || 1,
-          category: categoryName,
+          category: "1-Year Goals",
           // 1-year goals don't have distribution flags
           distributeDaily: false,
           distributeWeekly: false,
         })
       })
 
-      if (Object.keys(groupedGoals).length === 0) {
+      if (goals.length === 0) {
         console.log("[v0] No 1-year goals found in database")
-        return {}
       }
 
       return groupedGoals
