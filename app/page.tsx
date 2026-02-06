@@ -981,30 +981,20 @@ function SortableWeeklyTaskItem({
           >
             <GripVertical className="h-4 w-4 text-gray-400" />
           </div>
-          <div className="flex flex-col gap-1 flex-1 min-w-0">
-            {/* Category Badge - Above on mobile, inline on desktop */}
+          {task.completed ? (
+            <CheckCircle className="h-4 w-4 text-green-500 cursor-pointer" onClick={onToggle} />
+          ) : (
+            <Checkbox checked={task.completed} onCheckedChange={onToggle} className={`${checkboxStyles}`} />
+          )}
+          <div className="flex-1 min-w-0 flex items-center gap-2">
+            <h3 className={`text-sm ${task.completed ? "line-through text-gray-500" : "text-gray-900"}`}>
+              {task.title}
+            </h3>
             {task.category && (
-              <Badge variant="secondary" className={`text-xs w-fit sm:hidden ${getCategoryColor(task.category)}`}>
+              <Badge variant="secondary" className={`text-xs ${getCategoryColor(task.category)}`}>
                 {task.category}
               </Badge>
             )}
-            <div className="flex items-center gap-2">
-              {task.completed ? (
-                <CheckCircle className="h-4 w-4 text-green-500 cursor-pointer" onClick={onToggle} />
-              ) : (
-                <Checkbox checked={task.completed} onCheckedChange={onToggle} className={`${checkboxStyles} flex-shrink-0`} />
-              )}
-              <div className="flex-1 min-w-0 flex items-center gap-2">
-                <h3 className={`text-sm ${task.completed ? "line-through text-gray-500" : "text-gray-900"}`}>
-                  {task.title}
-                </h3>
-                {task.category && (
-                  <Badge variant="secondary" className={`text-xs hidden sm:inline ${getCategoryColor(task.category)}`}>
-                    {task.category}
-                  </Badge>
-                )}
-              </div>
-            </div>
           </div>
           <Badge variant="outline" className="text-blue-600 border-blue-200">
             On Track
@@ -1303,50 +1293,61 @@ function SortableDailyTaskItem({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-3 px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors ${isDragging ? "bg-gray-100 shadow-md" : "bg-gray-50"}`}
+      className={`flex flex-col gap-1 px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors ${isDragging ? "bg-gray-100 shadow-md" : "bg-gray-50"}`}
     >
-      <div
-        {...attributes}
-        {...listeners}
-        className="cursor-grab active:cursor-grabbing hover:bg-gray-100 rounded p-1 flex-shrink-0"
-      >
-        <GripVertical className="h-4 w-4 text-gray-400" />
-      </div>
-      <button
-        onClick={(e) => {
-          e.stopPropagation()
-          onToggle()
-        }}
-        className="flex-shrink-0 focus:outline-none"
-      >
-        {task.completed ? (
-          <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
-        ) : (
-          <div className="h-5 w-5 border-2 border-gray-300 rounded bg-white flex-shrink-0" />
-        )}
-      </button>
-      <div className="flex-1 min-w-0 flex items-center gap-2">
-        {/* CHANGE: Match text style of regular tasks (text-sm instead of font-medium) */}
-        <h3 className={`text-sm ${task.completed ? "line-through text-gray-500" : "text-gray-900"}`}>{task.title}</h3>
-        {task.category && (
-          <span
-            className={`text-xs px-2 py-0.5 rounded border font-medium flex-shrink-0 ${getCategoryColor(task.category)}`}
-          >
-            {task.category}
-          </span>
-        )}
-        <div className="flex-1"></div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={onEdit}>
-                <Edit className="h-4 w-4 mr-2" />
-                Edit Task
+      {/* Category badge above task on mobile only */}
+      {task.category && (
+        <span
+          className={`text-xs px-2 py-0.5 rounded border font-medium w-fit sm:hidden ${getCategoryColor(task.category)}`}
+        >
+          {task.category}
+        </span>
+      )}
+      
+      {/* Task row */}
+      <div className="flex items-center gap-3">
+        <div
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing hover:bg-gray-100 rounded p-1 flex-shrink-0"
+        >
+          <GripVertical className="h-4 w-4 text-gray-400" />
+        </div>
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            onToggle()
+          }}
+          className="flex-shrink-0 focus:outline-none"
+        >
+          {task.completed ? (
+            <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+          ) : (
+            <div className="h-5 w-5 border-2 border-gray-300 rounded bg-white flex-shrink-0" />
+          )}
+        </button>
+        <div className="flex-1 min-w-0 flex items-center gap-2">
+          {/* CHANGE: Match text style of regular tasks (text-sm instead of font-medium) */}
+          <h3 className={`text-sm ${task.completed ? "line-through text-gray-500" : "text-gray-900"}`}>{task.title}</h3>
+          {task.category && (
+            <span
+              className={`text-xs px-2 py-0.5 rounded border font-medium flex-shrink-0 hidden sm:inline ${getCategoryColor(task.category)}`}
+            >
+              {task.category}
+            </span>
+          )}
+          <div className="flex-1"></div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={onEdit}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Task
               </DropdownMenuItem>
               <DropdownMenuItem onClick={onDelete} className="text-red-600">
                 <Trash2 className="h-4 w-4 mr-2" />
