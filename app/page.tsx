@@ -981,30 +981,20 @@ function SortableWeeklyTaskItem({
           >
             <GripVertical className="h-4 w-4 text-gray-400" />
           </div>
-          <div className="flex flex-col gap-1">
-            {/* Category badge above on mobile, inline with task on desktop */}
+          {task.completed ? (
+            <CheckCircle className="h-4 w-4 text-green-500 cursor-pointer" onClick={onToggle} />
+          ) : (
+            <Checkbox checked={task.completed} onCheckedChange={onToggle} className={`${checkboxStyles}`} />
+          )}
+          <div className="flex-1 min-w-0 flex items-center gap-2">
+            <h3 className={`text-sm ${task.completed ? "line-through text-gray-500" : "text-gray-900"}`}>
+              {task.title}
+            </h3>
             {task.category && (
-              <Badge variant="secondary" className={`text-xs w-fit ${getCategoryColor(task.category)} md:hidden`}>
+              <Badge variant="secondary" className={`text-xs ${getCategoryColor(task.category)}`}>
                 {task.category}
               </Badge>
             )}
-            <div className="flex items-center gap-2">
-              {task.completed ? (
-                <CheckCircle className="h-4 w-4 text-green-500 cursor-pointer flex-shrink-0" onClick={onToggle} />
-              ) : (
-                <Checkbox checked={task.completed} onCheckedChange={onToggle} className={`${checkboxStyles} flex-shrink-0`} />
-              )}
-              <div className="flex-1 min-w-0 flex items-center gap-2">
-                <h3 className={`text-sm ${task.completed ? "line-through text-gray-500" : "text-gray-900"}`}>
-                  {task.title}
-                </h3>
-                {task.category && (
-                  <Badge variant="secondary" className={`text-xs ${getCategoryColor(task.category)} hidden md:inline`}>
-                    {task.category}
-                  </Badge>
-                )}
-              </div>
-            </div>
           </div>
           <Badge variant="outline" className="text-blue-600 border-blue-200">
             On Track
@@ -4748,37 +4738,37 @@ function GoalTrackerApp() {
                   </Card>
                 </div>
 
-                {/* Tabs - Hidden on mobile, shown on md and up */}
-                <Tabs value={activeView} onValueChange={setActiveView} className="mb-8 hidden md:block">
-                  <TabsList className="grid w-full grid-cols-4 gap-2">
-                    <TabsTrigger value="daily" className="text-xs md:text-sm">Daily Tasks</TabsTrigger>
-                    <TabsTrigger value="weekly" className="text-xs md:text-sm">Weekly Goals</TabsTrigger>
+                <Tabs value={activeView} onValueChange={setActiveView} className="mb-8">
+                  {/* Desktop Tabs */}
+                  <TabsList className="hidden md:grid w-full grid-cols-4 mb-8">
+                    <TabsTrigger value="daily">Daily Tasks</TabsTrigger>
+                    <TabsTrigger value="weekly">Weekly Goals</TabsTrigger>
                     {dashboardMode === "12-week" ? (
-                      <TabsTrigger value="1-week" className="text-xs md:text-sm">12-Week Goals</TabsTrigger>
+                      <TabsTrigger value="1-week">12-Week Goals</TabsTrigger>
                     ) : (
-                      <TabsTrigger value="1-year" className="text-xs md:text-sm">1-Year Goals</TabsTrigger>
+                      <TabsTrigger value="1-year">1-Year Goals</TabsTrigger>
                     )}
-                    <TabsTrigger value="notes" className="text-xs md:text-sm">Notes</TabsTrigger>
+                    <TabsTrigger value="notes">Notes</TabsTrigger>
                   </TabsList>
 
-                {/* Mobile Dropdown Selector */}
-                <div className="mb-8 md:hidden">
-                  <Select value={activeView} onValueChange={setActiveView}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="daily">Daily Tasks</SelectItem>
-                      <SelectItem value="weekly">Weekly Goals</SelectItem>
-                      {dashboardMode === "12-week" ? (
-                        <SelectItem value="1-week">12-Week Goals</SelectItem>
-                      ) : (
-                        <SelectItem value="1-year">1-Year Goals</SelectItem>
-                      )}
-                      <SelectItem value="notes">Notes</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                  {/* Mobile Dropdown Selector */}
+                  <div className="md:hidden mb-8">
+                    <Select value={activeView} onValueChange={setActiveView}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="daily">Daily Tasks</SelectItem>
+                        <SelectItem value="weekly">Weekly Goals</SelectItem>
+                        {dashboardMode === "12-week" ? (
+                          <SelectItem value="1-week">12-Week Goals</SelectItem>
+                        ) : (
+                          <SelectItem value="1-year">1-Year Goals</SelectItem>
+                        )}
+                        <SelectItem value="notes">Notes</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
                   {/* 12-Week Goals View */}
                   <TabsContent value="1-week" className="mt-8 w-full" data-page="twelve-week">
@@ -5418,8 +5408,8 @@ function GoalTrackerApp() {
 
                   {/* Daily Tasks View */}
                   <TabsContent value="daily" className="mt-8 w-full">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
-                      <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Daily Tasks</h2>
+                    <div className="flex items-center justify-between mb-6">
+                      <h2 className="text-2xl font-bold text-gray-900">Daily Tasks</h2>
 
                       <Button
                         variant="outline"
@@ -5428,14 +5418,14 @@ function GoalTrackerApp() {
                           setNewDailyTask((prev) => ({ ...prev, category: "" }))
                           setShowAddDailyTask(true)
                         }}
-                        className="text-xs sm:text-sm w-full sm:w-auto"
+                        className="text-sm"
                       >
                         <Plus className="h-4 w-4 mr-2" />
                         Add Task
                       </Button>
                     </div>
 
-                    <div className="space-y-3 md:space-y-4">
+                    <div className="space-y-4">
                       <DndContext
                         sensors={sensors}
                         collisionDetection={closestCenter}
@@ -5448,28 +5438,28 @@ function GoalTrackerApp() {
                           return (
                             // Updated Card to use consistent border and shadow on all sides
                             <Card key={day} className="border border-border shadow-md">
-                              <CardHeader className="pb-2 md:pb-3">
-                                <div className="flex items-center justify-between gap-2">
-                                  <CardTitle className="text-sm md:text-base font-semibold truncate">
+                              <CardHeader className="pb-3">
+                                <div className="flex items-center justify-between">
+                                  <CardTitle className="text-base font-semibold">
                                     {day}
-                                    <span className="text-xs md:text-sm font-normal text-gray-500 ml-1 md:ml-2">
+                                    <span className="text-sm font-normal text-gray-500 ml-2">
                                       ({dayTasks.length} task{dayTasks.length !== 1 ? "s" : ""})
                                     </span>
                                   </CardTitle>
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-6 w-6 md:h-7 md:w-7 p-0 flex-shrink-0"
+                                    className="h-7 w-7"
                                     onClick={() => {
                                       setSelectedDay(day)
                                       setShowAddDailyTask(true)
                                     }}
                                   >
-                                    <Plus className="h-3 w-3 md:h-4 md:w-4" />
+                                    <Plus className="h-4 w-4" />
                                   </Button>
                                 </div>
                               </CardHeader>
-                              <CardContent className="space-y-2 md:space-y-3 min-h-[60px] p-3 md:p-4">
+                              <CardContent className="space-y-3 min-h-[60px]">
                                 <SortableContext
                                   items={[day, ...dayTasks.map((task) => `${day}-${task.id}`)]} // Include day name as droppable target
                                   strategy={verticalListSortingStrategy}
