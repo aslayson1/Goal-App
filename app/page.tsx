@@ -1293,57 +1293,70 @@ function SortableDailyTaskItem({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-3 px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors ${isDragging ? "bg-gray-100 shadow-md" : "bg-gray-50"}`}
+      className={`flex flex-col gap-1 px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors ${isDragging ? "bg-gray-100 shadow-md" : "bg-gray-50"}`}
     >
-      <div
-        {...attributes}
-        {...listeners}
-        className="cursor-grab active:cursor-grabbing hover:bg-gray-100 rounded p-1 flex-shrink-0"
-      >
-        <GripVertical className="h-4 w-4 text-gray-400" />
-      </div>
-      <button
-        onClick={(e) => {
-          e.stopPropagation()
-          onToggle()
-        }}
-        className="flex-shrink-0 focus:outline-none"
-      >
-        {task.completed ? (
-          <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
-        ) : (
-          <div className="h-5 w-5 border-2 border-gray-300 rounded bg-white flex-shrink-0" />
-        )}
-      </button>
-      <div className="flex-1 min-w-0 flex items-center gap-2">
-        {/* CHANGE: Match text style of regular tasks (text-sm instead of font-medium) */}
-        <h3 className={`text-sm ${task.completed ? "line-through text-gray-500" : "text-gray-900"}`}>{task.title}</h3>
-        {task.category && (
-          <span
-            className={`text-xs px-2 py-0.5 rounded border font-medium flex-shrink-0 ${getCategoryColor(task.category)}`}
+      {/* Task row */}
+      <div className="flex items-start gap-3">
+        <div className="flex flex-col gap-0 flex-shrink-0">
+          {/* Category badge above checkbox on mobile only */}
+          {task.category && (
+            <div className={`text-xs px-2 py-0.5 rounded border font-medium w-fit sm:hidden mb-1`}>
+              <span className={getCategoryColor(task.category)}>
+                {task.category}
+              </span>
+            </div>
+          )}
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onToggle()
+            }}
+            className="flex-shrink-0 focus:outline-none"
           >
-            {task.category}
-          </span>
-        )}
-        <div className="flex-1"></div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={onEdit}>
-                <Edit className="h-4 w-4 mr-2" />
-                Edit Task
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={onDelete} className="text-red-600">
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete Task
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            {task.completed ? (
+              <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+            ) : (
+              <div className="h-5 w-5 border-2 border-gray-300 rounded bg-white flex-shrink-0" />
+            )}
+          </button>
+        </div>
+        <div
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing hover:bg-gray-100 rounded p-1 flex-shrink-0"
+        >
+          <GripVertical className="h-4 w-4 text-gray-400" />
+        </div>
+        <div className="flex-1 min-w-0 flex items-center gap-2">
+          {/* CHANGE: Match text style of regular tasks (text-sm instead of font-medium) */}
+          <h3 className={`text-sm ${task.completed ? "line-through text-gray-500" : "text-gray-900"}`}>{task.title}</h3>
+          {task.category && (
+            <span
+              className={`text-xs px-2 py-0.5 rounded border font-medium flex-shrink-0 hidden sm:inline ${getCategoryColor(task.category)}`}
+            >
+              {task.category}
+            </span>
+          )}
+          <div className="flex-1"></div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={onEdit}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Task
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={onDelete} className="text-red-600">
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Task
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
     </div>
@@ -4739,7 +4752,8 @@ function GoalTrackerApp() {
                 </div>
 
                 <Tabs value={activeView} onValueChange={setActiveView} className="mb-8">
-                  <TabsList className="grid w-full grid-cols-4">
+                  {/* Desktop Tabs */}
+                  <TabsList className="hidden md:grid w-full grid-cols-4 mb-8">
                     <TabsTrigger value="daily">Daily Tasks</TabsTrigger>
                     <TabsTrigger value="weekly">Weekly Goals</TabsTrigger>
                     {dashboardMode === "12-week" ? (
@@ -4749,6 +4763,25 @@ function GoalTrackerApp() {
                     )}
                     <TabsTrigger value="notes">Notes</TabsTrigger>
                   </TabsList>
+
+                  {/* Mobile Dropdown Selector */}
+                  <div className="md:hidden mb-8">
+                    <Select value={activeView} onValueChange={setActiveView}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="daily">Daily Tasks</SelectItem>
+                        <SelectItem value="weekly">Weekly Goals</SelectItem>
+                        {dashboardMode === "12-week" ? (
+                          <SelectItem value="1-week">12-Week Goals</SelectItem>
+                        ) : (
+                          <SelectItem value="1-year">1-Year Goals</SelectItem>
+                        )}
+                        <SelectItem value="notes">Notes</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
                   {/* 12-Week Goals View */}
                   <TabsContent value="1-week" className="mt-8 w-full" data-page="twelve-week">
