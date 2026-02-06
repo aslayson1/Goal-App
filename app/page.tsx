@@ -981,20 +981,30 @@ function SortableWeeklyTaskItem({
           >
             <GripVertical className="h-4 w-4 text-gray-400" />
           </div>
-          {task.completed ? (
-            <CheckCircle className="h-4 w-4 text-green-500 cursor-pointer" onClick={onToggle} />
-          ) : (
-            <Checkbox checked={task.completed} onCheckedChange={onToggle} className={`${checkboxStyles}`} />
-          )}
-          <div className="flex-1 min-w-0 flex items-center gap-2">
-            <h3 className={`text-sm ${task.completed ? "line-through text-gray-500" : "text-gray-900"}`}>
-              {task.title}
-            </h3>
+          <div className="flex flex-col gap-1 flex-1 min-w-0">
+            {/* Category Badge - Above on mobile, inline on desktop */}
             {task.category && (
-              <Badge variant="secondary" className={`text-xs ${getCategoryColor(task.category)}`}>
+              <Badge variant="secondary" className={`text-xs w-fit sm:hidden ${getCategoryColor(task.category)}`}>
                 {task.category}
               </Badge>
             )}
+            <div className="flex items-center gap-2">
+              {task.completed ? (
+                <CheckCircle className="h-4 w-4 text-green-500 cursor-pointer" onClick={onToggle} />
+              ) : (
+                <Checkbox checked={task.completed} onCheckedChange={onToggle} className={`${checkboxStyles} flex-shrink-0`} />
+              )}
+              <div className="flex-1 min-w-0 flex items-center gap-2">
+                <h3 className={`text-sm ${task.completed ? "line-through text-gray-500" : "text-gray-900"}`}>
+                  {task.title}
+                </h3>
+                {task.category && (
+                  <Badge variant="secondary" className={`text-xs hidden sm:inline ${getCategoryColor(task.category)}`}>
+                    {task.category}
+                  </Badge>
+                )}
+              </div>
+            </div>
           </div>
           <Badge variant="outline" className="text-blue-600 border-blue-200">
             On Track
