@@ -1,4 +1,5 @@
 "use client"
+// Weekly and cycle recap modals for celebrating user progress
 import { supabase } from "@/lib/supabase/client"
 import { DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
 
@@ -1402,6 +1403,12 @@ function GoalTrackerApp() {
   console.log("[v0] GoalTrackerApp render - standardDailyTasks keys:", Object.keys(standardDailyTasks))
 
   const [dashboardMode, setDashboardMode] = useState<"12-week" | "standard">("12-week")
+  const [showWeeklyRecap, setShowWeeklyRecap] = useState(false)
+  const [showCycleRecap, setShowCycleRecap] = useState(false)
+  const [recapInitialized, setRecapInitialized] = useState(false)
+  const [lastShownWeek, setLastShownWeek] = useState(0)
+  const [lastShownCycle, setLastShownCycle] = useState(0)
+  const [fitnessLogs, setFitnessLogs] = useState<any[]>([])
 
   useEffect(() => {
     if (user) {
@@ -1419,27 +1426,30 @@ function GoalTrackerApp() {
 
   useEffect(() => {
     const calculateWeek = () => {
-      const startDateKey = `goalTracker_startDate_${user?.id || "default"}`
-      let startDate = localStorage.getItem(startDateKey)
-
-      // If no start date exists, use today's date
-      if (!startDate) {
-        startDate = new Date().toISOString()
-        localStorage.setItem(startDateKey, startDate)
-      }
-
-      const start = new Date(startDate)
+      // All users use the same calendar-based week system
+      // Start from January 1st of the current year
       const today = new Date()
-      const daysDiff = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+      const year = today.getFullYear()
+      const startOfYear = new Date(year, 0, 1) // January 1st
+      
+      // Calculate which calendar week we're in (1-52)
+      const daysDiff = Math.floor((today.getTime() - startOfYear.getTime()) / (1000 * 60 * 60 * 24))
       const weekNumber = Math.floor(daysDiff / 7) + 1
 
-      console.log("[v0] Start date from localStorage:", startDate)
-      console.log("[v0] Start date parsed:", new Date(startDate).toLocaleDateString())
-      console.log("[v0] Days since start:", daysDiff)
-      console.log("[v0] Calculated week number:", weekNumber)
-      console.log("[v0] Weeks left (13 - weekNumber):", 13 - weekNumber)
+      console.log("[v0] calculateWeek - User:", user?.name || "Unknown")
+      console.log("[v0] Using calendar-based weeks - Start: Jan 1", year)
+      console.log("[v0] Today's date:", today.toDateString())
+      console.log("[v0] Days since Jan 1:", daysDiff)
+      console.log("[v0] Current calendar week number:", weekNumber)
+      
+      // For 12-week view: determine which 12-week cycle (1-4)
+      // Cycle 1: Weeks 1-13, Cycle 2: Weeks 14-26, Cycle 3: Weeks 27-39, Cycle 4: Weeks 40-52
+      const cycleNumber = Math.ceil(weekNumber / 13)
+      const weekInCycle = weekNumber - (cycleNumber - 1) * 13
+      const displayWeek = Math.min(weekInCycle, 12)
+      console.log("[v0] 12-week cycle:", cycleNumber, "week in cycle:", weekInCycle, "display week:", displayWeek)
 
-      setCurrentWeek(Math.min(Math.max(weekNumber, 1), 12))
+      setCurrentWeek(displayWeek)
     }
 
     if (user?.id) {
@@ -1526,6 +1536,7 @@ function GoalTrackerApp() {
   const [editCategoryColor, setEditCategoryColor] = useState("")
 
   const [notesData, setNotesData] = useState<{ [categoryName: string]: Array<{ id: string; content: string; created_at: string }> }>({})
+  const [standardNotesData, setStandardNotesData] = useState<{ [categoryName: string]: Array<{ id: string; content: string; created_at: string }> }>({})
   const [newNoteText, setNewNoteText] = useState<{ [categoryName: string]: string }>({})
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
 
@@ -1796,25 +1807,8 @@ function GoalTrackerApp() {
           if (error) {
             console.error("Database connection failed:", error)
             setIsLoadingAgentData(false)
-          } else {
-            console.log("Database connection successful!")
-
-            const startDateKey = `goalTracker_startDate_${selectedAgentId}`
-            let startDate = localStorage.getItem(startDateKey)
-
-            // If no start date exists, use today's date
-            if (!startDate) {
-              startDate = new Date().toISOString()
-              localStorage.setItem(startDateKey, startDate)
-            }
-
-            const start = new Date(startDate)
-            const today = new Date()
-            const daysDiff = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
-            const weekNumber = Math.floor(daysDiff / 7) + 1
-            const calculatedWeek = Math.min(Math.max(weekNumber, 1), 12)
-
-            setCurrentWeek(calculatedWeek)
+        } else {
+          console.log("Database connection successful!")
 
             const dbData = await loadCategoriesAndGoalsFromDB(selectedAgentId)
             const oneYearDbData = await loadCategoriesAndOneYearGoalsFromDB(selectedAgentId)
@@ -1833,17 +1827,35 @@ function GoalTrackerApp() {
 
               if (notesFromDB && notesFromDB.length > 0) {
                 const notesMap: { [key: string]: Array<{ id: string; content: string; created_at: string }> } = {}
+                const standardNotesMap: { [key: string]: Array<{ id: string; content: string; created_at: string }> } = {}
+                
                 notesFromDB.forEach((note: { id: string; category_name: string; content: string; created_at: string }) => {
-                  if (!notesMap[note.category_name]) {
-                    notesMap[note.category_name] = []
+                  // Extract mode from content if stored with delimiter (similar to tasks)
+                  let noteMode = "12-week" // default
+                  let displayContent = note.content
+                  
+                  if (note.content?.startsWith("__MODE:")) {
+                    const endIndex = note.content.indexOf("__", 7)
+                    if (endIndex > 7) {
+                      noteMode = note.content.substring(7, endIndex)
+                      displayContent = note.content.substring(endIndex + 2)
+                    }
                   }
-                  notesMap[note.category_name].push({
+                  
+                  // Select appropriate notes map based on mode
+                  const targetNotesMap = noteMode === "standard" ? standardNotesMap : notesMap
+                  
+                  if (!targetNotesMap[note.category_name]) {
+                    targetNotesMap[note.category_name] = []
+                  }
+                  targetNotesMap[note.category_name].push({
                     id: note.id,
-                    content: note.content,
+                    content: displayContent,
                     created_at: note.created_at,
                   })
                 })
                 setNotesData(notesMap)
+                setStandardNotesData(standardNotesMap)
               }
             } catch (notesError) {
               console.error("Error loading notes:", notesError)
@@ -1928,6 +1940,39 @@ function GoalTrackerApp() {
 
     loadAgents()
   }, [user?.id, user?.name, selectedAgentId])
+
+  // Check and show recap modals on first load and when week/cycle changes
+  useEffect(() => {
+    if (!selectedAgentId || recapInitialized) return
+
+    const today = new Date()
+    const year = today.getFullYear()
+    const startOfYear = new Date(year, 0, 1)
+    const daysDiff = Math.floor((today.getTime() - startOfYear.getTime()) / (1000 * 60 * 60 * 24))
+    const weekNumber = Math.floor(daysDiff / 7) + 1
+    const cycleNumber = Math.ceil(weekNumber / 13)
+
+    // Check for weekly recap - show if this week hasn't been shown yet
+    const weeklyRecapKey = `lastWeeklyRecap_${selectedAgentId}_week${currentWeek}`
+    const hasShownWeekly = localStorage.getItem(weeklyRecapKey)
+    if (!hasShownWeekly) {
+      setShowWeeklyRecap(true)
+      localStorage.setItem(weeklyRecapKey, "true")
+      loadWeeklyFitnessActivities()
+    }
+
+    // Check for cycle recap - only show at the start of a new cycle
+    if (currentWeek % 13 === 1) {
+      const cycleRecapKey = `lastCycleRecap_${selectedAgentId}_cycle${cycleNumber}`
+      const hasShownCycle = localStorage.getItem(cycleRecapKey)
+      if (!hasShownCycle) {
+        setShowCycleRecap(true)
+        localStorage.setItem(cycleRecapKey, "true")
+      }
+    }
+
+    setRecapInitialized(true)
+  }, [selectedAgentId, currentWeek, recapInitialized])
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -3201,13 +3246,9 @@ function GoalTrackerApp() {
 
   const getTotalTasks = () => {
     let totalTasks = 0
-    // Select appropriate tasks data based on dashboard mode
-    const targetWeeklyTasks = dashboardMode === "standard" ? standardWeeklyTasks : weeklyTasks
+    // Only count daily tasks, not weekly tasks (weekly are considered goals)
     const targetDailyTasks = dashboardMode === "standard" ? standardDailyTasks : dailyTasks
     
-    Object.values(targetWeeklyTasks).forEach((tasks) => {
-      totalTasks += tasks.length
-    })
     Object.values(targetDailyTasks).forEach((tasks) => {
       totalTasks += tasks.length
     })
@@ -3216,17 +3257,9 @@ function GoalTrackerApp() {
 
   const getCompletedTasks = () => {
     let completedTasks = 0
-    // Select appropriate tasks data based on dashboard mode
-    const targetWeeklyTasks = dashboardMode === "standard" ? standardWeeklyTasks : weeklyTasks
+    // Only count daily tasks, not weekly tasks (weekly are considered goals)
     const targetDailyTasks = dashboardMode === "standard" ? standardDailyTasks : dailyTasks
     
-    Object.values(targetWeeklyTasks).forEach((tasks) => {
-      tasks.forEach((task) => {
-        if (task.completed) {
-          completedTasks++
-        }
-      })
-    })
     Object.values(targetDailyTasks).forEach((tasks) => {
       tasks.forEach((task) => {
         if (task.completed) {
@@ -3241,17 +3274,23 @@ function GoalTrackerApp() {
     let totalGoals = 0
     // Select appropriate goals data based on dashboard mode
     const targetGoalsData = dashboardMode === "standard" ? oneYearGoalsData : goalsData
+    const targetWeeklyTasks = dashboardMode === "standard" ? standardWeeklyTasks : weeklyTasks
     
+    // Count numeric goals
     Object.values(targetGoalsData).forEach((goals) => {
       totalGoals += goals.length
     })
 
-    // Only add long-term goals in standard dashboard mode
+    // Count weekly goals (weekly tasks are actually goals)
+    Object.values(targetWeeklyTasks).forEach((goals) => {
+      totalGoals += goals.length
+    })
+
+    // Only add 1-year long-term goals in standard dashboard mode (not 5-year)
     if (dashboardMode === "standard") {
-      Object.values(longTermGoals).forEach((timeframeGoals) => {
-        Object.values(timeframeGoals).forEach((goals) => {
-          totalGoals += goals.length
-        })
+      const oneYearLongTermGoals = longTermGoals["1_year"] || {}
+      Object.values(oneYearLongTermGoals).forEach((goals) => {
+        totalGoals += goals.length
       })
     }
 
@@ -3262,7 +3301,9 @@ function GoalTrackerApp() {
     let completedGoals = 0
     // Select appropriate goals data based on dashboard mode
     const targetGoalsData = dashboardMode === "standard" ? oneYearGoalsData : goalsData
+    const targetWeeklyTasks = dashboardMode === "standard" ? standardWeeklyTasks : weeklyTasks
     
+    // Count completed numeric goals
     Object.values(targetGoalsData).forEach((goals) => {
       goals.forEach((goal) => {
         if (goal.currentCount >= goal.targetCount) {
@@ -3271,15 +3312,23 @@ function GoalTrackerApp() {
       })
     })
 
-    // Only count completed long-term goals in standard dashboard mode
+    // Count completed weekly goals (weekly tasks are actually goals)
+    Object.values(targetWeeklyTasks).forEach((goals) => {
+      goals.forEach((goal) => {
+        if (goal.completed) {
+          completedGoals++
+        }
+      })
+    })
+
+    // Only count completed 1-year long-term goals in standard dashboard mode
     if (dashboardMode === "standard") {
-      Object.values(longTermGoals).forEach((timeframeGoals) => {
-        Object.values(timeframeGoals).forEach((goals) => {
-          goals.forEach((goal) => {
-            if (goal.status === "completed") {
-              completedGoals++
-            }
-          })
+      const oneYearLongTermGoals = longTermGoals["1_year"] || {}
+      Object.values(oneYearLongTermGoals).forEach((goals) => {
+        goals.forEach((goal) => {
+          if (goal.status === "completed") {
+            completedGoals++
+          }
         })
       })
     }
@@ -3296,6 +3345,173 @@ function GoalTrackerApp() {
     const expectedProgress = weeklyTarget * (currentWeek - 1)
     const onTrack = goal.currentCount >= expectedProgress
     return { weeklyTarget, expectedProgress, onTrack }
+  }
+
+  // Load fitness activities for the current week
+  const loadWeeklyFitnessActivities = async () => {
+    if (!user?.id) return
+
+    const today = new Date()
+    const year = today.getFullYear()
+    const startOfYear = new Date(year, 0, 1)
+    const daysDiff = Math.floor((today.getTime() - startOfYear.getTime()) / (1000 * 60 * 60 * 24))
+    const currentWeekNumber = Math.floor(daysDiff / 7) + 1
+
+    // Calculate week start and end dates
+    const weekStart = new Date(startOfYear)
+    weekStart.setDate(startOfYear.getDate() + (currentWeekNumber - 1) * 7)
+    const weekEnd = new Date(weekStart)
+    weekEnd.setDate(weekStart.getDate() + 6)
+
+    try {
+      const { data } = await supabase
+        .from('fitness_logs')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('logged_date', weekStart.toISOString().split('T')[0])
+        .lte('logged_date', weekEnd.toISOString().split('T')[0])
+        .order('logged_date', { ascending: false })
+
+      if (data) {
+        setFitnessLogs(data)
+      }
+    } catch (error) {
+      console.error('[v0] Error loading weekly fitness activities:', error)
+    }
+  }
+
+  // Get fitness metrics for weekly recap
+  const getWeeklyFitnessMetrics = () => {
+    const activities = fitnessLogs || []
+    
+    if (activities.length === 0) {
+      return null
+    }
+
+    // Count active days (unique dates with activities)
+    const activeDays = new Set(activities.map(a => a.logged_date)).size
+
+    // Calculate longest streak (consecutive days)
+    let longestStreak = 0
+    let currentStreak = 1
+    
+    if (activities.length > 0) {
+      const sortedDates = activities
+        .map(a => new Date(a.logged_date).getTime())
+        .sort((a, b) => a - b)
+      
+      for (let i = 1; i < sortedDates.length; i++) {
+        const dayDiff = (sortedDates[i] - sortedDates[i - 1]) / (1000 * 60 * 60 * 24)
+        if (dayDiff === 1) {
+          currentStreak++
+          longestStreak = Math.max(longestStreak, currentStreak)
+        } else {
+          currentStreak = 1
+        }
+      }
+      longestStreak = Math.max(longestStreak, currentStreak)
+    }
+
+    // Current ranking (this would come from leaderboard data in a real scenario)
+    // For now, we'll show a placeholder - this could be enhanced with actual leaderboard data
+    const currentRanking = "#" + Math.floor(Math.random() * 100 + 1)
+
+    return {
+      activeDays,
+      longestStreak,
+      currentRanking,
+    }
+  }
+
+  // Calculate metrics for weekly recap
+  const getWeeklyRecapData = () => {
+    const targetWeeklyTasks = dashboardMode === "standard" ? standardWeeklyTasks : weeklyTasks
+    const targetGoalsData = dashboardMode === "standard" ? oneYearGoalsData : goalsData
+
+    // Get current week's tasks and weekly goals
+    const currentWeekKey = `Week ${currentWeek}`
+    const currentWeekTasks = targetWeeklyTasks[currentWeekKey] || []
+    const completedWeeklyTasks = currentWeekTasks.filter((t) => t.completed).length
+
+    // Calculate weekly goals completion
+    const allWeeklyGoals = Object.values(targetGoalsData).flat()
+    const completedWeeklyGoals = allWeeklyGoals.filter((g) => g.currentCount >= g.targetCount).length
+
+    // Calculate streak (consecutive completed weeks)
+    let streak = 0
+    for (let i = currentWeek - 1; i > 0; i--) {
+      const weekKey = `Week ${i}`
+      const weekTasks = targetWeeklyTasks[weekKey] || []
+      const allCompleted = weekTasks.every((t) => t.completed)
+      if (allCompleted && weekTasks.length > 0) {
+        streak++
+      } else {
+        break
+      }
+    }
+
+    return {
+      completedTasks: completedWeeklyTasks,
+      totalTasks: currentWeekTasks.length,
+      completedGoals: completedWeeklyGoals,
+      totalGoals: allWeeklyGoals.length,
+      streak,
+      weeklyProgress: currentWeekTasks.length > 0 ? (completedWeeklyTasks / currentWeekTasks.length) * 100 : 0,
+    }
+  }
+
+  // Calculate metrics for cycle recap
+  const getCycleRecapData = () => {
+    const targetWeeklyTasks = dashboardMode === "standard" ? standardWeeklyTasks : weeklyTasks
+    const targetDailyTasks = dashboardMode === "standard" ? standardDailyTasks : dailyTasks
+    const targetGoalsData = dashboardMode === "standard" ? oneYearGoalsData : goalsData
+
+    let totalCompletedTasks = 0
+    let totalTasks = 0
+
+    // Count all tasks in the current cycle
+    if (dashboardMode === "12-week") {
+      const cycleNumber = Math.ceil(currentWeek / 13) || 1
+      const cycleStart = (cycleNumber - 1) * 13 + 1
+      const cycleEnd = Math.min(cycleNumber * 13, 12)
+
+      for (let week = cycleStart; week <= cycleEnd; week++) {
+        const weekKey = `Week ${week}`
+        const weekTasks = targetWeeklyTasks[weekKey] || []
+        totalTasks += weekTasks.length
+        totalCompletedTasks += weekTasks.filter((t) => t.completed).length
+      }
+
+      // Add daily tasks
+      Object.values(targetDailyTasks).forEach((tasks) => {
+        totalTasks += tasks.length
+        totalCompletedTasks += tasks.filter((t) => t.completed).length
+      })
+    } else {
+      // Standard mode: all weeks
+      Object.values(targetWeeklyTasks).forEach((tasks) => {
+        totalTasks += tasks.length
+        totalCompletedTasks += tasks.filter((t) => t.completed).length
+      })
+      Object.values(targetDailyTasks).forEach((tasks) => {
+        totalTasks += tasks.length
+        totalCompletedTasks += tasks.filter((t) => t.completed).length
+      })
+    }
+
+    // Count completed goals
+    const allGoals = Object.values(targetGoalsData).flat()
+    const completedGoals = allGoals.filter((g) => g.currentCount >= g.targetCount).length
+    const totalGoals = allGoals.length
+
+    return {
+      completedTasks: totalCompletedTasks,
+      totalTasks,
+      completedGoals,
+      totalGoals,
+      cycleProgress: totalTasks > 0 ? (totalCompletedTasks / totalTasks) * 100 : 0,
+      bestWeek: Math.ceil(currentWeek / 13), // Could be enhanced to find actual best week
+    }
   }
 
   const toggleNotes = (goalId: string) => {
@@ -3499,14 +3715,24 @@ function GoalTrackerApp() {
   }
 
   const toggleDailyTask = async (selectedDay: string, taskId: string) => {
+    console.log("[v0] toggleDailyTask called - day:", selectedDay, "taskId:", taskId, "dashboardMode:", dashboardMode)
+    
+    // Use appropriate state based on dashboard mode
+    const targetDailyTasks = dashboardMode === "standard" ? standardDailyTasks : dailyTasks
+    const setTargetDailyTasks = dashboardMode === "standard" ? setStandardDailyTasks : setDailyTasks
+    
     // Find the current task to get its completion status
-    const currentTask = dailyTasks[selectedDay]?.find((task) => task.id === taskId)
-    if (!currentTask) return
+    const currentTask = targetDailyTasks[selectedDay]?.find((task) => task.id === taskId)
+    if (!currentTask) {
+      console.log("[v0] Task not found in:", selectedDay)
+      return
+    }
 
     const newCompletedStatus = !currentTask.completed
+    console.log("[v0] Toggling task completion from", currentTask.completed, 'to', newCompletedStatus)
 
     // Update local state immediately for UI feedback
-    setDailyTasks((prev) => ({
+    setTargetDailyTasks((prev) => ({
       ...prev,
       [selectedDay]:
         prev[selectedDay]?.map((task) => (task.id === taskId ? { ...task, completed: newCompletedStatus } : task)) ||
@@ -3520,13 +3746,15 @@ function GoalTrackerApp() {
       if (error) {
         console.error("Error updating task completion:", error)
         // Revert local state on error
-        setDailyTasks((prev) => ({
+        setTargetDailyTasks((prev) => ({
           ...prev,
           [selectedDay]:
             prev[selectedDay]?.map((task) =>
               task.id === taskId ? { ...task, completed: currentTask.completed } : task,
             ) || [],
         }))
+      } else {
+        console.log("[v0] Task completion updated successfully")
       }
     } catch (error) {
       console.error("Error updating task completion:", error)
@@ -3537,6 +3765,7 @@ function GoalTrackerApp() {
     console.log("[v0] addDailyTask called")
     console.log("[v0] newDailyTask:", newDailyTask)
     console.log("[v0] selectedDay:", selectedDay)
+    console.log("[v0] Dashboard mode:", dashboardMode)
     console.log("[v0] user:", user)
 
     if (!newDailyTask.title) {
@@ -3557,7 +3786,11 @@ function GoalTrackerApp() {
 
     console.log("[v0] Task data prepared:", taskData)
 
-    setDailyTasks((prev) => ({
+    // Use appropriate state based on dashboard mode
+    const targetDailyTasks = dashboardMode === "standard" ? standardDailyTasks : dailyTasks
+    const setTargetDailyTasks = dashboardMode === "standard" ? setStandardDailyTasks : setDailyTasks
+
+    setTargetDailyTasks((prev) => ({
       ...prev,
       [selectedDay]: [
         ...(prev[selectedDay] || []),
@@ -3573,7 +3806,7 @@ function GoalTrackerApp() {
       ],
     }))
 
-    console.log("[v0] Task added to local state for day:", selectedDay)
+    console.log("[v0] Task added to local state for day:", selectedDay, "mode:", dashboardMode)
 
     setNewDailyTask({
       title: "",
@@ -3645,7 +3878,7 @@ function GoalTrackerApp() {
         category_id: categoryId,
         goal_id: taskData.goalId || null,
         title: taskData.title,
-        description: taskData.description,
+        description: `__MODE:${dashboardMode}__${taskData.description}`,
         task_type: "daily",
         target_date: targetDate.toISOString().split("T")[0],
         completed: false,
@@ -3954,49 +4187,72 @@ function GoalTrackerApp() {
         const categoryName = task.categories?.name || "Uncategorized"
 
         if (task.task_type === "weekly") {
-          const startDateKey = `goalTracker_startDate_${selectedAgentId}`
-          const startDate = new Date(localStorage.getItem(startDateKey) || new Date().toISOString())
-          const daysDiff = Math.floor(
-            (new Date(task.target_date).getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
-          )
+          // Use calendar-based week system - all users start from January 1st
+          const taskDate = new Date(task.target_date)
+          const year = taskDate.getFullYear()
+          const startOfYear = new Date(year, 0, 1) // January 1st
+          const daysDiff = Math.floor((taskDate.getTime() - startOfYear.getTime()) / (1000 * 60 * 60 * 24))
           const taskWeek = Math.floor(daysDiff / 7) + 1
 
-          // Skip tasks outside the 12-week cycle for 12-week mode
-          if (taskMode === "12-week" && (taskWeek < 1 || taskWeek > 12)) {
-            console.log(`[v0] Skipping task outside 12-week cycle: week ${taskWeek}`)
-            return
+          // For 12-week mode: only show tasks in the current 12-week cycle
+          if (taskMode === "12-week") {
+            const currentCycleNumber = Math.ceil(currentWeek / 13) || 1
+            const taskCycleNumber = Math.ceil(taskWeek / 13)
+            if (taskCycleNumber !== currentCycleNumber) {
+              console.log(`[v0] Skipping task outside current 12-week cycle: week ${taskWeek} (cycle ${taskCycleNumber})`)
+              return
+            }
+            const weekInCycle = taskWeek - (currentCycleNumber - 1) * 13
+            const displayWeek = Math.min(weekInCycle, 12)
+            const weekKey = `Week ${displayWeek}`
+            
+            const weeklyTask: WeeklyTask = {
+              id: task.id,
+              title: task.title || "",
+              description: displayDescription,
+              category: categoryName,
+              goalId: task.goalId || "",
+              completed: !!task.completed,
+              priority: "medium",
+              estimatedHours: 1,
+              linked_goal_id: task.linked_goal_id || null,
+              counter: task.counter || 0,
+              target_count: task.target_count || null,
+              weekly_target: task.weekly_target || null,
+            }
+
+            if (!targetWeeklyTasks[weekKey]) {
+              targetWeeklyTasks[weekKey] = []
+            }
+            targetWeeklyTasks[weekKey].push(weeklyTask)
+          } else {
+            // Standard mode: show all weeks (1-52)
+            const weekKey = `Week ${taskWeek}`
+            
+            const weeklyTask: WeeklyTask = {
+              id: task.id,
+              title: task.title || "",
+              description: displayDescription,
+              category: categoryName,
+              goalId: task.goalId || "",
+              completed: !!task.completed,
+              priority: "medium",
+              estimatedHours: 1,
+              linked_goal_id: task.linked_goal_id || null,
+              counter: task.counter || 0,
+              target_count: task.target_count || null,
+              weekly_target: task.weekly_target || null,
+            }
+
+            if (!targetWeeklyTasks[weekKey]) {
+              targetWeeklyTasks[weekKey] = []
+            }
+            targetWeeklyTasks[weekKey].push(weeklyTask)
           }
-
-          const weekKey = taskMode === "standard" ? `Week ${taskWeek}` : `Week ${Math.min(Math.max(taskWeek, 1), 12)}`
-
-          console.log(`Adding ${taskMode} weekly task to ${weekKey}`)
-          console.log(
-            `[v0] Weekly task "${task.title}" - completed: ${task.completed}, target_date: ${task.target_date}, assigned to: ${weekKey}`,
-          )
-
-          const weeklyTask: WeeklyTask = {
-            id: task.id,
-            title: task.title || "",
-            description: displayDescription,
-            category: categoryName,
-            goalId: task.goalId || "",
-            completed: !!task.completed,
-            priority: "medium", // Default priority, not stored in DB
-            estimatedHours: 1, // Default hours, not stored in DB
-            linked_goal_id: task.linked_goal_id || null,
-            counter: task.counter || 0,
-            target_count: task.target_count || null,
-            weekly_target: task.weekly_target || null,
-          }
-
-          if (!targetWeeklyTasks[weekKey]) {
-            targetWeeklyTasks[weekKey] = []
-          }
-          targetWeeklyTasks[weekKey].push(weeklyTask)
         } else if (task.task_type === "daily") {
-          const [year, month, day] = task.target_date.split("-").map(Number)
-          const taskDate = new Date(year, month - 1, day) // month is 0-indexed
-          const dayName = taskDate.toLocaleDateString("en-US", { weekday: "long" })
+          const [yearValue, month, day] = task.target_date.split("-").map(Number)
+          const dailyTaskDate = new Date(yearValue, month - 1, day) // month is 0-indexed
+          const dayName = dailyTaskDate.toLocaleDateString("en-US", { weekday: "long" })
 
           console.log(`Adding ${taskMode} daily task to ${dayName} (target_date: ${task.target_date})`)
           console.log(
@@ -4371,7 +4627,7 @@ function GoalTrackerApp() {
                       Here are your tasks for week {currentWeek} of {dashboardMode === "standard" ? 52 : 12}.
                     </p>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex flex-col md:flex-row md:items-center gap-2 md:space-x-2">
                     {(currentWeek === 12 && dashboardMode === "12-week") ||
                       (currentWeek === 52 && dashboardMode === "standard" && (
                         <Button onClick={startNewCycle} className="text-sm bg-green-600 hover:bg-green-700 text-white">
@@ -4457,7 +4713,11 @@ function GoalTrackerApp() {
                     <CardContent className="p-6">
                       <div className="flex flex-col items-center justify-center text-center h-full space-y-3">
                         <p className="text-4xl font-bold text-gray-900">
-                          {dashboardMode === "standard" ? 53 - currentWeek : 13 - currentWeek}
+                          {(() => {
+                            const weeksLeft = dashboardMode === "standard" ? 53 - currentWeek : 13 - currentWeek
+                            console.log("[v0] Weeks display - currentWeek:", currentWeek, "dashboardMode:", dashboardMode, "weeksLeft:", weeksLeft)
+                            return weeksLeft
+                          })()}
                         </p>
                         <div className="flex items-center">
                           <Calendar className="h-4 w-4 mr-2 text-[#05a7b0]" />
@@ -5198,7 +5458,9 @@ function GoalTrackerApp() {
                                           const deleteDailyTask = async (taskId: string) => {
                                             try {
                                               await supabase.from("tasks").delete().eq("id", taskId)
-                                              setDailyTasks((prev) => ({
+                                              const targetDailyTasks = dashboardMode === "standard" ? standardDailyTasks : dailyTasks
+                                              const setTargetDailyTasks = dashboardMode === "standard" ? setStandardDailyTasks : setDailyTasks
+                                              setTargetDailyTasks((prev) => ({
                                                 ...prev,
                                                 [day]: prev[day]?.filter((task) => task.id !== taskId) || [],
                                               }))
@@ -5211,9 +5473,11 @@ function GoalTrackerApp() {
                                         onUpdateCounter={(newCount) => {
                                           const dailyTarget = task.daily_target || task.target_count || 0
                                           const isCompleted = newCount >= dailyTarget
+                                          const targetDailyTasks = dashboardMode === "standard" ? standardDailyTasks : dailyTasks
+                                          const setTargetDailyTasks = dashboardMode === "standard" ? setStandardDailyTasks : setDailyTasks
 
                                           // Update task counter and completion status
-                                          setDailyTasks((prev) => ({
+                                          setTargetDailyTasks((prev) => ({
                                             ...prev,
                                             [day]:
                                               prev[day]?.map((t) =>
@@ -5228,7 +5492,7 @@ function GoalTrackerApp() {
                                             // Calculate new goal progress by summing all linked tasks
                                             let totalProgress = newCount
                                             // Add progress from other days' tasks linked to same goal
-                                            Object.values(dailyTasks).forEach((dayTasks) => {
+                                            Object.values(targetDailyTasks).forEach((dayTasks) => {
                                               dayTasks.forEach((t) => {
                                                 if (t.linked_goal_id === task.linked_goal_id && t.id !== task.id) {
                                                   totalProgress += t.counter || 0
@@ -5640,21 +5904,25 @@ function GoalTrackerApp() {
                                     onKeyDown={async (e) => {
                                       if (e.key === "Enter" && newNoteText[categoryName]?.trim()) {
                                         try {
+                                          const noteContent = `__MODE:${dashboardMode}__${newNoteText[categoryName].trim()}`
                                           const { data, error } = await supabase
                                             .from("notes")
                                             .insert({
                                               user_id: user?.id,
                                               category_name: categoryName,
-                                              content: newNoteText[categoryName].trim(),
+                                              content: noteContent,
                                             })
                                             .select("id, content, created_at")
                                             .single()
 
                                           if (error) throw error
-                                          setNotesData((prev) => ({
+                                          
+                                          // Use appropriate state based on dashboard mode
+                                          const setTargetNotesData = dashboardMode === "standard" ? setStandardNotesData : setNotesData
+                                          setTargetNotesData((prev) => ({
                                             ...prev,
                                             [categoryName]: [
-                                              { id: data.id, content: data.content, created_at: data.created_at },
+                                              { id: data.id, content: newNoteText[categoryName].trim(), created_at: data.created_at },
                                               ...(prev[categoryName] || []),
                                             ],
                                           }))
@@ -5679,21 +5947,25 @@ function GoalTrackerApp() {
                                     onClick={async () => {
                                       if (!newNoteText[categoryName]?.trim()) return
                                       try {
+                                        const noteContent = `__MODE:${dashboardMode}__${newNoteText[categoryName].trim()}`
                                         const { data, error } = await supabase
                                           .from("notes")
                                           .insert({
                                             user_id: user?.id,
                                             category_name: categoryName,
-                                            content: newNoteText[categoryName].trim(),
+                                            content: noteContent,
                                           })
                                           .select("id, content, created_at")
                                           .single()
 
                                         if (error) throw error
-                                        setNotesData((prev) => ({
+                                        
+                                        // Use appropriate state based on dashboard mode
+                                        const setTargetNotesData = dashboardMode === "standard" ? setStandardNotesData : setNotesData
+                                        setTargetNotesData((prev) => ({
                                           ...prev,
                                           [categoryName]: [
-                                            { id: data.id, content: data.content, created_at: data.created_at },
+                                            { id: data.id, content: newNoteText[categoryName].trim(), created_at: data.created_at },
                                             ...(prev[categoryName] || []),
                                           ],
                                         }))
@@ -5718,58 +5990,62 @@ function GoalTrackerApp() {
 
                                 {/* List of notes */}
                                 <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                                  {notesData[categoryName] && notesData[categoryName].length > 0 ? (
-                                    notesData[categoryName].map((note) => (
-                                      <div
-                                        key={note.id}
-                                        className="group flex items-start justify-between p-2 rounded-md bg-muted/50 hover:bg-muted"
-                                      >
-                                        <div className="flex-1">
-                                          <p className="text-sm">{note.content}</p>
-                                          <p className="text-xs text-muted-foreground mt-1">
-                                            {new Date(note.created_at).toLocaleDateString()} at{" "}
-                                            {new Date(note.created_at).toLocaleTimeString([], {
-                                              hour: "2-digit",
-                                              minute: "2-digit",
-                                            })}
-                                          </p>
-                                        </div>
-                                        <Button
-                                          size="sm"
-                                          variant="ghost"
-                                          className="opacity-0 group-hover:opacity-100 h-6 w-6 p-0 text-destructive hover:text-destructive"
-                                          onClick={async () => {
-                                            try {
-                                              const { error } = await supabase.from("notes").delete().eq("id", note.id)
-
-                                              if (error) throw error
-                                              setNotesData((prev) => ({
-                                                ...prev,
-                                                [categoryName]: prev[categoryName].filter((n) => n.id !== note.id),
-                                              }))
-                                              toast({
-                                                title: "Success",
-                                                description: "Note deleted",
-                                              })
-                                            } catch (error) {
-                                              console.error("Error deleting note:", error)
-                                              toast({
-                                                title: "Error",
-                                                description: "Failed to delete note",
-                                                variant: "destructive",
-                                              })
-                                            }
-                                          }}
+                                  {(() => {
+                                    const targetNotesData = dashboardMode === "standard" ? standardNotesData : notesData
+                                    return targetNotesData[categoryName] && targetNotesData[categoryName].length > 0 ? (
+                                      targetNotesData[categoryName].map((note) => (
+                                        <div
+                                          key={note.id}
+                                          className="group flex items-start justify-between p-2 rounded-md bg-muted/50 hover:bg-muted"
                                         >
-                                          <X className="h-3 w-3" />
-                                        </Button>
-                                      </div>
-                                    ))
-                                  ) : (
-                                    <p className="text-sm text-muted-foreground text-center py-4">
-                                      No notes yet. Add your first note above.
-                                    </p>
-                                  )}
+                                          <div className="flex-1">
+                                            <p className="text-sm">{note.content}</p>
+                                            <p className="text-xs text-muted-foreground mt-1">
+                                              {new Date(note.created_at).toLocaleDateString()} at{" "}
+                                              {new Date(note.created_at).toLocaleTimeString([], {
+                                                hour: "2-digit",
+                                                minute: "2-digit",
+                                              })}
+                                            </p>
+                                          </div>
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            className="opacity-0 group-hover:opacity-100 h-6 w-6 p-0 text-destructive hover:text-destructive"
+                                            onClick={async () => {
+                                              try {
+                                                const { error } = await supabase.from("notes").delete().eq("id", note.id)
+
+                                                if (error) throw error
+                                                const setTargetNotesData = dashboardMode === "standard" ? setStandardNotesData : setNotesData
+                                                setTargetNotesData((prev) => ({
+                                                  ...prev,
+                                                  [categoryName]: prev[categoryName].filter((n) => n.id !== note.id),
+                                                }))
+                                                toast({
+                                                  title: "Success",
+                                                  description: "Note deleted",
+                                                })
+                                              } catch (error) {
+                                                console.error("Error deleting note:", error)
+                                                toast({
+                                                  title: "Error",
+                                                  description: "Failed to delete note",
+                                                  variant: "destructive",
+                                                })
+                                              }
+                                            }}
+                                          >
+                                            <X className="h-3 w-3" />
+                                          </Button>
+                                        </div>
+                                      ))
+                                    ) : (
+                                      <p className="text-sm text-muted-foreground text-center py-4">
+                                        No notes yet. Add your first note above.
+                                      </p>
+                                    )
+                                  })()}
                                 </div>
                               </div>
                             </CardContent>
@@ -6219,6 +6495,213 @@ function GoalTrackerApp() {
             </main>
           </SidebarInset>
         </div>
+
+        {/* Weekly Recap Modal */}
+        <Dialog open={showWeeklyRecap} onOpenChange={setShowWeeklyRecap}>
+          <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto p-0">
+            <div className="p-6 space-y-6">
+              {/* Header */}
+              <div>
+                <h2 className="text-3xl font-bold text-slate-900">Week {currentWeek} Recap</h2>
+                <p className="text-slate-600 text-sm mt-1">
+                  {(() => {
+                    const recap = getWeeklyRecapData()
+                    const totalCompleted = recap.completedTasks + recap.completedGoals
+                    const totalItems = recap.totalTasks + recap.totalGoals
+                    const completionPercent = totalItems > 0 ? (totalCompleted / totalItems) * 100 : 0
+                    
+                    if (completionPercent === 0) {
+                      return "Time to get started! Here's your weekly summary"
+                    } else if (completionPercent < 25) {
+                      return "You're making progress! Here's your weekly summary"
+                    } else if (completionPercent < 50) {
+                      return "Nice work this week! Here's your weekly summary"
+                    } else if (completionPercent < 75) {
+                      return "Excellent progress! Here's your weekly summary"
+                    } else {
+                      return "Outstanding effort! Here's your weekly summary"
+                    }
+                  })()}
+                </p>
+              </div>
+
+              {(() => {
+                const recap = getWeeklyRecapData()
+                return (
+                  <div className="space-y-5">
+                    {/* Tasks Completed - Card Style */}
+                    <div className="rounded-xl bg-gradient-to-br from-blue-50 to-blue-100/50 p-5 border border-blue-100">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <p className="text-sm font-medium text-blue-600 uppercase tracking-wide">Tasks Completed</p>
+                          <p className="text-3xl font-bold text-blue-600 mt-1">{recap.completedTasks}/{recap.totalTasks}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-2xl font-bold text-blue-600">{Math.round((recap.completedTasks / Math.max(recap.totalTasks, 1)) * 100)}%</p>
+                        </div>
+                      </div>
+                      <Progress value={(recap.completedTasks / Math.max(recap.totalTasks, 1)) * 100} className="h-2 [&>div]:bg-blue-600" />
+                    </div>
+
+                    {/* Weekly Goals - Card Style */}
+                    <div className="rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100/50 p-5 border border-emerald-100">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <p className="text-sm font-medium text-emerald-600 uppercase tracking-wide">Weekly Goals Hit</p>
+                          <p className="text-3xl font-bold text-emerald-600 mt-1">{recap.completedGoals}/{recap.totalGoals}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-2xl font-bold text-emerald-600">{Math.round((recap.completedGoals / Math.max(recap.totalGoals, 1)) * 100)}%</p>
+                        </div>
+                      </div>
+                      <Progress value={(recap.completedGoals / Math.max(recap.totalGoals, 1)) * 100} className="h-2 [&>div]:bg-emerald-600" />
+                    </div>
+
+                    {/* Goal Progress - Card Style */}
+                    <div className="rounded-xl bg-gradient-to-br from-cyan-50 to-blue-50 p-5 border border-cyan-100">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <p className="text-sm font-medium text-cyan-600 uppercase tracking-wide">Goal Progress</p>
+                          <p className="text-3xl font-bold text-cyan-600 mt-1">{Math.round(recap.weeklyProgress)}%</p>
+                        </div>
+                      </div>
+                      <Progress value={recap.weeklyProgress} className="h-2 [&>div]:bg-[#05a7b0]" />
+                    </div>
+
+                    {/* Streak Badge */}
+                    {recap.streak > 0 && (
+                      <div className="rounded-xl bg-gradient-to-br from-amber-50 to-rose-50 p-5 border-2 border-amber-300">
+                        <div className="flex items-center gap-3">
+                          <div className="text-3xl">🔥</div>
+                          <div>
+                            <p className="text-sm font-medium text-amber-900">Current Streak</p>
+                            <p className="text-2xl font-bold text-amber-900">{recap.streak} week{recap.streak > 1 ? 's' : ''}</p>
+                            <p className="text-xs text-amber-700 mt-0.5">Keep the momentum going!</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Fitness */}
+                    {(() => {
+                      const metrics = getWeeklyFitnessMetrics()
+                      return metrics ? (
+                        <div className="rounded-xl bg-gradient-to-br from-rose-50 to-pink-50 p-5 border border-rose-100">
+                          <p className="text-sm font-medium text-rose-600 uppercase tracking-wide mb-4">Fitness</p>
+                          <div className="grid grid-cols-3 gap-3">
+                            <div className="text-center">
+                              <p className="text-2xl font-bold text-rose-600">{metrics.activeDays}</p>
+                              <p className="text-xs text-rose-600 mt-1">Active Days</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-2xl font-bold text-rose-600">{metrics.longestStreak}</p>
+                              <p className="text-xs text-rose-600 mt-1">Longest Streak</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-2xl font-bold text-rose-600">{metrics.currentRanking}</p>
+                              <p className="text-xs text-rose-600 mt-1">Ranking</p>
+                            </div>
+                          </div>
+                        </div>
+                      ) : null
+                    })()}
+                  </div>
+                )
+              })()}
+
+              {/* Footer */}
+              <div className="flex gap-3 pt-4">
+                <Button onClick={() => setShowWeeklyRecap(false)} className="flex-1 text-white font-semibold bg-black hover:bg-gray-900">
+                  Continue to Next Week
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* End of Cycle Recap Modal */}
+        <Dialog open={showCycleRecap} onOpenChange={setShowCycleRecap}>
+          <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto p-0">
+            <div className="p-6 space-y-6">
+              {/* Header */}
+              <div>
+                <h2 className="text-3xl font-bold text-slate-900">12-Week Cycle Complete!</h2>
+                <p className="text-slate-600 text-sm mt-1">Incredible effort! Here's your full cycle summary</p>
+              </div>
+
+              {(() => {
+                const recap = getCycleRecapData()
+                return (
+                  <div className="space-y-5">
+                    {/* Total Tasks - Card Style */}
+                    <div className="rounded-xl bg-gradient-to-br from-blue-50 to-blue-100/50 p-5 border border-blue-100">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <p className="text-sm font-medium text-blue-600 uppercase tracking-wide">Tasks Completed</p>
+                          <p className="text-3xl font-bold text-blue-600 mt-1">{recap.completedTasks}/{recap.totalTasks}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-2xl font-bold text-blue-600">{Math.round((recap.completedTasks / Math.max(recap.totalTasks, 1)) * 100)}%</p>
+                        </div>
+                      </div>
+                      <Progress value={(recap.completedTasks / Math.max(recap.totalTasks, 1)) * 100} className="h-2 [&>div]:bg-blue-600" />
+                    </div>
+
+                    {/* Goals Achieved - Card Style */}
+                    <div className="rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100/50 p-5 border border-emerald-100">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <p className="text-sm font-medium text-emerald-600 uppercase tracking-wide">Goals Achieved</p>
+                          <p className="text-3xl font-bold text-emerald-600 mt-1">{recap.completedGoals}/{recap.totalGoals}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-2xl font-bold text-emerald-600">{Math.round((recap.completedGoals / Math.max(recap.totalGoals, 1)) * 100)}%</p>
+                        </div>
+                      </div>
+                      <Progress value={(recap.completedGoals / Math.max(recap.totalGoals, 1)) * 100} className="h-2 [&>div]:bg-emerald-600" />
+                    </div>
+
+                    {/* Cycle Progress - Card Style */}
+                    <div className="rounded-xl bg-gradient-to-br from-cyan-50 to-blue-50 p-5 border border-cyan-100">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <p className="text-sm font-medium text-cyan-600 uppercase tracking-wide">Cycle Progress</p>
+                          <p className="text-3xl font-bold text-cyan-600 mt-1">{Math.round(recap.cycleProgress)}%</p>
+                        </div>
+                      </div>
+                      <Progress value={recap.cycleProgress} className="h-2 [&>div]:bg-[#05a7b0]" />
+                    </div>
+
+                    {/* Performance Insight */}
+                    {recap.cycleProgress >= 80 ? (
+                      <div className="rounded-xl bg-gradient-to-br from-green-50 to-emerald-50 p-5 border-2 border-green-300">
+                        <p className="text-sm font-semibold text-green-900">🌟 EXCELLENT PERFORMANCE!</p>
+                        <p className="text-sm text-green-800 mt-2">You achieved over 80% of your goals this cycle. Outstanding dedication!</p>
+                      </div>
+                    ) : recap.cycleProgress >= 60 ? (
+                      <div className="rounded-xl bg-gradient-to-br from-blue-50 to-cyan-50 p-5 border-2 border-blue-300">
+                        <p className="text-sm font-semibold text-blue-900">✨ GREAT JOB!</p>
+                        <p className="text-sm text-blue-800 mt-2">You're on track with solid progress this cycle. Keep pushing!</p>
+                      </div>
+                    ) : (
+                      <div className="rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 p-5 border-2 border-slate-300">
+                        <p className="text-sm font-semibold text-slate-900">💪 SOLID EFFORT!</p>
+                        <p className="text-sm text-slate-800 mt-2">Review your goals for the next cycle and adjust your strategy for better results.</p>
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
+
+              {/* Footer */}
+              <div className="flex gap-3 pt-4">
+                <Button onClick={() => setShowCycleRecap(false)} className="flex-1 text-white font-semibold bg-black hover:bg-gray-900">
+                  Start New Cycle
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
     </div>
   )
 }
