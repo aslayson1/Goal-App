@@ -981,20 +981,30 @@ function SortableWeeklyTaskItem({
           >
             <GripVertical className="h-4 w-4 text-gray-400" />
           </div>
-          {task.completed ? (
-            <CheckCircle className="h-4 w-4 text-green-500 cursor-pointer" onClick={onToggle} />
-          ) : (
-            <Checkbox checked={task.completed} onCheckedChange={onToggle} className={`${checkboxStyles}`} />
-          )}
-          <div className="flex-1 min-w-0 flex items-center gap-2">
-            <h3 className={`text-sm ${task.completed ? "line-through text-gray-500" : "text-gray-900"}`}>
-              {task.title}
-            </h3>
+          <div className="flex flex-col gap-1">
+            {/* Category badge above on mobile, inline with task on desktop */}
             {task.category && (
-              <Badge variant="secondary" className={`text-xs ${getCategoryColor(task.category)}`}>
+              <Badge variant="secondary" className={`text-xs w-fit ${getCategoryColor(task.category)} md:hidden`}>
                 {task.category}
               </Badge>
             )}
+            <div className="flex items-center gap-2">
+              {task.completed ? (
+                <CheckCircle className="h-4 w-4 text-green-500 cursor-pointer flex-shrink-0" onClick={onToggle} />
+              ) : (
+                <Checkbox checked={task.completed} onCheckedChange={onToggle} className={`${checkboxStyles} flex-shrink-0`} />
+              )}
+              <div className="flex-1 min-w-0 flex items-center gap-2">
+                <h3 className={`text-sm ${task.completed ? "line-through text-gray-500" : "text-gray-900"}`}>
+                  {task.title}
+                </h3>
+                {task.category && (
+                  <Badge variant="secondary" className={`text-xs ${getCategoryColor(task.category)} hidden md:inline`}>
+                    {task.category}
+                  </Badge>
+                )}
+              </div>
+            </div>
           </div>
           <Badge variant="outline" className="text-blue-600 border-blue-200">
             On Track
@@ -4738,8 +4748,9 @@ function GoalTrackerApp() {
                   </Card>
                 </div>
 
-                <Tabs value={activeView} onValueChange={setActiveView} className="mb-8">
-                  <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 gap-2">
+                {/* Tabs - Hidden on mobile, shown on md and up */}
+                <Tabs value={activeView} onValueChange={setActiveView} className="mb-8 hidden md:block">
+                  <TabsList className="grid w-full grid-cols-4 gap-2">
                     <TabsTrigger value="daily" className="text-xs md:text-sm">Daily Tasks</TabsTrigger>
                     <TabsTrigger value="weekly" className="text-xs md:text-sm">Weekly Goals</TabsTrigger>
                     {dashboardMode === "12-week" ? (
@@ -4749,6 +4760,25 @@ function GoalTrackerApp() {
                     )}
                     <TabsTrigger value="notes" className="text-xs md:text-sm">Notes</TabsTrigger>
                   </TabsList>
+
+                {/* Mobile Dropdown Selector */}
+                <div className="mb-8 md:hidden">
+                  <Select value={activeView} onValueChange={setActiveView}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="daily">Daily Tasks</SelectItem>
+                      <SelectItem value="weekly">Weekly Goals</SelectItem>
+                      {dashboardMode === "12-week" ? (
+                        <SelectItem value="1-week">12-Week Goals</SelectItem>
+                      ) : (
+                        <SelectItem value="1-year">1-Year Goals</SelectItem>
+                      )}
+                      <SelectItem value="notes">Notes</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
                   {/* 12-Week Goals View */}
                   <TabsContent value="1-week" className="mt-8 w-full" data-page="twelve-week">
