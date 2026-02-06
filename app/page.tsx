@@ -1295,17 +1295,31 @@ function SortableDailyTaskItem({
       style={style}
       className={`flex flex-col gap-1 px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors ${isDragging ? "bg-gray-100 shadow-md" : "bg-gray-50"}`}
     >
-      {/* Category badge above task on mobile only */}
-      {task.category && (
-        <span
-          className={`text-xs px-2 py-0.5 rounded border font-medium w-fit sm:hidden ${getCategoryColor(task.category)}`}
-        >
-          {task.category}
-        </span>
-      )}
-      
       {/* Task row */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-start gap-3">
+        <div className="flex flex-col gap-0 flex-shrink-0">
+          {/* Category badge above checkbox on mobile only */}
+          {task.category && (
+            <div className={`text-xs px-2 py-0.5 rounded border font-medium w-fit sm:hidden mb-1`}>
+              <span className={getCategoryColor(task.category)}>
+                {task.category}
+              </span>
+            </div>
+          )}
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onToggle()
+            }}
+            className="flex-shrink-0 focus:outline-none"
+          >
+            {task.completed ? (
+              <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+            ) : (
+              <div className="h-5 w-5 border-2 border-gray-300 rounded bg-white flex-shrink-0" />
+            )}
+          </button>
+        </div>
         <div
           {...attributes}
           {...listeners}
@@ -1313,19 +1327,6 @@ function SortableDailyTaskItem({
         >
           <GripVertical className="h-4 w-4 text-gray-400" />
         </div>
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            onToggle()
-          }}
-          className="flex-shrink-0 focus:outline-none"
-        >
-          {task.completed ? (
-            <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
-          ) : (
-            <div className="h-5 w-5 border-2 border-gray-300 rounded bg-white flex-shrink-0" />
-          )}
-        </button>
         <div className="flex-1 min-w-0 flex items-center gap-2">
           {/* CHANGE: Match text style of regular tasks (text-sm instead of font-medium) */}
           <h3 className={`text-sm ${task.completed ? "line-through text-gray-500" : "text-gray-900"}`}>{task.title}</h3>
