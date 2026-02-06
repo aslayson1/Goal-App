@@ -4739,15 +4739,15 @@ function GoalTrackerApp() {
                 </div>
 
                 <Tabs value={activeView} onValueChange={setActiveView} className="mb-8">
-                  <TabsList className="grid w-full grid-cols-4">
-                    <TabsTrigger value="daily">Daily Tasks</TabsTrigger>
-                    <TabsTrigger value="weekly">Weekly Goals</TabsTrigger>
+                  <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 gap-2">
+                    <TabsTrigger value="daily" className="text-xs md:text-sm">Daily Tasks</TabsTrigger>
+                    <TabsTrigger value="weekly" className="text-xs md:text-sm">Weekly Goals</TabsTrigger>
                     {dashboardMode === "12-week" ? (
-                      <TabsTrigger value="1-week">12-Week Goals</TabsTrigger>
+                      <TabsTrigger value="1-week" className="text-xs md:text-sm">12-Week Goals</TabsTrigger>
                     ) : (
-                      <TabsTrigger value="1-year">1-Year Goals</TabsTrigger>
+                      <TabsTrigger value="1-year" className="text-xs md:text-sm">1-Year Goals</TabsTrigger>
                     )}
-                    <TabsTrigger value="notes">Notes</TabsTrigger>
+                    <TabsTrigger value="notes" className="text-xs md:text-sm">Notes</TabsTrigger>
                   </TabsList>
 
                   {/* 12-Week Goals View */}
@@ -5388,8 +5388,8 @@ function GoalTrackerApp() {
 
                   {/* Daily Tasks View */}
                   <TabsContent value="daily" className="mt-8 w-full">
-                    <div className="flex items-center justify-between mb-6">
-                      <h2 className="text-2xl font-bold text-gray-900">Daily Tasks</h2>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
+                      <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Daily Tasks</h2>
 
                       <Button
                         variant="outline"
@@ -5398,14 +5398,14 @@ function GoalTrackerApp() {
                           setNewDailyTask((prev) => ({ ...prev, category: "" }))
                           setShowAddDailyTask(true)
                         }}
-                        className="text-sm"
+                        className="text-xs sm:text-sm w-full sm:w-auto"
                       >
                         <Plus className="h-4 w-4 mr-2" />
                         Add Task
                       </Button>
                     </div>
 
-                    <div className="space-y-4">
+                    <div className="space-y-3 md:space-y-4">
                       <DndContext
                         sensors={sensors}
                         collisionDetection={closestCenter}
@@ -5418,28 +5418,28 @@ function GoalTrackerApp() {
                           return (
                             // Updated Card to use consistent border and shadow on all sides
                             <Card key={day} className="border border-border shadow-md">
-                              <CardHeader className="pb-3">
-                                <div className="flex items-center justify-between">
-                                  <CardTitle className="text-base font-semibold">
+                              <CardHeader className="pb-2 md:pb-3">
+                                <div className="flex items-center justify-between gap-2">
+                                  <CardTitle className="text-sm md:text-base font-semibold truncate">
                                     {day}
-                                    <span className="text-sm font-normal text-gray-500 ml-2">
+                                    <span className="text-xs md:text-sm font-normal text-gray-500 ml-1 md:ml-2">
                                       ({dayTasks.length} task{dayTasks.length !== 1 ? "s" : ""})
                                     </span>
                                   </CardTitle>
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-7 w-7"
+                                    className="h-6 w-6 md:h-7 md:w-7 p-0 flex-shrink-0"
                                     onClick={() => {
                                       setSelectedDay(day)
                                       setShowAddDailyTask(true)
                                     }}
                                   >
-                                    <Plus className="h-4 w-4" />
+                                    <Plus className="h-3 w-3 md:h-4 md:w-4" />
                                   </Button>
                                 </div>
                               </CardHeader>
-                              <CardContent className="space-y-3 min-h-[60px]">
+                              <CardContent className="space-y-2 md:space-y-3 min-h-[60px] p-3 md:p-4">
                                 <SortableContext
                                   items={[day, ...dayTasks.map((task) => `${day}-${task.id}`)]} // Include day name as droppable target
                                   strategy={verticalListSortingStrategy}
