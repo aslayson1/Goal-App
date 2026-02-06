@@ -1348,13 +1348,14 @@ function SortableDailyTaskItem({
                 <DropdownMenuItem onClick={onEdit}>
                   <Edit className="h-4 w-4 mr-2" />
                   Edit Task
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={onDelete} className="text-red-600">
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete Task
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={onDelete} className="text-red-600">
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Task
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
     </div>
