@@ -439,28 +439,6 @@ export default function FitnessPage() {
         </CardContent>
       </Card>
 
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>Fast ways to log your workout</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              onClick={() => {
-                const today = new Date()
-                logWorkout(today)
-              }}
-              className="bg-emerald-600 hover:bg-emerald-700"
-            >
-              Log Today
-            </Button>
-            <Button variant="outline">View History</Button>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Goal Selection Dialog */}
       <Dialog open={showGoalDialog} onOpenChange={setShowGoalDialog}>
         <DialogContent className="sm:max-w-[500px]">
