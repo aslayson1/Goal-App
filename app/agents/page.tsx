@@ -23,9 +23,11 @@ import Image from "next/image"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAuth } from "@/components/auth/auth-provider"
 import { SignOutButton } from "@/components/auth/sign-out-button"
+import { UserProfile } from "@/components/profile/user-profile"
 import { useRouter } from "next/navigation"
 import { updateAgentAuthUser, createAgentWithAuth, syncAgentName } from "./actions" // Import server action
-import { createClient } from "@supabase/supabase-js"
+import { createClient } from "@supabase/supabase-js" // Import createClient for Supabase
+import { supabase } from "@/lib/supabase/client"
 
 interface Agent {
   id: string
@@ -33,15 +35,20 @@ interface Agent {
   name: string
   role: string
   description: string
+  email: string
   created_at: string
   updated_at: string
-  email: string
-  auth_user_id: string
+  auth_user_id?: string
 }
 
-const supabaseUrl = "https://your-supabase-url.supabase.co"
-const supabaseKey = "your-supabase-key"
-const supabase = createClient(supabaseUrl, supabaseKey)
+function getInitials(name?: string | null): string {
+  if (!name || typeof name !== "string") return "U"
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+}
 
 export default function AgentsPage() {
   const { user, isLoading: authLoading } = useAuth()
@@ -60,14 +67,9 @@ export default function AgentsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
 
-  const getInitials = (name: string | null | undefined) => {
-    if (!name || typeof name !== "string") return "U"
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-  }
+  const supabaseUrl = "https://your-supabase-url.supabase.co"
+  const supabaseKey = "your-supabase-key"
+  const supabaseClient = createClient(supabaseUrl, supabaseKey)
 
   // Fetch agents from Supabase
   useEffect(() => {
