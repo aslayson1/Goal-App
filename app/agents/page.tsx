@@ -23,8 +23,9 @@ import Image from "next/image"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAuth } from "@/components/auth/auth-provider"
 import { SignOutButton } from "@/components/auth/sign-out-button"
-import { supabase } from "@/lib/supabase/client"
+import { useRouter } from "next/navigation"
 import { updateAgentAuthUser, createAgentWithAuth, syncAgentName } from "./actions" // Import server action
+import { createClient } from "@supabase/supabase-js"
 
 interface Agent {
   id: string
@@ -38,8 +39,13 @@ interface Agent {
   auth_user_id: string
 }
 
+const supabaseUrl = "https://your-supabase-url.supabase.co"
+const supabaseKey = "your-supabase-key"
+const supabase = createClient(supabaseUrl, supabaseKey)
+
 export default function AgentsPage() {
   const { user, isLoading: authLoading } = useAuth()
+  const router = useRouter()
   const [agents, setAgents] = useState<Agent[]>([])
   const [showAddAgent, setShowAddAgent] = useState(false)
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null)
@@ -238,14 +244,20 @@ export default function AgentsPage() {
       <div className="flex h-screen w-screen flex-col overflow-hidden">
         <header className="sticky top-0 z-50 flex h-16 shrink-0 items-center justify-between gap-4 border-b bg-white px-6 w-full">
           <div className="flex items-center gap-3">
-            <Image
-              src="/layson-group-logo.png"
-              alt="Layson Group"
-              width={180}
-              height={40}
-              className="h-10 w-auto object-contain"
-              priority
-            />
+            <button
+              onClick={() => router.push("/")}
+              className="flex items-center gap-2 hover:opacity-80 transition-opacity focus:outline-none"
+              aria-label="Go to home"
+            >
+              <Image
+                src="/layson-group-logo.png"
+                alt="Layson Group"
+                width={180}
+                height={40}
+                className="h-10 w-auto object-contain cursor-pointer"
+                priority
+              />
+            </button>
           </div>
 
           {/* User Profile Dropdown */}
