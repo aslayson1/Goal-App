@@ -49,7 +49,7 @@ export default function LongTermGoalsLayout({
   return (
     <SidebarProvider>
       <div className="flex flex-col h-screen w-screen overflow-hidden">
-        {/* Full-width Top Header Bar */}
+        {/* Full-width Top Header Bar - Mobile responsive */}
         <header className="sticky top-0 z-50 flex h-14 shrink-0 items-center justify-between gap-4 border-b bg-white px-6 w-full">
           <div className="flex items-center gap-3">
             <SidebarTrigger className="md:hidden" />
