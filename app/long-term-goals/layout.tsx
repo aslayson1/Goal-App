@@ -70,7 +70,7 @@ export default function LongTermGoalsLayout({
           </div>
 
           {/* User Profile Dropdown - Desktop only */}
-          <div className="hidden md:block">
+          <div className="sm:hidden md:block">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-10 w-10 p-0 rounded-full">
