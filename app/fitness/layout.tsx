@@ -72,7 +72,7 @@ export default function FitnessLayout({
           {/* User Profile Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="flex items-center space-x-2 h-10 w-10 p-0">
+              <Button variant="ghost" size="sm" className="h-10 w-10 p-0 rounded-full">
                 <Avatar className="h-8 w-8 border-2 border-black">
                   {user?.avatar && (
                     <AvatarImage src={user.avatar || "/placeholder.svg?height=40&width=40&text=U"} alt={user?.name} />
@@ -83,31 +83,31 @@ export default function FitnessLayout({
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 z-50">
-              <DropdownMenuItem onClick={() => setShowProfile(true)} className="cursor-pointer">
-                Profile Settings
-              </DropdownMenuItem>
+            <DropdownMenuContent align="end" className="w-56">
+              <Dialog open={showProfile} onOpenChange={setShowProfile}>
+                <DialogTrigger asChild>
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                    Profile Settings
+                  </DropdownMenuItem>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[450px]">
+                  <DialogHeader>
+                    <DialogTitle>Profile Settings</DialogTitle>
+                    <DialogDescription>Manage your user profile information.</DialogDescription>
+                  </DialogHeader>
+                  <UserProfile userId={user?.id} />
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setShowProfile(false)}>
+                      Close
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
               <DropdownMenuItem asChild>
-                <SignOutButton className="w-full text-left justify-start px-2" />
+                <SignOutButton className="w-full text-left" />
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          
-          {/* Profile Dialog - Outside Dropdown */}
-          <Dialog open={showProfile} onOpenChange={setShowProfile}>
-            <DialogContent className="sm:max-w-[450px] z-50">
-              <DialogHeader>
-                <DialogTitle>Profile Settings</DialogTitle>
-                <DialogDescription>Manage your user profile information.</DialogDescription>
-              </DialogHeader>
-              <UserProfile userId={user?.id} />
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setShowProfile(false)}>
-                  Close
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
         </header>
 
         {/* Sidebar and Content Area */}
