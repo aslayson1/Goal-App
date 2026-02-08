@@ -69,10 +69,10 @@ export default function FitnessLayout({
             </button>
           </div>
 
-          {/* User Profile Dropdown */}
+          {/* User Profile Dropdown - Hidden on Mobile */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-10 w-10 p-0 rounded-full">
+              <Button variant="ghost" size="sm" className="hidden md:flex h-10 w-10 p-0 rounded-full">
                 <Avatar className="h-8 w-8 border-2 border-black">
                   {user?.avatar && (
                     <AvatarImage src={user.avatar || "/placeholder.svg?height=40&width=40&text=U"} alt={user?.name} />

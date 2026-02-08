@@ -263,10 +263,10 @@ export default function AgentsPage() {
             </button>
           </div>
 
-          {/* User Profile Dropdown */}
+          {/* User Profile Dropdown - Hidden on Mobile */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="flex items-center space-x-2">
+              <Button variant="ghost" size="sm" className="hidden md:flex items-center space-x-2">
                 <Avatar className="h-8 w-8 border-2 border-black">
                   {user?.avatar && (
                     <AvatarImage src={user.avatar || "/placeholder.svg?height=40&width=40&text=U"} alt={user?.name} />
