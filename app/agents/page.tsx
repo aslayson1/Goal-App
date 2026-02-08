@@ -263,26 +263,28 @@ export default function AgentsPage() {
             </button>
           </div>
 
-          {/* User Profile Dropdown - Hidden on Mobile */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="hidden md:flex items-center space-x-2">
-                <Avatar className="h-8 w-8 border-2 border-black">
-                  {user?.avatar && (
-                    <AvatarImage src={user.avatar || "/placeholder.svg?height=40&width=40&text=U"} alt={user?.name} />
-                  )}
-                  <AvatarFallback className="bg-white text-black text-xs font-semibold">
-                    {getInitials(user?.name)}
-                  </AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem asChild>
-                <SignOutButton className="w-full text-left" />
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* User Profile Dropdown - Desktop only */}
+          <div className="hidden md:block">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-10 w-10 p-0 rounded-full">
+                  <Avatar className="h-8 w-8 border-2 border-black">
+                    {user?.avatar && (
+                      <AvatarImage src={user.avatar || "/placeholder.svg?height=40&width=40&text=U"} alt={user?.name} />
+                    )}
+                    <AvatarFallback className="bg-white text-black text-xs font-semibold">
+                      {getInitials(user?.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <SignOutButton className="w-full text-left" />
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </header>
 
         <div className="flex flex-1 overflow-hidden">
