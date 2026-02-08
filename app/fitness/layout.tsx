@@ -70,7 +70,7 @@ export default function FitnessLayout({
           </div>
 
           {/* User Profile Dropdown - Desktop only */}
-          <div className="sm:hidden md:block">
+          <div className="hidden lg:block">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-10 w-10 p-0 rounded-full">
