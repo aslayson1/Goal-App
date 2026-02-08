@@ -69,47 +69,49 @@ export default function FitnessLayout({
             </button>
           </div>
 
-          {/* User Profile Dropdown - Desktop only */}
-          <div className="hidden lg:block">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-10 w-10 p-0 rounded-full">
-                  <Avatar className="h-8 w-8 border-2 border-black">
-                    {user?.avatar && (
-                      <AvatarImage src={user.avatar || "/placeholder.svg?height=40&width=40&text=U"} alt={user?.name} />
-                    )}
-                    <AvatarFallback className="bg-white text-black text-xs font-semibold">
-                      {getInitials(user?.name)}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <Dialog open={showProfile} onOpenChange={setShowProfile}>
-                  <DialogTrigger asChild>
-                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                      Profile Settings
-                    </DropdownMenuItem>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-[450px]">
-                    <DialogHeader>
-                      <DialogTitle>Profile Settings</DialogTitle>
-                      <DialogDescription>Manage your user profile information.</DialogDescription>
-                    </DialogHeader>
-                    <UserProfile userId={user?.id} />
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setShowProfile(false)}>
-                        Close
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-                <DropdownMenuItem asChild>
-                  <SignOutButton className="w-full text-left" />
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+          {/* User Profile Dropdown - Desktop only - NOT visible on mobile */}
+          {user && (
+            <div className="hidden lg:block">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-10 w-10 p-0 rounded-full">
+                    <Avatar className="h-8 w-8 border-2 border-black">
+                      {user?.avatar && (
+                        <AvatarImage src={user.avatar || "/placeholder.svg?height=40&width=40&text=U"} alt={user?.name} />
+                      )}
+                      <AvatarFallback className="bg-white text-black text-xs font-semibold">
+                        {getInitials(user?.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <Dialog open={showProfile} onOpenChange={setShowProfile}>
+                    <DialogTrigger asChild>
+                      <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                        Profile Settings
+                      </DropdownMenuItem>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[450px]">
+                      <DialogHeader>
+                        <DialogTitle>Profile Settings</DialogTitle>
+                        <DialogDescription>Manage your user profile information.</DialogDescription>
+                      </DialogHeader>
+                      <UserProfile userId={user?.id} />
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowProfile(false)}>
+                          Close
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                  <DropdownMenuItem asChild>
+                    <SignOutButton className="w-full text-left" />
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
         </header>
 
         {/* Sidebar and Content Area */}
