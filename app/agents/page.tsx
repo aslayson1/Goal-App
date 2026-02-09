@@ -265,7 +265,7 @@ export default function AgentsPage() {
 
           {/* User Profile Dropdown - Desktop only - NOT visible on mobile */}
           {user && (
-            <div style={{ display: 'none' }} className="md:block">
+            <div className="hidden lg:block">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="h-10 w-10 p-0 rounded-full">

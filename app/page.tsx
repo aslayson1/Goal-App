@@ -4610,15 +4610,7 @@ function GoalTrackerApp() {
             </SheetContent>
           </Sheet>
 
-          {/* Mobile Avatar Display Only */}
-          <Avatar className="h-8 w-8 border-2 border-black lg:hidden">
-            {user?.avatar && (
-              <AvatarImage src={user.avatar || "/placeholder.svg?height=40&width=40&text=U"} alt={user?.name} />
-            )}
-            <AvatarFallback className="bg-white text-black text-xs font-semibold">
-              {getInitials(user?.name)}
-            </AvatarFallback>
-          </Avatar>
+
         </div>
       </header>
 
