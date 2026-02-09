@@ -4604,7 +4604,7 @@ function GoalTrackerApp() {
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
-                  <SignOutButton className="w-full justify-start" />
+                  <SignOutButton className="w-full justify-start text-base px-4 py-2 h-10 inline-flex items-center rounded-md hover:bg-accent hover:text-accent-foreground" />
                 </div>
               </nav>
             </SheetContent>
