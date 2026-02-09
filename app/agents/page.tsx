@@ -17,14 +17,17 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AppSidebar } from "@/components/app-sidebar"
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import Image from "next/image"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAuth } from "@/components/auth/auth-provider"
 import { SignOutButton } from "@/components/auth/sign-out-button"
-import { supabase } from "@/lib/supabase/client"
+import { UserProfile } from "@/components/profile/user-profile"
+import { useRouter } from "next/navigation"
 import { updateAgentAuthUser, createAgentWithAuth, syncAgentName } from "./actions" // Import server action
+import { createClient } from "@supabase/supabase-js" // Import createClient for Supabase
+import { supabase } from "@/lib/supabase/client"
 
 interface Agent {
   id: string
@@ -32,14 +35,24 @@ interface Agent {
   name: string
   role: string
   description: string
+  email: string
   created_at: string
   updated_at: string
-  email: string
-  auth_user_id: string
+  auth_user_id?: string
+}
+
+function getInitials(name?: string | null): string {
+  if (!name || typeof name !== "string") return "U"
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
 }
 
 export default function AgentsPage() {
   const { user, isLoading: authLoading } = useAuth()
+  const router = useRouter()
   const [agents, setAgents] = useState<Agent[]>([])
   const [showAddAgent, setShowAddAgent] = useState(false)
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null)
@@ -54,14 +67,9 @@ export default function AgentsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
 
-  const getInitials = (name: string | null | undefined) => {
-    if (!name || typeof name !== "string") return "U"
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-  }
+  const supabaseUrl = "https://your-supabase-url.supabase.co"
+  const supabaseKey = "your-supabase-key"
+  const supabaseClient = createClient(supabaseUrl, supabaseKey)
 
   // Fetch agents from Supabase
   useEffect(() => {
@@ -238,36 +246,47 @@ export default function AgentsPage() {
       <div className="flex h-screen w-screen flex-col overflow-hidden">
         <header className="sticky top-0 z-50 flex h-16 shrink-0 items-center justify-between gap-4 border-b bg-white px-6 w-full">
           <div className="flex items-center gap-3">
-            <Image
-              src="/layson-group-logo.png"
-              alt="Layson Group"
-              width={180}
-              height={40}
-              className="h-10 w-auto object-contain"
-              priority
-            />
+            <SidebarTrigger className="md:hidden" />
+            <button
+              onClick={() => router.push("/")}
+              className="flex items-center gap-2 hover:opacity-80 transition-opacity focus:outline-none"
+              aria-label="Go to home"
+            >
+              <Image
+                src="/layson-group-logo.png"
+                alt="Layson Group"
+                width={180}
+                height={40}
+                className="h-10 w-auto object-contain cursor-pointer"
+                priority
+              />
+            </button>
           </div>
 
-          {/* User Profile Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="flex items-center space-x-2">
-                <Avatar className="h-8 w-8 border-2 border-black">
-                  {user?.avatar && (
-                    <AvatarImage src={user.avatar || "/placeholder.svg?height=40&width=40&text=U"} alt={user?.name} />
-                  )}
-                  <AvatarFallback className="bg-white text-black text-xs font-semibold">
-                    {getInitials(user?.name)}
-                  </AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem asChild>
-                <SignOutButton className="w-full text-left" />
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* User Profile Dropdown - Desktop only - NOT visible on mobile */}
+          {user && (
+            <div className="hidden lg:block">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-10 w-10 p-0 rounded-full">
+                    <Avatar className="h-8 w-8 border-2 border-black">
+                      {user?.avatar && (
+                        <AvatarImage src={user.avatar || "/placeholder.svg?height=40&width=40&text=U"} alt={user?.name} />
+                      )}
+                      <AvatarFallback className="bg-white text-black text-xs font-semibold">
+                        {getInitials(user?.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                    <SignOutButton className="w-full text-left" />
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
         </header>
 
         <div className="flex flex-1 overflow-hidden">

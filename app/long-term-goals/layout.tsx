@@ -2,9 +2,10 @@
 
 import React, { useState } from "react"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 
 import { AppSidebar } from '@/components/app-sidebar'
-import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar'
 import { useAuth } from "@/components/auth/auth-provider"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -43,60 +44,74 @@ export default function LongTermGoalsLayout({
 }) {
   const { user } = useAuth()
   const [showProfile, setShowProfile] = useState(false)
+  const router = useRouter()
 
   return (
     <SidebarProvider>
       <div className="flex flex-col h-screen w-screen overflow-hidden">
-        {/* Full-width Top Header Bar */}
+        {/* Full-width Top Header Bar - Mobile responsive */}
         <header className="sticky top-0 z-50 flex h-14 shrink-0 items-center justify-between gap-4 border-b bg-white px-6 w-full">
           <div className="flex items-center gap-3">
-            <Image
-              src="/layson-group-logo.png"
-              alt="Layson Group"
-              width={150}
-              height={36}
-              className="h-9 w-auto object-contain"
-              priority
-            />
+            <SidebarTrigger className="md:hidden" />
+            <button
+              onClick={() => router.push("/")}
+              className="flex items-center gap-2 hover:opacity-80 transition-opacity focus:outline-none"
+              aria-label="Go to home"
+            >
+              <Image
+                src="/layson-group-logo.png"
+                alt="Layson Group"
+                width={150}
+                height={36}
+                className="h-9 w-auto object-contain cursor-pointer"
+                priority
+              />
+            </button>
           </div>
 
-          {/* User Profile Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="flex items-center space-x-2">
-                <Avatar className="h-8 w-8 border-2 border-black">
-                  {user?.avatar && (
-                    <AvatarImage src={user.avatar || "/placeholder.svg?height=40&width=40&text=U"} alt={user?.name} />
-                  )}
-                  <AvatarFallback className="bg-white text-black text-xs font-semibold">
-                    {getInitials(user?.name)}
-                  </AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <Dialog open={showProfile} onOpenChange={setShowProfile}>
-                <DialogTrigger asChild>
-                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>Profile Settings</DropdownMenuItem>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[450px]">
-                  <DialogHeader>
-                    <DialogTitle>Profile Settings</DialogTitle>
-                    <DialogDescription>Manage your user profile information.</DialogDescription>
-                  </DialogHeader>
-                  <UserProfile userId={user?.id} />
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setShowProfile(false)}>
-                      Close
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-              <DropdownMenuItem asChild>
-                <SignOutButton className="w-full text-left" />
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* User Profile Dropdown - Desktop only - NOT visible on mobile */}
+          {user && (
+            <div className="hidden lg:block">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-10 w-10 p-0 rounded-full">
+                    <Avatar className="h-8 w-8 border-2 border-black">
+                      {user?.avatar && (
+                        <AvatarImage src={user.avatar || "/placeholder.svg?height=40&width=40&text=U"} alt={user?.name} />
+                      )}
+                      <AvatarFallback className="bg-white text-black text-xs font-semibold">
+                        {getInitials(user?.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <Dialog open={showProfile} onOpenChange={setShowProfile}>
+                    <DialogTrigger asChild>
+                      <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                        Profile Settings
+                      </DropdownMenuItem>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[450px]">
+                      <DialogHeader>
+                        <DialogTitle>Profile Settings</DialogTitle>
+                        <DialogDescription>Manage your user profile information.</DialogDescription>
+                      </DialogHeader>
+                      <UserProfile userId={user?.id} />
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowProfile(false)}>
+                          Close
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                  <DropdownMenuItem asChild>
+                    <SignOutButton className="w-full text-left" />
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
         </header>
 
         {/* Sidebar and Content Area */}

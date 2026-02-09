@@ -4604,21 +4604,13 @@ function GoalTrackerApp() {
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
-                  <SignOutButton className="w-full justify-start" />
+                  <SignOutButton className="w-full justify-start text-base px-4 py-2 h-10 inline-flex items-center rounded-md hover:bg-accent hover:text-accent-foreground" />
                 </div>
               </nav>
             </SheetContent>
           </Sheet>
 
-          {/* Mobile Avatar Display Only */}
-          <Avatar className="h-8 w-8 border-2 border-black lg:hidden">
-            {user?.avatar && (
-              <AvatarImage src={user.avatar || "/placeholder.svg?height=40&width=40&text=U"} alt={user?.name} />
-            )}
-            <AvatarFallback className="bg-white text-black text-xs font-semibold">
-              {getInitials(user?.name)}
-            </AvatarFallback>
-          </Avatar>
+
         </div>
       </header>
 
