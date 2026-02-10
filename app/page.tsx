@@ -1499,6 +1499,7 @@ function GoalTrackerApp() {
   const [showAddDailyTask, setShowAddDailyTask] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState("")
   const [showProfile, setShowProfile] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   const [newGoal, setNewGoal] = useState({
     title: "",
     description: "",
@@ -4541,7 +4542,7 @@ function GoalTrackerApp() {
           </DropdownMenu>
 
           {/* Mobile Menu - Sheet with Navigation + Settings */}
-          <Sheet>
+          <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="sm" className="lg:hidden">
                 <Menu className="h-5 w-5" />
@@ -4581,7 +4582,10 @@ function GoalTrackerApp() {
 
                 {/* Settings and Sign Out at Bottom */}
                 <div className="border-t space-y-2 p-4">
-                  <Dialog open={showProfile} onOpenChange={setShowProfile}>
+                  <Dialog open={showProfile} onOpenChange={(open) => {
+                    setShowProfile(open)
+                    if (!open) setMenuOpen(false)
+                  }}>
                     <DialogTrigger asChild>
                       <Button variant="ghost" className="w-full justify-start text-base">
                         Settings
