@@ -1188,7 +1188,7 @@ function SortableDailyTaskItem({
         className={`p-4 rounded-lg border border-gray-200 bg-gray-50 ${isDragging ? "shadow-md" : ""}`}
       >
         {/* Header row with drag handle, checkbox, title, badge, and menu */}
-        <div className="flex items-center gap-3 mb-3">
+        <div className="flex items-start gap-2 gap-3 mb-3 flex-wrap sm:flex-nowrap sm:items-center">
           <div
             {...attributes}
             {...listeners}
@@ -1209,21 +1209,28 @@ function SortableDailyTaskItem({
               <div className="h-5 w-5 border-2 border-gray-300 rounded bg-white flex-shrink-0" />
             )}
           </button>
-          {/* CHANGE: Move category badge inside title container so it appears next to title */}
-          <div className="flex-1 min-w-0 flex items-center gap-2">
+          {/* Category badge - on mobile appears before title, on desktop inside flex-1 container */}
+          {task.category && (
+            <span
+              className={`text-xs px-2 py-0.5 rounded border font-medium flex-shrink-0 sm:hidden ${getCategoryColor(task.category)}`}
+            >
+              {task.category}
+            </span>
+          )}
+          <div className="flex-1 min-w-0 flex items-center gap-2 order-last sm:order-none">
             <h3 className={`text-sm ${task.completed ? "line-through text-gray-500" : "text-gray-900"}`}>
               {task.title}
             </h3>
             {task.category && (
               <span
-                className={`text-xs px-2 py-0.5 rounded border font-medium flex-shrink-0 ${getCategoryColor(task.category)}`}
+                className={`text-xs px-2 py-0.5 rounded border font-medium flex-shrink-0 hidden sm:inline ${getCategoryColor(task.category)}`}
               >
                 {task.category}
               </span>
             )}
           </div>
           {/* CHANGE: On Track badge stays on the right */}
-          <Badge variant="secondary" className="bg-blue-100 text-blue-800 whitespace-nowrap flex-shrink-0">
+          <Badge variant="secondary" className="bg-blue-100 text-blue-800 whitespace-nowrap flex-shrink-0 hidden sm:inline-block">
             On Track
           </Badge>
           <DropdownMenu>
