@@ -1317,10 +1317,10 @@ function SortableDailyTaskItem({
         >
           <GripVertical className="h-4 w-4 text-gray-400" />
         </div>
-        <div className="flex-1 min-w-0 flex items-center gap-2">
+        <div className="flex-1 min-w-0 flex items-start gap-2">
           {task.category && (
             <span
-              className={`text-xs px-2 py-0.5 rounded border font-medium flex-shrink-0 ${getCategoryColor(task.category)}`}
+              className={`text-xs px-2 py-0.5 rounded border font-medium flex-shrink-0 self-center ${getCategoryColor(task.category)}`}
             >
               {task.category}
             </span>
