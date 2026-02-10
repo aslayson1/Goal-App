@@ -1411,7 +1411,7 @@ function GoalTrackerApp() {
   console.log("[v0] GoalTrackerApp render - standardWeeklyTasks keys:", Object.keys(standardWeeklyTasks))
   console.log("[v0] GoalTrackerApp render - standardDailyTasks keys:", Object.keys(standardDailyTasks))
 
-  const [dashboardMode, setDashboardMode] = useState<"12-week" | "standard">("12-week")
+  const [dashboardMode, setDashboardMode] = useState<"12-week" | "standard">("standard")
   const [showWeeklyRecap, setShowWeeklyRecap] = useState(false)
   const [showCycleRecap, setShowCycleRecap] = useState(false)
   const [recapInitialized, setRecapInitialized] = useState(false)
@@ -1424,7 +1424,7 @@ function GoalTrackerApp() {
       const prefs = localStorage.getItem(`user_preferences_${user.id}`)
       if (prefs) {
         const preferences = JSON.parse(prefs)
-        setDashboardMode(preferences.dashboardMode || "12-week")
+        setDashboardMode(preferences.dashboardMode || "standard")
       }
     }
   }, [user])
