@@ -1333,6 +1333,13 @@ function SortableDailyTaskItem({
             </span>
           )}
           <h3 className={`text-sm ${task.completed ? "line-through text-gray-500" : "text-gray-900"}`}>{task.title}</h3>
+          {task.category && (
+            <span
+              className={`text-xs px-2 py-0.5 rounded border font-medium flex-shrink-0 hidden sm:inline ${getCategoryColor(task.category)}`}
+            >
+              {task.category}
+            </span>
+          )}
           <div className="flex-1"></div>
           <div className="flex items-center gap-2 flex-shrink-0">
             <DropdownMenu>
