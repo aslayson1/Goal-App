@@ -1209,25 +1209,28 @@ function SortableDailyTaskItem({
               <div className="h-5 w-5 border-2 border-gray-300 rounded bg-white flex-shrink-0" />
             )}
           </button>
-          {/* Category badge - on mobile appears before title, on desktop hidden here */}
-          {task.category && (
-            <span
-              className={`text-xs px-2 py-0.5 rounded border font-medium flex-shrink-0 sm:hidden ${getCategoryColor(task.category)}`}
-            >
-              {task.category}
-            </span>
-          )}
-          <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
-            <h3 className={`text-sm ${task.completed ? "line-through text-gray-500" : "text-gray-900"}`}>
-              {task.title}
-            </h3>
+          <div className="flex-1 min-w-0 flex flex-col sm:flex-row items-start gap-2">
+            {/* Mobile-only category badge - appears above title on mobile */}
             {task.category && (
               <span
-                className={`text-xs px-2 py-0.5 rounded border font-medium flex-shrink-0 hidden sm:inline ${getCategoryColor(task.category)}`}
+                className={`text-xs px-2 py-0.5 rounded border font-medium flex-shrink-0 sm:hidden ${getCategoryColor(task.category)}`}
               >
                 {task.category}
               </span>
             )}
+            <div className="flex items-start gap-2 flex-1 min-w-0">
+              <h3 className={`text-sm ${task.completed ? "line-through text-gray-500" : "text-gray-900"}`}>
+                {task.title}
+              </h3>
+              {/* Desktop-only category badge - appears after title on desktop */}
+              {task.category && (
+                <span
+                  className={`text-xs px-2 py-0.5 rounded border font-medium flex-shrink-0 hidden sm:inline ${getCategoryColor(task.category)}`}
+                >
+                  {task.category}
+                </span>
+              )}
+            </div>
           </div>
           {/* CHANGE: On Track badge stays on the right */}
           <Badge variant="secondary" className="bg-blue-100 text-blue-800 whitespace-nowrap flex-shrink-0 hidden sm:inline-block">
