@@ -1324,45 +1324,44 @@ function SortableDailyTaskItem({
             <div className="h-5 w-5 border-2 border-gray-300 rounded bg-white flex-shrink-0" />
           )}
         </button>
-        {/* Mobile-only category badge - appears before title on mobile */}
-        {task.category && (
-          <span
-            className={`text-xs px-2 py-0.5 rounded border font-medium flex-shrink-0 self-start sm:hidden ${getCategoryColor(task.category)}`}
-          >
-            {task.category}
-          </span>
-        )}
-        <div className="flex-1 min-w-0 flex items-start gap-2">
-          <h3 className={`text-sm ${task.completed ? "line-through text-gray-500" : "text-gray-900"}`}>{task.title}</h3>
-          {/* Desktop-only category badge - appears after title on desktop */}
+        <div className="flex-1 min-w-0 flex flex-col sm:flex-row items-start gap-2">
+          {/* Mobile-only category badge - appears above title on mobile */}
           {task.category && (
             <span
-              className={`text-xs px-2 py-0.5 rounded border font-medium flex-shrink-0 hidden sm:inline ${getCategoryColor(task.category)}`}
+              className={`text-xs px-2 py-0.5 rounded border font-medium flex-shrink-0 sm:hidden ${getCategoryColor(task.category)}`}
             >
               {task.category}
             </span>
           )}
-          <div className="flex-1"></div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={onEdit}>
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit Task
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={onDelete} className="text-red-600">
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Task
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          <div className="flex items-start gap-2 flex-1 min-w-0">
+            <h3 className={`text-sm ${task.completed ? "line-through text-gray-500" : "text-gray-900"}`}>{task.title}</h3>
+            {/* Desktop-only category badge - appears after title on desktop */}
+            {task.category && (
+              <span
+                className={`text-xs px-2 py-0.5 rounded border font-medium flex-shrink-0 hidden sm:inline ${getCategoryColor(task.category)}`}
+              >
+                {task.category}
+              </span>
+            )}
           </div>
         </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={onEdit}>
+              <Edit className="h-4 w-4 mr-2" />
+              Edit Task
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onDelete} className="text-red-600">
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete Task
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   )
