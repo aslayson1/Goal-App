@@ -1304,6 +1304,13 @@ function SortableDailyTaskItem({
     >
       {/* Task row */}
       <div className="flex items-start gap-3">
+        <div
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing hover:bg-gray-100 rounded p-1 flex-shrink-0"
+        >
+          <GripVertical className="h-4 w-4 text-gray-400" />
+        </div>
         <button
           onClick={(e) => {
             e.stopPropagation()
@@ -1317,13 +1324,6 @@ function SortableDailyTaskItem({
             <div className="h-5 w-5 border-2 border-gray-300 rounded bg-white flex-shrink-0" />
           )}
         </button>
-        <div
-          {...attributes}
-          {...listeners}
-          className="cursor-grab active:cursor-grabbing hover:bg-gray-100 rounded p-1 flex-shrink-0"
-        >
-          <GripVertical className="h-4 w-4 text-gray-400" />
-        </div>
         {/* Mobile-only category badge - appears before title on mobile */}
         {task.category && (
           <span
