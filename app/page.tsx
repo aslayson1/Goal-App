@@ -1344,9 +1344,6 @@ function SortableDailyTaskItem({
               </span>
             )}
             <div className="flex-1"></div>
-          </div>
-          </div>
-          <div className="flex items-center gap-2 flex-shrink-0 sm:ml-auto">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
