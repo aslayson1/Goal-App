@@ -1327,7 +1327,7 @@ function SortableDailyTaskItem({
         {/* Mobile-only category badge - appears before title on mobile */}
         {task.category && (
           <span
-            className={`text-xs px-2 py-0.5 rounded border font-medium flex-shrink-0 self-center sm:hidden ${getCategoryColor(task.category)}`}
+            className={`text-xs px-2 py-0.5 rounded border font-medium flex-shrink-0 self-start sm:hidden ${getCategoryColor(task.category)}`}
           >
             {task.category}
           </span>
