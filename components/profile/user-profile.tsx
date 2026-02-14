@@ -219,92 +219,82 @@ export function UserProfile({ onClose }: UserProfileProps) {
   }
 
   return (
-    <>
-      <Dialog
-        open={showPasswordDialog}
-        onOpenChange={(open) => {
-          if (!open) {
-            setShowPasswordDialog(false)
-            setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" })
-            setMessage(null)
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Change Password</DialogTitle>
-            <DialogDescription>Enter your new password below</DialogDescription>
-          </DialogHeader>
+    <Dialog
+      open={true}
+      onOpenChange={(open) => {
+        if (!open && !showPasswordDialog) onClose()
+      }}
+    >
+      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+        {showPasswordDialog ? (
+          <>
+            <DialogHeader>
+              <DialogTitle>Change Password</DialogTitle>
+              <DialogDescription>Enter your new password below</DialogDescription>
+            </DialogHeader>
 
-          {message && (
-            <div
-              className={`px-4 py-3 rounded border ${
-                message.type === "success"
-                  ? "bg-green-500/10 border-green-500/50 text-green-700"
-                  : "bg-red-500/10 border-red-500/50 text-red-700"
-              }`}
-            >
-              {message.text}
-            </div>
-          )}
-
-          <form onSubmit={handlePasswordChange} className="space-y-4">
-            <div className="grid gap-2">
-              <Label htmlFor="newPassword">New Password</Label>
-              <Input
-                id="newPassword"
-                type="password"
-                value={passwordData.newPassword}
-                onChange={(e) => setPasswordData((prev) => ({ ...prev, newPassword: e.target.value }))}
-                required
-                minLength={6}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="confirmPassword">Confirm New Password</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                value={passwordData.confirmPassword}
-                onChange={(e) => setPasswordData((prev) => ({ ...prev, confirmPassword: e.target.value }))}
-                required
-                minLength={6}
-              />
-            </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setShowPasswordDialog(false)
-                  setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" })
-                  setMessage(null)
-                }}
+            {message && (
+              <div
+                className={`px-4 py-3 rounded border ${
+                  message.type === "success"
+                    ? "bg-green-500/10 border-green-500/50 text-green-700"
+                    : "bg-red-500/10 border-red-500/50 text-red-700"
+                }`}
               >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Updating...
-                  </>
-                ) : (
-                  "Update Password"
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+                {message.text}
+              </div>
+            )}
 
-      <Dialog
-        open={true}
-        onOpenChange={(open) => {
-          if (!open) onClose()
-        }}
-      >
-        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+            <form onSubmit={handlePasswordChange} className="space-y-4">
+              <div className="grid gap-2">
+                <Label htmlFor="newPassword">New Password</Label>
+                <Input
+                  id="newPassword"
+                  type="password"
+                  value={passwordData.newPassword}
+                  onChange={(e) => setPasswordData((prev) => ({ ...prev, newPassword: e.target.value }))}
+                  required
+                  minLength={6}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  value={passwordData.confirmPassword}
+                  onChange={(e) => setPasswordData((prev) => ({ ...prev, confirmPassword: e.target.value }))}
+                  required
+                  minLength={6}
+                />
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowPasswordDialog(false)
+                    setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" })
+                    setMessage(null)
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isLoading}>
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Updating...
+                    </>
+                  ) : (
+                    "Update Password"
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          </>
+        ) : (
+          <>
         <DialogHeader>
           <DialogTitle>Profile Settings</DialogTitle>
           <DialogDescription>Manage your account settings and preferences</DialogDescription>
@@ -568,8 +558,8 @@ export function UserProfile({ onClose }: UserProfileProps) {
             </Button>
           </DialogFooter>
         </form>
+        )}
       </DialogContent>
     </Dialog>
-    </>
   )
 }
