@@ -51,6 +51,12 @@ export function UserProfile({ onClose }: UserProfileProps) {
   const [activeTab, setActiveTab] = useState("profile")
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false)
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  })
 
   const [formData, setFormData] = useState(() => {
     if (!user)
@@ -128,6 +134,49 @@ export function UserProfile({ onClose }: UserProfileProps) {
     }
   }
 
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+    setMessage(null)
+
+    // Validate passwords match
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setMessage({ type: "error", text: "New passwords do not match" })
+      setIsLoading(false)
+      return
+    }
+
+    // Validate password length
+    if (passwordData.newPassword.length < 6) {
+      setMessage({ type: "error", text: "Password must be at least 6 characters" })
+      setIsLoading(false)
+      return
+    }
+
+    try {
+      const { createClient } = await import("@/lib/supabase/client")
+      const supabase = createClient()
+
+      const { error } = await supabase.auth.updateUser({
+        password: passwordData.newPassword,
+      })
+
+      if (error) {
+        console.error("[v0] Password update error:", error)
+        setMessage({ type: "error", text: error.message })
+      } else {
+        setMessage({ type: "success", text: "Password updated successfully!" })
+        setShowPasswordDialog(false)
+        setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" })
+      }
+    } catch (error) {
+      console.error("[v0] Error changing password:", error)
+      setMessage({ type: "error", text: "Failed to update password" })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const handleResetCycle = async () => {
     const confirmed = window.confirm(
       "This will reset your goal cycle start date to today and clear all progress.\n\nThis action cannot be undone.\n\nAre you sure?",
@@ -170,13 +219,92 @@ export function UserProfile({ onClose }: UserProfileProps) {
   }
 
   return (
-    <Dialog
-      open={true}
-      onOpenChange={(open) => {
-        if (!open) onClose()
-      }}
-    >
-      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+    <>
+      <Dialog
+        open={showPasswordDialog}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowPasswordDialog(false)
+            setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" })
+            setMessage(null)
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Change Password</DialogTitle>
+            <DialogDescription>Enter your new password below</DialogDescription>
+          </DialogHeader>
+
+          {message && (
+            <div
+              className={`px-4 py-3 rounded border ${
+                message.type === "success"
+                  ? "bg-green-500/10 border-green-500/50 text-green-700"
+                  : "bg-red-500/10 border-red-500/50 text-red-700"
+              }`}
+            >
+              {message.text}
+            </div>
+          )}
+
+          <form onSubmit={handlePasswordChange} className="space-y-4">
+            <div className="grid gap-2">
+              <Label htmlFor="newPassword">New Password</Label>
+              <Input
+                id="newPassword"
+                type="password"
+                value={passwordData.newPassword}
+                onChange={(e) => setPasswordData((prev) => ({ ...prev, newPassword: e.target.value }))}
+                required
+                minLength={6}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="confirmPassword">Confirm New Password</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                value={passwordData.confirmPassword}
+                onChange={(e) => setPasswordData((prev) => ({ ...prev, confirmPassword: e.target.value }))}
+                required
+                minLength={6}
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setShowPasswordDialog(false)
+                  setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" })
+                  setMessage(null)
+                }}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  "Update Password"
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={true}
+        onOpenChange={(open) => {
+          if (!open) onClose()
+        }}
+      >
+        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Profile Settings</DialogTitle>
           <DialogDescription>Manage your account settings and preferences</DialogDescription>
@@ -386,7 +514,11 @@ export function UserProfile({ onClose }: UserProfileProps) {
                   <Button variant="outline" className="w-full justify-start bg-transparent">
                     Export Data
                   </Button>
-                  <Button variant="outline" className="w-full justify-start bg-transparent">
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start bg-transparent"
+                    onClick={() => setShowPasswordDialog(true)}
+                  >
                     Change Password
                   </Button>
                   <Button
@@ -438,5 +570,6 @@ export function UserProfile({ onClose }: UserProfileProps) {
         </form>
       </DialogContent>
     </Dialog>
+    </>
   )
 }
