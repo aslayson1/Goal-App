@@ -1,0 +1,109 @@
+'use client'
+
+import React, { useState } from "react"
+import Image from "next/image"
+import { useRouter } from "next/navigation"
+
+import { AppSidebar } from '@/components/app-sidebar'
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar'
+import { useAuth } from "@/components/auth/auth-provider"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { SignOutButton } from "@/components/auth/sign-out-button"
+import { UserProfile } from "@/components/profile/user-profile"
+
+function getInitials(name?: string | null): string {
+  if (!name) return "U"
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2)
+}
+
+export default function AgentsLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  const { user } = useAuth()
+  const [showProfile, setShowProfile] = useState(false)
+  const router = useRouter()
+
+  return (
+    <SidebarProvider>
+      <div className="flex flex-col h-screen w-screen overflow-hidden">
+        {/* Full-width Top Header Bar - Mobile responsive */}
+        <header className="sticky top-0 z-50 flex h-14 shrink-0 items-center justify-between gap-4 border-b bg-white px-6 w-full">
+          <div className="flex items-center gap-3">
+            <SidebarTrigger className="md:hidden" />
+            <button
+              onClick={() => router.push("/")}
+              className="flex items-center gap-2 hover:opacity-80 transition-opacity focus:outline-none"
+              aria-label="Go to home"
+            >
+              <Image
+                src="/layson-group-logo.png"
+                alt="Layson Group"
+                width={150}
+                height={36}
+                className="h-9 w-auto object-contain cursor-pointer"
+                priority
+              />
+            </button>
+          </div>
+
+          {/* User Profile Dropdown - Desktop only - NOT visible on mobile */}
+          {user && (
+            <div className="hidden lg:block">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-10 w-10 p-0 rounded-full">
+                    <Avatar className="h-8 w-8 border-2 border-black">
+                      {user?.avatar && (
+                        <AvatarImage src={user.avatar || "/placeholder.svg?height=40&width=40&text=U"} alt={user?.name} />
+                      )}
+                      <AvatarFallback className="bg-white text-black text-xs font-semibold">
+                        {getInitials(user?.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem onClick={() => setShowProfile(true)}>
+                    Profile Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <SignOutButton className="w-full text-left" />
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
+        </header>
+
+        {/* Sidebar and Content Area */}
+        <div className="flex flex-1 overflow-hidden w-full">
+          <AppSidebar />
+          <SidebarInset className="flex-1 min-w-0 w-full">
+            <main className="h-full overflow-auto p-6 bg-slate-50">
+              {children}
+            </main>
+          </SidebarInset>
+        </div>
+      </div>
+
+      {/* Profile Dialog */}
+      {showProfile && (
+        <UserProfile onClose={() => setShowProfile(false)} />
+      )}
+    </SidebarProvider>
+  )
+}
