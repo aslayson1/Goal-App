@@ -295,10 +295,10 @@ export function UserProfile({ onClose }: UserProfileProps) {
           </>
         ) : (
           <>
-        <DialogHeader>
-          <DialogTitle>Profile Settings</DialogTitle>
-          <DialogDescription>Manage your account settings and preferences</DialogDescription>
-        </DialogHeader>
+            <DialogHeader>
+              <DialogTitle>Profile Settings</DialogTitle>
+              <DialogDescription>Manage your account settings and preferences</DialogDescription>
+            </DialogHeader>
 
         {message && (
           <div
@@ -558,6 +558,7 @@ export function UserProfile({ onClose }: UserProfileProps) {
             </Button>
           </DialogFooter>
         </form>
+          </>
         )}
       </DialogContent>
     </Dialog>
