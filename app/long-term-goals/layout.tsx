@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation"
 import { Menu, LayoutDashboard, Target, Users, Activity } from "lucide-react"
 
 import { AppSidebar } from '@/components/app-sidebar'
-import { SidebarInset } from '@/components/ui/sidebar'
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { useAuth } from "@/components/auth/auth-provider"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -51,7 +51,8 @@ export default function LongTermGoalsLayout({
   const router = useRouter()
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden">
+    <SidebarProvider>
+      <div className="flex flex-col h-screen w-screen overflow-hidden">
       {/* Full-width Top Header Bar */}
       <header className="sticky top-0 z-50 flex h-14 shrink-0 items-center justify-between gap-4 border-b bg-white px-6 w-full">
         <div>
@@ -187,6 +188,6 @@ export default function LongTermGoalsLayout({
           </main>
         </SidebarInset>
       </div>
-    </div>
+    </SidebarProvider>
   )
 }
