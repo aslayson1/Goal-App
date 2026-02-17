@@ -203,8 +203,7 @@ export function UserProfile({ onClose }: UserProfileProps) {
       const data = await response.json()
       setMessage({ type: "success", text: "Profile photo updated successfully!" })
       
-      // Reload to show new avatar
-      setTimeout(() => window.location.reload(), 1000)
+      console.log("[v0] Avatar uploaded successfully:", data.url)
     } catch (error) {
       console.error("[v0] Avatar upload error:", error)
       setMessage({ type: "error", text: "Failed to upload profile photo" })
@@ -236,8 +235,7 @@ export function UserProfile({ onClose }: UserProfileProps) {
       const data = await response.json()
       setMessage({ type: "success", text: "Company logo updated successfully!" })
       
-      // Reload to show new logo
-      setTimeout(() => window.location.reload(), 1000)
+      console.log("[v0] Logo uploaded successfully:", data.url)
     } catch (error) {
       console.error("[v0] Logo upload error:", error)
       setMessage({ type: "error", text: "Failed to upload company logo" })

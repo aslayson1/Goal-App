@@ -3,7 +3,13 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 import { supabase } from "@/lib/supabase/client"
 
-type User = { id: string; email?: string | null; name?: string | null; avatar?: string | null }
+type User = { 
+  id: string
+  email?: string | null
+  name?: string | null
+  avatar?: string | null
+  companyLogo?: string | null
+}
 
 type AuthContextType = {
   user: User | null
@@ -37,10 +43,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (mounted && supabaseUser) {
           const name = supabaseUser.user_metadata?.name ?? supabaseUser.user_metadata?.full_name ?? null
 
+          // Fetch profile data including avatar and logo
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('avatar_url, company_logo_url')
+            .eq('id', supabaseUser.id)
+            .single()
+
           setUser({
             id: supabaseUser.id,
             email: supabaseUser.email ?? null,
             name,
+            avatar: profile?.avatar_url ?? null,
+            companyLogo: profile?.company_logo_url ?? null,
           })
           setIsLoading(false)
         } else if (mounted) {
@@ -68,10 +83,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (supabaseUser) {
         const name = supabaseUser.user_metadata?.name ?? supabaseUser.user_metadata?.full_name ?? null
 
+        // Fetch profile data including avatar and logo
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('avatar_url, company_logo_url')
+          .eq('id', supabaseUser.id)
+          .single()
+
         setUser({
           id: supabaseUser.id,
           email: supabaseUser.email ?? null,
           name,
+          avatar: profile?.avatar_url ?? null,
+          companyLogo: profile?.company_logo_url ?? null,
         })
       } else {
         setUser(null)

@@ -1,4 +1,5 @@
 import { put } from '@vercel/blob'
+import { createClient } from '@/lib/supabase/server'
 import { type NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
@@ -6,9 +7,14 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData()
     const file = formData.get('file') as File
     const type = formData.get('type') as string // 'avatar' or 'logo'
+    const userId = formData.get('userId') as string
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
+    }
+
+    if (!userId) {
+      return NextResponse.json({ error: 'User ID required' }, { status: 400 })
     }
 
     // Validate file type
@@ -30,6 +36,22 @@ export async function POST(request: NextRequest) {
       access: 'public',
     })
 
+    // Update database with new URL
+    const supabase = await createClient()
+    const fieldName = type === 'avatar' ? 'avatar_url' : 'company_logo_url'
+    
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ [fieldName]: blob.url })
+      .eq('id', userId)
+
+    if (updateError) {
+      console.error('[v0] Database update error:', updateError)
+      return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 })
+    }
+
+    console.log(`[v0] Successfully updated ${fieldName} for user ${userId}`)
+
     return NextResponse.json({
       url: blob.url,
       filename: file.name,
@@ -37,7 +59,7 @@ export async function POST(request: NextRequest) {
       type: file.type,
     })
   } catch (error) {
-    console.error('Upload error:', error)
+    console.error('[v0] Upload error:', error)
     return NextResponse.json({ error: 'Upload failed' }, { status: 500 })
   }
 }
