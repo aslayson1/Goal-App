@@ -45,11 +45,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const name = supabaseUser.user_metadata?.name ?? supabaseUser.user_metadata?.full_name ?? null
 
           // Fetch profile data including avatar and logo
-          const { data: profile } = await supabase
+          const { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('avatar_url, company_logo_url')
             .eq('id', supabaseUser.id)
             .single()
+
+          if (profileError) {
+            console.error('[v0] Initial profile fetch error:', profileError)
+          }
+          
+          console.log('[v0] Initial profile load:', profile)
 
           setUser({
             id: supabaseUser.id,
@@ -85,11 +91,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const name = supabaseUser.user_metadata?.name ?? supabaseUser.user_metadata?.full_name ?? null
 
         // Fetch profile data including avatar and logo
-        const { data: profile } = await supabase
+        const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('avatar_url, company_logo_url')
           .eq('id', supabaseUser.id)
           .single()
+
+        if (profileError) {
+          console.error('[v0] Auth listener profile fetch error:', profileError)
+        }
+
+        console.log('[v0] Auth listener profile load:', profile)
 
         setUser({
           id: supabaseUser.id,
@@ -121,11 +133,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const name = supabaseUser.user_metadata?.name ?? supabaseUser.user_metadata?.full_name ?? null
 
         // Fetch profile data including avatar and logo
-        const { data: profile } = await supabase
+        const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('avatar_url, company_logo_url')
           .eq('id', supabaseUser.id)
           .single()
+
+        if (profileError) {
+          console.error('[v0] Profile fetch error:', profileError)
+        }
 
         console.log('[v0] Refreshed user profile:', profile)
 
