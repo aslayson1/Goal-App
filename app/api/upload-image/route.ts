@@ -1,5 +1,5 @@
 import { put } from '@vercel/blob'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { type NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
@@ -36,8 +36,8 @@ export async function POST(request: NextRequest) {
       access: 'public',
     })
 
-    // Update database with new URL
-    const supabase = await createClient()
+    // Update database with new URL using admin client
+    const supabase = createAdminClient()
     const fieldName = type === 'avatar' ? 'avatar_url' : 'company_logo_url'
     
     const { error: updateError } = await supabase
