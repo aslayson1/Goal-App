@@ -1,7 +1,6 @@
 "use client"
 
-import type React from "react"
-import { useState } from "react"
+import React, { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -57,6 +56,10 @@ export function UserProfile({ onClose }: UserProfileProps) {
     newPassword: "",
     confirmPassword: "",
   })
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
+  const avatarInputRef = React.useRef<HTMLInputElement>(null)
+  const logoInputRef = React.useRef<HTMLInputElement>(null)
 
   const [formData, setFormData] = useState(() => {
     if (!user)
@@ -174,6 +177,72 @@ export function UserProfile({ onClose }: UserProfileProps) {
       setMessage({ type: "error", text: "Failed to update password" })
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploadingAvatar(true)
+    setMessage(null)
+
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      formData.append("type", "avatar")
+      formData.append("userId", user.id)
+
+      const response = await fetch("/api/upload-image", {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!response.ok) throw new Error("Upload failed")
+
+      const data = await response.json()
+      setMessage({ type: "success", text: "Profile photo updated successfully!" })
+      
+      // Reload to show new avatar
+      setTimeout(() => window.location.reload(), 1000)
+    } catch (error) {
+      console.error("[v0] Avatar upload error:", error)
+      setMessage({ type: "error", text: "Failed to upload profile photo" })
+    } finally {
+      setUploadingAvatar(false)
+    }
+  }
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploadingLogo(true)
+    setMessage(null)
+
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      formData.append("type", "logo")
+      formData.append("userId", user.id)
+
+      const response = await fetch("/api/upload-image", {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!response.ok) throw new Error("Upload failed")
+
+      const data = await response.json()
+      setMessage({ type: "success", text: "Company logo updated successfully!" })
+      
+      // Reload to show new logo
+      setTimeout(() => window.location.reload(), 1000)
+    } catch (error) {
+      console.error("[v0] Logo upload error:", error)
+      setMessage({ type: "error", text: "Failed to upload company logo" })
+    } finally {
+      setUploadingLogo(false)
     }
   }
 
@@ -335,12 +404,26 @@ export function UserProfile({ onClose }: UserProfileProps) {
                         {user.avatar && <AvatarImage src={user.avatar || "/placeholder.svg"} alt={user.name} />}
                         <AvatarFallback className="text-lg">{getInitials(user.name)}</AvatarFallback>
                       </Avatar>
+                      <input
+                        ref={avatarInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleAvatarUpload}
+                      />
                       <Button
+                        type="button"
                         size="sm"
                         variant="outline"
                         className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full p-0 bg-transparent"
+                        onClick={() => avatarInputRef.current?.click()}
+                        disabled={uploadingAvatar}
                       >
-                        <Camera className="h-4 w-4" />
+                        {uploadingAvatar ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Camera className="h-4 w-4" />
+                        )}
                       </Button>
                     </div>
                     <div className="flex-1">
@@ -384,6 +467,51 @@ export function UserProfile({ onClose }: UserProfileProps) {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid gap-4">
+                    <div className="space-y-4 pb-4 border-b">
+                      <Label>Company Logo</Label>
+                      <div className="flex items-center gap-4">
+                        <div className="relative">
+                          {user.companyLogo ? (
+                            <img
+                              src={user.companyLogo}
+                              alt="Company Logo"
+                              className="h-16 w-16 object-contain border rounded"
+                            />
+                          ) : (
+                            <div className="h-16 w-16 border-2 border-dashed rounded flex items-center justify-center text-gray-400">
+                              <span className="text-xs">No Logo</span>
+                            </div>
+                          )}
+                        </div>
+                        <input
+                          ref={logoInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleLogoUpload}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => logoInputRef.current?.click()}
+                          disabled={uploadingLogo}
+                        >
+                          {uploadingLogo ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Uploading...
+                            </>
+                          ) : (
+                            <>{user.companyLogo ? "Replace Logo" : "Upload Logo"}</>
+                          )}
+                        </Button>
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        This logo will appear in the header across your dashboard
+                      </p>
+                    </div>
+
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
                         <Label>Theme</Label>
