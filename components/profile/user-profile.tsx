@@ -46,7 +46,7 @@ const savePreferences = (userId: string, preferences: any) => {
 }
 
 export function UserProfile({ onClose }: UserProfileProps) {
-  const { user, logout, sessionToken } = useAuth()
+  const { user, logout, sessionToken, refreshUser } = useAuth()
   const [activeTab, setActiveTab] = useState("profile")
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
@@ -204,6 +204,9 @@ export function UserProfile({ onClose }: UserProfileProps) {
       setMessage({ type: "success", text: "Profile photo updated successfully!" })
       
       console.log("[v0] Avatar uploaded successfully:", data.url)
+      
+      // Refresh user data to show new avatar
+      await refreshUser()
     } catch (error) {
       console.error("[v0] Avatar upload error:", error)
       setMessage({ type: "error", text: "Failed to upload profile photo" })
@@ -236,6 +239,9 @@ export function UserProfile({ onClose }: UserProfileProps) {
       setMessage({ type: "success", text: "Company logo updated successfully!" })
       
       console.log("[v0] Logo uploaded successfully:", data.url)
+      
+      // Refresh user data to show new logo
+      await refreshUser()
     } catch (error) {
       console.error("[v0] Logo upload error:", error)
       setMessage({ type: "error", text: "Failed to upload company logo" })

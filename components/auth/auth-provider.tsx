@@ -17,6 +17,7 @@ type AuthContextType = {
   login: () => Promise<void>
   register: () => Promise<void>
   logout: () => Promise<void>
+  refreshUser: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -110,6 +111,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  const refreshUser = async () => {
+    try {
+      const {
+        data: { user: supabaseUser },
+      } = await supabase.auth.getUser()
+
+      if (supabaseUser) {
+        const name = supabaseUser.user_metadata?.name ?? supabaseUser.user_metadata?.full_name ?? null
+
+        // Fetch profile data including avatar and logo
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('avatar_url, company_logo_url')
+          .eq('id', supabaseUser.id)
+          .single()
+
+        console.log('[v0] Refreshed user profile:', profile)
+
+        setUser({
+          id: supabaseUser.id,
+          email: supabaseUser.email ?? null,
+          name,
+          avatar: profile?.avatar_url ?? null,
+          companyLogo: profile?.company_logo_url ?? null,
+        })
+      }
+    } catch (error) {
+      console.error("[v0] Error refreshing user:", error)
+    }
+  }
+
   const logout = async () => {
     setIsLoading(true)
     try {
@@ -132,6 +164,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error("Use server actions for register")
     },
     logout,
+    refreshUser,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
