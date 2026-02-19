@@ -49,7 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             .from('profiles')
             .select('avatar_url, company_logo_url')
             .eq('id', supabaseUser.id)
-            .single()
+            .maybeSingle()
 
           if (profileError) {
             console.error('[v0] Initial profile fetch error:', profileError)
@@ -95,7 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .from('profiles')
           .select('avatar_url, company_logo_url')
           .eq('id', supabaseUser.id)
-          .single()
+          .maybeSingle()
 
         if (profileError) {
           console.error('[v0] Auth listener profile fetch error:', profileError)
@@ -137,7 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .from('profiles')
           .select('avatar_url, company_logo_url')
           .eq('id', supabaseUser.id)
-          .single()
+          .maybeSingle()
 
         if (profileError) {
           console.error('[v0] Profile fetch error:', profileError)
