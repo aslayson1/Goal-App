@@ -16,14 +16,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { AppSidebar } from "@/components/app-sidebar"
-import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import Image from "next/image"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAuth } from "@/components/auth/auth-provider"
-import { SignOutButton } from "@/components/auth/sign-out-button"
-import { UserProfile } from "@/components/profile/user-profile"
 import { useRouter } from "next/navigation"
 import { updateAgentAuthUser, createAgentWithAuth, syncAgentName } from "./actions" // Import server action
 import { createClient } from "@supabase/supabase-js" // Import createClient for Supabase
@@ -39,6 +34,9 @@ interface Agent {
   created_at: string
   updated_at: string
   auth_user_id?: string
+  profiles?: {
+    avatar_url: string | null
+  }
 }
 
 function getInitials(name?: string | null): string {
@@ -67,10 +65,6 @@ export default function AgentsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
 
-  const supabaseUrl = "https://your-supabase-url.supabase.co"
-  const supabaseKey = "your-supabase-key"
-  const supabaseClient = createClient(supabaseUrl, supabaseKey)
-
   // Fetch agents from Supabase
   useEffect(() => {
     if (!authLoading && user?.id) {
@@ -88,16 +82,46 @@ export default function AgentsPage() {
 
     try {
       setIsLoading(true)
-      const { data, error } = await supabase
+      
+      // Fetch agents
+      const { data: agentsData, error: agentsError } = await supabase
         .from("agents")
         .select("*")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
 
-      if (error) throw error
-      setAgents(data || [])
+      if (agentsError) throw agentsError
+
+      // Get all unique auth_user_ids
+      const authUserIds = agentsData
+        ?.map(agent => agent.auth_user_id)
+        .filter((id): id is string => !!id) || []
+
+      // Fetch profiles for those auth_user_ids
+      let profilesMap: Record<string, { avatar_url: string | null }> = {}
+      if (authUserIds.length > 0) {
+        const { data: profilesData } = await supabase
+          .from("profiles")
+          .select("id, avatar_url")
+          .in("id", authUserIds)
+
+        if (profilesData) {
+          profilesMap = profilesData.reduce((acc, profile) => {
+            acc[profile.id] = { avatar_url: profile.avatar_url }
+            return acc
+          }, {} as Record<string, { avatar_url: string | null }>)
+        }
+      }
+
+      // Merge profiles into agents
+      const agentsWithProfiles = agentsData?.map(agent => ({
+        ...agent,
+        profiles: agent.auth_user_id ? profilesMap[agent.auth_user_id] : undefined
+      })) || []
+
+      setAgents(agentsWithProfiles)
     } catch (error) {
-      console.error("Error fetching agents:", error)
+      console.error("[v0] Error fetching agents:", error)
     } finally {
       setIsLoading(false)
     }
@@ -242,57 +266,7 @@ export default function AgentsPage() {
   }
 
   return (
-    <SidebarProvider defaultOpen={true}>
-      <div className="flex h-screen w-screen flex-col overflow-hidden">
-        <header className="sticky top-0 z-50 flex h-16 shrink-0 items-center justify-between gap-4 border-b bg-white px-6 w-full">
-          <div className="flex items-center gap-3">
-            <SidebarTrigger className="md:hidden" />
-            <button
-              onClick={() => router.push("/")}
-              className="flex items-center gap-2 hover:opacity-80 transition-opacity focus:outline-none"
-              aria-label="Go to home"
-            >
-              <Image
-                src="/layson-group-logo.png"
-                alt="Layson Group"
-                width={180}
-                height={40}
-                className="h-10 w-auto object-contain cursor-pointer"
-                priority
-              />
-            </button>
-          </div>
-
-          {/* User Profile Dropdown - Desktop only - NOT visible on mobile */}
-          {user && (
-            <div className="hidden lg:block">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-10 w-10 p-0 rounded-full">
-                    <Avatar className="h-8 w-8 border-2 border-black">
-                      {user?.avatar && (
-                        <AvatarImage src={user.avatar || "/placeholder.svg?height=40&width=40&text=U"} alt={user?.name} />
-                      )}
-                      <AvatarFallback className="bg-white text-black text-xs font-semibold">
-                        {getInitials(user?.name)}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem asChild>
-                    <SignOutButton className="w-full text-left" />
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          )}
-        </header>
-
-        <div className="flex flex-1 overflow-hidden">
-          <AppSidebar />
-          <SidebarInset className="flex-1 overflow-auto">
-            <div className="flex flex-1 flex-col gap-4 py-4 md:py-6 px-4 md:px-6">
+    <div className="space-y-6 px-6 lg:px-12 pt-6">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900">My Team</h2>
@@ -331,21 +305,24 @@ export default function AgentsPage() {
                   </CardContent>
                 </Card>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
                   {agents.map((agent) => (
                     <Card key={agent.id} className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200">
                       <CardHeader className="pb-3">
                         <div className="flex items-start justify-between">
                           <div className="flex items-center space-x-3">
                             <Avatar className="h-12 w-12 border-2 border-gray-200">
+                              {agent.profiles?.avatar_url && (
+                                <AvatarImage src={agent.profiles.avatar_url} alt={agent.name} />
+                              )}
                               <AvatarFallback className="bg-gray-100 text-gray-700 font-semibold">
                                 {getInitials(agent.name)}
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <CardTitle className="text-lg">{agent.name}</CardTitle>
-                              <CardDescription className="text-sm">{agent.role}</CardDescription>
-                              {agent.email && <p className="text-xs text-gray-500 mt-1">{agent.email}</p>}
+                              <CardTitle className="text-sm lg:text-base font-semibold line-clamp-2">{agent.name}</CardTitle>
+                              <CardDescription className="text-xs lg:text-sm">{agent.role}</CardDescription>
+                              {agent.email && <p className="text-xs text-gray-500 mt-1 truncate">{agent.email}</p>}
                             </div>
                           </div>
                           <DropdownMenu>
@@ -379,10 +356,6 @@ export default function AgentsPage() {
                   ))}
                 </div>
               )}
-            </div>
-          </SidebarInset>
-        </div>
-      </div>
 
       {/* Add/Edit Agent Dialog */}
       <Dialog open={showAddAgent} onOpenChange={handleDialogClose}>
@@ -495,6 +468,6 @@ export default function AgentsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </SidebarProvider>
+    </div>
   )
 }

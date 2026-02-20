@@ -3,7 +3,13 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 import { supabase } from "@/lib/supabase/client"
 
-type User = { id: string; email?: string | null; name?: string | null; avatar?: string | null }
+type User = { 
+  id: string
+  email?: string | null
+  name?: string | null
+  avatar?: string | null
+  companyLogo?: string | null
+}
 
 type AuthContextType = {
   user: User | null
@@ -11,6 +17,7 @@ type AuthContextType = {
   login: () => Promise<void>
   register: () => Promise<void>
   logout: () => Promise<void>
+  refreshUser: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -37,10 +44,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (mounted && supabaseUser) {
           const name = supabaseUser.user_metadata?.name ?? supabaseUser.user_metadata?.full_name ?? null
 
+          // Fetch profile data including avatar and logo
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('avatar_url, company_logo_url')
+            .eq('id', supabaseUser.id)
+            .maybeSingle()
+
+          if (profileError) {
+            console.error('[v0] Initial profile fetch error:', profileError)
+          }
+          
+          console.log('[v0] Initial profile load:', profile)
+
           setUser({
             id: supabaseUser.id,
             email: supabaseUser.email ?? null,
             name,
+            avatar: profile?.avatar_url ?? null,
+            companyLogo: profile?.company_logo_url ?? null,
           })
           setIsLoading(false)
         } else if (mounted) {
@@ -68,10 +90,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (supabaseUser) {
         const name = supabaseUser.user_metadata?.name ?? supabaseUser.user_metadata?.full_name ?? null
 
+        // Fetch profile data including avatar and logo
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('avatar_url, company_logo_url')
+          .eq('id', supabaseUser.id)
+          .maybeSingle()
+
+        if (profileError) {
+          console.error('[v0] Auth listener profile fetch error:', profileError)
+        }
+
+        console.log('[v0] Auth listener profile load:', profile)
+
         setUser({
           id: supabaseUser.id,
           email: supabaseUser.email ?? null,
           name,
+          avatar: profile?.avatar_url ?? null,
+          companyLogo: profile?.company_logo_url ?? null,
         })
       } else {
         setUser(null)
@@ -85,6 +122,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       subscription.unsubscribe()
     }
   }, [])
+
+  const refreshUser = async () => {
+    try {
+      const {
+        data: { user: supabaseUser },
+      } = await supabase.auth.getUser()
+
+      if (supabaseUser) {
+        const name = supabaseUser.user_metadata?.name ?? supabaseUser.user_metadata?.full_name ?? null
+
+        // Fetch profile data including avatar and logo
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('avatar_url, company_logo_url')
+          .eq('id', supabaseUser.id)
+          .maybeSingle()
+
+        if (profileError) {
+          console.error('[v0] Profile fetch error:', profileError)
+        }
+
+        console.log('[v0] Refreshed user profile:', profile)
+
+        setUser({
+          id: supabaseUser.id,
+          email: supabaseUser.email ?? null,
+          name,
+          avatar: profile?.avatar_url ?? null,
+          companyLogo: profile?.company_logo_url ?? null,
+        })
+      }
+    } catch (error) {
+      console.error("[v0] Error refreshing user:", error)
+    }
+  }
 
   const logout = async () => {
     setIsLoading(true)
@@ -108,6 +180,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error("Use server actions for register")
     },
     logout,
+    refreshUser,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

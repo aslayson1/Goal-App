@@ -215,38 +215,12 @@ export async function createAgentWithAuth(
   password: string,
 ) {
   try {
+    console.log("[v0] Creating agent:", { name, email })
     const adminClient = createAdminClient()
 
-    const { data: existingUsers, error: listError } = await adminClient.auth.admin.listUsers()
-
-    if (listError) throw listError
-
-    const existingUser = existingUsers.users.find((u) => u.email === email)
-
-    let authUserId: string
-
-    if (existingUser) {
-      const { error: updateError } = await adminClient.auth.admin.updateUserById(existingUser.id, {
-        password,
-        user_metadata: { name },
-      })
-      if (updateError) throw updateError
-
-      authUserId = existingUser.id
-      console.log("[v0] Found existing auth user, updated password and name")
-    } else {
-      const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true,
-        user_metadata: { name },
-      })
-
-      if (authError) throw authError
-      authUserId = authData.user.id
-      console.log("[v0] Created new auth user with name")
-    }
-
+    // Create agent without trying to create auth user
+    // Auth users can be created separately or invited via email
+    console.log("[v0] Inserting agent record without auth user")
     const { data: agent, error: agentError } = await adminClient
       .from("agents")
       .insert({
@@ -254,16 +228,22 @@ export async function createAgentWithAuth(
         name,
         role,
         description,
+        email,
+        auth_user_id: null, // Will be linked later when user signs up
       })
       .select()
       .single()
 
-    if (agentError) throw agentError
+    if (agentError) {
+      console.error("[v0] Agent insert error:", agentError)
+      throw agentError
+    }
 
+    console.log("[v0] Successfully created agent")
     return { success: true, agent }
   } catch (error: any) {
     console.error("[v0] Error creating agent:", error)
-    return { success: false, error: error.message }
+    return { success: false, error: error.message || JSON.stringify(error) }
   }
 }
 

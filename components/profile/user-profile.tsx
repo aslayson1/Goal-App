@@ -1,7 +1,6 @@
 "use client"
 
-import type React from "react"
-import { useState } from "react"
+import React, { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -47,10 +46,22 @@ const savePreferences = (userId: string, preferences: any) => {
 }
 
 export function UserProfile({ onClose }: UserProfileProps) {
-  const { user, logout, sessionToken } = useAuth()
+  const { user, logout, sessionToken, refreshUser } = useAuth()
   const [activeTab, setActiveTab] = useState("profile")
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false)
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  })
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
+  const [localAvatarUrl, setLocalAvatarUrl] = useState<string | null>(null)
+  const [localLogoUrl, setLocalLogoUrl] = useState<string | null>(null)
+  const avatarInputRef = React.useRef<HTMLInputElement>(null)
+  const logoInputRef = React.useRef<HTMLInputElement>(null)
 
   const [formData, setFormData] = useState(() => {
     if (!user)
@@ -128,6 +139,129 @@ export function UserProfile({ onClose }: UserProfileProps) {
     }
   }
 
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+    setMessage(null)
+
+    // Validate passwords match
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setMessage({ type: "error", text: "New passwords do not match" })
+      setIsLoading(false)
+      return
+    }
+
+    // Validate password length
+    if (passwordData.newPassword.length < 6) {
+      setMessage({ type: "error", text: "Password must be at least 6 characters" })
+      setIsLoading(false)
+      return
+    }
+
+    try {
+      const { createClient } = await import("@/lib/supabase/client")
+      const supabase = createClient()
+
+      const { error } = await supabase.auth.updateUser({
+        password: passwordData.newPassword,
+      })
+
+      if (error) {
+        console.error("[v0] Password update error:", error)
+        setMessage({ type: "error", text: error.message })
+      } else {
+        setMessage({ type: "success", text: "Password updated successfully!" })
+        setShowPasswordDialog(false)
+        setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" })
+      }
+    } catch (error) {
+      console.error("[v0] Error changing password:", error)
+      setMessage({ type: "error", text: "Failed to update password" })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploadingAvatar(true)
+    setMessage(null)
+
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      formData.append("type", "avatar")
+      formData.append("userId", user.id)
+
+      const response = await fetch("/api/upload-image", {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!response.ok) throw new Error("Upload failed")
+
+      const data = await response.json()
+      setMessage({ type: "success", text: "Profile photo updated successfully!" })
+      
+      console.log("[v0] Avatar uploaded successfully:", data.url)
+      
+      // Store avatar URL in local state for immediate display
+      setLocalAvatarUrl(data.url)
+      
+      // Reset loading state immediately
+      setUploadingAvatar(false)
+      
+      // Refresh user data to show new avatar (don't await to avoid hanging)
+      refreshUser().catch((err) => console.error("[v0] Error refreshing user:", err))
+    } catch (error) {
+      console.error("[v0] Avatar upload error:", error)
+      setMessage({ type: "error", text: "Failed to upload profile photo" })
+      setUploadingAvatar(false)
+    }
+  }
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploadingLogo(true)
+    setMessage(null)
+
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      formData.append("type", "logo")
+      formData.append("userId", user.id)
+
+      const response = await fetch("/api/upload-image", {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!response.ok) throw new Error("Upload failed")
+
+      const data = await response.json()
+      setMessage({ type: "success", text: "Company logo updated successfully!" })
+      
+      console.log("[v0] Logo uploaded successfully:", data.url)
+      
+      // Store logo URL in local state for immediate display
+      setLocalLogoUrl(data.url)
+      
+      // Reset loading state immediately
+      setUploadingLogo(false)
+      
+      // Refresh user data to show new logo (don't await to avoid hanging)
+      refreshUser().catch((err) => console.error("[v0] Error refreshing user:", err))
+    } catch (error) {
+      console.error("[v0] Logo upload error:", error)
+      setMessage({ type: "error", text: "Failed to upload company logo" })
+      setUploadingLogo(false)
+    }
+  }
+
   const handleResetCycle = async () => {
     const confirmed = window.confirm(
       "This will reset your goal cycle start date to today and clear all progress.\n\nThis action cannot be undone.\n\nAre you sure?",
@@ -173,14 +307,83 @@ export function UserProfile({ onClose }: UserProfileProps) {
     <Dialog
       open={true}
       onOpenChange={(open) => {
-        if (!open) onClose()
+        if (!open && !showPasswordDialog) onClose()
       }}
     >
       <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Profile Settings</DialogTitle>
-          <DialogDescription>Manage your account settings and preferences</DialogDescription>
-        </DialogHeader>
+        {showPasswordDialog ? (
+          <>
+            <DialogHeader>
+              <DialogTitle>Change Password</DialogTitle>
+              <DialogDescription>Enter your new password below</DialogDescription>
+            </DialogHeader>
+
+            {message && (
+              <div
+                className={`px-4 py-3 rounded border ${
+                  message.type === "success"
+                    ? "bg-green-500/10 border-green-500/50 text-green-700"
+                    : "bg-red-500/10 border-red-500/50 text-red-700"
+                }`}
+              >
+                {message.text}
+              </div>
+            )}
+
+            <form onSubmit={handlePasswordChange} className="space-y-4">
+              <div className="grid gap-2">
+                <Label htmlFor="newPassword">New Password</Label>
+                <Input
+                  id="newPassword"
+                  type="password"
+                  value={passwordData.newPassword}
+                  onChange={(e) => setPasswordData((prev) => ({ ...prev, newPassword: e.target.value }))}
+                  required
+                  minLength={6}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  value={passwordData.confirmPassword}
+                  onChange={(e) => setPasswordData((prev) => ({ ...prev, confirmPassword: e.target.value }))}
+                  required
+                  minLength={6}
+                />
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowPasswordDialog(false)
+                    setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" })
+                    setMessage(null)
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isLoading}>
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Updating...
+                    </>
+                  ) : (
+                    "Update Password"
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          </>
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle>Profile Settings</DialogTitle>
+              <DialogDescription>Manage your account settings and preferences</DialogDescription>
+            </DialogHeader>
 
         {message && (
           <div
@@ -214,15 +417,34 @@ export function UserProfile({ onClose }: UserProfileProps) {
                   <div className="flex items-center space-x-4">
                     <div className="relative">
                       <Avatar className="h-20 w-20">
-                        {user.avatar && <AvatarImage src={user.avatar || "/placeholder.svg"} alt={user.name} />}
+                        {(localAvatarUrl || user.avatar) && (
+                          <AvatarImage 
+                            src={localAvatarUrl || user.avatar || "/placeholder.svg"} 
+                            alt={user.name} 
+                          />
+                        )}
                         <AvatarFallback className="text-lg">{getInitials(user.name)}</AvatarFallback>
                       </Avatar>
+                      <input
+                        ref={avatarInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleAvatarUpload}
+                      />
                       <Button
+                        type="button"
                         size="sm"
                         variant="outline"
                         className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full p-0 bg-transparent"
+                        onClick={() => avatarInputRef.current?.click()}
+                        disabled={uploadingAvatar}
                       >
-                        <Camera className="h-4 w-4" />
+                        {uploadingAvatar ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Camera className="h-4 w-4" />
+                        )}
                       </Button>
                     </div>
                     <div className="flex-1">
@@ -266,6 +488,51 @@ export function UserProfile({ onClose }: UserProfileProps) {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid gap-4">
+                    <div className="space-y-4 pb-4 border-b">
+                      <Label>Company Logo</Label>
+                      <div className="flex items-center gap-4">
+                        <div className="relative">
+                          {(localLogoUrl || user.companyLogo) ? (
+                            <img
+                              src={localLogoUrl || user.companyLogo || ''}
+                              alt="Company Logo"
+                              className="h-16 w-16 object-contain border rounded"
+                            />
+                          ) : (
+                            <div className="h-16 w-16 border-2 border-dashed rounded flex items-center justify-center text-gray-400">
+                              <span className="text-xs">No Logo</span>
+                            </div>
+                          )}
+                        </div>
+                        <input
+                          ref={logoInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleLogoUpload}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => logoInputRef.current?.click()}
+                          disabled={uploadingLogo}
+                        >
+                          {uploadingLogo ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Uploading...
+                            </>
+                          ) : (
+                            <>{user.companyLogo ? "Replace Logo" : "Upload Logo"}</>
+                          )}
+                        </Button>
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        This logo will appear in the header across your dashboard
+                      </p>
+                    </div>
+
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
                         <Label>Theme</Label>
@@ -386,7 +653,11 @@ export function UserProfile({ onClose }: UserProfileProps) {
                   <Button variant="outline" className="w-full justify-start bg-transparent">
                     Export Data
                   </Button>
-                  <Button variant="outline" className="w-full justify-start bg-transparent">
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start bg-transparent"
+                    onClick={() => setShowPasswordDialog(true)}
+                  >
                     Change Password
                   </Button>
                   <Button
@@ -436,6 +707,8 @@ export function UserProfile({ onClose }: UserProfileProps) {
             </Button>
           </DialogFooter>
         </form>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   )

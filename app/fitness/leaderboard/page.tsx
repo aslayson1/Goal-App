@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/components/auth/auth-provider'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import Link from 'next/link'
 import { ChevronLeft, Crown, TrendingUp, TrendingDown } from 'lucide-react'
 
@@ -34,10 +34,34 @@ export default function LeaderboardPage() {
       console.log('[v0] Current user ID:', user?.id)
       console.log('[v0] Timeframe:', timeframe, 'Start date:', startDate.toISOString().split('T')[0])
 
-      const { data: agents } = await supabase.from('agents').select('id, name, email, auth_user_id')
+      // Fetch agents
+      const { data: agents } = await supabase
+        .from('agents')
+        .select('id, name, email, auth_user_id')
       console.log('[v0] Agents fetched:', agents)
 
       if (!agents) return
+
+      // Get all unique auth_user_ids
+      const authUserIds = agents
+        .map(agent => agent.auth_user_id)
+        .filter((id): id is string => !!id)
+
+      // Fetch profiles for those auth_user_ids
+      let profilesMap: Record<string, { avatar_url: string | null }> = {}
+      if (authUserIds.length > 0) {
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, avatar_url')
+          .in('id', authUserIds)
+
+        if (profilesData) {
+          profilesMap = profilesData.reduce((acc, profile) => {
+            acc[profile.id] = { avatar_url: profile.avatar_url }
+            return acc
+          }, {} as Record<string, { avatar_url: string | null }>)
+        }
+      }
 
       // First, let's check all fitness logs to see what user_ids are in there
       const { data: allLogs } = await supabase
@@ -61,6 +85,7 @@ export default function LeaderboardPage() {
             name: agent.name || agent.email?.split('@')[0] || 'Unknown',
             workouts: count || 0,
             isCurrentUser: agent.auth_user_id === user?.id,
+            avatar_url: agent.auth_user_id ? (profilesMap[agent.auth_user_id]?.avatar_url || null) : null,
           }
         })
       )
@@ -145,6 +170,9 @@ export default function LeaderboardPage() {
                     {/* 2nd Place */}
                     <div className="flex flex-col items-center">
                       <Avatar className={`h-16 w-16 lg:h-24 lg:w-24 ring-4 ${championColors[0].ring}`}>
+                        {top3[1]?.avatar_url && (
+                          <AvatarImage src={top3[1].avatar_url} alt={top3[1]?.name} />
+                        )}
                         <AvatarFallback className="bg-slate-100 text-slate-700 text-lg lg:text-2xl font-semibold">
                           {getInitials(top3[1]?.name || '')}
                         </AvatarFallback>
@@ -162,6 +190,9 @@ export default function LeaderboardPage() {
                     <div className="flex flex-col items-center -mt-4 lg:-mt-8">
                       <Crown className="h-8 w-8 lg:h-12 lg:w-12 text-amber-400 mb-1" />
                       <Avatar className={`h-20 w-20 lg:h-28 lg:w-28 ring-4 ${championColors[1].ring}`}>
+                        {top3[0]?.avatar_url && (
+                          <AvatarImage src={top3[0].avatar_url} alt={top3[0]?.name} />
+                        )}
                         <AvatarFallback className="bg-amber-50 text-amber-700 text-xl lg:text-3xl font-semibold">
                           {getInitials(top3[0]?.name || '')}
                         </AvatarFallback>
@@ -178,6 +209,9 @@ export default function LeaderboardPage() {
                     {/* 3rd Place */}
                     <div className="flex flex-col items-center">
                       <Avatar className={`h-16 w-16 lg:h-24 lg:w-24 ring-4 ${championColors[2].ring}`}>
+                        {top3[2]?.avatar_url && (
+                          <AvatarImage src={top3[2].avatar_url} alt={top3[2]?.name} />
+                        )}
                         <AvatarFallback className="bg-rose-50 text-rose-700 text-lg lg:text-2xl font-semibold">
                           {getInitials(top3[2]?.name || '')}
                         </AvatarFallback>
@@ -220,6 +254,9 @@ export default function LeaderboardPage() {
                       {/* Avatar & Name */}
                       <div className="col-span-5 lg:col-span-4 flex items-center gap-3 lg:gap-4">
                         <Avatar className="h-10 w-10 lg:h-12 lg:w-12">
+                          {person.avatar_url && (
+                            <AvatarImage src={person.avatar_url} alt={person.name} />
+                          )}
                           <AvatarFallback className="bg-slate-100 text-slate-600 text-sm lg:text-base">
                             {getInitials(person.name)}
                           </AvatarFallback>
