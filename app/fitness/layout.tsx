@@ -191,7 +191,7 @@ export default function FitnessLayout({
           <AppSidebar />
         </div>
         <SidebarInset className="flex-1 min-w-0 w-full">
-          <main className="h-full overflow-auto p-6 bg-slate-50">
+          <main className="h-full overflow-auto p-3 md:p-6 bg-slate-50">
             {children}
           </main>
         </SidebarInset>
