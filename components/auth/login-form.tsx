@@ -83,17 +83,15 @@ export function LoginForm() {
 
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
-        <Input id="email" name="email" type="email" defaultValue="demo@example.com" required />
+        <Input id="email" name="email" type="email" placeholder="Enter your email" required />
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="password">Password</Label>
-        <Input id="password" name="password" type="password" defaultValue="password" required />
+        <Input id="password" name="password" type="password" placeholder="Enter your password" required />
       </div>
 
       <SubmitButton isLoading={isLoading} />
-
-      <div className="text-sm text-gray-600 text-center">Demo credentials: demo@example.com / password</div>
     </form>
   )
 }
