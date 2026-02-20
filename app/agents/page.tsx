@@ -86,17 +86,44 @@ export default function AgentsPage() {
 
     try {
       setIsLoading(true)
-      const { data, error } = await supabase
+      
+      // Fetch agents
+      const { data: agentsData, error: agentsError } = await supabase
         .from("agents")
-        .select(`
-          *,
-          profiles!agents_auth_user_id_fkey(avatar_url)
-        `)
+        .select("*")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
 
-      if (error) throw error
-      setAgents(data || [])
+      if (agentsError) throw agentsError
+
+      // Get all unique auth_user_ids
+      const authUserIds = agentsData
+        ?.map(agent => agent.auth_user_id)
+        .filter((id): id is string => !!id) || []
+
+      // Fetch profiles for those auth_user_ids
+      let profilesMap: Record<string, { avatar_url: string | null }> = {}
+      if (authUserIds.length > 0) {
+        const { data: profilesData } = await supabase
+          .from("profiles")
+          .select("id, avatar_url")
+          .in("id", authUserIds)
+
+        if (profilesData) {
+          profilesMap = profilesData.reduce((acc, profile) => {
+            acc[profile.id] = { avatar_url: profile.avatar_url }
+            return acc
+          }, {} as Record<string, { avatar_url: string | null }>)
+        }
+      }
+
+      // Merge profiles into agents
+      const agentsWithProfiles = agentsData?.map(agent => ({
+        ...agent,
+        profiles: agent.auth_user_id ? profilesMap[agent.auth_user_id] : undefined
+      })) || []
+
+      setAgents(agentsWithProfiles)
     } catch (error) {
       console.error("Error fetching agents:", error)
     } finally {

@@ -34,18 +34,34 @@ export default function LeaderboardPage() {
       console.log('[v0] Current user ID:', user?.id)
       console.log('[v0] Timeframe:', timeframe, 'Start date:', startDate.toISOString().split('T')[0])
 
+      // Fetch agents
       const { data: agents } = await supabase
         .from('agents')
-        .select(`
-          id, 
-          name, 
-          email, 
-          auth_user_id,
-          profiles!agents_auth_user_id_fkey(avatar_url)
-        `)
+        .select('id, name, email, auth_user_id')
       console.log('[v0] Agents fetched:', agents)
 
       if (!agents) return
+
+      // Get all unique auth_user_ids
+      const authUserIds = agents
+        .map(agent => agent.auth_user_id)
+        .filter((id): id is string => !!id)
+
+      // Fetch profiles for those auth_user_ids
+      let profilesMap: Record<string, { avatar_url: string | null }> = {}
+      if (authUserIds.length > 0) {
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, avatar_url')
+          .in('id', authUserIds)
+
+        if (profilesData) {
+          profilesMap = profilesData.reduce((acc, profile) => {
+            acc[profile.id] = { avatar_url: profile.avatar_url }
+            return acc
+          }, {} as Record<string, { avatar_url: string | null }>)
+        }
+      }
 
       // First, let's check all fitness logs to see what user_ids are in there
       const { data: allLogs } = await supabase
@@ -69,7 +85,7 @@ export default function LeaderboardPage() {
             name: agent.name || agent.email?.split('@')[0] || 'Unknown',
             workouts: count || 0,
             isCurrentUser: agent.auth_user_id === user?.id,
-            avatar_url: agent.profiles?.avatar_url || null,
+            avatar_url: agent.auth_user_id ? (profilesMap[agent.auth_user_id]?.avatar_url || null) : null,
           }
         })
       )
