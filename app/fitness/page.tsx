@@ -329,7 +329,7 @@ export default function FitnessPage() {
   }
 
   return (
-    <div className="flex-1 space-y-6 p-6">
+    <div className="flex-1 space-y-6 overflow-y-auto pb-20">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -389,12 +389,12 @@ export default function FitnessPage() {
       {/* Calendar */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <CardTitle>Workout Calendar</CardTitle>
               <CardDescription>Click a day to log your workout</CardDescription>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
@@ -403,10 +403,11 @@ export default function FitnessPage() {
                   prev.setMonth(prev.getMonth() - 1)
                   setCurrentMonth(prev)
                 }}
+                className="flex-shrink-0"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <span className="w-32 text-center font-semibold">
+              <span className="min-w-[140px] text-center font-semibold text-sm md:text-base">
                 {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
               </span>
               <Button
@@ -417,6 +418,7 @@ export default function FitnessPage() {
                   next.setMonth(next.getMonth() + 1)
                   setCurrentMonth(next)
                 }}
+                className="flex-shrink-0"
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>

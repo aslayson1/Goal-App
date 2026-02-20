@@ -165,7 +165,7 @@ export default function LeaderboardPage() {
             <>
               {/* Top 3 Champions */}
               {top3.length >= 3 && (
-                <div className="px-6 lg:px-12 py-8 lg:py-12">
+                <div className="px-3 md:px-6 lg:px-12 py-8 lg:py-12">
                   <div className="flex items-end justify-center gap-8 lg:gap-16">
                     {/* 2nd Place */}
                     <div className="flex flex-col items-center">
