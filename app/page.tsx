@@ -4062,7 +4062,7 @@ function GoalTrackerApp() {
         for (const task of tasks) {
           if (task.task_type === "daily") {
             console.log(
-              `[v0] Daily task: "${task.title}", completed: ${task.completed}, target_date: ${task.target_date}`,
+              `[v0] Daily task: "${task.title}", completed: ${task.completed}, target_date: ${task.target_date}, counter: ${task.counter}`,
             )
 
             if (!task.completed) {
@@ -4074,7 +4074,7 @@ function GoalTrackerApp() {
               )
 
               if (taskDate < today) {
-                console.log(`[v0] Moving incomplete task "${task.title}" from ${task.target_date} to ${todayString}`)
+                console.log(`[v0] Moving incomplete task "${task.title}" from ${task.target_date} to ${todayString}, preserving counter: ${task.counter}`)
                 tasksToUpdate.push(task.id)
 
                 // Update the task's target_date in the database
@@ -4086,7 +4086,7 @@ function GoalTrackerApp() {
                 if (updateError) {
                   console.error(`[v0] Error updating task ${task.id}:`, updateError)
                 } else {
-                  console.log(`[v0] Successfully updated task ${task.id} in database`)
+                  console.log(`[v0] Successfully updated task ${task.id} in database with new target_date: ${todayString}, counter remains: ${task.counter}`)
                   // Update the task object in memory so it's organized correctly
                   task.target_date = todayString
                 }
@@ -4123,7 +4123,7 @@ function GoalTrackerApp() {
                   agent_id: task.agent_id,
                   sort_order: task.sort_order,
                   linked_goal_id: task.linked_goal_id,
-                  counter: task.counter || 0, // Preserve the counter from yesterday
+                  counter: 0, // Reset counter to 0 for new day (completed tasks create new fresh instances)
                   target_count: task.target_count,
                   daily_target: task.daily_target,
                 })
