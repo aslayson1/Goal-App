@@ -254,6 +254,8 @@ export async function createAgentWithAuth(
         name,
         role,
         description,
+        email,
+        auth_user_id: authUserId,
       })
       .select()
       .single()
