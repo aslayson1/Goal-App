@@ -7,17 +7,9 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import Link from 'next/link'
 import { ChevronLeft, Crown, TrendingUp, TrendingDown } from 'lucide-react'
 
-  interface LeaderboardPerson {
-    id: string
-    name: string
-    workouts: number
-    isCurrentUser: boolean
-    avatar_url: string | null
-  }
-
-  export default function LeaderboardPage() {
+export default function LeaderboardPage() {
   const { user } = useAuth()
-  const [leaderboard, setLeaderboard] = useState<LeaderboardPerson[]>([])
+  const [leaderboard, setLeaderboard] = useState<any[]>([])
   const [timeframe, setTimeframe] = useState<'week' | 'month' | 'all'>('month')
   const [loading, setLoading] = useState(true)
 
@@ -165,7 +157,7 @@ import { ChevronLeft, Crown, TrendingUp, TrendingDown } from 'lucide-react'
                         {top3[1]?.avatar_url && (
                           <AvatarImage src={top3[1].avatar_url} alt={top3[1]?.name} />
                         )}
-                        <AvatarFallback className="bg-sky-50 text-sky-700 text-lg lg:text-2xl font-semibold">
+                        <AvatarFallback className="bg-slate-100 text-slate-700 text-lg lg:text-2xl font-semibold">
                           {getInitials(top3[1]?.name || '')}
                         </AvatarFallback>
                       </Avatar>
