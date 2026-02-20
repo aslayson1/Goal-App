@@ -4499,14 +4499,22 @@ function GoalTrackerApp() {
       {/* Full-width Top Header Bar */}
       <header className="sticky top-0 z-50 flex h-14 shrink-0 items-center justify-between gap-4 border-b bg-white px-6 w-full">
         <div>
-          <Image
-            src="/layson-group-logo.png"
-            alt="Layson Group"
-            width={150}
-            height={36}
-            className="h-9 w-auto object-contain"
-            priority
-          />
+          {user?.companyLogo ? (
+            <img
+              src={user.companyLogo}
+              alt="Company Logo"
+              className="h-9 w-auto object-contain max-w-[150px]"
+            />
+          ) : (
+            <Image
+              src="/layson-group-logo.png"
+              alt="Layson Group"
+              width={150}
+              height={36}
+              className="h-9 w-auto object-contain"
+              priority
+            />
+          )}
         </div>
 
         {/* Right side: Avatar dropdown and Mobile hamburger menu */}

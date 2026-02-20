@@ -38,8 +38,15 @@ export default function AgentsLayout({
     <SidebarProvider>
       <div className="flex flex-col h-screen w-screen overflow-hidden">
         {/* Full-width Top Header Bar */}
-        <header className="sticky top-0 z-50 flex h-14 shrink-0 items-center justify-between gap-4 border-b bg-white px-6 w-full">
-          <div>
+      <header className="sticky top-0 z-50 flex h-14 shrink-0 items-center justify-between gap-4 border-b bg-white px-6 w-full">
+        <div>
+          {user?.companyLogo ? (
+            <img
+              src={user.companyLogo}
+              alt="Company Logo"
+              className="h-9 w-auto object-contain max-w-[150px]"
+            />
+          ) : (
             <Image
               src="/layson-group-logo.png"
               alt="Layson Group"
@@ -48,7 +55,8 @@ export default function AgentsLayout({
               className="h-9 w-auto object-contain"
               priority
             />
-          </div>
+          )}
+        </div>
 
           {/* Right side: Avatar dropdown and Mobile hamburger menu */}
           <div className="flex items-center gap-2">
