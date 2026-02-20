@@ -196,6 +196,7 @@ export default function FitnessLayout({
           </main>
         </SidebarInset>
       </div>
+      </div>
     </SidebarProvider>
   )
 }

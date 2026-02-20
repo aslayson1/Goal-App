@@ -196,6 +196,7 @@ export default function LongTermGoalsLayout({
           </main>
         </SidebarInset>
       </div>
+      </div>
     </SidebarProvider>
   )
 }
