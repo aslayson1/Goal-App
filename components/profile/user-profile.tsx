@@ -205,12 +205,14 @@ export function UserProfile({ onClose }: UserProfileProps) {
       
       console.log("[v0] Avatar uploaded successfully:", data.url)
       
-      // Refresh user data to show new avatar
-      await refreshUser()
+      // Reset loading state immediately
+      setUploadingAvatar(false)
+      
+      // Refresh user data to show new avatar (don't await to avoid hanging)
+      refreshUser().catch((err) => console.error("[v0] Error refreshing user:", err))
     } catch (error) {
       console.error("[v0] Avatar upload error:", error)
       setMessage({ type: "error", text: "Failed to upload profile photo" })
-    } finally {
       setUploadingAvatar(false)
     }
   }
@@ -240,12 +242,14 @@ export function UserProfile({ onClose }: UserProfileProps) {
       
       console.log("[v0] Logo uploaded successfully:", data.url)
       
-      // Refresh user data to show new logo
-      await refreshUser()
+      // Reset loading state immediately
+      setUploadingLogo(false)
+      
+      // Refresh user data to show new logo (don't await to avoid hanging)
+      refreshUser().catch((err) => console.error("[v0] Error refreshing user:", err))
     } catch (error) {
       console.error("[v0] Logo upload error:", error)
       setMessage({ type: "error", text: "Failed to upload company logo" })
-    } finally {
       setUploadingLogo(false)
     }
   }
