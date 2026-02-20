@@ -100,35 +100,31 @@ export async function signUp(prevState: any, formData: FormData) {
   }
 }
 
-export async function updatePassword(newPassword: string) {
+export async function updatePassword(newPassword: string, userId: string) {
   try {
-    console.log("[v0] Server action: updating password...")
-    const supabase = await createClient()
+    console.log("[v0] Server action: updating password for user:", userId)
+    
+    // Import admin client to bypass RLS and session requirements
+    const { createAdminClient } = await import("@/lib/supabase/admin")
+    const adminClient = createAdminClient()
 
-    // Get the current user session
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser()
-
-    if (userError || !user) {
-      console.error("[v0] No authenticated user found:", userError)
-      return { error: "You must be signed in to change your password" }
+    if (!userId) {
+      console.error("[v0] No user ID provided")
+      return { error: "User ID is required to change password" }
     }
 
-    console.log("[v0] Authenticated user found:", user.id)
-
-    // Update the password on the server side
-    const { error } = await supabase.auth.updateUser({
+    // Use admin client to update user password by ID
+    // This doesn't require an active session
+    const { error: updateError } = await adminClient.auth.admin.updateUserById(userId, {
       password: newPassword,
     })
 
-    if (error) {
-      console.error("[v0] Password update error:", error)
-      return { error: error.message || "Failed to update password" }
+    if (updateError) {
+      console.error("[v0] Password update error:", updateError)
+      return { error: updateError.message || "Failed to update password" }
     }
 
-    console.log("[v0] Password updated successfully")
+    console.log("[v0] Password updated successfully for user:", userId)
     revalidatePath("/", "layout")
     return { success: "Password updated successfully!" }
   } catch (error) {

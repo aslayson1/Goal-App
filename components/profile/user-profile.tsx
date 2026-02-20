@@ -159,9 +159,17 @@ export function UserProfile({ onClose }: UserProfileProps) {
       return
     }
 
+    // Check if user is authenticated
+    if (!user?.id) {
+      setMessage({ type: "error", text: "You must be signed in to change your password" })
+      setIsLoading(false)
+      return
+    }
+
     try {
+      console.log("[v0] User attempting password change, user ID:", user.id)
       console.log("[v0] Calling server action to update password...")
-      const result = await updatePassword(passwordData.newPassword)
+      const result = await updatePassword(passwordData.newPassword, user.id)
 
       if (result.error) {
         console.error("[v0] Password update error:", result.error)
