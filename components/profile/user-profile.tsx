@@ -578,7 +578,7 @@ export function UserProfile({ onClose }: UserProfileProps) {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="12-week">12-Week Year</SelectItem>
-                          <SelectItem value="standard">Standard</SelectItem>
+                          <SelectItem value="standard">1-Year</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
