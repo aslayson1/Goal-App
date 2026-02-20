@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { UserProfile } from "@/components/profile/user-profile"
 import Image from "next/image"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { useAuth } from "@/components/auth/auth-provider"
 import { Button } from "@/components/ui/button"
@@ -31,6 +32,7 @@ export default function AgentsLayout({
   children: React.ReactNode
 }) {
   const { user } = useAuth()
+  const router = useRouter()
   const [showProfile, setShowProfile] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
 
