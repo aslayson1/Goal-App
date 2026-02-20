@@ -67,26 +67,31 @@ export default function AgentsPage() {
 
   // Fetch agents from Supabase
   useEffect(() => {
-    console.log("[v0] useEffect triggered - authLoading:", authLoading, "user:", user?.id)
-    if (!authLoading && user?.id) {
-      console.log("[v0] Starting fetchAgents")
+    // If user is loaded, fetch agents
+    if (user?.id) {
       fetchAgents()
     } else if (!authLoading && !user) {
-      console.log("[v0] No user, setting loading to false")
+      // Auth is done loading and no user is logged in
       setIsLoading(false)
     }
+    
+    // Timeout fallback - if auth is stuck loading after 5 seconds, try anyway
+    const timeout = setTimeout(() => {
+      if (isLoading && !user) {
+        setIsLoading(false)
+      }
+    }, 5000)
+    
+    return () => clearTimeout(timeout)
   }, [user, authLoading])
 
   const fetchAgents = async () => {
-    console.log("[v0] fetchAgents called with user.id:", user?.id)
     if (!user?.id) {
-      console.log("[v0] No user ID, setting loading to false")
       setIsLoading(false)
       return
     }
 
     try {
-      console.log("[v0] Starting agents fetch")
       setIsLoading(true)
       
       // Fetch agents
@@ -96,15 +101,12 @@ export default function AgentsPage() {
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
 
-      console.log("[v0] Agents query result:", { hasData: !!agentsData, error: agentsError })
       if (agentsError) throw agentsError
 
       // Get all unique auth_user_ids
       const authUserIds = agentsData
         ?.map(agent => agent.auth_user_id)
         .filter((id): id is string => !!id) || []
-
-      console.log("[v0] Found auth_user_ids:", authUserIds)
 
       // Fetch profiles for those auth_user_ids
       let profilesMap: Record<string, { avatar_url: string | null }> = {}
@@ -114,7 +116,6 @@ export default function AgentsPage() {
           .select("id, avatar_url")
           .in("id", authUserIds)
 
-        console.log("[v0] Profiles query result:", { count: profilesData?.length })
         if (profilesData) {
           profilesMap = profilesData.reduce((acc, profile) => {
             acc[profile.id] = { avatar_url: profile.avatar_url }
@@ -129,13 +130,11 @@ export default function AgentsPage() {
         profiles: agent.auth_user_id ? profilesMap[agent.auth_user_id] : undefined
       })) || []
 
-      console.log("[v0] Setting agents:", agentsWithProfiles.length)
       setAgents(agentsWithProfiles)
-      console.log("[v0] Agents fetch completed successfully")
     } catch (error) {
-      console.error("[v0] Error fetching agents:", error)
+      console.error("Error fetching agents:", error)
+      setAgents([])
     } finally {
-      console.log("[v0] Setting isLoading to false")
       setIsLoading(false)
     }
   }
