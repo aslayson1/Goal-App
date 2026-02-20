@@ -119,11 +119,8 @@ export default function LeaderboardPage() {
 
   return (
     <div className="flex-1 flex flex-col">
-      {/* Thin green header strip */}
-      <div className="bg-emerald-100 h-12" />
-
       {/* Main Content Card */}
-      <div className="relative -mt-6 mx-6 mb-6 flex-1">
+      <div className="relative mx-6 mb-6 mt-6 flex-1">
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden h-full">
           {/* Header with Back, Title, and Timeframe Toggle */}
           <div className="flex items-center justify-between gap-4 p-4 border-b">
@@ -140,12 +137,12 @@ export default function LeaderboardPage() {
             </div>
 
             {/* Right side: Timeframe Toggle */}
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap justify-end">
               {(['week', 'month', 'all'] as const).map((tf) => (
                 <button
                   key={tf}
                   onClick={() => setTimeframe(tf)}
-                  className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                  className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
                     timeframe === tf
                       ? 'bg-emerald-600 text-white'
                       : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'

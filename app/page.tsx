@@ -1533,6 +1533,7 @@ function GoalTrackerApp() {
     goalId: "",
     timeBlock: "",
     estimatedMinutes: 30,
+    dayOfWeek: "",
   })
 
   const [showAddCategory, setShowAddCategory] = useState(false)
@@ -6474,6 +6475,26 @@ function GoalTrackerApp() {
                           value={newDailyTask.description}
                           onChange={(e) => setNewDailyTask((prev) => ({ ...prev, description: e.target.value }))}
                         />
+                      </div>
+                      <div>
+                        <Label htmlFor="daily-task-dayofweek">Day of Week</Label>
+                        <Select
+                          value={newDailyTask.dayOfWeek}
+                          onValueChange={(value) => setNewDailyTask((prev) => ({ ...prev, dayOfWeek: value }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a day" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Monday">Monday</SelectItem>
+                            <SelectItem value="Tuesday">Tuesday</SelectItem>
+                            <SelectItem value="Wednesday">Wednesday</SelectItem>
+                            <SelectItem value="Thursday">Thursday</SelectItem>
+                            <SelectItem value="Friday">Friday</SelectItem>
+                            <SelectItem value="Saturday">Saturday</SelectItem>
+                            <SelectItem value="Sunday">Sunday</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div>
                         <Label htmlFor="daily-task-category">Category</Label>
