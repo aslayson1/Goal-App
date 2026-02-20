@@ -216,50 +216,12 @@ export async function createAgentWithAuth(
 ) {
   try {
     console.log("[v0] Creating agent:", { name, email })
-    const adminClient = createAdminClient()
+    const supabase = await createClient()
 
-    console.log("[v0] Listing existing auth users...")
-    const { data: existingUsers, error: listError } = await adminClient.auth.admin.listUsers()
-
-    if (listError) {
-      console.error("[v0] Error listing users:", listError)
-      throw listError
-    }
-
-    console.log("[v0] Found existing users count:", existingUsers.users.length)
-    const existingUser = existingUsers.users.find((u) => u.email === email)
-
-    let authUserId: string
-
-    if (existingUser) {
-      console.log("[v0] Found existing auth user:", existingUser.id)
-      const { error: updateError } = await adminClient.auth.admin.updateUserById(existingUser.id, {
-        password,
-        user_metadata: { name },
-      })
-      if (updateError) throw updateError
-
-      authUserId = existingUser.id
-      console.log("[v0] Found existing auth user, updated password and name")
-    } else {
-      console.log("[v0] Creating new auth user...")
-      const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true,
-        user_metadata: { name },
-      })
-
-      if (authError) {
-        console.error("[v0] Auth creation error:", authError)
-        throw authError
-      }
-      authUserId = authData.user.id
-      console.log("[v0] Created new auth user with ID:", authUserId)
-    }
-
-    console.log("[v0] Inserting agent record with auth_user_id:", authUserId)
-    const { data: agent, error: agentError } = await adminClient
+    // Create agent without trying to create auth user
+    // Auth users can be created separately or invited via email
+    console.log("[v0] Inserting agent record without auth user")
+    const { data: agent, error: agentError } = await supabase
       .from("agents")
       .insert({
         user_id: userId,
@@ -267,7 +229,7 @@ export async function createAgentWithAuth(
         role,
         description,
         email,
-        auth_user_id: authUserId,
+        auth_user_id: null, // Will be linked later when user signs up
       })
       .select()
       .single()
