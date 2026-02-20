@@ -4498,7 +4498,11 @@ function GoalTrackerApp() {
     <div className="flex flex-col h-screen w-screen overflow-hidden">
       {/* Full-width Top Header Bar */}
       <header className="sticky top-0 z-50 flex h-14 shrink-0 items-center justify-between gap-4 border-b bg-white px-6 w-full">
-        <div>
+        <button
+          onClick={() => window.location.href = '/'}
+          className="hover:opacity-75 transition-opacity"
+          aria-label="Go to dashboard"
+        >
           {user?.companyLogo ? (
             <img
               src={user.companyLogo}
@@ -4515,7 +4519,7 @@ function GoalTrackerApp() {
               priority
             />
           )}
-        </div>
+        </button>
 
         {/* Right side: Avatar dropdown and Mobile hamburger menu */}
         <div className="flex items-center gap-2">
@@ -4645,7 +4649,9 @@ function GoalTrackerApp() {
                       Hi {selectedAgentName?.split(" ")[0] || user?.name?.split(" ")[0] || "there"},
                     </h1>
                     <p className="text-gray-600">
-                      Here are your tasks for week {currentWeek} of {dashboardMode === "standard" ? 52 : 12}.
+                      Here are your tasks for week {currentWeek}{" "}
+                      <span className="hidden md:inline">of {dashboardMode === "standard" ? 52 : 12}.</span>
+                      <span className="md:hidden">of <br/>{dashboardMode === "standard" ? 52 : 12}.</span>
                     </p>
                   </div>
                   <div className="flex flex-col md:flex-row md:items-center gap-2 md:space-x-2">
