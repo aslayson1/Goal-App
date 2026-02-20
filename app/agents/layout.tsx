@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { UserProfile } from "@/components/profile/user-profile"
 import Image from "next/image"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { useAuth } from "@/components/auth/auth-provider"
 import { Button } from "@/components/ui/button"
@@ -31,6 +32,7 @@ export default function AgentsLayout({
   children: React.ReactNode
 }) {
   const { user } = useAuth()
+  const router = useRouter()
   const [showProfile, setShowProfile] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
 
@@ -39,7 +41,11 @@ export default function AgentsLayout({
       <div className="flex flex-col h-screen w-screen overflow-hidden">
         {/* Full-width Top Header Bar */}
       <header className="sticky top-0 z-50 flex h-14 shrink-0 items-center justify-between gap-4 border-b bg-white px-6 w-full">
-        <div>
+        <button
+          onClick={() => router.push('/')}
+          className="hover:opacity-75 transition-opacity"
+          aria-label="Go to dashboard"
+        >
           {user?.companyLogo ? (
             <img
               src={user.companyLogo}
@@ -56,7 +62,7 @@ export default function AgentsLayout({
               priority
             />
           )}
-        </div>
+        </button>
 
           {/* Right side: Avatar dropdown and Mobile hamburger menu */}
           <div className="flex items-center gap-2">

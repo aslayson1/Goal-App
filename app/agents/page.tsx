@@ -67,11 +67,22 @@ export default function AgentsPage() {
 
   // Fetch agents from Supabase
   useEffect(() => {
-    if (!authLoading && user?.id) {
+    // If user is loaded, fetch agents
+    if (user?.id) {
       fetchAgents()
     } else if (!authLoading && !user) {
+      // Auth is done loading and no user is logged in
       setIsLoading(false)
     }
+    
+    // Timeout fallback - if auth is stuck loading after 5 seconds, try anyway
+    const timeout = setTimeout(() => {
+      if (isLoading && !user) {
+        setIsLoading(false)
+      }
+    }, 5000)
+    
+    return () => clearTimeout(timeout)
   }, [user, authLoading])
 
   const fetchAgents = async () => {
@@ -121,7 +132,8 @@ export default function AgentsPage() {
 
       setAgents(agentsWithProfiles)
     } catch (error) {
-      console.error("[v0] Error fetching agents:", error)
+      console.error("Error fetching agents:", error)
+      setAgents([])
     } finally {
       setIsLoading(false)
     }

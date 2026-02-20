@@ -256,24 +256,40 @@ export default function FitnessPage() {
   }
 
   const logWorkout = async (date: Date) => {
-    if (!user) return
-
-    const dateStr = date.toISOString().split('T')[0]
-    const existingLog = logs.find((log) => log.logged_date === dateStr)
-
-    if (existingLog) {
-      // Delete if already logged (toggle off)
-      await supabase.from('fitness_logs').delete().eq('id', existingLog.id)
-    } else {
-      // Create new log
-      await supabase.from('fitness_logs').insert({
-        user_id: user.id,
-        logged_date: dateStr,
-      })
+    if (!user) {
+      console.log('[v0] No user, cannot log workout')
+      return
     }
 
-    // Reload data (streak will be recalculated client-side)
-    loadFitnessData()
+    const dateStr = date.toISOString().split('T')[0]
+    console.log('[v0] Logging workout for date:', dateStr, 'user:', user.id)
+    const existingLog = logs.find((log) => log.logged_date === dateStr)
+
+    try {
+      if (existingLog) {
+        // Delete if already logged (toggle off)
+        console.log('[v0] Deleting existing log:', existingLog.id)
+        const { error } = await supabase.from('fitness_logs').delete().eq('id', existingLog.id)
+        if (error) throw error
+        console.log('[v0] Successfully deleted log')
+      } else {
+        // Create new log
+        console.log('[v0] Creating new fitness log for date:', dateStr)
+        const { error } = await supabase.from('fitness_logs').insert({
+          user_id: user.id,
+          logged_date: dateStr,
+        })
+        if (error) throw error
+        console.log('[v0] Successfully created fitness log')
+      }
+
+      // Reload data (streak will be recalculated client-side)
+      console.log('[v0] Reloading fitness data')
+      await loadFitnessData()
+      console.log('[v0] Fitness data reloaded successfully')
+    } catch (error) {
+      console.error('[v0] Error in logWorkout:', error)
+    }
   }
 
   const getDaysInMonth = (date: Date) => {
