@@ -65,13 +65,11 @@ export default function AgentsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
 
-  const supabaseUrl = "https://your-supabase-url.supabase.co"
-  const supabaseKey = "your-supabase-key"
-  const supabaseClient = createClient(supabaseUrl, supabaseKey)
-
   // Fetch agents from Supabase
   useEffect(() => {
+    console.log("[v0] Agents page - user:", user?.id, "authLoading:", authLoading)
     if (!authLoading && user?.id) {
+      console.log("[v0] Fetching agents...")
       fetchAgents()
     } else if (!authLoading && !user) {
       setIsLoading(false)
@@ -80,12 +78,14 @@ export default function AgentsPage() {
 
   const fetchAgents = async () => {
     if (!user?.id) {
+      console.log("[v0] No user ID, skipping fetch")
       setIsLoading(false)
       return
     }
 
     try {
       setIsLoading(true)
+      console.log("[v0] Starting to fetch agents for user:", user.id)
       
       // Fetch agents
       const { data: agentsData, error: agentsError } = await supabase
@@ -94,12 +94,16 @@ export default function AgentsPage() {
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
 
+      console.log("[v0] Agents fetch result:", { agentsData, agentsError })
+
       if (agentsError) throw agentsError
 
       // Get all unique auth_user_ids
       const authUserIds = agentsData
         ?.map(agent => agent.auth_user_id)
         .filter((id): id is string => !!id) || []
+
+      console.log("[v0] Auth user IDs to fetch:", authUserIds)
 
       // Fetch profiles for those auth_user_ids
       let profilesMap: Record<string, { avatar_url: string | null }> = {}
@@ -108,6 +112,8 @@ export default function AgentsPage() {
           .from("profiles")
           .select("id, avatar_url")
           .in("id", authUserIds)
+
+        console.log("[v0] Profiles fetch result:", profilesData)
 
         if (profilesData) {
           profilesMap = profilesData.reduce((acc, profile) => {
@@ -123,9 +129,10 @@ export default function AgentsPage() {
         profiles: agent.auth_user_id ? profilesMap[agent.auth_user_id] : undefined
       })) || []
 
+      console.log("[v0] Setting agents:", agentsWithProfiles)
       setAgents(agentsWithProfiles)
     } catch (error) {
-      console.error("Error fetching agents:", error)
+      console.error("[v0] Error fetching agents:", error)
     } finally {
       setIsLoading(false)
     }
