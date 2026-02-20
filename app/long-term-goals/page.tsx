@@ -71,14 +71,21 @@ export default function LongTermGoalsPage() {
   // Load goals from database
   useEffect(() => {
     const loadGoals = async () => {
-      if (!user?.id) return
+      if (!user?.id) {
+        console.log("[v0] Long-term goals: No user ID yet, skipping load")
+        setLoading(false)
+        return
+      }
+      console.log("[v0] Long-term goals: Starting to load for user", user.id)
       setLoading(true)
       try {
         const data = await getLongTermGoals()
+        console.log("[v0] Long-term goals: Loaded", data.length, "goals")
         setGoals(data)
       } catch (error) {
-        console.error("Error loading long-term goals:", error)
+        console.error("[v0] Error loading long-term goals:", error)
       } finally {
+        console.log("[v0] Long-term goals: Loading complete")
         setLoading(false)
       }
     }

@@ -34,6 +34,9 @@ interface Agent {
   created_at: string
   updated_at: string
   auth_user_id?: string
+  profiles?: {
+    avatar_url: string | null
+  }
 }
 
 function getInitials(name?: string | null): string {
@@ -85,7 +88,10 @@ export default function AgentsPage() {
       setIsLoading(true)
       const { data, error } = await supabase
         .from("agents")
-        .select("*")
+        .select(`
+          *,
+          profiles!agents_auth_user_id_fkey(avatar_url)
+        `)
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
 
@@ -283,6 +289,9 @@ export default function AgentsPage() {
                         <div className="flex items-start justify-between">
                           <div className="flex items-center space-x-3">
                             <Avatar className="h-12 w-12 border-2 border-gray-200">
+                              {agent.profiles?.avatar_url && (
+                                <AvatarImage src={agent.profiles.avatar_url} alt={agent.name} />
+                              )}
                               <AvatarFallback className="bg-gray-100 text-gray-700 font-semibold">
                                 {getInitials(agent.name)}
                               </AvatarFallback>

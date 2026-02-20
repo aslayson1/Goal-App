@@ -7,9 +7,17 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import Link from 'next/link'
 import { ChevronLeft, Crown, TrendingUp, TrendingDown } from 'lucide-react'
 
-export default function LeaderboardPage() {
+  interface LeaderboardPerson {
+    id: string
+    name: string
+    workouts: number
+    isCurrentUser: boolean
+    avatar_url: string | null
+  }
+
+  export default function LeaderboardPage() {
   const { user } = useAuth()
-  const [leaderboard, setLeaderboard] = useState<any[]>([])
+  const [leaderboard, setLeaderboard] = useState<LeaderboardPerson[]>([])
   const [timeframe, setTimeframe] = useState<'week' | 'month' | 'all'>('month')
   const [loading, setLoading] = useState(true)
 
@@ -34,7 +42,15 @@ export default function LeaderboardPage() {
       console.log('[v0] Current user ID:', user?.id)
       console.log('[v0] Timeframe:', timeframe, 'Start date:', startDate.toISOString().split('T')[0])
 
-      const { data: agents } = await supabase.from('agents').select('id, name, email, auth_user_id')
+      const { data: agents } = await supabase
+        .from('agents')
+        .select(`
+          id, 
+          name, 
+          email, 
+          auth_user_id,
+          profiles!agents_auth_user_id_fkey(avatar_url)
+        `)
       console.log('[v0] Agents fetched:', agents)
 
       if (!agents) return
@@ -61,6 +77,7 @@ export default function LeaderboardPage() {
             name: agent.name || agent.email?.split('@')[0] || 'Unknown',
             workouts: count || 0,
             isCurrentUser: agent.auth_user_id === user?.id,
+            avatar_url: agent.profiles?.avatar_url || null,
           }
         })
       )
@@ -145,7 +162,10 @@ export default function LeaderboardPage() {
                     {/* 2nd Place */}
                     <div className="flex flex-col items-center">
                       <Avatar className={`h-16 w-16 lg:h-24 lg:w-24 ring-4 ${championColors[0].ring}`}>
-                        <AvatarFallback className="bg-slate-100 text-slate-700 text-lg lg:text-2xl font-semibold">
+                        {top3[1]?.avatar_url && (
+                          <AvatarImage src={top3[1].avatar_url} alt={top3[1]?.name} />
+                        )}
+                        <AvatarFallback className="bg-sky-50 text-sky-700 text-lg lg:text-2xl font-semibold">
                           {getInitials(top3[1]?.name || '')}
                         </AvatarFallback>
                       </Avatar>
@@ -162,6 +182,9 @@ export default function LeaderboardPage() {
                     <div className="flex flex-col items-center -mt-4 lg:-mt-8">
                       <Crown className="h-8 w-8 lg:h-12 lg:w-12 text-amber-400 mb-1" />
                       <Avatar className={`h-20 w-20 lg:h-28 lg:w-28 ring-4 ${championColors[1].ring}`}>
+                        {top3[0]?.avatar_url && (
+                          <AvatarImage src={top3[0].avatar_url} alt={top3[0]?.name} />
+                        )}
                         <AvatarFallback className="bg-amber-50 text-amber-700 text-xl lg:text-3xl font-semibold">
                           {getInitials(top3[0]?.name || '')}
                         </AvatarFallback>
@@ -178,6 +201,9 @@ export default function LeaderboardPage() {
                     {/* 3rd Place */}
                     <div className="flex flex-col items-center">
                       <Avatar className={`h-16 w-16 lg:h-24 lg:w-24 ring-4 ${championColors[2].ring}`}>
+                        {top3[2]?.avatar_url && (
+                          <AvatarImage src={top3[2].avatar_url} alt={top3[2]?.name} />
+                        )}
                         <AvatarFallback className="bg-rose-50 text-rose-700 text-lg lg:text-2xl font-semibold">
                           {getInitials(top3[2]?.name || '')}
                         </AvatarFallback>
@@ -220,6 +246,9 @@ export default function LeaderboardPage() {
                       {/* Avatar & Name */}
                       <div className="col-span-5 lg:col-span-4 flex items-center gap-3 lg:gap-4">
                         <Avatar className="h-10 w-10 lg:h-12 lg:w-12">
+                          {person.avatar_url && (
+                            <AvatarImage src={person.avatar_url} alt={person.name} />
+                          )}
                           <AvatarFallback className="bg-slate-100 text-slate-600 text-sm lg:text-base">
                             {getInitials(person.name)}
                           </AvatarFallback>
