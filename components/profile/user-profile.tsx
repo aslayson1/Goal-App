@@ -417,7 +417,12 @@ export function UserProfile({ onClose }: UserProfileProps) {
                   <div className="flex items-center space-x-4">
                     <div className="relative">
                       <Avatar className="h-20 w-20">
-                        {user.avatar && <AvatarImage src={user.avatar || "/placeholder.svg"} alt={user.name} />}
+                        {(localAvatarUrl || user.avatar) && (
+                          <AvatarImage 
+                            src={localAvatarUrl || user.avatar || "/placeholder.svg"} 
+                            alt={user.name} 
+                          />
+                        )}
                         <AvatarFallback className="text-lg">{getInitials(user.name)}</AvatarFallback>
                       </Avatar>
                       <input
