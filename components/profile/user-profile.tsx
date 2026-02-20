@@ -18,6 +18,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useAuth } from "@/components/auth/auth-provider"
+import { updatePassword } from "@/lib/actions/auth"
 import { Camera, LogOut, User, Settings, Bell, Loader2 } from "lucide-react"
 
 interface UserProfileProps {
@@ -158,25 +159,31 @@ export function UserProfile({ onClose }: UserProfileProps) {
       return
     }
 
+    // Check if user is authenticated
+    if (!user?.id) {
+      setMessage({ type: "error", text: "You must be signed in to change your password" })
+      setIsLoading(false)
+      return
+    }
+
     try {
-      const { createClient } = await import("@/lib/supabase/client")
-      const supabase = createClient()
+      console.log("[v0] User attempting password change, user ID:", user.id)
+      console.log("[v0] Calling server action to update password...")
+      const result = await updatePassword(passwordData.newPassword, user.id)
 
-      const { error } = await supabase.auth.updateUser({
-        password: passwordData.newPassword,
-      })
-
-      if (error) {
-        console.error("[v0] Password update error:", error)
-        setMessage({ type: "error", text: error.message })
-      } else {
-        setMessage({ type: "success", text: "Password updated successfully!" })
+      if (result.error) {
+        console.error("[v0] Password update error:", result.error)
+        setMessage({ type: "error", text: result.error })
+      } else if (result.success) {
+        console.log("[v0] Password updated successfully")
+        setMessage({ type: "success", text: result.success })
         setShowPasswordDialog(false)
         setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" })
       }
     } catch (error) {
       console.error("[v0] Error changing password:", error)
-      setMessage({ type: "error", text: "Failed to update password" })
+      const errorMessage = error instanceof Error ? error.message : "Failed to update password"
+      setMessage({ type: "error", text: errorMessage })
     } finally {
       setIsLoading(false)
     }

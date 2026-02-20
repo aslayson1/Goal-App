@@ -99,3 +99,37 @@ export async function signUp(prevState: any, formData: FormData) {
     return { error: "An unexpected error occurred. Please try again." }
   }
 }
+
+export async function updatePassword(newPassword: string, userId: string) {
+  try {
+    console.log("[v0] Server action: updating password for user:", userId)
+    
+    // Import admin client to bypass RLS and session requirements
+    const { createAdminClient } = await import("@/lib/supabase/admin")
+    const adminClient = createAdminClient()
+
+    if (!userId) {
+      console.error("[v0] No user ID provided")
+      return { error: "User ID is required to change password" }
+    }
+
+    // Use admin client to update user password by ID
+    // This doesn't require an active session
+    const { error: updateError } = await adminClient.auth.admin.updateUserById(userId, {
+      password: newPassword,
+    })
+
+    if (updateError) {
+      console.error("[v0] Password update error:", updateError)
+      return { error: updateError.message || "Failed to update password" }
+    }
+
+    console.log("[v0] Password updated successfully for user:", userId)
+    revalidatePath("/", "layout")
+    return { success: "Password updated successfully!" }
+  } catch (error) {
+    console.error("[v0] Error updating password:", error)
+    const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred"
+    return { error: errorMessage }
+  }
+}
