@@ -270,7 +270,7 @@ export default function AgentsPage() {
   }
 
   return (
-    <div className="space-y-6 px-6 lg:px-12">
+    <div className="space-y-6 px-6 lg:px-12 pt-6">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900">My Team</h2>
@@ -309,7 +309,7 @@ export default function AgentsPage() {
                   </CardContent>
                 </Card>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
                   {agents.map((agent) => (
                     <Card key={agent.id} className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200">
                       <CardHeader className="pb-3">
@@ -324,9 +324,9 @@ export default function AgentsPage() {
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <CardTitle className="text-lg">{agent.name}</CardTitle>
-                              <CardDescription className="text-sm">{agent.role}</CardDescription>
-                              {agent.email && <p className="text-xs text-gray-500 mt-1">{agent.email}</p>}
+                              <CardTitle className="text-sm lg:text-base font-semibold line-clamp-2">{agent.name}</CardTitle>
+                              <CardDescription className="text-xs lg:text-sm">{agent.role}</CardDescription>
+                              {agent.email && <p className="text-xs text-gray-500 mt-1 truncate">{agent.email}</p>}
                             </div>
                           </div>
                           <DropdownMenu>
