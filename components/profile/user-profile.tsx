@@ -58,6 +58,8 @@ export function UserProfile({ onClose }: UserProfileProps) {
   })
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [uploadingLogo, setUploadingLogo] = useState(false)
+  const [localAvatarUrl, setLocalAvatarUrl] = useState<string | null>(null)
+  const [localLogoUrl, setLocalLogoUrl] = useState<string | null>(null)
   const avatarInputRef = React.useRef<HTMLInputElement>(null)
   const logoInputRef = React.useRef<HTMLInputElement>(null)
 
@@ -205,6 +207,9 @@ export function UserProfile({ onClose }: UserProfileProps) {
       
       console.log("[v0] Avatar uploaded successfully:", data.url)
       
+      // Store avatar URL in local state for immediate display
+      setLocalAvatarUrl(data.url)
+      
       // Reset loading state immediately
       setUploadingAvatar(false)
       
@@ -241,6 +246,9 @@ export function UserProfile({ onClose }: UserProfileProps) {
       setMessage({ type: "success", text: "Company logo updated successfully!" })
       
       console.log("[v0] Logo uploaded successfully:", data.url)
+      
+      // Store logo URL in local state for immediate display
+      setLocalLogoUrl(data.url)
       
       // Reset loading state immediately
       setUploadingLogo(false)
@@ -479,9 +487,9 @@ export function UserProfile({ onClose }: UserProfileProps) {
                       <Label>Company Logo</Label>
                       <div className="flex items-center gap-4">
                         <div className="relative">
-                          {user.companyLogo ? (
+                          {(localLogoUrl || user.companyLogo) ? (
                             <img
-                              src={user.companyLogo}
+                              src={localLogoUrl || user.companyLogo || ''}
                               alt="Company Logo"
                               className="h-16 w-16 object-contain border rounded"
                             />
