@@ -4649,9 +4649,8 @@ function GoalTrackerApp() {
                       Hi {selectedAgentName?.split(" ")[0] || user?.name?.split(" ")[0] || "there"},
                     </h1>
                     <p className="text-gray-600">
-                      Here are your tasks for week {currentWeek}{" "}
-                      <span className="hidden md:inline">of {dashboardMode === "standard" ? 52 : 12}.</span>
-                      <span className="md:hidden">of <br/>{dashboardMode === "standard" ? 52 : 12}.</span>
+                      Here are your tasks for week {currentWeek} of{" "}
+                      {dashboardMode === "standard" ? 52 : 12}.
                     </p>
                   </div>
                   <div className="flex flex-col md:flex-row md:items-center gap-2 md:space-x-2">

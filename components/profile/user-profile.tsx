@@ -466,6 +466,7 @@ export function UserProfile({ onClose }: UserProfileProps) {
                       <Input
                         id="name"
                         name="name"
+                        placeholder="Enter your full name"
                         value={formData.name}
                         onChange={(e) => handleInputChange("name", e.target.value)}
                       />
@@ -476,6 +477,7 @@ export function UserProfile({ onClose }: UserProfileProps) {
                         id="email"
                         name="email"
                         type="email"
+                        placeholder="Enter your email address"
                         value={formData.email}
                         onChange={(e) => handleInputChange("email", e.target.value)}
                       />
