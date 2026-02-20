@@ -216,12 +216,12 @@ export async function createAgentWithAuth(
 ) {
   try {
     console.log("[v0] Creating agent:", { name, email })
-    const supabase = await createClient()
+    const adminClient = createAdminClient()
 
     // Create agent without trying to create auth user
     // Auth users can be created separately or invited via email
     console.log("[v0] Inserting agent record without auth user")
-    const { data: agent, error: agentError } = await supabase
+    const { data: agent, error: agentError } = await adminClient
       .from("agents")
       .insert({
         user_id: userId,
