@@ -159,24 +159,34 @@ export function UserProfile({ onClose }: UserProfileProps) {
     }
 
     try {
+      console.log("[v0] Starting password update...")
       const { createClient } = await import("@/lib/supabase/client")
       const supabase = createClient()
 
-      const { error } = await supabase.auth.updateUser({
+      // Create a promise with a timeout
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Password update timeout - please try again")), 10000)
+      )
+
+      const updatePromise = supabase.auth.updateUser({
         password: passwordData.newPassword,
       })
 
+      const { error } = await Promise.race([updatePromise, timeoutPromise]) as any
+
       if (error) {
         console.error("[v0] Password update error:", error)
-        setMessage({ type: "error", text: error.message })
+        setMessage({ type: "error", text: error.message || "Failed to update password" })
       } else {
+        console.log("[v0] Password updated successfully")
         setMessage({ type: "success", text: "Password updated successfully!" })
         setShowPasswordDialog(false)
         setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" })
       }
     } catch (error) {
       console.error("[v0] Error changing password:", error)
-      setMessage({ type: "error", text: "Failed to update password" })
+      const errorMessage = error instanceof Error ? error.message : "Failed to update password"
+      setMessage({ type: "error", text: errorMessage })
     } finally {
       setIsLoading(false)
     }
