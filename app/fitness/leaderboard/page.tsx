@@ -118,9 +118,9 @@ export default function LeaderboardPage() {
   ]
 
   return (
-    <div className="flex-1 flex flex-col p-3 md:p-6 lg:px-20">
+    <div className="flex-1 flex flex-col overflow-y-auto pb-20">
       {/* Main Content Card */}
-      <div className="relative mb-6 flex-1">
+      <div className="relative mb-6 flex-1 mx-6 md:mx-0">
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden h-full">
           {/* Header with Back, Title, and Timeframe Toggle */}
           <div className="flex items-center justify-between gap-4 p-4 border-b">
