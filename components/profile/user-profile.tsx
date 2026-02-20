@@ -18,6 +18,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useAuth } from "@/components/auth/auth-provider"
+import { updatePassword } from "@/lib/actions/auth"
 import { Camera, LogOut, User, Settings, Bell, Loader2 } from "lucide-react"
 
 interface UserProfileProps {
@@ -159,27 +160,15 @@ export function UserProfile({ onClose }: UserProfileProps) {
     }
 
     try {
-      console.log("[v0] Starting password update...")
-      const { createClient } = await import("@/lib/supabase/client")
-      const supabase = createClient()
+      console.log("[v0] Calling server action to update password...")
+      const result = await updatePassword(passwordData.newPassword)
 
-      // Create a promise with a timeout
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error("Password update timeout - please try again")), 10000)
-      )
-
-      const updatePromise = supabase.auth.updateUser({
-        password: passwordData.newPassword,
-      })
-
-      const { error } = await Promise.race([updatePromise, timeoutPromise]) as any
-
-      if (error) {
-        console.error("[v0] Password update error:", error)
-        setMessage({ type: "error", text: error.message || "Failed to update password" })
-      } else {
+      if (result.error) {
+        console.error("[v0] Password update error:", result.error)
+        setMessage({ type: "error", text: result.error })
+      } else if (result.success) {
         console.log("[v0] Password updated successfully")
-        setMessage({ type: "success", text: "Password updated successfully!" })
+        setMessage({ type: "success", text: result.success })
         setShowPasswordDialog(false)
         setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" })
       }

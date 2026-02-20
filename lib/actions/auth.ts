@@ -99,3 +99,41 @@ export async function signUp(prevState: any, formData: FormData) {
     return { error: "An unexpected error occurred. Please try again." }
   }
 }
+
+export async function updatePassword(newPassword: string) {
+  try {
+    console.log("[v0] Server action: updating password...")
+    const supabase = await createClient()
+
+    // Get the current user session
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser()
+
+    if (userError || !user) {
+      console.error("[v0] No authenticated user found:", userError)
+      return { error: "You must be signed in to change your password" }
+    }
+
+    console.log("[v0] Authenticated user found:", user.id)
+
+    // Update the password on the server side
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword,
+    })
+
+    if (error) {
+      console.error("[v0] Password update error:", error)
+      return { error: error.message || "Failed to update password" }
+    }
+
+    console.log("[v0] Password updated successfully")
+    revalidatePath("/", "layout")
+    return { success: "Password updated successfully!" }
+  } catch (error) {
+    console.error("[v0] Error updating password:", error)
+    const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred"
+    return { error: errorMessage }
+  }
+}
