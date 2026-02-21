@@ -3800,12 +3800,11 @@ function GoalTrackerApp() {
       description: newDailyTask.description,
       category: newDailyTask.category,
       goalId: newDailyTask.goalId,
-      // Removed timeBlock and estimatedMinutes as per the update
     }
 
     console.log("[v0] Task data prepared:", taskData)
 
-    // Check if a task with the same title already exists for this goal on this day
+    // Check if a task with the same title already exists for this goal on this day (local check)
     const targetDailyTasks = dashboardMode === "standard" ? standardDailyTasks : dailyTasks
     const existingTasksForDay = targetDailyTasks[selectedDay] || []
     const isDuplicate = existingTasksForDay.some(
@@ -3817,31 +3816,6 @@ function GoalTrackerApp() {
       alert(`A task "${taskData.title}" already exists for ${selectedDay}. Please use a different title or day.`)
       return
     }
-
-    try {
-      if (!user?.id) {
-        console.error("[v0] ERROR: No user ID available - task will not be saved to database!")
-        console.error("[v0] User object:", user)
-        return
-      }
-
-      console.log("[v0] User authenticated, proceeding with database save")
-      console.log("[v0] User ID:", user.id)
-
-      // Look up category ID if category is provided
-      let categoryId = null
-      if (taskData.category) {
-        console.log("[v0] Looking up category ID for:", taskData.category)
-        const { data: categories } = await supabase
-          .from("categories")
-          .select("id")
-          .eq("name", taskData.category)
-          .eq("user_id", user.id)
-          .single()
-
-        categoryId = categories?.id || null
-        console.log("[v0] Category ID found:", categoryId)
-      }
 
     // Calculate the target_date based on the selected day
     const today = new Date()
@@ -3874,31 +3848,10 @@ function GoalTrackerApp() {
 
     const targetDateString = targetDate.toISOString().split("T")[0]
 
-    // CHECK DATABASE FOR EXISTING TASK WITH SAME TITLE ON SAME DAY
-    try {
-      const { data: existingTasks, error: checkError } = await supabase
-        .from("tasks")
-        .select("id, title")
-        .eq("user_id", user.id)
-        .eq("target_date", targetDateString)
-        .eq("title", taskData.title)
-        .eq("task_type", "daily")
-
-      if (checkError) {
-        console.error("[v0] Error checking for duplicates:", checkError)
-      } else if (existingTasks && existingTasks.length > 0) {
-        console.log("[v0] Found existing task(s) with same title on this date:", existingTasks)
-        alert(`A task "${taskData.title}" already exists for ${selectedDay}. Duplicates are not allowed.`)
-        return
-      }
-    } catch (err) {
-      console.error("[v0] Exception while checking duplicates:", err)
-    }
-
     // Use appropriate state based on dashboard mode
     const setTargetDailyTasks = dashboardMode === "standard" ? setStandardDailyTasks : setDailyTasks
 
-    // Add to local state AFTER duplicate check passes
+    // Add to local state
     setTargetDailyTasks((prev) => ({
       ...prev,
       [selectedDay]: [
