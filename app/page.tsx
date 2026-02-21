@@ -1533,6 +1533,7 @@ function GoalTrackerApp() {
     goalId: "",
     timeBlock: "",
     estimatedMinutes: 30,
+    dayOfWeek: "",
   })
 
   const [showAddCategory, setShowAddCategory] = useState(false)
@@ -4643,7 +4644,7 @@ function GoalTrackerApp() {
           <main className="h-full overflow-auto p-3 md:p-6 lg:px-20 bg-slate-50">
               <div className="w-full space-y-6">
                 {/* Header */}
-                <div className="w-full flex items-center justify-between mb-8">
+                <div className="w-full flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-0 mb-8">
                   <div>
                     <h1 className="text-4xl font-bold text-gray-900 mb-2">
                       Hi {selectedAgentName?.split(" ")[0] || user?.name?.split(" ")[0] || "there"},
@@ -6474,6 +6475,26 @@ function GoalTrackerApp() {
                           value={newDailyTask.description}
                           onChange={(e) => setNewDailyTask((prev) => ({ ...prev, description: e.target.value }))}
                         />
+                      </div>
+                      <div>
+                        <Label htmlFor="daily-task-dayofweek">Day of Week</Label>
+                        <Select
+                          value={newDailyTask.dayOfWeek}
+                          onValueChange={(value) => setNewDailyTask((prev) => ({ ...prev, dayOfWeek: value }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a day" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Monday">Monday</SelectItem>
+                            <SelectItem value="Tuesday">Tuesday</SelectItem>
+                            <SelectItem value="Wednesday">Wednesday</SelectItem>
+                            <SelectItem value="Thursday">Thursday</SelectItem>
+                            <SelectItem value="Friday">Friday</SelectItem>
+                            <SelectItem value="Saturday">Saturday</SelectItem>
+                            <SelectItem value="Sunday">Sunday</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div>
                         <Label htmlFor="daily-task-category">Category</Label>
