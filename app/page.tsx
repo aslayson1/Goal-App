@@ -953,9 +953,22 @@ function SortableWeeklyTaskItem({
 
   // Check if this is a numeric task
   const isNumericTask = task.target_count !== null && task.target_count !== undefined && task.target_count > 0
-  const currentCount = task.counter || 0
   const targetCount = task.target_count || 0
   const weeklyTarget = task.weekly_target || targetCount
+
+  // Calculate cumulative count across all instances of this task (for numeric goals)
+  let currentCount = task.counter || 0
+  if (isNumericTask && task.linked_goal_id) {
+    // Sum up counters from all tasks linked to the same goal
+    const allTasksWithGoal = Object.values(dailyTasks || {})
+      .flat()
+      .concat(Object.values(standardDailyTasks || {}).flat())
+      .filter((t) => t.linked_goal_id === task.linked_goal_id && t.title === task.title)
+    
+    currentCount = allTasksWithGoal.reduce((sum, t) => sum + (t.counter || 0), 0)
+    console.log("[v0] Calculating cumulative count for task:", task.title, "goal:", task.linked_goal_id, "total:", currentCount, "tasks found:", allTasksWithGoal.length)
+  }
+  
   const progressPercent = targetCount > 0 ? Math.round((currentCount / targetCount) * 100) : 0
 
   // Calculate increment buttons based on target size
@@ -1166,8 +1179,20 @@ function SortableDailyTaskItem({
   }
 
   const isNumericTask = task.target_count !== null && task.target_count !== undefined && task.target_count > 0
-  const currentCount = task.counter || 0
   const targetCount = task.target_count || 0
+
+  // Calculate cumulative count across all instances of this task (for numeric goals)
+  let currentCount = task.counter || 0
+  if (isNumericTask && task.linked_goal_id) {
+    // Sum up counters from all tasks linked to the same goal
+    const allTasksWithGoal = Object.values(dailyTasks || {})
+      .flat()
+      .concat(Object.values(standardDailyTasks || {}).flat())
+      .filter((t) => t.linked_goal_id === task.linked_goal_id && t.title === task.title)
+    
+    currentCount = allTasksWithGoal.reduce((sum, t) => sum + (t.counter || 0), 0)
+  }
+  
   const progressPercentage = targetCount > 0 ? Math.min((currentCount / targetCount) * 100, 100) : 0
 
   // Calculate quick increment values based on target size
@@ -3805,8 +3830,20 @@ function GoalTrackerApp() {
 
     console.log("[v0] Task data prepared:", taskData)
 
-    // Use appropriate state based on dashboard mode
+    // Check if a task with the same title already exists for this goal on this day
     const targetDailyTasks = dashboardMode === "standard" ? standardDailyTasks : dailyTasks
+    const existingTasksForDay = targetDailyTasks[selectedDay] || []
+    const isDuplicate = existingTasksForDay.some(
+      (task) => task.title === taskData.title && task.goalId === taskData.goalId
+    )
+
+    if (isDuplicate) {
+      console.log("[v0] Task with same title and goal already exists for this day. Skipping creation.")
+      alert(`A task "${taskData.title}" already exists for ${selectedDay}. Please use a different title or day.`)
+      return
+    }
+
+    // Use appropriate state based on dashboard mode
     const setTargetDailyTasks = dashboardMode === "standard" ? setStandardDailyTasks : setDailyTasks
 
     setTargetDailyTasks((prev) => ({
@@ -3834,6 +3871,7 @@ function GoalTrackerApp() {
       goalId: "",
       timeBlock: "", // Resetting as it's removed
       estimatedMinutes: 30, // Resetting as it's removed
+      dayOfWeek: "",
     })
     setShowAddDailyTask(false)
 
