@@ -34,6 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true
+    let timeoutId: NodeJS.Timeout
 
     const getInitialSession = async () => {
       try {
@@ -44,33 +45,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (mounted && supabaseUser) {
           const name = supabaseUser.user_metadata?.name ?? supabaseUser.user_metadata?.full_name ?? null
 
-          // Fetch profile data including avatar and logo
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('avatar_url, company_logo_url')
-            .eq('id', supabaseUser.id)
-            .maybeSingle()
+          // Fetch profile data including avatar and logo with timeout
+          let profile = null
+          try {
+            const profilePromise = supabase
+              .from('profiles')
+              .select('avatar_url, company_logo_url')
+              .eq('id', supabaseUser.id)
+              .maybeSingle()
 
-          if (profileError) {
+            const timeoutPromise = new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
+            )
+
+            const result = await Promise.race([profilePromise, timeoutPromise])
+            profile = (result as any).data
+          } catch (profileError) {
             console.error('[v0] Initial profile fetch error:', profileError)
+            // Continue without profile data
           }
-          
-          console.log('[v0] Initial profile load:', profile)
 
-          setUser({
-            id: supabaseUser.id,
-            email: supabaseUser.email ?? null,
-            name,
-            avatar: profile?.avatar_url ?? null,
-            companyLogo: profile?.company_logo_url ?? null,
-          })
-          setIsLoading(false)
+          if (mounted) {
+            setUser({
+              id: supabaseUser.id,
+              email: supabaseUser.email ?? null,
+              name,
+              avatar: profile?.avatar_url ?? null,
+              companyLogo: profile?.company_logo_url ?? null,
+            })
+            setIsLoading(false)
+          }
         } else if (mounted) {
           setUser(null)
           setIsLoading(false)
         }
       } catch (error) {
-        console.error("Auth check error:", error)
+        console.error("[v0] Auth check error:", error)
         if (mounted) {
           setUser(null)
           setIsLoading(false)
@@ -90,35 +100,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (supabaseUser) {
         const name = supabaseUser.user_metadata?.name ?? supabaseUser.user_metadata?.full_name ?? null
 
-        // Fetch profile data including avatar and logo
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('avatar_url, company_logo_url')
-          .eq('id', supabaseUser.id)
-          .maybeSingle()
+        // Fetch profile data including avatar and logo with timeout
+        let profile = null
+        try {
+          const profilePromise = supabase
+            .from('profiles')
+            .select('avatar_url, company_logo_url')
+            .eq('id', supabaseUser.id)
+            .maybeSingle()
 
-        if (profileError) {
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
+          )
+
+          const result = await Promise.race([profilePromise, timeoutPromise])
+          profile = (result as any).data
+        } catch (profileError) {
           console.error('[v0] Auth listener profile fetch error:', profileError)
+          // Continue without profile data
         }
 
-        console.log('[v0] Auth listener profile load:', profile)
-
-        setUser({
-          id: supabaseUser.id,
-          email: supabaseUser.email ?? null,
-          name,
-          avatar: profile?.avatar_url ?? null,
-          companyLogo: profile?.company_logo_url ?? null,
-        })
+        if (mounted) {
+          setUser({
+            id: supabaseUser.id,
+            email: supabaseUser.email ?? null,
+            name,
+            avatar: profile?.avatar_url ?? null,
+            companyLogo: profile?.company_logo_url ?? null,
+          })
+        }
       } else {
-        setUser(null)
+        if (mounted) {
+          setUser(null)
+        }
       }
 
-      setIsLoading(false)
+      if (mounted) {
+        setIsLoading(false)
+      }
     })
 
     return () => {
       mounted = false
+      clearTimeout(timeoutId)
       subscription.unsubscribe()
     }
   }, [])
@@ -132,18 +156,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (supabaseUser) {
         const name = supabaseUser.user_metadata?.name ?? supabaseUser.user_metadata?.full_name ?? null
 
-        // Fetch profile data including avatar and logo
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('avatar_url, company_logo_url')
-          .eq('id', supabaseUser.id)
-          .maybeSingle()
+        // Fetch profile data including avatar and logo with timeout
+        let profile = null
+        try {
+          const profilePromise = supabase
+            .from('profiles')
+            .select('avatar_url, company_logo_url')
+            .eq('id', supabaseUser.id)
+            .maybeSingle()
 
-        if (profileError) {
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
+          )
+
+          const result = await Promise.race([profilePromise, timeoutPromise])
+          profile = (result as any).data
+        } catch (profileError) {
           console.error('[v0] Profile fetch error:', profileError)
+          // Continue without profile data
         }
-
-        console.log('[v0] Refreshed user profile:', profile)
 
         setUser({
           id: supabaseUser.id,
