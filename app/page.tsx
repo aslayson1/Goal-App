@@ -4644,7 +4644,7 @@ function GoalTrackerApp() {
           <main className="h-full overflow-auto p-3 md:p-6 lg:px-20 bg-slate-50">
               <div className="w-full space-y-6">
                 {/* Header */}
-                <div className="w-full flex items-center justify-between mb-8">
+                <div className="w-full flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-0 mb-8">
                   <div>
                     <h1 className="text-4xl font-bold text-gray-900 mb-2">
                       Hi {selectedAgentName?.split(" ")[0] || user?.name?.split(" ")[0] || "there"},
