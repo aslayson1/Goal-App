@@ -34,6 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true
+    let timeoutId: NodeJS.Timeout
 
     const getInitialSession = async () => {
       try {
@@ -44,33 +45,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (mounted && supabaseUser) {
           const name = supabaseUser.user_metadata?.name ?? supabaseUser.user_metadata?.full_name ?? null
 
-          // Fetch profile data including avatar and logo
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('avatar_url, company_logo_url')
-            .eq('id', supabaseUser.id)
-            .maybeSingle()
-
-          if (profileError) {
-            console.error('[v0] Initial profile fetch error:', profileError)
-          }
-          
-          console.log('[v0] Initial profile load:', profile)
-
           setUser({
             id: supabaseUser.id,
             email: supabaseUser.email ?? null,
             name,
-            avatar: profile?.avatar_url ?? null,
-            companyLogo: profile?.company_logo_url ?? null,
+            avatar: null,
+            companyLogo: null,
           })
           setIsLoading(false)
+
+          // Fetch profile data in background (don't block loading)
+          supabase
+            .from('profiles')
+            .select('avatar_url, company_logo_url')
+            .eq('id', supabaseUser.id)
+            .maybeSingle()
+            .then(({ data: profile, error }) => {
+              if (mounted && profile) {
+                setUser((prev) => prev ? {
+                  ...prev,
+                  avatar: profile.avatar_url ?? null,
+                  companyLogo: profile.company_logo_url ?? null,
+                } : null)
+              }
+              if (error) {
+                console.error('[v0] Initial profile fetch error:', error)
+              }
+            })
+            .catch((err) => {
+              console.error('[v0] Initial profile fetch exception:', err)
+            })
         } else if (mounted) {
           setUser(null)
           setIsLoading(false)
         }
       } catch (error) {
-        console.error("Auth check error:", error)
+        console.error("[v0] Auth check error:", error)
         if (mounted) {
           setUser(null)
           setIsLoading(false)
@@ -82,7 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return
 
       const supabaseUser = session?.user
@@ -90,35 +100,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (supabaseUser) {
         const name = supabaseUser.user_metadata?.name ?? supabaseUser.user_metadata?.full_name ?? null
 
-        // Fetch profile data including avatar and logo
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('avatar_url, company_logo_url')
-          .eq('id', supabaseUser.id)
-          .maybeSingle()
-
-        if (profileError) {
-          console.error('[v0] Auth listener profile fetch error:', profileError)
-        }
-
-        console.log('[v0] Auth listener profile load:', profile)
-
         setUser({
           id: supabaseUser.id,
           email: supabaseUser.email ?? null,
           name,
-          avatar: profile?.avatar_url ?? null,
-          companyLogo: profile?.company_logo_url ?? null,
+          avatar: null,
+          companyLogo: null,
         })
+
+        // Fetch profile data in background (don't block)
+        supabase
+          .from('profiles')
+          .select('avatar_url, company_logo_url')
+          .eq('id', supabaseUser.id)
+          .maybeSingle()
+          .then(({ data: profile, error }) => {
+            if (mounted && profile) {
+              setUser((prev) => prev ? {
+                ...prev,
+                avatar: profile.avatar_url ?? null,
+                companyLogo: profile.company_logo_url ?? null,
+              } : null)
+            }
+            if (error) {
+              console.error('[v0] Auth listener profile fetch error:', error)
+            }
+          })
+          .catch((err) => {
+            console.error('[v0] Auth listener profile fetch exception:', err)
+          })
       } else {
-        setUser(null)
+        if (mounted) {
+          setUser(null)
+        }
       }
 
-      setIsLoading(false)
+      if (mounted) {
+        setIsLoading(false)
+      }
     })
 
     return () => {
       mounted = false
+      clearTimeout(timeoutId)
       subscription.unsubscribe()
     }
   }, [])
@@ -132,26 +156,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (supabaseUser) {
         const name = supabaseUser.user_metadata?.name ?? supabaseUser.user_metadata?.full_name ?? null
 
-        // Fetch profile data including avatar and logo
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('avatar_url, company_logo_url')
-          .eq('id', supabaseUser.id)
-          .maybeSingle()
-
-        if (profileError) {
-          console.error('[v0] Profile fetch error:', profileError)
-        }
-
-        console.log('[v0] Refreshed user profile:', profile)
-
         setUser({
           id: supabaseUser.id,
           email: supabaseUser.email ?? null,
           name,
-          avatar: profile?.avatar_url ?? null,
-          companyLogo: profile?.company_logo_url ?? null,
+          avatar: null,
+          companyLogo: null,
         })
+
+        // Fetch profile data in background
+        supabase
+          .from('profiles')
+          .select('avatar_url, company_logo_url')
+          .eq('id', supabaseUser.id)
+          .maybeSingle()
+          .then(({ data: profile, error }) => {
+            if (profile) {
+              setUser((prev) => prev ? {
+                ...prev,
+                avatar: profile.avatar_url ?? null,
+                companyLogo: profile.company_logo_url ?? null,
+              } : null)
+            }
+            if (error) {
+              console.error('[v0] Profile refresh error:', error)
+            }
+          })
+          .catch((err) => {
+            console.error('[v0] Profile refresh exception:', err)
+          })
       }
     } catch (error) {
       console.error("[v0] Error refreshing user:", error)

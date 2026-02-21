@@ -953,9 +953,9 @@ function SortableWeeklyTaskItem({
 
   // Check if this is a numeric task
   const isNumericTask = task.target_count !== null && task.target_count !== undefined && task.target_count > 0
-  const currentCount = task.counter || 0
   const targetCount = task.target_count || 0
   const weeklyTarget = task.weekly_target || targetCount
+  const currentCount = task.counter || 0
   const progressPercent = targetCount > 0 ? Math.round((currentCount / targetCount) * 100) : 0
 
   // Calculate increment buttons based on target size
@@ -1166,8 +1166,8 @@ function SortableDailyTaskItem({
   }
 
   const isNumericTask = task.target_count !== null && task.target_count !== undefined && task.target_count > 0
-  const currentCount = task.counter || 0
   const targetCount = task.target_count || 0
+  const currentCount = task.counter || 0
   const progressPercentage = targetCount > 0 ? Math.min((currentCount / targetCount) * 100, 100) : 0
 
   // Calculate quick increment values based on target size
@@ -3800,15 +3800,58 @@ function GoalTrackerApp() {
       description: newDailyTask.description,
       category: newDailyTask.category,
       goalId: newDailyTask.goalId,
-      // Removed timeBlock and estimatedMinutes as per the update
     }
 
     console.log("[v0] Task data prepared:", taskData)
 
-    // Use appropriate state based on dashboard mode
+    // Check if a task with the same title already exists for this goal on this day (local check)
     const targetDailyTasks = dashboardMode === "standard" ? standardDailyTasks : dailyTasks
+    const existingTasksForDay = targetDailyTasks[selectedDay] || []
+    const isDuplicate = existingTasksForDay.some(
+      (task) => task.title === taskData.title && task.goalId === taskData.goalId
+    )
+
+    if (isDuplicate) {
+      console.log("[v0] Task with same title and goal already exists for this day. Skipping creation.")
+      alert(`A task "${taskData.title}" already exists for ${selectedDay}. Please use a different title or day.`)
+      return
+    }
+
+    // Calculate the target_date based on the selected day
+    const today = new Date()
+    const currentDayIndex = today.getDay()
+    const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+    const selectedDayIndex = daysOfWeek.indexOf(selectedDay)
+
+    console.log("[v0] Date calculation:")
+    console.log("[v0]   - Today:", today.toISOString())
+    console.log("[v0]   - Current day index:", currentDayIndex)
+    console.log("[v0]   - Selected day:", selectedDay)
+    console.log("[v0]   - Selected day index:", selectedDayIndex)
+
+    // Calculate days difference
+    let daysDiff = selectedDayIndex - currentDayIndex
+
+    // If the selected day is in the past this week, move to next week
+    if (daysDiff < 0) {
+      daysDiff += 7
+    }
+
+    console.log("[v0]   - Days difference:", daysDiff)
+
+    // Create target date
+    const targetDate = new Date(today)
+    targetDate.setDate(today.getDate() + daysDiff)
+
+    console.log("[v0]   - Target date:", targetDate.toISOString())
+    console.log("[v0]   - Target date (formatted):", targetDate.toISOString().split("T")[0])
+
+    const targetDateString = targetDate.toISOString().split("T")[0]
+
+    // Use appropriate state based on dashboard mode
     const setTargetDailyTasks = dashboardMode === "standard" ? setStandardDailyTasks : setDailyTasks
 
+    // Add to local state
     setTargetDailyTasks((prev) => ({
       ...prev,
       [selectedDay]: [
@@ -3820,7 +3863,6 @@ function GoalTrackerApp() {
           category: taskData.category,
           goalId: taskData.goalId,
           completed: false,
-          // Removed timeBlock and estimatedMinutes from local state update
         },
       ],
     }))
@@ -3832,8 +3874,9 @@ function GoalTrackerApp() {
       description: "",
       category: "",
       goalId: "",
-      timeBlock: "", // Resetting as it's removed
-      estimatedMinutes: 30, // Resetting as it's removed
+      timeBlock: "",
+      estimatedMinutes: 30,
+      dayOfWeek: "",
     })
     setShowAddDailyTask(false)
 
@@ -3862,35 +3905,6 @@ function GoalTrackerApp() {
         console.log("[v0] Category ID found:", categoryId)
       }
 
-      // Calculate the target_date based on the selected day
-      const today = new Date()
-      const currentDayIndex = today.getDay()
-      const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
-      const selectedDayIndex = daysOfWeek.indexOf(selectedDay)
-
-      console.log("[v0] Date calculation:")
-      console.log("[v0]   - Today:", today.toISOString())
-      console.log("[v0]   - Current day index:", currentDayIndex)
-      console.log("[v0]   - Selected day:", selectedDay)
-      console.log("[v0]   - Selected day index:", selectedDayIndex)
-
-      // Calculate days difference
-      let daysDiff = selectedDayIndex - currentDayIndex
-
-      // If the selected day is in the past this week, move to next week
-      if (daysDiff < 0) {
-        daysDiff += 7
-      }
-
-      console.log("[v0]   - Days difference:", daysDiff)
-
-      // Create target date
-      const targetDate = new Date(today)
-      targetDate.setDate(today.getDate() + daysDiff)
-
-      console.log("[v0]   - Target date:", targetDate.toISOString())
-      console.log("[v0]   - Target date (formatted):", targetDate.toISOString().split("T")[0])
-
       const insertData = {
         id: taskId,
         user_id: user.id,
@@ -3899,9 +3913,8 @@ function GoalTrackerApp() {
         title: taskData.title,
         description: `__MODE:${dashboardMode}__${taskData.description}`,
         task_type: "daily",
-        target_date: targetDate.toISOString().split("T")[0],
+        target_date: targetDateString,
         completed: false,
-        // Removed time_block and estimated_minutes from database insert
       }
 
       console.log("[v0] Inserting into database:", JSON.stringify(insertData, null, 2))
@@ -4075,21 +4088,41 @@ function GoalTrackerApp() {
               )
 
               if (taskDate < today) {
-                console.log(`[v0] Moving incomplete task "${task.title}" from ${task.target_date} to ${todayString}, preserving counter: ${task.counter}`)
-                tasksToUpdate.push(task.id)
+                // Check if a task with the same title already exists for today (duplicate prevention)
+                const taskAlreadyExistsToday = tasks.some(
+                  (t) => t.target_date.split("T")[0] === todayString && t.title === task.title && !t.completed && t.id !== task.id
+                )
 
-                // Update the task's target_date in the database
-                const { error: updateError } = await supabase
-                  .from("tasks")
-                  .update({ target_date: todayString })
-                  .eq("id", task.id)
+                if (taskAlreadyExistsToday) {
+                  console.log(`[v0] Task "${task.title}" already exists for today, skipping move and deleting duplicate`)
+                  // Delete this duplicate task since it already exists
+                  const { error: deleteError } = await supabase
+                    .from("tasks")
+                    .delete()
+                    .eq("id", task.id)
 
-                if (updateError) {
-                  console.error(`[v0] Error updating task ${task.id}:`, updateError)
+                  if (deleteError) {
+                    console.error(`[v0] Error deleting duplicate task ${task.id}:`, deleteError)
+                  } else {
+                    console.log(`[v0] Successfully deleted duplicate task ${task.id}`)
+                  }
                 } else {
-                  console.log(`[v0] Successfully updated task ${task.id} in database with new target_date: ${todayString}, counter remains: ${task.counter}`)
-                  // Update the task object in memory so it's organized correctly
-                  task.target_date = todayString
+                  console.log(`[v0] Moving incomplete task "${task.title}" from ${task.target_date} to ${todayString}, preserving counter: ${task.counter}`)
+                  tasksToUpdate.push(task.id)
+
+                  // Update the task's target_date in the database
+                  const { error: updateError } = await supabase
+                    .from("tasks")
+                    .update({ target_date: todayString })
+                    .eq("id", task.id)
+
+                  if (updateError) {
+                    console.error(`[v0] Error updating task ${task.id}:`, updateError)
+                  } else {
+                    console.log(`[v0] Successfully updated task ${task.id} in database with new target_date: ${todayString}, counter remains: ${task.counter}`)
+                    // Update the task object in memory so it's organized correctly
+                    task.target_date = todayString
+                  }
                 }
               }
             } else {
@@ -4104,30 +4137,41 @@ function GoalTrackerApp() {
               )
 
               if (taskDateStr === yesterdayDateStr && task.target_count) {
-                console.log(
-                  `[v0] Duplicating completed recurring task "${task.title}" to today with counter: ${task.counter || 0}`,
+                // Check if this task already exists for today (duplicate prevention)
+                const taskAlreadyExistsToday = tasks.some(
+                  (t) => t.target_date.split("T")[0] === todayString && t.title === task.title && !t.completed
                 )
-                completedRecurringTasks.push({
-                  user_id: task.user_id,
-                  goal_id: task.goal_id,
-                  category_id: task.category_id,
-                  title: task.title,
-                  task_type: task.task_type,
-                  target_date: todayString,
-                  completed: false,
-                  completed_at: null,
-                  created_at: task.created_at,
-                  updated_at: new Date().toISOString(),
-                  description: task.description,
-                  time_block: task.time_block,
-                  estimated_minutes: task.estimated_minutes,
-                  agent_id: task.agent_id,
-                  sort_order: task.sort_order,
-                  linked_goal_id: task.linked_goal_id,
-                  counter: 0, // Reset counter to 0 for new day (completed tasks create new fresh instances)
-                  target_count: task.target_count,
-                  daily_target: task.daily_target,
-                })
+
+                if (taskAlreadyExistsToday) {
+                  console.log(
+                    `[v0] Task "${task.title}" already exists for today, skipping duplicate creation`,
+                  )
+                } else {
+                  console.log(
+                    `[v0] Duplicating completed recurring task "${task.title}" to today with counter: ${task.counter || 0}`,
+                  )
+                  completedRecurringTasks.push({
+                    user_id: task.user_id,
+                    goal_id: task.goal_id,
+                    category_id: task.category_id,
+                    title: task.title,
+                    task_type: task.task_type,
+                    target_date: todayString,
+                    completed: false,
+                    completed_at: null,
+                    created_at: task.created_at,
+                    updated_at: new Date().toISOString(),
+                    description: task.description,
+                    time_block: task.time_block,
+                    estimated_minutes: task.estimated_minutes,
+                    agent_id: task.agent_id,
+                    sort_order: task.sort_order,
+                    linked_goal_id: task.linked_goal_id,
+                    counter: 0, // Reset counter to 0 for new day (completed tasks create new fresh instances)
+                    target_count: task.target_count,
+                    daily_target: task.daily_target,
+                  })
+                }
               }
             }
           }
@@ -5269,23 +5313,25 @@ function GoalTrackerApp() {
 
                                           // Sync to linked 12-week goal if exists
                                           if (task.linked_goal_id) {
-                                            // Calculate total progress from all linked tasks
-                                            let totalProgress = newCount
+                                            // Calculate total progress - use the MAXIMUM counter value, not the sum
+                                            // (since counters are cumulative across days)
+                                            let maxProgress = newCount
                                             Object.values(targetWeeklyTasks).forEach((weekTasks) => {
                                               weekTasks.forEach((t) => {
                                                 if (t.linked_goal_id === task.linked_goal_id && t.id !== task.id) {
-                                                  totalProgress += t.counter || 0
+                                                  maxProgress = Math.max(maxProgress, t.counter || 0)
                                                 }
                                               })
                                             })
                                             Object.values(targetDailyTasks).forEach((dayTasks) => {
                                               dayTasks.forEach((t) => {
                                                 if (t.linked_goal_id === task.linked_goal_id) {
-                                                  totalProgress += t.counter || 0
+                                                  maxProgress = Math.max(maxProgress, t.counter || 0)
                                                 }
                                               })
                                             })
-                                            updateGoalProgress(task.linked_goal_id, totalProgress)
+                                            console.log("[v0] Updating goal progress with max counter:", maxProgress, "for goal:", task.linked_goal_id)
+                                            updateGoalProgress(task.linked_goal_id, maxProgress)
                                           }
 
                                           // Update database
@@ -5387,22 +5433,25 @@ function GoalTrackerApp() {
 
                                         // Sync to linked 12-week goal if exists
                                         if (task.linked_goal_id) {
-                                          let totalProgress = newCount
+                                          // Calculate total progress - use the MAXIMUM counter value, not the sum
+                                          // (since counters are cumulative across days)
+                                          let maxProgress = newCount
                                           Object.values(weeklyTasks).forEach((weekTasks) => {
                                             weekTasks.forEach((t) => {
                                               if (t.linked_goal_id === task.linked_goal_id && t.id !== task.id) {
-                                                totalProgress += t.counter || 0
+                                                maxProgress = Math.max(maxProgress, t.counter || 0)
                                               }
                                             })
                                           })
                                           Object.values(dailyTasks).forEach((dayTasks) => {
                                             dayTasks.forEach((t) => {
                                               if (t.linked_goal_id === task.linked_goal_id) {
-                                                totalProgress += t.counter || 0
+                                                maxProgress = Math.max(maxProgress, t.counter || 0)
                                               }
                                             })
                                           })
-                                          updateGoalProgress(task.linked_goal_id, totalProgress)
+                                          console.log("[v0] Updating goal progress with max counter:", maxProgress, "for goal:", task.linked_goal_id)
+                                          updateGoalProgress(task.linked_goal_id, maxProgress)
                                         }
 
                                         // Update database
@@ -5536,17 +5585,19 @@ function GoalTrackerApp() {
 
                                           // Sync to linked 12-week goal if exists
                                           if (task.linked_goal_id) {
-                                            // Calculate new goal progress by summing all linked tasks
-                                            let totalProgress = newCount
-                                            // Add progress from other days' tasks linked to same goal
+                                            // Calculate new goal progress - use MAXIMUM counter value, not sum
+                                            // (since counters are cumulative across days)
+                                            let maxProgress = newCount
+                                            // Get max progress from other days' tasks linked to same goal
                                             Object.values(targetDailyTasks).forEach((dayTasks) => {
                                               dayTasks.forEach((t) => {
                                                 if (t.linked_goal_id === task.linked_goal_id && t.id !== task.id) {
-                                                  totalProgress += t.counter || 0
+                                                  maxProgress = Math.max(maxProgress, t.counter || 0)
                                                 }
                                               })
                                             })
-                                            updateGoalProgress(task.linked_goal_id, totalProgress)
+                                            console.log("[v0] Updating goal progress with max counter:", maxProgress, "for goal:", task.linked_goal_id)
+                                            updateGoalProgress(task.linked_goal_id, maxProgress)
                                           }
 
                                           // Update database
