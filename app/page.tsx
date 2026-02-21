@@ -4088,21 +4088,41 @@ function GoalTrackerApp() {
               )
 
               if (taskDate < today) {
-                console.log(`[v0] Moving incomplete task "${task.title}" from ${task.target_date} to ${todayString}, preserving counter: ${task.counter}`)
-                tasksToUpdate.push(task.id)
+                // Check if a task with the same title already exists for today (duplicate prevention)
+                const taskAlreadyExistsToday = tasks.some(
+                  (t) => t.target_date.split("T")[0] === todayString && t.title === task.title && !t.completed && t.id !== task.id
+                )
 
-                // Update the task's target_date in the database
-                const { error: updateError } = await supabase
-                  .from("tasks")
-                  .update({ target_date: todayString })
-                  .eq("id", task.id)
+                if (taskAlreadyExistsToday) {
+                  console.log(`[v0] Task "${task.title}" already exists for today, skipping move and deleting duplicate`)
+                  // Delete this duplicate task since it already exists
+                  const { error: deleteError } = await supabase
+                    .from("tasks")
+                    .delete()
+                    .eq("id", task.id)
 
-                if (updateError) {
-                  console.error(`[v0] Error updating task ${task.id}:`, updateError)
+                  if (deleteError) {
+                    console.error(`[v0] Error deleting duplicate task ${task.id}:`, deleteError)
+                  } else {
+                    console.log(`[v0] Successfully deleted duplicate task ${task.id}`)
+                  }
                 } else {
-                  console.log(`[v0] Successfully updated task ${task.id} in database with new target_date: ${todayString}, counter remains: ${task.counter}`)
-                  // Update the task object in memory so it's organized correctly
-                  task.target_date = todayString
+                  console.log(`[v0] Moving incomplete task "${task.title}" from ${task.target_date} to ${todayString}, preserving counter: ${task.counter}`)
+                  tasksToUpdate.push(task.id)
+
+                  // Update the task's target_date in the database
+                  const { error: updateError } = await supabase
+                    .from("tasks")
+                    .update({ target_date: todayString })
+                    .eq("id", task.id)
+
+                  if (updateError) {
+                    console.error(`[v0] Error updating task ${task.id}:`, updateError)
+                  } else {
+                    console.log(`[v0] Successfully updated task ${task.id} in database with new target_date: ${todayString}, counter remains: ${task.counter}`)
+                    // Update the task object in memory so it's organized correctly
+                    task.target_date = todayString
+                  }
                 }
               }
             } else {
