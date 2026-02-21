@@ -5313,23 +5313,25 @@ function GoalTrackerApp() {
 
                                           // Sync to linked 12-week goal if exists
                                           if (task.linked_goal_id) {
-                                            // Calculate total progress from all linked tasks
-                                            let totalProgress = newCount
+                                            // Calculate total progress - use the MAXIMUM counter value, not the sum
+                                            // (since counters are cumulative across days)
+                                            let maxProgress = newCount
                                             Object.values(targetWeeklyTasks).forEach((weekTasks) => {
                                               weekTasks.forEach((t) => {
                                                 if (t.linked_goal_id === task.linked_goal_id && t.id !== task.id) {
-                                                  totalProgress += t.counter || 0
+                                                  maxProgress = Math.max(maxProgress, t.counter || 0)
                                                 }
                                               })
                                             })
                                             Object.values(targetDailyTasks).forEach((dayTasks) => {
                                               dayTasks.forEach((t) => {
                                                 if (t.linked_goal_id === task.linked_goal_id) {
-                                                  totalProgress += t.counter || 0
+                                                  maxProgress = Math.max(maxProgress, t.counter || 0)
                                                 }
                                               })
                                             })
-                                            updateGoalProgress(task.linked_goal_id, totalProgress)
+                                            console.log("[v0] Updating goal progress with max counter:", maxProgress, "for goal:", task.linked_goal_id)
+                                            updateGoalProgress(task.linked_goal_id, maxProgress)
                                           }
 
                                           // Update database
@@ -5431,22 +5433,25 @@ function GoalTrackerApp() {
 
                                         // Sync to linked 12-week goal if exists
                                         if (task.linked_goal_id) {
-                                          let totalProgress = newCount
+                                          // Calculate total progress - use the MAXIMUM counter value, not the sum
+                                          // (since counters are cumulative across days)
+                                          let maxProgress = newCount
                                           Object.values(weeklyTasks).forEach((weekTasks) => {
                                             weekTasks.forEach((t) => {
                                               if (t.linked_goal_id === task.linked_goal_id && t.id !== task.id) {
-                                                totalProgress += t.counter || 0
+                                                maxProgress = Math.max(maxProgress, t.counter || 0)
                                               }
                                             })
                                           })
                                           Object.values(dailyTasks).forEach((dayTasks) => {
                                             dayTasks.forEach((t) => {
                                               if (t.linked_goal_id === task.linked_goal_id) {
-                                                totalProgress += t.counter || 0
+                                                maxProgress = Math.max(maxProgress, t.counter || 0)
                                               }
                                             })
                                           })
-                                          updateGoalProgress(task.linked_goal_id, totalProgress)
+                                          console.log("[v0] Updating goal progress with max counter:", maxProgress, "for goal:", task.linked_goal_id)
+                                          updateGoalProgress(task.linked_goal_id, maxProgress)
                                         }
 
                                         // Update database
@@ -5580,17 +5585,19 @@ function GoalTrackerApp() {
 
                                           // Sync to linked 12-week goal if exists
                                           if (task.linked_goal_id) {
-                                            // Calculate new goal progress by summing all linked tasks
-                                            let totalProgress = newCount
-                                            // Add progress from other days' tasks linked to same goal
+                                            // Calculate new goal progress - use MAXIMUM counter value, not sum
+                                            // (since counters are cumulative across days)
+                                            let maxProgress = newCount
+                                            // Get max progress from other days' tasks linked to same goal
                                             Object.values(targetDailyTasks).forEach((dayTasks) => {
                                               dayTasks.forEach((t) => {
                                                 if (t.linked_goal_id === task.linked_goal_id && t.id !== task.id) {
-                                                  totalProgress += t.counter || 0
+                                                  maxProgress = Math.max(maxProgress, t.counter || 0)
                                                 }
                                               })
                                             })
-                                            updateGoalProgress(task.linked_goal_id, totalProgress)
+                                            console.log("[v0] Updating goal progress with max counter:", maxProgress, "for goal:", task.linked_goal_id)
+                                            updateGoalProgress(task.linked_goal_id, maxProgress)
                                           }
 
                                           // Update database
