@@ -3926,6 +3926,33 @@ function GoalTrackerApp() {
       dayOfWeek: "",
     })
     setShowAddDailyTask(false)
+
+    try {
+      if (!user?.id) {
+        console.error("[v0] ERROR: No user ID available - task will not be saved to database!")
+        console.error("[v0] User object:", user)
+        return
+      }
+
+      console.log("[v0] User authenticated, proceeding with database save")
+      console.log("[v0] User ID:", user.id)
+
+      // Look up category ID if category is provided
+      let categoryId = null
+      if (taskData.category) {
+        console.log("[v0] Looking up category ID for:", taskData.category)
+        const { data: categories } = await supabase
+          .from("categories")
+          .select("id")
+          .eq("name", taskData.category)
+          .eq("user_id", user.id)
+          .single()
+
+        categoryId = categories?.id || null
+        console.log("[v0] Category ID found:", categoryId)
+      }
+
+      const insertData = {
         id: taskId,
         user_id: user.id,
         category_id: categoryId,
@@ -3933,9 +3960,8 @@ function GoalTrackerApp() {
         title: taskData.title,
         description: `__MODE:${dashboardMode}__${taskData.description}`,
         task_type: "daily",
-        target_date: targetDate.toISOString().split("T")[0],
+        target_date: targetDateString,
         completed: false,
-        // Removed time_block and estimated_minutes from database insert
       }
 
       console.log("[v0] Inserting into database:", JSON.stringify(insertData, null, 2))
