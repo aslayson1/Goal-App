@@ -3818,38 +3818,6 @@ function GoalTrackerApp() {
       return
     }
 
-    // Use appropriate state based on dashboard mode
-    const setTargetDailyTasks = dashboardMode === "standard" ? setStandardDailyTasks : setDailyTasks
-
-    setTargetDailyTasks((prev) => ({
-      ...prev,
-      [selectedDay]: [
-        ...(prev[selectedDay] || []),
-        {
-          id: taskId,
-          title: taskData.title,
-          description: taskData.description,
-          category: taskData.category,
-          goalId: taskData.goalId,
-          completed: false,
-          // Removed timeBlock and estimatedMinutes from local state update
-        },
-      ],
-    }))
-
-    console.log("[v0] Task added to local state for day:", selectedDay, "mode:", dashboardMode)
-
-    setNewDailyTask({
-      title: "",
-      description: "",
-      category: "",
-      goalId: "",
-      timeBlock: "", // Resetting as it's removed
-      estimatedMinutes: 30, // Resetting as it's removed
-      dayOfWeek: "",
-    })
-    setShowAddDailyTask(false)
-
     try {
       if (!user?.id) {
         console.error("[v0] ERROR: No user ID available - task will not be saved to database!")
@@ -3875,36 +3843,89 @@ function GoalTrackerApp() {
         console.log("[v0] Category ID found:", categoryId)
       }
 
-      // Calculate the target_date based on the selected day
-      const today = new Date()
-      const currentDayIndex = today.getDay()
-      const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
-      const selectedDayIndex = daysOfWeek.indexOf(selectedDay)
+    // Calculate the target_date based on the selected day
+    const today = new Date()
+    const currentDayIndex = today.getDay()
+    const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+    const selectedDayIndex = daysOfWeek.indexOf(selectedDay)
 
-      console.log("[v0] Date calculation:")
-      console.log("[v0]   - Today:", today.toISOString())
-      console.log("[v0]   - Current day index:", currentDayIndex)
-      console.log("[v0]   - Selected day:", selectedDay)
-      console.log("[v0]   - Selected day index:", selectedDayIndex)
+    console.log("[v0] Date calculation:")
+    console.log("[v0]   - Today:", today.toISOString())
+    console.log("[v0]   - Current day index:", currentDayIndex)
+    console.log("[v0]   - Selected day:", selectedDay)
+    console.log("[v0]   - Selected day index:", selectedDayIndex)
 
-      // Calculate days difference
-      let daysDiff = selectedDayIndex - currentDayIndex
+    // Calculate days difference
+    let daysDiff = selectedDayIndex - currentDayIndex
 
-      // If the selected day is in the past this week, move to next week
-      if (daysDiff < 0) {
-        daysDiff += 7
+    // If the selected day is in the past this week, move to next week
+    if (daysDiff < 0) {
+      daysDiff += 7
+    }
+
+    console.log("[v0]   - Days difference:", daysDiff)
+
+    // Create target date
+    const targetDate = new Date(today)
+    targetDate.setDate(today.getDate() + daysDiff)
+
+    console.log("[v0]   - Target date:", targetDate.toISOString())
+    console.log("[v0]   - Target date (formatted):", targetDate.toISOString().split("T")[0])
+
+    const targetDateString = targetDate.toISOString().split("T")[0]
+
+    // CHECK DATABASE FOR EXISTING TASK WITH SAME TITLE ON SAME DAY
+    try {
+      const { data: existingTasks, error: checkError } = await supabase
+        .from("tasks")
+        .select("id, title")
+        .eq("user_id", user.id)
+        .eq("target_date", targetDateString)
+        .eq("title", taskData.title)
+        .eq("task_type", "daily")
+
+      if (checkError) {
+        console.error("[v0] Error checking for duplicates:", checkError)
+      } else if (existingTasks && existingTasks.length > 0) {
+        console.log("[v0] Found existing task(s) with same title on this date:", existingTasks)
+        alert(`A task "${taskData.title}" already exists for ${selectedDay}. Duplicates are not allowed.`)
+        return
       }
+    } catch (err) {
+      console.error("[v0] Exception while checking duplicates:", err)
+    }
 
-      console.log("[v0]   - Days difference:", daysDiff)
+    // Use appropriate state based on dashboard mode
+    const setTargetDailyTasks = dashboardMode === "standard" ? setStandardDailyTasks : setDailyTasks
 
-      // Create target date
-      const targetDate = new Date(today)
-      targetDate.setDate(today.getDate() + daysDiff)
+    // Add to local state AFTER duplicate check passes
+    setTargetDailyTasks((prev) => ({
+      ...prev,
+      [selectedDay]: [
+        ...(prev[selectedDay] || []),
+        {
+          id: taskId,
+          title: taskData.title,
+          description: taskData.description,
+          category: taskData.category,
+          goalId: taskData.goalId,
+          completed: false,
+        },
+      ],
+    }))
 
-      console.log("[v0]   - Target date:", targetDate.toISOString())
-      console.log("[v0]   - Target date (formatted):", targetDate.toISOString().split("T")[0])
+    console.log("[v0] Task added to local state for day:", selectedDay, "mode:", dashboardMode)
 
-      const insertData = {
+    setNewDailyTask({
+      title: "",
+      description: "",
+      category: "",
+      goalId: "",
+      timeBlock: "",
+      estimatedMinutes: 30,
+      dayOfWeek: "",
+    })
+    setShowAddDailyTask(false)
         id: taskId,
         user_id: user.id,
         category_id: categoryId,
