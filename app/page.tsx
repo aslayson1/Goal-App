@@ -4117,30 +4117,41 @@ function GoalTrackerApp() {
               )
 
               if (taskDateStr === yesterdayDateStr && task.target_count) {
-                console.log(
-                  `[v0] Duplicating completed recurring task "${task.title}" to today with counter: ${task.counter || 0}`,
+                // Check if this task already exists for today (duplicate prevention)
+                const taskAlreadyExistsToday = tasks.some(
+                  (t) => t.target_date.split("T")[0] === todayString && t.title === task.title && !t.completed
                 )
-                completedRecurringTasks.push({
-                  user_id: task.user_id,
-                  goal_id: task.goal_id,
-                  category_id: task.category_id,
-                  title: task.title,
-                  task_type: task.task_type,
-                  target_date: todayString,
-                  completed: false,
-                  completed_at: null,
-                  created_at: task.created_at,
-                  updated_at: new Date().toISOString(),
-                  description: task.description,
-                  time_block: task.time_block,
-                  estimated_minutes: task.estimated_minutes,
-                  agent_id: task.agent_id,
-                  sort_order: task.sort_order,
-                  linked_goal_id: task.linked_goal_id,
-                  counter: 0, // Reset counter to 0 for new day (completed tasks create new fresh instances)
-                  target_count: task.target_count,
-                  daily_target: task.daily_target,
-                })
+
+                if (taskAlreadyExistsToday) {
+                  console.log(
+                    `[v0] Task "${task.title}" already exists for today, skipping duplicate creation`,
+                  )
+                } else {
+                  console.log(
+                    `[v0] Duplicating completed recurring task "${task.title}" to today with counter: ${task.counter || 0}`,
+                  )
+                  completedRecurringTasks.push({
+                    user_id: task.user_id,
+                    goal_id: task.goal_id,
+                    category_id: task.category_id,
+                    title: task.title,
+                    task_type: task.task_type,
+                    target_date: todayString,
+                    completed: false,
+                    completed_at: null,
+                    created_at: task.created_at,
+                    updated_at: new Date().toISOString(),
+                    description: task.description,
+                    time_block: task.time_block,
+                    estimated_minutes: task.estimated_minutes,
+                    agent_id: task.agent_id,
+                    sort_order: task.sort_order,
+                    linked_goal_id: task.linked_goal_id,
+                    counter: 0, // Reset counter to 0 for new day (completed tasks create new fresh instances)
+                    target_count: task.target_count,
+                    daily_target: task.daily_target,
+                  })
+                }
               }
             }
           }
