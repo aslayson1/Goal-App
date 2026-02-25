@@ -1168,16 +1168,7 @@ function SortableDailyTaskItem({
   const isNumericTask = task.target_count !== null && task.target_count !== undefined && task.target_count > 0
   const targetCount = task.target_count || 0
   
-  // For numeric tasks linked to long-term goals, use the goal's progress value
-  // This ensures daily tasks always display the cumulative progress from the 12-week goal
-  let currentCount = task.counter || 0
-  if (task.linked_goal_id && isNumericTask) {
-    // Note: The actual goal progress is passed through props or fetched elsewhere
-    // This serves as a placeholder - the actual sync happens in the parent component
-    // The counter value should be kept in sync with the linked goal's progress field
-    console.log(`[v0] Daily task "${task.title}" is linked to goal ${task.linked_goal_id} with counter: ${currentCount}`)
-  }
-  
+  const currentCount = task.counter || 0
   const progressPercentage = targetCount > 0 ? Math.min((currentCount / targetCount) * 100, 100) : 0
 
   // Calculate quick increment values based on target size
@@ -4490,20 +4481,37 @@ function GoalTrackerApp() {
         (task) => task.linked_goal_id === goal.id && task.target_date === todayStr,
       )
 
-      if (existingTaskForGoal) {
-        console.log(`[v0] Task already exists for goal "${goal.title}" today, skipping`)
-        continue
-      }
-
-      // Fetch the current progress from the linked goal
+      // Fetch the current progress from the linked goal (needed for both existing and new tasks)
       const { data: goalData } = await supabase
         .from("long_term_goals")
         .select("progress")
         .eq("id", goal.id)
         .single()
-      
+
       const currentGoalProgress = goalData?.progress || 0
-      console.log(`[v0] Fetched current progress for goal "${goal.title}": ${currentGoalProgress}`)
+
+      if (existingTaskForGoal) {
+        // If the existing task's counter doesn't match the goal's progress, sync it
+        if ((existingTaskForGoal.counter || 0) !== currentGoalProgress) {
+          console.log(`[v0] Syncing counter for "${goal.title}" from ${existingTaskForGoal.counter} to ${currentGoalProgress}`)
+          await supabase
+            .from("tasks")
+            .update({ counter: currentGoalProgress })
+            .eq("id", existingTaskForGoal.id)
+
+          // Update local state so it re-renders immediately
+          setDailyTasks((prev) => {
+            const updated = { ...prev }
+            for (const day of Object.keys(updated)) {
+              updated[day] = (updated[day] || []).map((t) =>
+                t.id === existingTaskForGoal.id ? { ...t, counter: currentGoalProgress } : t,
+              )
+            }
+            return updated
+          })
+        }
+        continue
+      }
 
       // Create a new daily task for this goal
       const dailyTaskId = crypto.randomUUID()
