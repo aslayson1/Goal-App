@@ -4108,21 +4108,36 @@ function GoalTrackerApp() {
                     console.log(`[v0] Successfully deleted duplicate task ${task.id}`)
                   }
                 } else {
-                  console.log(`[v0] Moving incomplete task "${task.title}" from ${task.target_date} to ${todayString}, preserving counter: ${task.counter}`)
+                  // For numeric tasks linked to a long-term goal, sync the counter from the goal's current progress
+                  let syncedCounter = task.counter || 0
+                  if (task.linked_goal_id && task.target_count) {
+                    const { data: linkedGoal } = await supabase
+                      .from("long_term_goals")
+                      .select("progress")
+                      .eq("id", task.linked_goal_id)
+                      .single()
+                    if (linkedGoal) {
+                      syncedCounter = linkedGoal.progress || 0
+                      console.log(`[v0] Syncing counter for "${task.title}" from ${task.counter} to goal progress: ${syncedCounter}`)
+                    }
+                  }
+
+                  console.log(`[v0] Moving incomplete task "${task.title}" from ${task.target_date} to ${todayString}, counter: ${syncedCounter}`)
                   tasksToUpdate.push(task.id)
 
-                  // Update the task's target_date in the database
+                  // Update the task's target_date and synced counter in the database
                   const { error: updateError } = await supabase
                     .from("tasks")
-                    .update({ target_date: todayString })
+                    .update({ target_date: todayString, counter: syncedCounter })
                     .eq("id", task.id)
 
                   if (updateError) {
                     console.error(`[v0] Error updating task ${task.id}:`, updateError)
                   } else {
-                    console.log(`[v0] Successfully updated task ${task.id} in database with new target_date: ${todayString}, counter remains: ${task.counter}`)
+                    console.log(`[v0] Successfully moved task ${task.id} to ${todayString} with counter: ${syncedCounter}`)
                     // Update the task object in memory so it's organized correctly
                     task.target_date = todayString
+                    task.counter = syncedCounter
                   }
                 }
               }
