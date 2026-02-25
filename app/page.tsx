@@ -4167,7 +4167,7 @@ function GoalTrackerApp() {
                     agent_id: task.agent_id,
                     sort_order: task.sort_order,
                     linked_goal_id: task.linked_goal_id,
-                    counter: 0, // Reset counter to 0 for new day (completed tasks create new fresh instances)
+                    counter: task.counter || 0, // Preserve counter value from previous day to track cumulative progress
                     target_count: task.target_count,
                     daily_target: task.daily_target,
                   })
