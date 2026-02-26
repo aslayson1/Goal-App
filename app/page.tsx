@@ -1167,6 +1167,7 @@ function SortableDailyTaskItem({
 
   const isNumericTask = task.target_count !== null && task.target_count !== undefined && task.target_count > 0
   const targetCount = task.target_count || 0
+  
   const currentCount = task.counter || 0
   const progressPercentage = targetCount > 0 ? Math.min((currentCount / targetCount) * 100, 100) : 0
 
@@ -4107,21 +4108,36 @@ function GoalTrackerApp() {
                     console.log(`[v0] Successfully deleted duplicate task ${task.id}`)
                   }
                 } else {
-                  console.log(`[v0] Moving incomplete task "${task.title}" from ${task.target_date} to ${todayString}, preserving counter: ${task.counter}`)
+                  // For numeric tasks linked to a long-term goal, sync the counter from the goal's current progress
+                  let syncedCounter = task.counter || 0
+                  if (task.linked_goal_id && task.target_count) {
+                    const { data: linkedGoal } = await supabase
+                      .from("long_term_goals")
+                      .select("progress")
+                      .eq("id", task.linked_goal_id)
+                      .single()
+                    if (linkedGoal) {
+                      syncedCounter = linkedGoal.progress || 0
+                      console.log(`[v0] Syncing counter for "${task.title}" from ${task.counter} to goal progress: ${syncedCounter}`)
+                    }
+                  }
+
+                  console.log(`[v0] Moving incomplete task "${task.title}" from ${task.target_date} to ${todayString}, counter: ${syncedCounter}`)
                   tasksToUpdate.push(task.id)
 
-                  // Update the task's target_date in the database
+                  // Update the task's target_date and synced counter in the database
                   const { error: updateError } = await supabase
                     .from("tasks")
-                    .update({ target_date: todayString })
+                    .update({ target_date: todayString, counter: syncedCounter })
                     .eq("id", task.id)
 
                   if (updateError) {
                     console.error(`[v0] Error updating task ${task.id}:`, updateError)
                   } else {
-                    console.log(`[v0] Successfully updated task ${task.id} in database with new target_date: ${todayString}, counter remains: ${task.counter}`)
+                    console.log(`[v0] Successfully moved task ${task.id} to ${todayString} with counter: ${syncedCounter}`)
                     // Update the task object in memory so it's organized correctly
                     task.target_date = todayString
+                    task.counter = syncedCounter
                   }
                 }
               }
@@ -4167,7 +4183,7 @@ function GoalTrackerApp() {
                     agent_id: task.agent_id,
                     sort_order: task.sort_order,
                     linked_goal_id: task.linked_goal_id,
-                    counter: 0, // Reset counter to 0 for new day (completed tasks create new fresh instances)
+                    counter: task.counter || 0, // Preserve counter value from previous day to track cumulative progress
                     target_count: task.target_count,
                     daily_target: task.daily_target,
                   })
@@ -4480,8 +4496,35 @@ function GoalTrackerApp() {
         (task) => task.linked_goal_id === goal.id && task.target_date === todayStr,
       )
 
+      // Fetch the current progress from the linked goal (needed for both existing and new tasks)
+      const { data: goalData } = await supabase
+        .from("long_term_goals")
+        .select("progress")
+        .eq("id", goal.id)
+        .single()
+
+      const currentGoalProgress = goalData?.progress || 0
+
       if (existingTaskForGoal) {
-        console.log(`[v0] Task already exists for goal "${goal.title}" today, skipping`)
+        // If the existing task's counter doesn't match the goal's progress, sync it
+        if ((existingTaskForGoal.counter || 0) !== currentGoalProgress) {
+          console.log(`[v0] Syncing counter for "${goal.title}" from ${existingTaskForGoal.counter} to ${currentGoalProgress}`)
+          await supabase
+            .from("tasks")
+            .update({ counter: currentGoalProgress })
+            .eq("id", existingTaskForGoal.id)
+
+          // Update local state so it re-renders immediately
+          setDailyTasks((prev) => {
+            const updated = { ...prev }
+            for (const day of Object.keys(updated)) {
+              updated[day] = (updated[day] || []).map((t) =>
+                t.id === existingTaskForGoal.id ? { ...t, counter: currentGoalProgress } : t,
+              )
+            }
+            return updated
+          })
+        }
         continue
       }
 
@@ -4490,9 +4533,9 @@ function GoalTrackerApp() {
       const dailyTarget = goal.daily_target || Math.ceil((goal.target_count || 0) / 84)
       const categoryName = goal.categories?.name || "Uncategorized"
 
-      console.log(`[v0] Auto-generating daily task for goal "${goal.title}" (daily target: ${dailyTarget})`)
+      console.log(`[v0] Auto-generating daily task for goal "${goal.title}" (daily target: ${dailyTarget}, initial counter: ${currentGoalProgress})`)
 
-      // Insert into database
+      // Insert into database with the current goal progress as the initial counter
       const { error: insertError } = await supabase.from("tasks").insert({
         id: dailyTaskId,
         user_id: userId,
@@ -4502,7 +4545,7 @@ function GoalTrackerApp() {
         task_type: "daily",
         target_date: todayStr,
         linked_goal_id: goal.id,
-        counter: 0,
+        counter: currentGoalProgress, // Initialize counter with current goal progress
         target_count: goal.target_count,
         daily_target: dailyTarget,
         completed: false,
@@ -4513,7 +4556,7 @@ function GoalTrackerApp() {
         continue
       }
 
-      // Add to local state
+      // Add to local state with current goal progress
       const newTask: DailyTask = {
         id: dailyTaskId,
         title: goal.title,
@@ -4525,7 +4568,7 @@ function GoalTrackerApp() {
         estimatedMinutes: 0,
         target_date: todayStr,
         linked_goal_id: goal.id,
-        counter: 0,
+        counter: currentGoalProgress, // Initialize with current goal progress
         target_count: goal.target_count,
         daily_target: dailyTarget,
       }
@@ -4535,7 +4578,7 @@ function GoalTrackerApp() {
         [dayName]: [...(prev[dayName] || []), newTask],
       }))
 
-      console.log(`[v0] Successfully auto-generated daily task for goal "${goal.title}"`)
+      console.log(`[v0] Successfully auto-generated daily task for goal "${goal.title}" with counter: ${currentGoalProgress}`)
     }
   }
 
