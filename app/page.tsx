@@ -4113,12 +4113,12 @@ function GoalTrackerApp() {
                   if (task.linked_goal_id && task.target_count) {
                     const { data: linkedGoal } = await supabase
                       .from("long_term_goals")
-                      .select("progress")
+                      .select("current_progress")
                       .eq("id", task.linked_goal_id)
                       .single()
                     if (linkedGoal) {
-                      syncedCounter = linkedGoal.progress || 0
-                      console.log(`[v0] Syncing counter for "${task.title}" from ${task.counter} to goal progress: ${syncedCounter}`)
+                      syncedCounter = linkedGoal.current_progress || 0
+                      console.log(`[v0] Syncing counter for "${task.title}" from ${task.counter} to goal current_progress: ${syncedCounter}`)
                     }
                   }
 
@@ -4499,11 +4499,11 @@ function GoalTrackerApp() {
       // Fetch the current progress from the linked goal (needed for both existing and new tasks)
       const { data: goalData } = await supabase
         .from("long_term_goals")
-        .select("progress")
+        .select("current_progress")
         .eq("id", goal.id)
         .single()
 
-      const currentGoalProgress = goalData?.progress || 0
+      const currentGoalProgress = goalData?.current_progress || 0
 
       if (existingTaskForGoal) {
         // If the existing task's counter doesn't match the goal's progress, sync it
