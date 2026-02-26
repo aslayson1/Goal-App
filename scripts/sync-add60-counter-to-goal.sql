@@ -1,9 +1,9 @@
--- Sync the "Add 60 Users" daily task counter to match the linked goal's progress
+-- Sync the "Add 60 Users" daily task counter to match the linked goal's current_progress
 -- This is a direct database fix while we debug the UI sync logic
 
 UPDATE tasks
 SET counter = (
-  SELECT COALESCE(lg.progress, 0)
+  SELECT COALESCE(lg.current_progress, 0)
   FROM long_term_goals lg
   WHERE lg.id = tasks.linked_goal_id
     AND lg.title = 'Add 60 Users'
@@ -21,7 +21,7 @@ SELECT
   counter,
   target_count,
   linked_goal_id,
-  (SELECT progress FROM long_term_goals WHERE id = tasks.linked_goal_id) as goal_progress
+  (SELECT current_progress FROM long_term_goals WHERE id = tasks.linked_goal_id) as goal_progress
 FROM tasks
 WHERE title = 'Add 60 Users'
   AND target_date = '2026-02-26'
