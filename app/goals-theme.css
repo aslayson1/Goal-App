@@ -1,0 +1,87 @@
+/* Scoped visual language for Goal Tracker's eventual Moment integration.
+   No goal calculations, data fetching, or auth rules are changed here. */
+.moment-goals {
+  --goal-teal: #078b90;
+  --goal-teal-dark: #076f75;
+  --goal-navy: #142b43;
+  --goal-page: #f7f9fb;
+  --goal-border: #e3e8ee;
+  --goal-muted: #657487;
+  color: var(--goal-navy);
+  background: var(--goal-page);
+}
+.moment-goals > header {
+  height: 68px;
+  background: #ffffff;
+  border-bottom: 1px solid var(--goal-border);
+  box-shadow: none;
+}
+.moment-goals main {
+  background: var(--goal-page);
+}
+.moment-goals main > div {
+  max-width: 1440px;
+}
+.moment-goals main h1 {
+  font-size: clamp(1.65rem, 2.2vw, 2.1rem);
+  line-height: 1.2;
+  letter-spacing: -.035em;
+  font-weight: 700;
+  color: var(--goal-navy);
+}
+.moment-goals main h1 + p {
+  color: var(--goal-muted);
+  font-size: .9rem;
+}
+.moment-goals main button.bg-black,
+.moment-goals main button[class*="bg-black"] {
+  background: var(--goal-teal);
+  border-color: var(--goal-teal);
+}
+.moment-goals main button.bg-black:hover,
+.moment-goals main button[class*="bg-black"]:hover {
+  background: var(--goal-teal-dark);
+}
+.moment-goals main [data-slot="card"] {
+  background: white;
+  border: 1px solid var(--goal-border);
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(20,43,67,.035);
+}
+.moment-goals main [data-slot="card"]:hover {
+  box-shadow: 0 4px 16px rgba(20,43,67,.06);
+}
+.moment-goals main [data-slot="tabs-list"] {
+  width: fit-content;
+  max-width: 100%;
+  background: #edf2f5;
+  padding: 4px;
+  border-radius: 10px;
+  border: 1px solid #e4eaee;
+}
+.moment-goals main [data-slot="tabs-trigger"] {
+  border-radius: 8px;
+  font-weight: 550;
+  color: #637184;
+}
+.moment-goals main [data-slot="tabs-trigger"][data-state="active"] {
+  background: white;
+  color: var(--goal-navy);
+  box-shadow: 0 1px 3px rgba(20,43,67,.08);
+}
+.moment-goals aside,
+.moment-goals [data-sidebar="sidebar"] {
+  background: #fff;
+  border-color: var(--goal-border);
+}
+.moment-goals [data-sidebar="menu-button"][data-active="true"] {
+  color: var(--goal-teal-dark);
+  background: #e9f6f5;
+}
+.moment-goals main [role="progressbar"] > div {
+  background: var(--goal-teal);
+}
+@media(max-width: 768px){
+  .moment-goals main { padding: 16px; }
+  .moment-goals main > div > div:first-child { gap: 12px; }
+}
