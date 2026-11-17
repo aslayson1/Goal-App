@@ -1,5 +1,6 @@
 "use client"
 import { supabase } from "@/lib/supabase/client"
+import "./goals-theme.css"
 import {
   Dialog,
   DialogContent,
@@ -2863,7 +2864,7 @@ function GoalTrackerApp() {
 
   return (
     <SidebarProvider defaultOpen={true}>
-      <div className="flex h-screen flex-col">
+      <div className="moment-goals flex h-screen flex-col">
         <header className="sticky top-0 z-50 flex h-16 shrink-0 items-center justify-between gap-4 border-b bg-white px-6">
           <div className="flex items-center gap-3">
             <Image
@@ -2902,22 +2903,22 @@ function GoalTrackerApp() {
         <div className="flex flex-1 overflow-hidden">
           <AppSidebar />
           <SidebarInset className="flex-1">
-            <main className="flex-1 overflow-auto p-6">
-              <div className="mx-auto max-w-7xl space-y-6">
+            <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
+              <div className="mx-auto max-w-[1440px] space-y-6">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-8">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-7">
                   <div>
-                    <h1 className="text-4xl font-bold text-gray-900 mb-2">
+                    <h1 className="text-3xl font-bold text-slate-900 mb-1">
                       Hi {user?.name?.split(" ")[0] || "there"},
                     </h1>
-                    <p className="text-gray-600">Here are your tasks for week {currentWeek} of 12.</p>
+                    <p className="text-slate-500">Your priorities, progress and daily execution · Week {currentWeek} of 12</p>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Button
                       variant="default"
                       size="sm"
                       onClick={() => setShowAddGoal(true)}
-                      className="text-sm bg-black hover:bg-gray-800 text-white"
+                      className="text-sm bg-[#078b90] hover:bg-[#076f75] text-white"
                     >
                       <Plus className="h-4 w-4 mr-2" />
                       Add Goal
@@ -2930,7 +2931,7 @@ function GoalTrackerApp() {
                 </div>
 
                 {/* Stats Overview */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4 mb-7">
                   <Card className="border-0 shadow-sm">
                     <CardContent className="p-6">
                       <div className="flex flex-col items-center justify-center text-center h-full space-y-3">
@@ -3006,9 +3007,9 @@ function GoalTrackerApp() {
                 </div>
 
                 <Tabs value={activeView} onValueChange={setActiveView} className="mb-8">
-                  <TabsList className="grid w-full max-w-2xl grid-cols-3">
+                  <TabsList className="grid w-full max-w-xl grid-cols-3">
                     <TabsTrigger value="daily">Daily Tasks</TabsTrigger>
-                    <TabsTrigger value="weekly">Weekly Tasks</TabsTrigger>
+                    <TabsTrigger value="weekly">Weekly Goals</TabsTrigger>
                     <TabsTrigger value="12-week">12-Week Goals</TabsTrigger>
                   </TabsList>
 
